@@ -530,6 +530,7 @@ return `<div class="card"><h2>ชุดสีสำเร็จ</h2>
 }
 function setImport(){
 return `<div class="card"><h2>นำเข้างานจากไฟล์ CSV</h2>
+<div id="impstat">${impPill()}</div>
 <div class="hint" style="margin-top:2px">เปิดไฟล์ Excel แล้ว Save As → CSV UTF-8 หรือ Google Sheets → ดาวน์โหลด → CSV แล้วอัปโหลดที่นี่</div>
 <div class="addg"><input type="file" id="csvfile" accept=".csv,text/csv" style="background:var(--paper);padding:9px 14px"></div>
 <div class="hint">หรือวางข้อความ CSV ลงช่องนี้</div>
@@ -580,6 +581,23 @@ Sky Work เป็นเว็บแอปของวิมเอง ติด�
 <div id="csvout2"></div></div>
 </div>`;
 }
+let imp={state:"idle",ok:0,fail:0,total:0,msg:"",at:""};
+function impPill(){
+const map={idle:["s-wait","รอดำเนินการ"],run:["s-run","กำลังดำเนินการ"],done:["s-done","ดำเนินการเสร็จสิ้น"],fail:["s-run","เสร็จสิ้นบางส่วน"]};
+const [cls,label]=map[imp.state]||map.idle;
+let detail="";
+if(imp.state==="run")detail=`กำลังบันทึก ${imp.ok+imp.fail} จาก ${imp.total} รายการ`;
+else if(imp.state==="done")detail=`นำเข้าแล้ว ${imp.ok} รายการ${imp.at?" · "+imp.at:""}`;
+else if(imp.state==="fail")detail=`สำเร็จ ${imp.ok} · ล้มเหลว ${imp.fail}${imp.at?" · "+imp.at:""}`;
+else detail="ยังไม่ได้เริ่มนำเข้า";
+const pct=imp.total?Math.round((imp.ok+imp.fail)/imp.total*100):0;
+return `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--paper);border-radius:var(--r-sm);padding:13px 16px;margin-top:12px">
+<span class="pill ${cls}">${label}</span>
+<span style="font-size:13.5px;color:var(--ink-2)">${esc(detail)}</span>
+${imp.state==="run"?`<div class="bar" style="flex:1;min-width:120px;margin:0"><i style="width:${pct}%"></i></div>`:""}
+</div>${imp.msg?`<div style="font-size:12.5px;color:var(--ink-3);margin-top:8px">${imp.msg}</div>`:""}`;
+}
+function paintImp(){const n=el("impstat");if(n)n.innerHTML=impPill();}
 let cResolve=null;
 function ask(msg,yes="ยืนยัน"){
 el("cmsg").innerHTML=msg; el("cyes").textContent=yes;
@@ -722,6 +740,7 @@ return rows.filter(r=>r.some(c=>c.trim()));
 }
 async function importCSV(txt){
 const out=el("csvout"); if(!txt.trim()){out.innerHTML=`<div class="banner bad">ยังไม่มีข้อมูลให้นำเข้าค่ะ</div>`;return;}
+imp={state:"run",ok:0,fail:0,total:0,msg:"",at:""}; paintImp();
 const COLS=["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","งบ","ใช้จริง","รายละเอียด"];
 const rows=parseCSV(txt);
 let head=rows[0].map(h=>h.replace(/\uFEFF/g,"").trim());
@@ -730,6 +749,7 @@ if(head.indexOf("ชื่องาน")<0){ head=COLS.slice(); body=rows; noHea
 const idx=n=>head.indexOf(n);
 const get=(r,n)=>{const i=idx(n);return i<0?"":String(r[i]==null?"":r[i]).trim();};
 let added=0, failed=0, firstErr=null, newG=[], newC=[];
+imp.total=body.length; paintImp();
 for(const r of body){
 const title=get(r,"ชื่องาน"); if(!title)continue;
 let gl=get(r,"กลุ่ม")||"งานประจำปี";
@@ -750,12 +770,18 @@ months:/^\d{4}-\d{2}-\d{2}$/.test(date)?[new Date(date).getMonth()+1]:[]
 });
 added++;
 }catch(e){ failed++; if(!firstErr)firstErr=e; }
-out.innerHTML=`<div class="banner">กำลังนำเข้า… ${added+failed}/${body.length}</div>`;
+imp.ok=added; imp.fail=failed; paintImp();
 }
 try{ if(newG.length)await saveMeta("groups",groups); if(newC.length)await saveMeta("companies",companies); }catch(e){ if(!firstErr)firstErr=e; }
 let verify="";
 try{ const {count,error}=await SB.from("rows").select("id",{count:"exact",head:true}).eq("uid",uid).eq("kind","items");
  if(!error)verify=` · ตรวจสอบบนเซิร์ฟเวอร์แล้วมี ${count} งาน`; }catch(e){}
+const now=new Date();
+imp.ok=added; imp.fail=failed;
+imp.at=now.getDate()+" "+MTH[now.getMonth()]+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+imp.state=failed?"fail":"done";
+imp.msg=verify?esc(verify.replace(" · ","")):"";
+paintImp();
 if(failed){
 out.innerHTML=`<div class="banner bad">${svg(ICON.bell,19)} นำเข้าได้ ${added} งาน · <b>ล้มเหลว ${failed} งาน</b><br>
 <span style="font-size:12.5px">สาเหตุ: ${esc((firstErr&&(firstErr.message||firstErr.hint))||"ไม่ทราบ")} ${firstErr&&firstErr.code?"(code "+esc(firstErr.code)+")":""}</span></div>`;
