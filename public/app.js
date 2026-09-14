@@ -682,6 +682,7 @@ el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
 ledger.map(x=>[x.date,x.kind==="income"?"รายรับ":"รายจ่าย",glLabel(x.gl),x.amount,cLabel(x.company),x.note])));
 }
 function parseCSV(txt){
+txt=String(txt).replace(/^\uFEFF/,"");
 const rows=[];let row=[],cur="",q=false;
 for(let i=0;i<txt.length;i++){const c=txt[i];
 if(q){ if(c==='"'&&txt[i+1]==='"'){cur+='"';i++;} else if(c==='"'){q=false;} else cur+=c; }
@@ -694,7 +695,7 @@ return rows.filter(r=>r.some(c=>c.trim()));
 }
 async function importCSV(txt){
 const out=el("csvout"); if(!txt.trim()){out.innerHTML=`<div class="banner bad">ยังไม่มีข้อมูลให้นำเข้าค่ะ</div>`;return;}
-const rows=parseCSV(txt); const head=rows[0].map(h=>h.trim());
+const rows=parseCSV(txt); const head=rows[0].map(h=>h.replace(/\uFEFF/g,"").trim());
 const idx=n=>head.indexOf(n);
 if(idx("ชื่องาน")<0){out.innerHTML=`<div class="banner bad">ไม่พบคอลัมน์ “ชื่องาน” — ตรวจบรรทัดหัวตารางอีกครั้งนะคะ</div>`;return;}
 const get=(r,n)=>{const i=idx(n);return i<0?"":(r[i]||"").trim();};
