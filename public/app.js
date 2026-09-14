@@ -142,10 +142,20 @@ listeners[coll].forEach(cb=>cb({docs,size:docs.length,empty:!docs.length,docChan
 };
 const emitMeta=id=>{(listeners.meta.get(id)||[]).forEach(cb=>cb(snapDoc(id,cache.meta.get(id))));};
 const uuid=()=>crypto.randomUUID?crypto.randomUUID():"id"+Date.now()+Math.random().toString(36).slice(2);
+let lastErr=null;
 async function up(coll,id,data){
+const prev=cache[coll].get(id);
 cache[coll].set(id,data); coll==="meta"?emitMeta(id):emit(coll);
 const {error}=await SB.from("rows").upsert({id,uid,kind:coll,data,updated_at:new Date().toISOString()});
-if(error)setFoot("บันทึกไม่สำเร็จ","var(--over)");
+if(error){
+lastErr=error;
+if(prev===undefined)cache[coll].delete(id); else cache[coll].set(id,prev);
+coll==="meta"?emitMeta(id):emit(coll);
+setFoot("บันทึกไม่สำเร็จ","var(--over)");
+render();
+throw error;
+}
+lastErr=null;
 return id;
 }
 async function del(coll,id){
@@ -233,8 +243,8 @@ gls=Object.values(found).sort((a,b)=>b.budget-a.budget);
 if(gls.length&&DB)DB.doc("meta/gl").set({list:gls});
 }
 const glKeyOf=g=>{g=(g||"").trim();if(!g)return"";const m=g.match(/^(\d{6,9})/);return m?m[1]:g.slice(0,18);};
-const saveMeta=(k,list)=>DB&&DB.doc("meta/"+k).set({list});
-async function saveItem(data,id){ if(!DB)return; id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
+const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ tell("บันทึกการตั้งค่าไม่สำเร็จ<br><span style=\"font-size:12.5px\">"+esc(e.message||"")+"</span>"); } };
+async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
 function renderNav(){
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
 el("tabbar").innerHTML=TABS.map(k=>{const l=VIEWS.find(v=>v[0]===k)[1];
@@ -563,7 +573,8 @@ Sky Work เป็นเว็บแอปของวิมเอง ติด�
 ข้อมูลผูกกับบัญชีที่ล็อกอิน คนอื่นเปิดลิงก์โดยไม่มีรหัสผ่านก็ไม่เห็นข้อมูล · เครื่องนี้จำการล็อกอินไว้แล้ว ไม่ต้องกรอกซ้ำ<br><br>
 แนะนำให้กดดาวน์โหลด CSV เก็บไว้เดือนละครั้ง เป็นสำเนาสำรองไว้อุ่นใจค่ะ
 </div>
-<div class="addg"><button class="btn" id="expTasks">${svg(ICON.file,17)}ดาวน์โหลดงานเป็น CSV</button>
+<div class="addg"><button class="btn" id="selftest">${svg(ICON.check,17)}ทดสอบการบันทึกข้อมูล</button>
+<button class="btn ghost" id="expTasks">${svg(ICON.file,17)}ดาวน์โหลดงานเป็น CSV</button>
 <button class="btn ghost" id="expLedger">ดาวน์โหลดรายการเงิน</button>
 <button class="btn ghost" id="signout">ออกจากระบบ</button></div>
 <div id="csvout2"></div></div>
@@ -676,6 +687,15 @@ const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
 ["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","งบ","ใช้จริง","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),budgetOf(t),t.actual,t.note])));
+el("selftest")&&(el("selftest").onclick=async()=>{
+const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
+const id="selftest-"+Date.now();
+const w=await SB.from("rows").upsert({id,uid,kind:"items",data:{title:"__ทดสอบระบบ__",track:"annual",status:"รอดำเนินการ",months:[]},updated_at:new Date().toISOString()});
+if(w.error){out.innerHTML=`<div class="banner bad">${svg(ICON.bell,19)} เขียนข้อมูลไม่ได้<br><span style="font-size:12.5px">${esc(w.error.message||"")} ${w.error.code?"(code "+esc(w.error.code)+")":""}${w.error.hint?" · "+esc(w.error.hint):""}</span></div>`;return;}
+const rd=await SB.from("rows").select("id",{count:"exact",head:true}).eq("uid",uid);
+await SB.from("rows").delete().eq("id",id).eq("uid",uid);
+out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} เขียน อ่าน และลบข้อมูลได้ปกติ · ตอนนี้มี ${rd.count!=null?rd.count-1:"?"} แถวบนเซิร์ฟเวอร์</div>`;
+});
 el("signout")&&(el("signout").onclick=async()=>{if(await ask("ออกจากระบบเครื่องนี้ใช่ไหมคะ?","ออกจากระบบ"))signOut();});
 el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
 ["วันที่","ประเภท","หมวด GL","จำนวนเงิน","บริษัท","รายละเอียด"],
@@ -709,7 +729,7 @@ let body=rows.slice(1), noHead=false;
 if(head.indexOf("ชื่องาน")<0){ head=COLS.slice(); body=rows; noHead=true; }
 const idx=n=>head.indexOf(n);
 const get=(r,n)=>{const i=idx(n);return i<0?"":String(r[i]==null?"":r[i]).trim();};
-let added=0, newG=[], newC=[];
+let added=0, failed=0, firstErr=null, newG=[], newC=[];
 for(const r of body){
 const title=get(r,"ชื่องาน"); if(!title)continue;
 let gl=get(r,"กลุ่ม")||"งานประจำปี";
@@ -719,6 +739,7 @@ let co=get(r,"บริษัท"), c=null;
 if(co){c=companies.find(x=>x.label===co);
 if(!c){c={key:"c"+Date.now().toString(36)+added,label:co};companies.push(c);newC.push(co);}}
 const date=get(r,"วันที่");
+try{
 await saveItem({
 title, track:g.key, type:get(r,"ประเภท"), status:STATUS.includes(get(r,"สถานะ"))?get(r,"สถานะ"):"รอดำเนินการ",
 owner:get(r,"ผู้รับผิดชอบ"), date:/^\d{4}-\d{2}-\d{2}$/.test(date)?date:null,
@@ -728,11 +749,20 @@ actual:+get(r,"ใช้จริง")||0, code:"", note:get(r,"รายละ�
 months:/^\d{4}-\d{2}-\d{2}$/.test(date)?[new Date(date).getMonth()+1]:[]
 });
 added++;
+}catch(e){ failed++; if(!firstErr)firstErr=e; }
+out.innerHTML=`<div class="banner">กำลังนำเข้า… ${added+failed}/${body.length}</div>`;
 }
-if(newG.length)await saveMeta("groups",groups);
-if(newC.length)await saveMeta("companies",companies);
-out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} นำเข้าสำเร็จ ${added} งาน${noHead?" (ไม่พบบรรทัดหัวตาราง ระบบอ่านตามลำดับคอลัมน์มาตรฐานให้)":""}${newG.length?` · สร้างกลุ่มใหม่: ${esc(newG.join(", "))}`:""}${newC.length?` · สร้างบริษัทใหม่: ${esc(newC.join(", "))}`:""}</div>`;
+try{ if(newG.length)await saveMeta("groups",groups); if(newC.length)await saveMeta("companies",companies); }catch(e){ if(!firstErr)firstErr=e; }
+let verify="";
+try{ const {count,error}=await SB.from("rows").select("id",{count:"exact",head:true}).eq("uid",uid).eq("kind","items");
+ if(!error)verify=` · ตรวจสอบบนเซิร์ฟเวอร์แล้วมี ${count} งาน`; }catch(e){}
+if(failed){
+out.innerHTML=`<div class="banner bad">${svg(ICON.bell,19)} นำเข้าได้ ${added} งาน · <b>ล้มเหลว ${failed} งาน</b><br>
+<span style="font-size:12.5px">สาเหตุ: ${esc((firstErr&&(firstErr.message||firstErr.hint))||"ไม่ทราบ")} ${firstErr&&firstErr.code?"(code "+esc(firstErr.code)+")":""}</span></div>`;
+}else{
+out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} นำเข้าสำเร็จ ${added} งาน${noHead?" (ไม่พบบรรทัดหัวตาราง ระบบอ่านตามลำดับคอลัมน์มาตรฐานให้)":""}${verify}${newG.length?` · สร้างกลุ่มใหม่: ${esc(newG.join(", "))}`:""}${newC.length?` · สร้างบริษัทใหม่: ${esc(newC.join(", "))}`:""}</div>`;
 el("csvtext").value="";
+}
 }
 function exportCSV(name,head,rows){
 const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
@@ -783,7 +813,9 @@ actual:+el("f-actual").value||0, code:el("f-code").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value)
 };
-el("dlg").close(); await saveItem(data,editing?._id);
+el("dlg").close();
+try{ await saveItem(data,editing?._id); }
+catch(e){ tell("บันทึกไม่สำเร็จ<br><span style=\"font-size:12.5px\">"+esc(e.message||"")+(e.code?" (code "+esc(e.code)+")":"")+"</span>"); }
 };
 el("del").onclick=async()=>{
 if(!editing)return;
@@ -812,7 +844,8 @@ const data={kind:el("t-kind").value, date:el("t-date").value, gl:el("t-gl").valu
 amount:amt, company:el("t-company").value, taskId:el("t-task").value, note:el("t-note").value.trim()};
 el("tdlg").close();
 if(!DB)return;
-editingTx?await DB.collection("ledger").doc(editingTx._id).set(data):await DB.collection("ledger").add(data);
+try{ editingTx?await DB.collection("ledger").doc(editingTx._id).set(data):await DB.collection("ledger").add(data); }
+catch(e){ tell("บันทึกไม่สำเร็จ<br><span style=\"font-size:12.5px\">"+esc(e.message||"")+(e.code?" (code "+esc(e.code)+")":"")+"</span>"); }
 };
 el("tdel").onclick=async()=>{
 if(!editingTx)return;
