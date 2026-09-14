@@ -27,29 +27,72 @@ const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหม�
 const TABS=["home","all","cal","budget","set"];
 const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
-{key:"cumulus", name:"เมฆกลางคืน", note:"ก้อนเมฆใต้ดาว", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
-{key:"above",   name:"เหนือหมู่เมฆ", note:"ฟ้าสดใสเหนือชั้นเมฆ", ramp:["#F2F8FF","#D7E7F7","#7FC1EE","#4A93D4","#2A5E96"]},
-{key:"clearday",name:"ฟ้าใสตอนเช้า", note:"Clear Day · โปร่งเบา", ramp:["#EAF4FD","#C9E4F8","#9BD0F0","#5BA8E0","#24618F"]},
-{key:"twilight",name:"ยามพลบค่ำ",   note:"Twilight · ม่วงคราม",  ramp:["#EDEAF7","#CFCDE9","#A3A3D6","#7172B6","#3A3A72"]},
-{key:"morning", name:"เช้าอบอุ่น",   note:"Morning Light",       ramp:["#FDF3E8","#F6E1CD","#DCC7B4","#9FB0C4","#4E6580"]},
-{key:"mint",    name:"Sky Mint",    note:"สดใส สบายตา",         ramp:["#DFFAFB","#B9F3FC","#5CE1E6","#2BB8C4","#1F3A60"]}
+{key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
+{key:"above",   name:"เหนือหมู่เมฆ", note:"ฟ้าสดใส", ramp:["#F2F8FF","#D7E7F7","#7FC1EE","#4A93D4","#2A5E96"]},
+{key:"clearday",name:"ฟ้าใสตอนเช้า", note:"โปร่งเบา", ramp:["#EAF4FD","#C9E4F8","#9BD0F0","#5BA8E0","#24618F"]},
+{key:"starsea", name:"ทะเลดาว",     note:"คราม-ม่วงลึก", ramp:["#C8DDF5","#88A5E0","#3A60A0","#4D4177","#0B1838"]},
+{key:"nightsky",name:"ท้องฟ้ายามค่ำ",note:"น้ำเงินเข้ม", ramp:["#D9E1E8","#A3B1C6","#4E5D6C","#00558C","#004C71"]},
+{key:"cleancool",name:"ใสเย็นตา",   note:"ฟ้าอมเขียว", ramp:["#DDEFF7","#ACEBFF","#5EBFE0","#0195D5","#2F7184"]},
+{key:"oceanbreeze",name:"Ocean Breeze",note:"ทะเลอ่อนโยน",ramp:["#E7F4FA","#CDE9F3","#A7D8E8","#7CC0DB","#3E7E9C"]},
+{key:"lavender",name:"Lavender Cloud",note:"ม่วงละมุน", ramp:["#F1ECFA","#DAC4E8","#C5BFE3","#A08BD0","#5B4A86"]},
+{key:"sakura",  name:"Sakura Blossom",note:"ชมพูหวานละมุน",ramp:["#FDEFF2","#F9D7DF","#F5AAC8","#E68AA6","#8C4A63"]},
+{key:"peach",   name:"Peach Sorbet", note:"พีชอบอุ่น",   ramp:["#FDF1E7","#F8DCC6","#F0B38B","#E08A5E","#7A4A32"]},
+{key:"pistachio",name:"Pistachio Dream",note:"เขียวใบไม้อ่อน",ramp:["#EFF6E9","#D2F0D5","#BBBE92","#8BB5B2","#4C6B4F"]},
+{key:"mocha",   name:"Mocha Latte",  note:"น้ำตาลอุ่น",   ramp:["#F6EFE8","#E8C1AF","#DBA396","#A88070","#5A4035"]},
+{key:"mint",    name:"Sky Mint",     note:"มินต์สดชื่น",  ramp:["#DFFAFB","#B9F3FC","#5CE1E6","#2BB8C4","#1F3A60"]},
+{key:"morning", name:"เช้าอบอุ่น",    note:"ครีมฟ้า",      ramp:["#FDF3E8","#F6E1CD","#DCC7B4","#9FB0C4","#4E6580"]},
+{key:"lemon",   name:"Lemon Meringue",note:"เหลืองสดใส",  ramp:["#FDF8E3","#FAF19F","#F3C669","#D9A23C","#6B5326"]},
+{key:"berry",   name:"Berry Smoothie",note:"ม่วงเบอร์รี่", ramp:["#F6EDF8","#E7C1ED","#DEC6E5","#BA98E1","#5C3E76"]}
 ];
 const hex2=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
 const mix=(a,b,t)=>{const A=hex2(a),B=hex2(b);return "#"+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,"0")).join("");};
 const lum=h=>{const[r,g,b]=hex2(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*r+.7152*g+.0722*b;};
+function isNight(){
+const h=new Date().getHours();
+return theme.mode==="dark" ? true : theme.mode==="light" ? false : (h>=18||h<6);
+}
 function applyTheme(){
 const p=PALETTES.find(x=>x.key===theme.preset)||PALETTES[0];
 const c=(theme.preset==="custom"&&theme.custom&&theme.custom.length===5)?theme.custom:p.ramp;
 const [c1,c2,c3,c4,c5]=c, s=document.documentElement.style, set=(k,v)=>s.setProperty(k,v);
+const night=isNight();
+if(night){
+const base=mix(c5,"#070d16",.55);
+set("--paper",base);
+set("--card",mix(c5,"#0d1520",.34));
+set("--line",mix(c5,"#0d1520",.12)); set("--line-2",mix(c5,"#0d1520",.24));
+set("--ink",mix(c1,"#ffffff",.35)); set("--ink-2",mix(c2,c1,.4)); set("--ink-3",mix(c3,c2,.35));
+set("--accent",lum(c2)>.55?c2:mix(c2,"#ffffff",.35)); set("--accent-2",c3);
+set("--accent-soft",mix(c5,"#0d1520",.05));
+set("--sky",c4); set("--sky-soft",c3);
+set("--sh-s","0 2px 6px -2px rgba(0,0,0,.45)");
+set("--sh-m","0 8px 22px -12px rgba(0,0,0,.75)");
+set("--sh-l","0 20px 48px -22px rgba(0,0,0,.9)");
+set("--ok-soft",mix("#1a9f86","#0d1520",.72)); set("--ok",mix("#1a9f86","#ffffff",.35));
+set("--run-soft",mix("#e0932b","#0d1520",.74)); set("--run",mix("#e0932b","#ffffff",.3));
+set("--wait-soft",mix(c5,"#0d1520",.2)); set("--wait",mix(c3,"#ffffff",.2));
+set("--over-soft",mix("#e0606d","#0d1520",.74)); set("--over",mix("#e0606d","#ffffff",.28));
+document.documentElement.style.colorScheme="dark";
+}else{
 set("--paper",mix(c1,"#ffffff",.55)); set("--card","#ffffff");
 set("--line",mix(c1,"#ffffff",.3)); set("--line-2",mix(c1,"#ffffff",.55));
 set("--ink",mix(c5,"#0b1a2a",.12)); set("--ink-2",mix(c5,c3,.45)); set("--ink-3",mix(c3,c4,.3));
 set("--accent",c5); set("--accent-2",c4); set("--accent-soft",mix(c2,"#ffffff",.4));
 set("--sky",lum(c4)<.62?c4:c5); set("--sky-soft",c2);
+set("--sh-s","0 2px 6px -2px rgba(18,58,94,.12)");
+set("--sh-m","0 6px 20px -10px rgba(18,58,94,.28)");
+set("--sh-l","0 18px 44px -22px rgba(18,58,94,.45)");
+set("--ok","#1a9f86"); set("--ok-soft","#dff4ef");
+set("--run","#e0932b"); set("--run-soft","#fcefdb");
+set("--wait","#8fa3ba"); set("--wait-soft","#e9eff5");
+set("--over","#e0606d"); set("--over-soft","#fbe5e8");
+document.documentElement.style.colorScheme="light";
 }
+}
+setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let DB=null, items=[], ledger=[], view="home", settab="groups", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
-let theme={preset:"cumulus",custom:null};
+let theme={preset:"cumulus",custom:null,mode:"auto"};
 try{const t=localStorage.getItem("hr-theme");if(t)theme=JSON.parse(t);}catch(e){}
 const YEAR=new Date().getFullYear();
 let R={scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
@@ -61,6 +104,7 @@ const kbaht=n=>n>=1000000?(n/1000000).toFixed(1)+"ล.":n>=1000?Math.round(n/100
 const budgetOf=t=>(+t.b1||0)+(+t.b2||0);
 const sCls=s=>s==="เสร็จสิ้น"?"s-done":s==="กำลังดำเนินการ"?"s-run":"s-wait";
 const sColor=s=>s==="เสร็จสิ้น"?"var(--ok)":s==="กำลังดำเนินการ"?"var(--run)":"var(--wait)";
+const visible=a=>a.filter(x=>!x.hidden);
 const gLabel=k=>(groups.find(g=>g.key===k)||{}).label||k||"ไม่ระบุกลุ่ม";
 const cLabel=k=>(companies.find(g=>g.key===k)||{}).label||k||"—";
 const glLabel=k=>{const g=gls.find(x=>x.key===k);return g?(g.code?g.code+" · ":"")+g.label:(k||"ไม่ระบุ GL");};
@@ -203,7 +247,7 @@ el("gate").close();
 sub("meta/groups",d=>{if(Array.isArray(d.list)&&d.list.length)groups=d.list;});
 sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{if(Array.isArray(d.list))gls=d.list;});
-sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null};applyTheme();}});
+sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
 items=s.docs.map(d=>Object.assign({_id:d.id},d.data()));
 if(!gls.length&&items.length)seedGL();
@@ -320,8 +364,8 @@ return header("งานทั้งหมด",`${list.length} จาก ${items
 `<div class="toolbar">${scopeBar("sc1")}</div>
 <div class="toolbar">
 <input type="search" id="q" placeholder="ค้นหางาน / ผู้รับผิดชอบ" value="${esc(F.q)}">
-<select id="fl-company">${opt([["","ทุกบริษัท"],...companies.map(c=>[c.key,c.label])],F.company)}</select>
-<select id="fl-track">${opt([["","ทุกกลุ่ม"],...groups.map(g=>[g.key,g.label])],F.track)}</select>
+<select id="fl-company">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],F.company)}</select>
+<select id="fl-track">${opt([["","ทุกกลุ่ม"],...visible(groups).map(g=>[g.key,g.label])],F.track)}</select>
 <select id="fl-type">${opt([["","ทุกประเภท"],...types().map(t=>[t,t])],F.type)}</select>
 <select id="fl-status">${opt([["","ทุกสถานะ"],...STATUS.map(s=>[s,s])],F.status)}</select>
 </div>`+
@@ -452,7 +496,7 @@ ${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth())}
 <b style="color:${x.kind==="income"?"var(--ok)":"inherit"};font-variant-numeric:tabular-nums">${x.kind==="income"?"+":"−"}${baht(x.amount)}</b></div>`).join("")
 ||`<div class="empty">ยังไม่มีรายการในช่วงนี้<br><span style="font-size:12.5px">กด “บันทึกเงิน” เพื่อเพิ่มรายรับหรือรายจ่าย</span></div>`}</div></div>
 <div class="card span4"><h2>งบตามหมวด GL <small>ใช้จริง / งบที่ตั้งไว้ · แก้งบได้ที่หน้าตั้งค่า</small></h2>
-${gls.length?gls.map(g=>{const a=spentByGL[g.key]||0,b=+g.budget||0,p=b?Math.min(100,a/b*100):(a?100:0);
+${gls.length?visible(gls).map(g=>{const a=spentByGL[g.key]||0,b=+g.budget||0,p=b?Math.min(100,a/b*100):(a?100:0);
 return `<div class="glrow"><div class="top"><span>${esc(glLabel(g.key))}</span>
 <span class="amt"${a>b&&b?' style="color:var(--over);font-weight:600"':""}>${baht(a)} / ${baht(b)}</span></div>
 <div class="bar"><i class="${a>b&&b?"hot":""}" style="width:${p}%"></i></div></div>`;}).join("")
@@ -480,44 +524,62 @@ return header("ตั้งค่า","ทุกอย่างที่ปร�
 ${SETTABS.map(([k,l])=>`<button data-st="${k}" aria-pressed="${k===settab}">${l}</button>`).join("")}
 </div></div>${body}`;
 }
+const ICON_UP='<path d="M12 19V5M6 11l6-6 6 6"/>', ICON_DN='<path d="M12 5v14M6 13l6 6 6-6"/>';
+const ICON_EYE='<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>';
+const ICON_EYEOFF='<path d="M4 4l16 16"/><path d="M9.9 5.9A9.8 9.8 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.3 4M6.3 8A17 17 0 0 0 2.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"/>';
+function moveBtns(kind,i,n,hidden){
+return `<button class="iconbtn" data-mv="${kind}:${i}:-1" ${i===0?"disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mv="${kind}:${i}:1" ${i===n-1?"disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button class="iconbtn${hidden?"":" on"}" data-hide="${kind}:${i}" title="${hidden?"กดเพื่อแสดง":"กดเพื่อซ่อน"}">${svg(hidden?ICON_EYEOFF:ICON_EYE,15)}</button>`;
+}
 const nameInput=(attr,key,val)=>`<input class="nm" ${attr}="${esc(key)}" value="${esc(val)}" aria-label="ชื่อ ${esc(val)}">`;
 function setGroups(){
 return `<div class="card"><h2>กลุ่มงาน <small>${groups.length} กลุ่ม</small></h2>
-<div class="rows">${groups.map(g=>{const n=items.filter(t=>t.track===g.key).length;
-return `<div class="rw">${nameInput("data-ren",g.key,g.label)}<span class="gc">${n} งาน</span>
+<div class="rows">${groups.map((g,i)=>{const n=items.filter(t=>t.track===g.key).length;
+return `<div class="rw${g.hidden?" off":""}">${nameInput("data-ren",g.key,g.label)}<span class="gc">${n} งาน</span>
+${moveBtns("groups",i,groups.length,g.hidden)}
 <button class="btn danger sm" data-delg="${esc(g.key)}">ลบ</button></div>`;}).join("")}</div>
 <div class="addg"><input id="newg" placeholder="ชื่อกลุ่มใหม่ เช่น งานฝึกอบรม">
 <button class="btn" id="addg">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มกลุ่ม</button></div>
-<div class="hint">แก้ชื่อได้โดยพิมพ์ทับในช่องแล้วกดนอกช่อง ระบบบันทึกให้ทันที · ลบกลุ่มที่ยังมีงานอยู่ไม่ได้ ต้องย้ายงานออกก่อนค่ะ</div></div>`;
+<div class="hint">พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
 }
 function setCompanies(){
 return `<div class="card"><h2>บริษัทในเครือ <small>${companies.length} บริษัท</small></h2>
-<div class="rows">${companies.map(c=>{const n=items.filter(t=>t.company===c.key).length;
-return `<div class="rw">${nameInput("data-renc",c.key,c.label)}<span class="gc">${n} งาน</span>
+<div class="rows">${companies.map((c,i)=>{const n=items.filter(t=>t.company===c.key).length;
+return `<div class="rw${c.hidden?" off":""}">${nameInput("data-renc",c.key,c.label)}<span class="gc">${n} งาน</span>
+${moveBtns("companies",i,companies.length,c.hidden)}
 <button class="btn danger sm" data-delc="${esc(c.key)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีบริษัท</div>`}</div>
 <div class="addg"><input id="newc" placeholder="ชื่อบริษัท เช่น LeKise Trading">
 <button class="btn" id="addc">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มบริษัท</button></div>
-<div class="hint">บริษัทจะขึ้นเป็นตัวเลือกในหน้าเพิ่มงาน บันทึกเงิน และตัวกรองหน้างานทั้งหมด</div></div>`;
+<div class="hint">เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
 function setGL(){
 const tot=gls.reduce((s,g)=>s+(+g.budget||0),0);
 return `<div class="card"><h2>หมวดงบประมาณ (GL) <small>${gls.length} หมวด · รวม ${baht(tot)} ฿</small></h2>
-<div class="rows">${gls.map(g=>`<div class="rw">
+<div class="rows">${gls.map((g,i)=>`<div class="rw${g.hidden?" off":""}">
 <input class="glcode" data-renc2="${esc(g.key)}" value="${esc(g.code||"")}" placeholder="รหัส GL" aria-label="รหัส GL">
 ${nameInput("data-reng",g.key,g.label)}
 <input type="number" class="glb" data-glb="${esc(g.key)}" value="${+g.budget||0}" aria-label="งบ ${esc(g.label)}">
+${moveBtns("gl",i,gls.length,g.hidden)}
 <button class="btn danger sm" data-delgl="${esc(g.key)}">ลบ</button></div>`).join("")||`<div class="empty">ยังไม่มีหมวด GL</div>`}</div>
 <div class="addg">
 <input id="glcode" placeholder="รหัส GL เช่น 785000000" style="max-width:190px">
 <input id="glname" placeholder="ชื่อหมวด เช่น ค่าอบรมและสัมมนา">
 <input id="glbud" type="number" placeholder="งบทั้งปี" style="max-width:150px">
 <button class="btn" id="addgl">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหมวด</button></div>
-<div class="hint">แก้รหัส ชื่อ หรือตัวเลขงบได้ในช่องเลย กดนอกช่องแล้วบันทึกอัตโนมัติ · หมวดเหล่านี้จะขึ้นเป็นตัวเลือกตอนบันทึกเงินและตอนเพิ่มงาน</div></div>`;
+<div class="hint">แก้รหัส ชื่อ หรืองบได้ในช่อง กดนอกช่องแล้วบันทึกทันที · เลื่อนลำดับให้หมวดที่ใช้บ่อยอยู่บนสุด · หมวดที่ซ่อนจะไม่ขึ้นในตัวเลือก แต่ตัวเลขยังรวมอยู่ในสรุปงบ</div></div>`;
 }
 function setTheme_(){
 const cur=theme.preset;
 const custom=(theme.custom&&theme.custom.length===5)?theme.custom:PALETTES[0].ramp;
-return `<div class="card"><h2>ชุดสีสำเร็จ</h2>
+const night=isNight();
+return `<div class="card"><h2>โหมดกลางวัน / กลางคืน <small>${night?"ตอนนี้: กลางคืน 🌙":"ตอนนี้: กลางวัน ☀️"}</small></h2>
+<div class="seg" id="modeseg" style="margin-top:10px">
+<button data-md="auto" aria-pressed="${theme.mode==="auto"}">ตามเวลา</button>
+<button data-md="light" aria-pressed="${theme.mode==="light"}">สว่างเสมอ</button>
+<button data-md="dark" aria-pressed="${theme.mode==="dark"}">มืดเสมอ</button></div>
+<div class="hint">โหมด “ตามเวลา” จะสลับเป็นธีมมืดอัตโนมัติช่วง 18:00–06:00 ตามนาฬิกาของเครื่อง และเปลี่ยนให้เองระหว่างเปิดแอปค้างไว้</div></div>
+<div class="card" style="margin-top:16px"><h2>ชุดสีสำเร็จ <small>${PALETTES.length} ชุด</small></h2>
 <div class="swgrid">${PALETTES.map(p=>`<button class="swcard${cur===p.key?" on":""}" data-pal="${p.key}">
 <div class="sw">${p.ramp.map(c=>`<span style="background:${c}"></span>`).join("")}</div>
 <div class="swname">${esc(p.name)}${cur===p.key?" ✓":""}</div><div class="swnote">${esc(p.note)}</div>
@@ -681,6 +743,18 @@ const bind=(id,key)=>{const n=el(id);if(!n)return;n.oninput=n.onchange=()=>{
 F[key]=n.value;const p=n.selectionStart,srch=n.type==="search";render();
 const m=el(id);if(m&&srch){m.focus();m.setSelectionRange(p,p);}};};
 bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","status");bind("fl-company","company");
+el("modeseg")&&(el("modeseg").onclick=async e=>{
+const b=e.target.closest("button[data-md]"); if(!b)return;
+await setTheme({preset:theme.preset,custom:theme.custom,mode:b.dataset.md});});
+document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
+const [kind,i,d]=b.dataset.mv.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:gls;
+const a=+i, t=a+(+d); if(t<0||t>=arr.length)return;
+const tmp=arr[a]; arr[a]=arr[t]; arr[t]=tmp;
+render(); await saveMeta(kind==="gl"?"gl":kind,arr);});
+document.querySelectorAll("[data-hide]").forEach(b=>b.onclick=async()=>{
+const [kind,i]=b.dataset.hide.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:gls;
+const o=arr[+i]; if(!o)return; o.hidden=!o.hidden;
+render(); await saveMeta(kind==="gl"?"gl":kind,arr);});
 document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>setTheme({preset:b.dataset.pal,custom:theme.custom}));
 if(el("useCustom")){
 el("useCustom").onclick=()=>setTheme({preset:"custom",custom:[0,1,2,3,4].map(i=>el("cc"+i).value)});
@@ -844,19 +918,19 @@ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 const out=el("csvout2"); if(out)out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} ดาวน์โหลดไฟล์แล้วค่ะ</div>`;
 }
 async function setTheme(t){
-theme=t; applyTheme(); render();
+t.mode=t.mode||theme.mode||"auto"; theme=t; applyTheme._last=isNight(); applyTheme(); render();
 try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
-if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null});
+if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
 function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
 function open_(t){
 editing=t;
 el("dlgh").textContent=t?"แก้ไขงาน":"เพิ่มงานใหม่";
 el("del").style.display=t?"":"none";
-fill("f-company",[["","— ไม่ระบุ —"],...companies.map(c=>[c.key,c.label])],t?.company||"");
-fill("f-track",groups.map(g=>[g.key,g.label]),t?.track||groups[0]?.key);
+fill("f-company",[["","— ไม่ระบุ —"],...visible(companies).map(c=>[c.key,c.label])],t?.company||"");
+fill("f-track",visible(groups).map(g=>[g.key,g.label]),t?.track||groups[0]?.key);
 fill("f-status",STATUS.map(x=>[x,x]),t?.status||"รอดำเนินการ");
-const glopts=[["","— ไม่ผูกหมวด —"],...gls.map(g=>[g.key,glLabel(g.key)])];
+const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(g=>[g.key,glLabel(g.key)])];
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
 el("typelist").innerHTML=types().map(x=>`<option value="${esc(x)}">`).join("");
 el("f-type").value=t?.type||"";
@@ -899,9 +973,9 @@ el("tdlgh").textContent=x?"แก้ไขรายการเงิน":"บ�
 el("tdel").style.display=x?"":"none";
 el("t-kind").value=x?.kind||"expense";
 el("t-date").value=x?.date||new Date().toISOString().slice(0,10);
-fill("t-gl",gls.length?gls.map(g=>[g.key,glLabel(g.key)]):[["","— ยังไม่มีหมวด GL —"]],x?.gl||"");
+fill("t-gl",visible(gls).length?visible(gls).map(g=>[g.key,glLabel(g.key)]):[["","— ยังไม่มีหมวด GL —"]],x?.gl||"");
 el("t-amount").value=x?.amount||"";
-fill("t-company",[["","— ไม่ระบุ —"],...companies.map(c=>[c.key,c.label])],x?.company||"");
+fill("t-company",[["","— ไม่ระบุ —"],...visible(companies).map(c=>[c.key,c.label])],x?.company||"");
 fill("t-task",[["","— ไม่ผูกงาน —"],...items.map(t=>[t._id,t.title])],x?.taskId||"");
 el("t-note").value=x?.note||"";
 el("tdlg").showModal();
