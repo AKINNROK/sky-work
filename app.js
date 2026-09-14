@@ -1,3 +1,4 @@
+const APP_VERSION="3.0"; const APP_DATE="14 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -290,6 +291,7 @@ const glKeyOf=g=>{g=(g||"").trim();if(!g)return"";const m=g.match(/^(\d{6,9})/);
 const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); } };
 async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
 function renderNav(){
+const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION;
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
 el("tabbar").innerHTML=TABS.map(k=>{const l=VIEWS.find(v=>v[0]===k)[1];
 return `<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k],21)}${l}</button>`;}).join("");
@@ -627,6 +629,8 @@ ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ �
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.link,16)}</span> สถานะซิงก์</div>
 <div class="v" style="font-size:19px;color:${on?"var(--ok)":"var(--over)"}">${on?"ออนไลน์":"ออฟไลน์"}</div>
 <div class="d">${on?"บันทึกแล้วเห็นทุกเครื่องทันที":"ตรวจการเชื่อมต่ออินเทอร์เน็ต"}</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.check,16)}</span> เวอร์ชันแอป</div>
+<div class="v" style="font-size:19px">${APP_VERSION}</div><div class="d">อัปเดต ${APP_DATE}</div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.file,16)}</span> ข้อมูลบนเซิร์ฟเวอร์</div>
 <div class="v" style="font-size:19px">${items.length} งาน · ${ledger.length} รายการเงิน</div>
 <div class="d">${groups.length} กลุ่ม · ${gls.length} หมวด GL · ${companies.length} บริษัท</div></div>
