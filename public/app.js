@@ -681,13 +681,20 @@ el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
 ["วันที่","ประเภท","หมวด GL","จำนวนเงิน","บริษัท","รายละเอียด"],
 ledger.map(x=>[x.date,x.kind==="income"?"รายรับ":"รายจ่าย",glLabel(x.gl),x.amount,cLabel(x.company),x.note])));
 }
-function parseCSV(txt){
+function sniffDelim(txt){
+const line=txt.split(/\r?\n/).find(l=>l.trim())||"";
+const n=c=>(line.split(c).length-1);
+const cand=[[",",n(",")],["\t",n("\t")],[";",n(";")],["|",n("|")]].sort((a,b)=>b[1]-a[1]);
+return cand[0][1]>0?cand[0][0]:",";
+}
+function parseCSV(txt,D){
 txt=String(txt).replace(/^\uFEFF/,"");
+D=D||sniffDelim(txt);
 const rows=[];let row=[],cur="",q=false;
 for(let i=0;i<txt.length;i++){const c=txt[i];
 if(q){ if(c==='"'&&txt[i+1]==='"'){cur+='"';i++;} else if(c==='"'){q=false;} else cur+=c; }
 else if(c==='"')q=true;
-else if(c===","){row.push(cur);cur="";}
+else if(c===D){row.push(cur);cur="";}
 else if(c==="\n"){row.push(cur);rows.push(row);row=[];cur="";}
 else if(c!=="\r")cur+=c;}
 if(cur||row.length){row.push(cur);rows.push(row);}
@@ -695,12 +702,15 @@ return rows.filter(r=>r.some(c=>c.trim()));
 }
 async function importCSV(txt){
 const out=el("csvout"); if(!txt.trim()){out.innerHTML=`<div class="banner bad">ยังไม่มีข้อมูลให้นำเข้าค่ะ</div>`;return;}
-const rows=parseCSV(txt); const head=rows[0].map(h=>h.replace(/\uFEFF/g,"").trim());
+const COLS=["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","งบ","ใช้จริง","รายละเอียด"];
+const rows=parseCSV(txt);
+let head=rows[0].map(h=>h.replace(/\uFEFF/g,"").trim());
+let body=rows.slice(1), noHead=false;
+if(head.indexOf("ชื่องาน")<0){ head=COLS.slice(); body=rows; noHead=true; }
 const idx=n=>head.indexOf(n);
-if(idx("ชื่องาน")<0){out.innerHTML=`<div class="banner bad">ไม่พบคอลัมน์ “ชื่องาน” — ตรวจบรรทัดหัวตารางอีกครั้งนะคะ</div>`;return;}
-const get=(r,n)=>{const i=idx(n);return i<0?"":(r[i]||"").trim();};
+const get=(r,n)=>{const i=idx(n);return i<0?"":String(r[i]==null?"":r[i]).trim();};
 let added=0, newG=[], newC=[];
-for(const r of rows.slice(1)){
+for(const r of body){
 const title=get(r,"ชื่องาน"); if(!title)continue;
 let gl=get(r,"กลุ่ม")||"งานประจำปี";
 let g=groups.find(x=>x.label===gl);
@@ -721,7 +731,7 @@ added++;
 }
 if(newG.length)await saveMeta("groups",groups);
 if(newC.length)await saveMeta("companies",companies);
-out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} นำเข้าสำเร็จ ${added} งาน${newG.length?` · สร้างกลุ่มใหม่: ${esc(newG.join(", "))}`:""}${newC.length?` · สร้างบริษัทใหม่: ${esc(newC.join(", "))}`:""}</div>`;
+out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} นำเข้าสำเร็จ ${added} งาน${noHead?" (ไม่พบบรรทัดหัวตาราง ระบบอ่านตามลำดับคอลัมน์มาตรฐานให้)":""}${newG.length?` · สร้างกลุ่มใหม่: ${esc(newG.join(", "))}`:""}${newC.length?` · สร้างบริษัทใหม่: ${esc(newC.join(", "))}`:""}</div>`;
 el("csvtext").value="";
 }
 function exportCSV(name,head,rows){
