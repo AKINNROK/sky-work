@@ -1,4 +1,4 @@
-const APP_VERSION="6.3"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="6.7"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -320,7 +320,7 @@ return `<g><rect x="${x}" y="${120-hi2}" width="${w}" height="${hi2}" rx="4" fil
 const CFG_BAKED={url:"",key:""};
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
-let hrdata={manpower:{},certified:{},dsd:{}};
+let hrdata={manpower:{},certified:{},dsd:{},subsidy:{pct:70,rate:200}};
 let legal=[], idx=[], notes=[];
 const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),meta:new Map()};
 const listeners={items:[],ledger:[],legal:[],index:[],note:[],meta:new Map()};
@@ -404,7 +404,7 @@ el("gate").close();
 sub("meta/groups",d=>{if(Array.isArray(d.list)&&d.list.length)groups=d.list;});
 sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{seedGL._done=true; if(Array.isArray(d.list))gls=d.list;});
-sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{}};});
+sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
 items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
@@ -483,20 +483,41 @@ const glYears=g=>Object.keys((g&&g.budgets)||{}).filter(y=>+g.budgets[y]).map(Nu
 const glKeyOf=g=>{g=(g||"").trim();if(!g)return"";const m=g.match(/^(\d{6,9})/);return m?m[1]:g.slice(0,18);};
 const mpOf=(c,y)=>+((hrdata.manpower[c]||{})[y])||0;
 const certOf=(c,y)=>{const v=(hrdata.certified[c]||{})[y]; return v==null?null:+v||0;};
-const saveHR=async()=>{ if(!DB)return; try{ await DB.doc("meta/hr").set({manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd}); }
+const saveHR=async()=>{ if(!DB)return; try{ await DB.doc("meta/hr").set({manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd,subsidy:hrdata.subsidy}); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div style="font-size:13px;margin-top:8px;line-height:1.7">'+x.fix+"</div>":"")); } };
 const dsdRec=(c,y)=>((hrdata.dsd||{})[c]||{})[y]||null;
 const dsdList=y=>visible(companies).filter(c=>!isGroupCo(c)&&dsdRec(c.key,y));
+const LAWPCT=50;
+const subPct=()=>+((hrdata.subsidy||{}).pct)||70;
+const subRate=()=>+((hrdata.subsidy||{}).rate)||200;
+const STD_RATE=1000, STD_CAP=100000, FUND_PCT=10;
+function subsidyOf(k,r){
+const base=k.avg*subPct()/100;
+const excess=Math.max(0,Math.floor(k.C-base));
+const amount=excess*subRate();
+const stdN=+((r||{}).stdPass)||0;
+const stdAmt=Math.min(stdN*STD_RATE,STD_CAP);
+const fundPaid=+((r||{}).fundPaid)||0;
+const fundAmt=Math.round(fundPaid*FUND_PCT/100);
+return {base:Math.round(base*100)/100,excess,amount,
+stdN,stdAmt,fundPaid,fundAmt,total:amount+stdAmt+fundAmt,
+nextPerson:k.avg?Math.max(0,Math.ceil(base+1)-k.C):0};
+}
+const goalOf=r=>{const g=+((r||{}).goal); return (g&&g>=LAWPCT&&g<=100)?g:LAWPCT;};
 function dsdCalc(r){
 const ms=(r&&r.months)||[];
 const vals=ms.map(v=>+v||0).filter(v=>v>0);
 const avg=vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*100)/100:0;
-const target=Math.ceil(avg*0.5);
+const target=Math.ceil(avg*LAWPCT/100);
+const goal=goalOf(r);
+const goalTarget=Math.ceil(avg*goal/100);
 const A=+((r||{}).sent)||0, B=+((r||{}).repeatTimes)||0;
 const C=Math.max(0,A-B);
 const pct=avg?Math.round(C/avg*10000)/100:0;
 const need=Math.max(0,target-C);
-return {avg,target,A,B,C,pct,need,months:vals.length};
+const needGoal=Math.max(0,goalTarget-C);
+const o={avg,target,goal,goalTarget,A,B,C,pct,need,needGoal,months:vals.length};
+return Object.assign(o,{sub:subsidyOf(o,r)});
 }
 const trainedPax=(c,y)=>items.filter(t=>isTrain(t)&&(t.company||"")===c&&t.status==="เสร็จสิ้น"
 &&(()=>{const d=dueDate(t);return d?d.getFullYear()===y:false;})()).reduce((n,t)=>n+(+t.pax||0),0);
@@ -700,7 +721,10 @@ card(ICON.train,"ฝึกอบรม",tr.length+" หลักสูตร",`�
 card(ICON.legal,"กฎหมาย",legal.length,lgLate?`เกินกำหนด ${lgLate} · ใกล้ครบ ${lgSoon}`:(lgNo?`ยังไม่มีผู้รับผิดชอบ ${lgNo}`:"เรียบร้อยทั้งหมด"),jump("legal"),lgLate),
 card(ICON.budget,"งบประมาณ",baht(bud-act)+" ฿",`ใช้ไป ${baht(act)} จาก ${baht(bud)}`,jump("budget"),act>bud&&bud>0),
 card(ICON.cal,"ปฏิทิน",byMonth.reduce((a,b)=>a+b,0),`งานที่มีกำหนดในปี ${R.year+543}`,jump("cal")),
-card(ICON.dsd,"เกณฑ์กรมพัฒนาฯ",dsdList(R.year).length?(need?"ขาด "+need+" คน":"ครบเกณฑ์"):"ยังไม่ตั้งค่า",dsdList(R.year).length?(need?"ยังไม่ถึง 50% ในบางบริษัท":"ทุกสถานประกอบกิจการผ่านแล้ว"):"เพิ่มสถานประกอบกิจการที่หน้ากรมพัฒนาฯ",jump("dsd"),need),
+(()=>{const T=dsdTotals(R.year);
+return card(ICON.dsd,"เกณฑ์กรมพัฒนาฯ",T.n?(T.mp?T.pct+"%":"—"):"ยังไม่ตั้งค่า",
+T.n?`ทำได้ ${baht(T.C)}/${baht(T.target)} คน${T.need?` · ขาด ${baht(T.need)}`:(T.goalTarget>T.target?(T.needGoal?` · ครบเกณฑ์ · ถึงเป้าเราอีก ${baht(T.needGoal)}`:" · ถึงเป้าที่ตั้งเองแล้ว"):" · ครบเกณฑ์")}`:"เพิ่มสถานประกอบกิจการที่หน้ากรมพัฒนาฯ",
+jump("dsd"),T.need);})(),
 card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใกล้สุด ${pr[0].t.title.slice(0,18)}`:"ว่าง",jump("meet"),pr.length)
 ].join("");})()}
 </div></div>
@@ -991,6 +1015,24 @@ ${bars(byDow,DOW,v=>v||"",new Date().getDay())}</div>
 <div class="list">${oneoff.slice(0,20).map(t=>row(t,dueDate(t),prepDate(t))).join("")||`<div class="empty">ยังไม่มี</div>`}</div></div>
 </div>`;
 }
+function dsdTotals(y){
+const L=dsdList(y);
+const t={n:L.length,subAmt:0,subExc:0,stdAmt:0,fundAmt:0,subTotal:0,mp:0,target:0,goalTarget:0,A:0,B:0,C:0,need:0,needGoal:0,done:0,doneGoal:0,updated:null,rows:[]};
+L.forEach(c=>{const r=dsdRec(c.key,y), k=dsdCalc(r);
+t.mp+=k.avg; t.target+=k.target; t.goalTarget+=k.goalTarget; t.A+=k.A; t.B+=k.B; t.C+=k.C; t.need+=k.need; t.needGoal+=k.needGoal;
+t.subAmt=(t.subAmt||0)+k.sub.amount; t.subExc=(t.subExc||0)+k.sub.excess;
+t.stdAmt=(t.stdAmt||0)+k.sub.stdAmt; t.fundAmt=(t.fundAmt||0)+k.sub.fundAmt; t.subTotal=(t.subTotal||0)+k.sub.total;
+if(k.avg&&k.pct>=LAWPCT)t.done++;
+if(k.avg&&k.pct>=k.goal)t.doneGoal++;
+if(r.updatedAt&&(!t.updated||r.updatedAt>t.updated))t.updated=r.updatedAt;
+t.rows.push({c,k,r});});
+t.mp=Math.round(t.mp*100)/100;
+t.pct=t.mp?Math.round(t.C/t.mp*10000)/100:0;
+t.goalPct=t.mp?Math.round(t.goalTarget/t.mp*10000)/100:LAWPCT;
+return t;
+}
+const fmtStamp=iso=>{if(!iso)return "";const d=new Date(iso);
+return `${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500} เวลา ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
 function dsdView(){
 const ty=items.filter(t=>isTrain(t)&&inScope(t));
 const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
@@ -1010,16 +1052,94 @@ t1:t.title,t2:`${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไ�
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"รอยื่น",pc:"s-run"};}))}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ <b>${waiting.length}</b> หลักสูตร</div>`:"")+
 (need?`<div class="banner bad">${svg(ICON.bell,19)} ยังไม่ถึงเกณฑ์ 50% — ต้องฝึกอีกรวม <b>${baht(need)}</b> คน</div>`:"")+
 `<div class="dash">
-<div class="card hero span2"><div class="lab">สถานประกอบกิจการที่ยื่น · ปี ${R.year+543}</div>
-<div class="big">${dsdList(R.year).length}</div>
-<div class="meta"><span>${need?"ต้องฝึกอีก "+baht(need)+" คน":"ครบเกณฑ์ทุกแห่ง"}</span></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> รอยื่น</div>
-<div class="v" style="color:${waiting.length?"var(--run)":"inherit"}">${waiting.length}</div><div class="d">ยื่นแล้ว ${sent.length} · อนุมัติ ${okd.length}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.check,16)}</span> อนุมัติแล้ว</div>
-<div class="v" style="color:var(--ok)">${okd.length}</div><div class="d">${bad.length?"ไม่ผ่าน "+bad.length+" หลักสูตร":"ไม่มีรายการไม่ผ่าน"}</div></div>
+${(()=>{const T=dsdTotals(R.year);
+const pass=T.pct>=50;
+return `<div class="card hero span4" style="padding-bottom:22px">
+<div class="lab">สรุปเกณฑ์กรมพัฒนาฝีมือแรงงาน · ปี ${R.year+543} · ${T.n} สถานประกอบกิจการ</div>
+<div style="display:flex;flex-wrap:wrap;gap:26px;align-items:flex-end;margin-top:6px;position:relative;z-index:1">
+<div><div class="big" style="margin:0">${T.mp?T.pct+"%":"—"}</div>
+<div style="font-size:13px;opacity:.9">ของลูกจ้างทั้งหมด · เกณฑ์กฎหมาย ${LAWPCT}%${T.goalPct>LAWPCT?` · เป้าที่ตั้งเอง ${T.goalPct}%`:""}</div></div>
+<div class="kpis">
+<div><span>พนักงานเฉลี่ยรวม</span><b>${T.mp?baht(T.mp):"—"}</b></div>
+<div><span>เป้ากฎหมาย ${LAWPCT}%</span><b>${T.target?baht(T.target):"—"}</b></div>
+${T.goalTarget>T.target?`<div><span>เป้าที่ตั้งเอง</span><b style="color:#ffe7a8">${baht(T.goalTarget)}</b></div>`:""}
+<div><span>ทำได้แล้ว (C)</span><b>${baht(T.C)}</b></div>
+<div><span>ขาดถึงเกณฑ์</span><b>${T.need?baht(T.need)+" คน":"ครบแล้ว ✓"}</b></div>
+${T.goalTarget>T.target?`<div><span>ขาดถึงเป้าเรา</span><b style="color:#ffe7a8">${T.needGoal?baht(T.needGoal)+" คน":"ถึงเป้าแล้ว ✓"}</b></div>`:""}
+<div><span>ผ่านเกณฑ์</span><b>${T.done}/${T.n} แห่ง</b></div>
+<div><span>เงินอุดหนุนคาดว่าได้</span><b style="color:${T.subTotal?"#8ef0c8":"inherit"}">${T.subTotal?baht(T.subTotal)+" ฿":"—"}</b></div>
+</div></div>
+<div class="prog goalbar" style="height:14px">
+<i style="width:${Math.min(100,T.pct)}%;background:${T.pct>=T.goalPct?"#8ef0c8":pass?"#bfe9ff":"#ffd08a"}"></i>
+<u style="left:${LAWPCT}%"></u>${T.goalPct>LAWPCT?`<u class="g2" style="left:${Math.min(100,T.goalPct)}%"></u>`:""}</div>
+<div style="display:flex;font-size:11.5px;opacity:.9;margin-top:6px;position:relative;height:16px">
+<span style="position:absolute;left:0">0%</span>
+<span style="position:absolute;left:${LAWPCT}%;transform:translateX(-50%)">กฎหมาย ${LAWPCT}%</span>
+${T.goalPct>LAWPCT?`<span style="position:absolute;left:${Math.min(96,T.goalPct)}%;transform:translateX(-50%);color:#ffe7a8;font-weight:600">เป้าเรา ${T.goalPct}%</span>`:""}
+<span style="position:absolute;right:0">100%</span></div>
+<div style="font-size:12px;opacity:.85;margin-top:10px">
+${T.updated?`ข้อมูลอัปเดตล่าสุด ${fmtStamp(T.updated)}`:"ยังไม่เคยบันทึกข้อมูล — กด “แก้ไข” ในตารางด้านล่าง"}</div></div>
+<div class="card span2"><h2>ความคืบหน้ารายบริษัท <small>เทียบเป้า 50%</small></h2>
+${T.rows.length?T.rows.map(({c,k})=>{const p=k.avg?Math.min(100,Math.round(k.pct)):0;
+const st=k.avg?(k.pct>=k.goal?"var(--ok)":k.pct>=LAWPCT?"var(--accent)":"var(--over)"):"var(--ink-3)";
+return `<div class="glrow"><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT?` <small style="color:var(--ink-3);font-weight:400">· เป้า ${k.goal}%</small>`:""}</span>
+<span class="amt" style="color:${st};font-weight:600">${k.avg?k.pct+"%":"—"}</span></div>
+<div class="bar goalbar"><i class="${k.avg&&k.pct<LAWPCT?"hot":""}" style="width:${p}%;${k.avg&&k.pct>=k.goal?"background:var(--ok)":""}"></i>
+<u style="left:${LAWPCT}%"></u>${k.goal>LAWPCT?`<u class="g2" style="left:${Math.min(100,k.goal)}%"></u>`:""}</div>
+<div class="t-note" style="margin-top:4px">ทำได้ ${baht(k.C)} · เกณฑ์ ${baht(k.target)} คน${k.need?` (ขาด ${baht(k.need)})`:" ✓"}${k.goal>LAWPCT?` · เป้าเรา ${baht(k.goalTarget)} คน${k.needGoal?` (ขาด ${baht(k.needGoal)})`:" ✓"}`:""}</div></div>`;}).join("")
+:`<div class="empty">ยังไม่มีสถานประกอบกิจการ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง</div>`}</div>
+<div class="card span4"><h2>เงินอุดหนุนกองทุนพัฒนาฝีมือแรงงาน <small>ผลงานปี ${R.year+543} → ยื่นภายใน 31 ส.ค. ${R.year+544}</small></h2>
+${(()=>{const T=dsdTotals(R.year);
+const rows=T.rows.filter(x=>x.k.avg||x.k.sub.stdN||x.k.sub.fundPaid);
+return `<div class="hint" style="margin:2px 0 12px">
+<b>ช่องทางที่ 1 — ฝึกอบรมเกิน ${subPct()}%</b> &nbsp;(ส่วนที่เกิน) × ${baht(subRate())} ฿ ต่อคน · นับ<b>คนไม่ซ้ำ</b> เริ่มนับตั้งแต่คนที่เกิน ${subPct()}% เป็นต้นไป<br>
+<b>ช่องทางที่ 2 — ทดสอบมาตรฐานฝีมือแรงงานแห่งชาติ</b> &nbsp;จำนวนคนที่ผ่านทดสอบ × ${baht(STD_RATE)} ฿ (ต้องจ่ายค่าจ้างตามมาตรฐานฝีมือไม่น้อยกว่า 180 วันก่อนยื่น · <b>ไม่เกินปีละ ${baht(STD_CAP)} ฿</b>)<br>
+<b>ช่องทางที่ 3 — คืนเงินสมทบ ${FUND_PCT}%</b> &nbsp;เงินสมทบที่นำส่งกองทุน × ${FUND_PCT}% (กรณีปีที่ผ่านมาส่งเงินสมทบ แล้วปีถัดมาพัฒนาครบตามสัดส่วน)</div>
+<div class="tblwrap wide"><table><thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th>
+<th style="text-align:right">ฐาน ${subPct()}%</th><th style="text-align:right">ผ่านรับรอง (C)</th>
+<th style="text-align:right">ส่วนที่เกิน</th><th style="text-align:right">1) อบรมเกิน ${subPct()}%</th>
+<th style="text-align:right">2) ทดสอบมาตรฐาน</th><th style="text-align:right">3) คืนเงินสมทบ</th>
+<th style="text-align:right">รวมคาดว่าได้</th><th>ถ้าฝึกเพิ่ม</th></tr></thead>
+<tbody>${rows.length?rows.map(({c,k})=>`<tr data-nolink="1">
+<td><div style="font-weight:600">${esc(c.label)}</div></td>
+<td class="num">${k.avg?baht(k.avg):"—"}</td><td class="num">${k.avg?baht(k.sub.base):"—"}</td><td class="num">${baht(k.C)}</td>
+<td class="num"${k.sub.excess?' style="color:var(--ok);font-weight:600"':""}>${k.sub.excess?"+"+baht(k.sub.excess):"—"}</td>
+<td class="num">${k.sub.amount?baht(k.sub.amount):"—"}</td>
+<td class="num">${k.sub.stdAmt?baht(k.sub.stdAmt)+(k.sub.stdN*STD_RATE>STD_CAP?" (เต็มเพดาน)":""):"—"}</td>
+<td class="num">${k.sub.fundAmt?baht(k.sub.fundAmt):"—"}</td>
+<td class="num" style="font-weight:700;color:${k.sub.total?"var(--ok)":"var(--ink-3)"}">${k.sub.total?baht(k.sub.total)+" ฿":"0 ฿"}</td>
+<td class="t-note">${k.sub.excess?`อีก 1 คน = +${baht(subRate())} ฿`:(k.sub.nextPerson?`อีก ${baht(k.sub.nextPerson)} คน จึงเริ่มได้`:"—")}</td></tr>`).join("")
+:`<tr><td colspan="10"><div class="empty">ยังไม่มีข้อมูล — ใส่จำนวนพนักงานที่ตารางด้านล่างก่อน</div></td></tr>`}
+${rows.length?`<tr data-nolink="1" style="background:var(--line-2)">
+<td style="font-weight:700">รวมทุกแห่ง</td><td class="num" style="font-weight:600">${baht(T.mp)}</td><td class="num">—</td>
+<td class="num" style="font-weight:600">${baht(T.C)}</td>
+<td class="num" style="font-weight:700;color:${T.subExc?"var(--ok)":"inherit"}">${T.subExc?"+"+baht(T.subExc):"—"}</td>
+<td class="num" style="font-weight:600">${baht(T.subAmt)}</td><td class="num" style="font-weight:600">${baht(T.stdAmt)}</td>
+<td class="num" style="font-weight:600">${baht(T.fundAmt)}</td>
+<td class="num" style="font-weight:700;color:${T.subTotal?"var(--ok)":"inherit"}">${baht(T.subTotal)} ฿</td><td></td></tr>`:""}
+</tbody></table></div>
+<div class="addg" style="margin-top:14px;align-items:center">
+<span style="font-size:13px;color:var(--ink-3)">ปรับเกณฑ์ตามประกาศปีนั้น</span>
+<input id="sub-pct" type="number" min="1" max="100" value="${subPct()}" style="max-width:100px" aria-label="เปอร์เซ็นต์">
+<span style="font-size:13px;color:var(--ink-3)">% · หัวละ</span>
+<input id="sub-rate" type="number" min="0" step="10" value="${subRate()}" style="max-width:120px" aria-label="บาทต่อคน">
+<span style="font-size:13px;color:var(--ink-3)">บาท</span></div>
+<div class="hint">ที่มา: หลักเกณฑ์การให้เงินช่วยเหลือหรืออุดหนุน ตาม พ.ร.บ. ส่งเสริมการพัฒนาฝีมือแรงงาน พ.ศ. 2545 (ข้อ 3, 4, 6)<br>
+<b>กำหนดยื่น</b> ภายใน <b>31 สิงหาคม</b> ของทุกปี โดยใช้ผลงานของ<b>ปีที่ผ่านมา</b> · ต้องยื่นประเมินเงินสมทบกองทุนฯ ประจำปีด้วย<br>
+ตัวเลขนี้เป็นการประมาณการจากข้อมูลที่คุณกรอก ใช้เตรียมเอกสารและตั้งเป้า ไม่ใช่ยอดที่กรมฯ อนุมัติ ควรตรวจสอบกับเจ้าหน้าที่ก่อนยื่นจริง</div>`;})()}
+</div>
+<div class="card span2"><h2>สถานะการยื่นหลักสูตร <small>${ty.length} หลักสูตรในปีนี้</small></h2>
+<div class="donutwrap">
+${(()=>{const parts=[{n:"อนุมัติแล้ว",v:okd.length,c:"var(--ok)"},{n:"ยื่นแล้ว",v:sent.length,c:"var(--run)"},
+{n:"รอยื่น",v:waiting.length,c:"var(--wait)"},{n:"ไม่ผ่าน",v:bad.length,c:"var(--over)"}].filter(p=>p.v);
+const tot=parts.reduce((a,b)=>a+b.v,0);
+return (tot?donut(parts,tot,"หลักสูตร"):`<div class="empty" style="flex:1">ยังไม่มีหลักสูตรที่ต้องยื่น</div>`)+
+`<div class="dlist">${parts.map(p=>`<div><i style="background:${p.c}"></i>${p.n}<b>${p.v}</b></div>`).join("")}
+${tot?`<div style="border-top:1px solid var(--line-2);padding-top:8px;margin-top:2px"><i style="background:transparent"></i>คืบหน้า<b>${Math.round((okd.length/tot)*100)}%</b></div>`:""}</div>`;})()}
+</div></div>`;})()}
 <div class="card span4"><h2>เกณฑ์กรมพัฒนาฝีมือแรงงาน ปี ${R.year+543} <small>โครงสร้างตามแบบยื่นของกรมฯ · เฉลี่ยจากจำนวนพนักงานรายเดือน</small></h2>
 <div class="tblwrap wide"><table>
-<thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th><th style="text-align:right">50% ที่ต้องฝึก</th>
+<thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th><th style="text-align:right">เกณฑ์ 50%</th><th style="text-align:right">เป้าที่ตั้งเอง</th>
 <th style="text-align:right">A ส่งฝึกแล้ว</th><th style="text-align:right">B ฝึกซ้ำ (ครั้ง)</th><th style="text-align:right">C = A−B</th>
 <th style="text-align:right">คิดเป็น %</th><th style="text-align:right">ต้องฝึกอีก</th><th>สถานะ</th><th></th></tr></thead>
 <tbody>${(()=>{const L=dsdList(R.year);
@@ -1029,13 +1149,14 @@ return `<tr data-nolink="1">
 <td><div style="font-weight:600">${esc(c.label)}</div>
 <div class="t-note">${r.id?"ทะเบียน "+esc(r.id)+" · ":""}กรอกพนักงานแล้ว ${k.months} เดือน${auto&&auto!==k.A?` · ระบบนับจากหลักสูตรได้ ${auto} คน`:""}</div></td>
 <td class="num">${k.avg?baht(k.avg):"—"}</td><td class="num">${k.target?baht(k.target):"—"}</td>
+<td class="num"${k.goal>LAWPCT?' style="font-weight:600"':""}>${k.avg?(k.goal>LAWPCT?baht(k.goalTarget)+` (${k.goal}%)`:"—"):"—"}</td>
 <td class="num">${baht(k.A)}</td><td class="num">${baht(k.B)}</td>
 <td class="num" style="font-weight:600">${baht(k.C)}</td>
 <td class="num" style="font-weight:600;color:${k.avg?(pass?"var(--ok)":"var(--over)"):"inherit"}">${k.avg?k.pct+"%":"—"}</td>
-<td class="num"${k.need?' style="color:var(--over);font-weight:600"':""}>${k.avg?(k.need?baht(k.need)+" คน":"ครบแล้ว"):"—"}</td>
+<td class="num"${k.need?' style="color:var(--over);font-weight:600"':""}>${k.avg?(k.need?baht(k.need)+" คน":(k.needGoal?baht(k.needGoal)+" คน (ถึงเป้า)":"ครบแล้ว")):"—"}</td>
 <td><span class="pill ${k.avg?(pass?"s-done":"s-run"):"s-wait"}">${k.avg?(pass?"ผ่านเกณฑ์":"ยังไม่ถึง 50%"):"ยังไม่มีข้อมูล"}</span></td>
 <td><button class="btn ghost sm" data-dsd="${esc(c.key)}">แก้ไข</button></td></tr>`;}).join("")
-:`<tr><td colspan="10"><div class="empty">ยังไม่มีสถานประกอบกิจการในปีนี้ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง<br>
+:`<tr><td colspan="11"><div class="empty">ยังไม่มีสถานประกอบกิจการในปีนี้ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง<br>
 <span style="font-size:12.5px">ใส่เฉพาะนิติบุคคลที่ยื่นกรมพัฒนาฯ เท่านั้น (กลุ่มบริษัทอย่าง LKG ไม่ต้องใส่)</span></div></td></tr>`;})()}
 </tbody></table></div>
 <div class="addg"><button class="btn ghost" id="dsdAdd">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มสถานประกอบกิจการ</button>
@@ -1603,6 +1724,9 @@ el("modeseg")&&(el("modeseg").onclick=async e=>{
 const b=e.target.closest("button[data-md]"); if(!b)return;
 await setTheme({preset:theme.preset,custom:theme.custom,mode:b.dataset.md});});
 document.querySelectorAll("[data-dsd]").forEach(b=>b.onclick=()=>openDsd(b.dataset.dsd));
+["sub-pct","sub-rate"].forEach(id=>{const n=el(id); if(!n)return; n.onchange=async()=>{
+hrdata.subsidy={pct:+el("sub-pct").value||70,rate:+el("sub-rate").value||200};
+render(); await saveHR();};});
 el("dsdAdd")&&(el("dsdAdd").onclick=async()=>{
 const free=visible(companies).filter(c=>!isGroupCo(c)&&!dsdRec(c.key,R.year));
 if(!free.length){tell("ทุกบริษัทมีข้อมูลปีนี้แล้วค่ะ<div style=\"font-size:13px;margin-top:8px\">ถ้าไม่เห็นบริษัทที่ต้องการ ให้ตรวจว่าตั้งเป็น “กลุ่มบริษัท” ไว้หรือเปล่า ที่ ตั้งค่า → บริษัท</div>");return;}
@@ -2173,8 +2297,10 @@ editingDsd={ck,y};
 el("ddlgh").textContent="กรมพัฒนาฯ · "+c.label+" · ปี "+(y+543);
 el("d-id").value=r.id||"";
 el("d-months").innerHTML=MTH.map((m,i)=>`<label class="mcell"><span>${m}</span><input type="number" min="0" class="dm" value="${(r.months&&r.months[i]!=null&&r.months[i]!=="")?r.months[i]:""}" placeholder="—"></label>`).join("");
+el("d-goal").value=(+r.goal&&+r.goal>LAWPCT)?r.goal:"";
 el("d-sent").value=r.sent||""; el("d-rp").value=r.repeatPersons||""; el("d-rt").value=r.repeatTimes||"";
 el("d-ps").value=r.passSkill||""; el("d-pd").value=r.passStd||"";
+el("d-std").value=r.stdPass||""; el("d-fund").value=r.fundPaid||"";
 const auto=trainedPax(ck,y);
 el("d-hint").innerHTML=`ระบบนับผู้เข้าอบรมจากหลักสูตรที่ปิดงานแล้วในปีนี้ได้ <b>${auto}</b> คน — ใช้เทียบได้ แต่เลข A ให้ยึดตามหน้าเว็บกรมฯ`;
 el("ddel").style.display=dsdRec(ck,y)?"":"none";
@@ -2183,13 +2309,19 @@ el("ddlg").showModal();
 }
 function paintDsd(){
 const ms=[...el("d-months").querySelectorAll(".dm")].map(i=>+i.value||0);
-const k=dsdCalc({months:ms,sent:+el("d-sent").value||0,repeatTimes:+el("d-rt").value||0});
+const k=dsdCalc({months:ms,sent:+el("d-sent").value||0,repeatTimes:+el("d-rt").value||0,goal:+el("d-goal").value||0,stdPass:+el("d-std").value||0,fundPaid:+el("d-fund").value||0});
 el("d-calc").innerHTML=`<div class="dcalc">
 <div><span>พนักงานเฉลี่ย</span><b>${k.avg?baht(k.avg):"—"}</b></div>
-<div><span>50% ที่ต้องฝึก</span><b>${k.target?baht(k.target):"—"}</b></div>
+<div><span>เกณฑ์ ${LAWPCT}%</span><b>${k.target?baht(k.target):"—"}</b></div>
+${k.goal>LAWPCT?`<div><span>เป้าเรา ${k.goal}%</span><b style="color:var(--accent)">${k.goalTarget?baht(k.goalTarget):"—"}</b></div>`:""}
 <div><span>C = A − B</span><b>${baht(k.C)}</b></div>
 <div><span>คิดเป็น %</span><b style="color:${k.avg?(k.pct>=50?"var(--ok)":"var(--over)"):"inherit"}">${k.avg?k.pct+"%":"—"}</b></div>
-<div><span>ต้องฝึกอีก</span><b style="color:${k.need?"var(--over)":"var(--ok)"}">${k.avg?(k.need?baht(k.need)+" คน":"ครบแล้ว"):"—"}</b></div></div>`;
+<div><span>ต้องฝึกอีก</span><b style="color:${k.need?"var(--over)":"var(--ok)"}">${k.avg?(k.need?baht(k.need)+" คน":"ครบแล้ว"):"—"}</b></div>
+${k.goal>LAWPCT?`<div><span>ถึงเป้าเรา</span><b style="color:${k.needGoal?"var(--accent)":"var(--ok)"}">${k.avg?(k.needGoal?"อีก "+baht(k.needGoal)+" คน":"ถึงแล้ว"):"—"}</b></div>`:""}
+<div><span>เงินอุดหนุน (เกิน ${subPct()}%)</span><b style="color:${k.sub.amount?"var(--ok)":"var(--ink-3)"}">${k.avg?(k.sub.amount?baht(k.sub.amount)+" ฿":"ยังไม่ถึงเกณฑ์"):"—"}</b></div>
+<div><span>ทดสอบมาตรฐาน</span><b style="color:${k.sub.stdAmt?"var(--ok)":"var(--ink-3)"}">${k.sub.stdAmt?baht(k.sub.stdAmt)+" ฿":"—"}</b></div>
+<div><span>คืนเงินสมทบ 10%</span><b style="color:${k.sub.fundAmt?"var(--ok)":"var(--ink-3)"}">${k.sub.fundAmt?baht(k.sub.fundAmt)+" ฿":"—"}</b></div>
+<div><span>รวมคาดว่าได้คืน</span><b style="color:${k.sub.total?"var(--ok)":"var(--ink-3)"}">${k.sub.total?baht(k.sub.total)+" ฿":"—"}</b></div></div>`;
 }
 el("ddlg").addEventListener("input",e=>{ if(e.target.closest("#ddlg"))paintDsd(); });
 el("dcancel").onclick=()=>el("ddlg").close();
@@ -2198,9 +2330,10 @@ if(!editingDsd)return;
 const {ck,y}=editingDsd;
 const months=[...el("d-months").querySelectorAll(".dm")].map(i=>i.value===""?"":(+i.value||0));
 hrdata.dsd=hrdata.dsd||{}; hrdata.dsd[ck]=hrdata.dsd[ck]||{};
-hrdata.dsd[ck][y]={id:el("d-id").value.trim(),months,
+hrdata.dsd[ck][y]={updatedAt:new Date().toISOString(),id:el("d-id").value.trim(),months,goal:+el("d-goal").value||0,
 sent:+el("d-sent").value||0,repeatPersons:+el("d-rp").value||0,repeatTimes:+el("d-rt").value||0,
-passSkill:+el("d-ps").value||0,passStd:+el("d-pd").value||0};
+passSkill:+el("d-ps").value||0,passStd:+el("d-pd").value||0,
+stdPass:+el("d-std").value||0,fundPaid:+el("d-fund").value||0};
 el("ddlg").close(); render(); await saveHR();
 };
 el("ddel").onclick=async()=>{
