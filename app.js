@@ -1,8 +1,10 @@
-const APP_VERSION="5.0"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="5.5"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
-const STATUS=["รอดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น"];
+const STATUS=["รอดำเนินการ","อยู่ระหว่างดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
+const STATUS_DONE="เสร็จสิ้น", STATUS_CANCEL="ยกเลิก";
+const isOpenStatus=x=>x!==STATUS_DONE&&x!==STATUS_CANCEL;
 const TAGCOLORS=["#e0606d","#e8743b","#e0932b","#d9c02e","#8fbf3f","#2fa36b","#1a9f86","#2bb3c9",
 "#3d86d6","#4a5fc4","#7d5bd0","#b155c4","#d6549b","#8a6a55","#6b7785","#a9a29a"];
 const tagsOf=()=>[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].sort();
@@ -40,6 +42,8 @@ all:'<path d="M4 7h16M4 12h16M4 17h10"/>',
 cal:'<rect x="3.5" y="5" width="17" height="15" rx="4.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
 budget:'<path d="M12 4v16"/><path d="M16 8c0-2-2-3-4-3s-4 1-4 3 2 2.6 4 3 4 1 4 3-2 3-4 3-4-1-4-3"/>',
 train:'<path d="M12 4 2.5 9 12 14l9.5-5L12 4z"/><path d="M6.5 11.2V16c0 1.5 2.6 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4.8"/><path d="M21.5 9v5"/>',
+idx:'<path d="M4 5.5A2 2 0 0 1 6 3.5h12v17H6a2 2 0 0 1-2-2z"/><path d="M8 8h7M8 12h7"/>',
+note:'<path d="M12.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="m15.5 4.8 3.7 3.7L14 13.7l-3.7.4.4-3.7z"/>',
 legal:'<path d="M12 3.5 4.5 6.5v5c0 4.4 3.1 8.2 7.5 9.2 4.4-1 7.5-4.8 7.5-9.2v-5L12 3.5z"/><path d="M9.2 12.2l2 2 3.6-3.8"/>',
 meet:'<circle cx="9" cy="8" r="2.8"/><circle cx="16.5" cy="9.5" r="2.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16.5 14c2.4 0 4 1.7 4 4"/>',
 pipeline:'<circle cx="6.5" cy="7" r="2.6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M9 7h4a4 4 0 0 1 4 4v3"/>',
@@ -53,8 +57,8 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["legal","กฎหมาย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
-const TABS=["home","all","meet","train","legal","set"];
+const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
+const TABS=["home","all","meet","train","legal","idx","note","cal","budget","set"];
 const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -180,8 +184,8 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const baht=n=>(+n||0).toLocaleString("th-TH",{maximumFractionDigits:0});
 const kbaht=n=>n>=1000000?(n/1000000).toFixed(1)+"ล.":n>=1000?Math.round(n/1000)+"พ.":String(Math.round(n));
 const budgetOf=t=>(+t.b1||0)+(+t.b2||0);
-const sCls=s=>s==="เสร็จสิ้น"?"s-done":s==="กำลังดำเนินการ"?"s-run":"s-wait";
-const sColor=s=>s==="เสร็จสิ้น"?"var(--ok)":s==="กำลังดำเนินการ"?"var(--run)":"var(--wait)";
+const sCls=x=>x==="เสร็จสิ้น"?"s-done":x==="ยกเลิก"?"s-cancel":x==="กำลังดำเนินการ"?"s-run":x==="อยู่ระหว่างดำเนินการ"?"s-mid":"s-wait";
+const sColor=x=>x==="เสร็จสิ้น"?"var(--ok)":x==="ยกเลิก"?"var(--ink-3)":x==="กำลังดำเนินการ"?"var(--run)":x==="อยู่ระหว่างดำเนินการ"?"var(--sky)":"var(--wait)";
 const visible=a=>a.filter(x=>!x.hidden);
 const gLabel=k=>(groups.find(g=>g.key===k)||{}).label||k||"ไม่ระบุกลุ่ม";
 const isGroupCo=c=>!!(c&&c.isGroup);
@@ -281,9 +285,9 @@ const CFG_BAKED={url:"",key:""};
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{},dsd:{}};
-let legal=[];
-const cache={items:new Map(),ledger:new Map(),legal:new Map(),meta:new Map()};
-const listeners={items:[],ledger:[],legal:[],meta:new Map()};
+let legal=[], idx=[], notes=[];
+const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),meta:new Map()};
+const listeners={items:[],ledger:[],legal:[],index:[],note:[],meta:new Map()};
 const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}});
 const emit=coll=>{
 const docs=[...cache[coll].entries()].map(([id,d])=>snapDoc(id,d));
@@ -341,7 +345,7 @@ const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid);
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
-emit("items");emit("ledger");emit("legal");[...cache.meta.keys()].forEach(emitMeta);
+emit("items");emit("ledger");emit("legal");emit("index");emit("note");[...cache.meta.keys()].forEach(emitMeta);
 ["groups","companies","gl","theme","hr"].forEach(emitMeta);
 }
 function liveSync(){
@@ -370,6 +374,10 @@ DBShim.collection("items").onSnapshot(s=>{
 items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
 if(!gls.length&&items.length)seedGL();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
+DBShim.collection("index").onSnapshot(s=>{
+idx=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
+DBShim.collection("note").onSnapshot(s=>{
+notes=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
 DBShim.collection("legal").onSnapshot(s=>{
 legal=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
 DBShim.collection("ledger").onSnapshot(s=>{
@@ -464,6 +472,23 @@ el("nav").onclick=go; el("tabbar").onclick=go;
 n.onclick=hardRefresh;
 n.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();hardRefresh();}};});
 }
+let LISTBOX={};
+function regList(key,title,rows){ LISTBOX[key]={title,rows}; return `data-list="${esc(key)}"`; }
+function openListBox(key){
+const L=LISTBOX[key]; if(!L||!L.rows.length)return;
+el("pdlgh").textContent=L.title;
+el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>`<div class="li" data-pick="${i}">
+<div class="ic" style="background:${r.c||"var(--line-2)"};color:${r.ic||"var(--ink-2)"}">${r.d||"—"}</div>
+<div class="tx"><div class="t1">${esc(r.t1)}</div><div class="t2">${esc(r.t2||"")}</div></div>
+<span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span></div>`).join("")}</div>
+<div class="hint">แตะรายการเพื่อเปิดแก้ไข</div>`;
+el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
+const r=L.rows[+n.dataset.pick]; el("pdlg").close();
+if(r.id){const t=items.find(x=>x._id===r.id); if(t)open_(t);}
+else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegal(g);}
+});
+el("pdlg").showModal();
+}
 function goTo(v,f){
 Object.assign(F,{q:"",track:"",type:"",status:"",company:""},f&&f.F||{});
 if(f&&f.R)Object.assign(R,f.R);
@@ -471,7 +496,8 @@ view=v; renderNav(); render(); window.scrollTo({top:0,behavior:"smooth"});
 }
 const jump=(v,payload)=>`data-go="${esc(JSON.stringify({v,...payload||{}}))}"`;
 function render(){
-el("view").innerHTML={home,all,meet,train,legal:legalView,cal:calView,budget,pipeline,set:setView}[view]();
+LISTBOX={};
+el("view").innerHTML={home,all,meet,train,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,pipeline,set:setView}[view]();
 paintSync(); wire();
 }
 function header(title,sub,btn=true){
@@ -491,7 +517,7 @@ return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 }
 function prepDue(days){
 days=days||7;
-return items.filter(t=>isMeet(t)&&t.status!=="เสร็จสิ้น"&&+t.prepDays>0)
+return items.filter(t=>isMeet(t)&&isOpenStatus(t.status)&&+t.prepDays>0)
 .map(t=>({t,p:prepDate(t),d:dueDate(t)}))
 .filter(x=>x.p&&x.d&&daysTo(x.d)>=0&&daysTo(x.p)<=days)
 .sort((a,b)=>a.p-b.p);
@@ -499,7 +525,7 @@ return items.filter(t=>isMeet(t)&&t.status!=="เสร็จสิ้น"&&+t.p
 function dueSoon(days){
 days=days||7;
 const late=[], soon=[];
-items.forEach(t=>{ if(t.status==="เสร็จสิ้น")return;
+items.forEach(t=>{ if(!isOpenStatus(t.status))return;
 const d=dueDate(t); if(!d)return; const n=daysTo(d);
 if(n<0&&!rr(t))late.push(t); else if(n>=0&&n<=days)soon.push(t); });
 const by=(a,b)=>dueDate(a)-dueDate(b);
@@ -564,12 +590,13 @@ return true;
 function home(){
 const now=new Date();
 const scoped=items.filter(inScope);
-const A=scoped.filter(t=>t.track!=="idea");
+const A=scoped.filter(t=>t.track!=="idea"&&t.status!==STATUS_CANCEL);
 const cnt=s=>A.filter(t=>t.status===s).length;
-const done=cnt("เสร็จสิ้น"), run=cnt("กำลังดำเนินการ"), wait=cnt("รอดำเนินการ");
+const done=cnt("เสร็จสิ้น"), run=cnt("กำลังดำเนินการ"), mid=cnt("อยู่ระหว่างดำเนินการ"), wait=cnt("รอดำเนินการ");
+const cancelled=scoped.filter(t=>t.status===STATUS_CANCEL).length;
 const bud=scoped.reduce((s,t)=>s+budgetOf(t),0), act=scoped.reduce((s,t)=>s+(+t.actual||0),0);
 const over=items.filter(t=>budgetOf(t)>0&&(+t.actual||0)>budgetOf(t));
-const up=items.filter(t=>t.date&&new Date(t.date)>=new Date(now.toDateString())&&t.status!=="เสร็จสิ้น")
+const up=items.filter(t=>t.date&&new Date(t.date)>=new Date(now.toDateString())&&isOpenStatus(t.status))
 .sort((a,b)=>a.date<b.date?-1:1).slice(0,6);
 const pct=A.length?Math.round(done/A.length*100):0;
 const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
@@ -578,10 +605,19 @@ return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุ�
 (()=>{const w=dueSoon();
 const lg=legal.filter(L=>{const k=legalState(L).k;return k==="late"||k==="soon";});
 const pr=prepDue(3);
-return (lg.filter(L=>legalState(L).k==="late").length?`<div class="banner bad" ${jump("legal")}>${svg(ICON.legal,19)} ใบรับรอง/คำสั่งแต่งตั้ง <b>${lg.filter(L=>legalState(L).k==="late").length}</b> รายการเกินกำหนดแล้ว — ดูที่หน้ากฎหมาย</div>`:"")
-+(pr.length?`<div class="banner bad" ${jump("meet")}>${svg(ICON.meet,19)} ต้องเตรียมข้อมูลก่อนประชุม <b>${pr.length}</b> รายการ — ${esc(pr.slice(0,2).map(x=>x.t.title).join(" · "))}${pr.length>2?" …":""}</div>`:"")
-+(w.late.length?`<div class="banner bad" ${jump("all",{F:{status:"รอดำเนินการ"}})}>${svg(ICON.bell,19)} เลยกำหนดแล้ว <b>${w.late.length}</b> งาน — ${esc(w.late.slice(0,2).map(t=>t.title).join(" · "))}${w.late.length>2?" …":""}</div>`:"")
-+(w.soon.length?`<div class="banner" ${jump("all")}>${svg(ICON.bell,19)} ครบกำหนดใน 7 วัน <b>${w.soon.length}</b> งาน — ${esc(w.soon.slice(0,2).map(t=>t.title).join(" · "))}${w.soon.length>2?" …":""}</div>`:"");})()+
+return (lg.filter(L=>legalState(L).k==="late").length?`<div class="banner bad" ${regList("hLegal","ใบรับรอง/คำสั่งแต่งตั้งที่เกินกำหนด",lg.filter(L=>legalState(L).k==="late").map(L=>{const d=legalDue(L);return {lg:L._id,t1:L.title,
+t2:`${(L.comps||[]).map(cLabel).join(", ")||"ไม่ระบุบริษัท"}${L.person?" · "+L.person:" · ยังไม่มีผู้รับผิดชอบ"}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",p:legalState(L).t,pc:"s-over"};}))}>${svg(ICON.legal,19)} ใบรับรอง/คำสั่งแต่งตั้ง <b>${lg.filter(L=>legalState(L).k==="late").length}</b> รายการเกินกำหนดแล้ว — ดูที่หน้ากฎหมาย</div>`:"")
++(pr.length?`<div class="banner bad" ${regList("hPrep","ต้องเตรียมข้อมูลก่อนประชุม",pr.map(x=>({id:x.t._id,t1:x.t.title,
+t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${x.t.prepNote?" · "+x.t.prepNote:""}`,
+d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--over-soft)",ic:"var(--over)",
+p:daysTo(x.p)<0?"เลยวันเตรียม":"เตรียมวันนี้",pc:"s-over"})))}>${svg(ICON.meet,19)} ต้องเตรียมข้อมูลก่อนประชุม <b>${pr.length}</b> รายการ — ${esc(pr.slice(0,2).map(x=>x.t.title).join(" · "))}${pr.length>2?" …":""}</div>`:"")
++(w.late.length?`<div class="banner bad" ${regList("hLate","งานที่เลยกำหนดแล้ว",w.late.map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${gLabel(t.track)}${t.company?" · "+cLabel(t.company):""}${t.owner?" · "+t.owner:""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",p:"เลย "+(-daysTo(d))+" วัน",pc:"s-over"};}))}>${svg(ICON.bell,19)} เลยกำหนดแล้ว <b>${w.late.length}</b> งาน — ${esc(w.late.slice(0,2).map(t=>t.title).join(" · "))}${w.late.length>2?" …":""}</div>`:"")
++(w.soon.length?`<div class="banner" ${regList("hSoon","ครบกำหนดใน 7 วัน",w.soon.map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${gLabel(t.track)}${t.company?" · "+cLabel(t.company):""}${t.owner?" · "+t.owner:""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"อีก "+daysTo(d)+" วัน",pc:"s-run"};}))}>${svg(ICON.bell,19)} ครบกำหนดใน 7 วัน <b>${w.soon.length}</b> งาน — ${esc(w.soon.slice(0,2).map(t=>t.title).join(" · "))}${w.soon.length>2?" …":""}</div>`:"");})()+
 (over.length?`<div class="banner" ${jump("budget")}>${svg(ICON.bell,19)} มี ${over.length} งานที่ใช้งบเกินแผน — ดูที่หน้างบประมาณ</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
@@ -589,7 +625,7 @@ return (lg.filter(L=>legalState(L).k==="late").length?`<div class="banner bad" $
 <div class="meta"><span>เสร็จแล้ว ${done} งาน</span><span>เหลืออีก ${A.length-done} งาน</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
 <div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
-<div class="v">${run}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
+<div class="v">${run+mid}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
 <div class="card stat" ${jump("budget")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
 <div class="v">${baht(bud-act)}</div><div class="d">ใช้ไป ${baht(act)} จาก ${baht(bud)}</div>
 <div class="bar"><i class="${act>bud?"hot":""}" style="width:${bud?Math.min(100,act/bud*100):0}%"></i></div></div>
@@ -608,7 +644,7 @@ const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go
 <div class="modh"><span class="ic">${svg(icon,16)}</span>${name}</div>
 <div class="modv">${big}</div><div class="mods">${sub}</div></div>`;
 return [
-card(ICON.all,"งานทั้งหมด",A.length,`ค้าง ${A.length-done} · เสร็จ ${done}`,jump("all")),
+card(ICON.all,"งานทั้งหมด",A.length,`ค้าง ${A.length-done} · เสร็จ ${done}${cancelled?" · ยกเลิก "+cancelled:""}`,jump("all")),
 card(ICON.meet,"การประชุม",ms.length,pr.length?`ต้องเตรียมข้อมูล ${pr.length} รายการ`:"ไม่มีที่ต้องเตรียม",jump("meet"),pr.length),
 card(ICON.train,"ฝึกอบรม",tr.length+" หลักสูตร",`ผู้เข้าอบรม ${baht(pax)} คน${dsdWait?" · รอยื่นกรมพัฒฯ "+dsdWait:""}`,jump("train"),dsdWait),
 card(ICON.legal,"กฎหมาย",legal.length,lgLate?`เกินกำหนด ${lgLate} · ใกล้ครบ ${lgSoon}`:(lgNo?`ยังไม่มีผู้รับผิดชอบ ${lgNo}`:"เรียบร้อยทั้งหมด"),jump("legal"),lgLate),
@@ -620,15 +656,17 @@ card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใ�
 </div></div>
 <div class="card span2"><h2>สัดส่วนสถานะงาน <small>${scopeLabel()} · ${A.length} งาน</small></h2>
 <div class="donutwrap">
-${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
+${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"อยู่ระหว่างดำเนินการ",v:mid,c:"var(--sky)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
 <div class="dlist">
-<div><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
-<div><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
-<div><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div></div></div></div>
+<div ${jump("all",{F:{status:"เสร็จสิ้น"}})}><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
+<div ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
+<div ${jump("all",{F:{status:"อยู่ระหว่างดำเนินการ"}})}><i style="background:var(--sky)"></i>อยู่ระหว่างดำเนินการ<b>${mid}</b></div>
+<div ${jump("all",{F:{status:"รอดำเนินการ"}})}><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div>
+${cancelled?`<div ${jump("all",{F:{status:"ยกเลิก"}})}><i style="background:var(--ink-3)"></i>ยกเลิก<b>${cancelled}</b></div>`:""}</div></div></div>
 <div class="card span2"><h2>จำนวนงานรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
 ${bars(byMonth,MTH,v=>v||"",now.getMonth())}</div>
-<div class="card span2"><h2>งานใน${scopeLabel()} <small>${scoped.filter(t=>t.status!=="เสร็จสิ้น").length} รายการที่ยังไม่ปิด</small></h2>
-<div class="list">${scoped.filter(t=>t.status!=="เสร็จสิ้น").slice(0,6).map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานค้างในช่วงนี้ 🎉</div>`}</div></div>
+<div class="card span2"><h2>งานใน${scopeLabel()} <small>${scoped.filter(t=>isOpenStatus(t.status)).length} รายการที่ยังไม่ปิด</small></h2>
+<div class="list">${scoped.filter(t=>isOpenStatus(t.status)).slice(0,6).map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานค้างในช่วงนี้ 🎉</div>`}</div></div>
 <div class="card span2"><h2>กำหนดการถัดไป <small>เรียงตามวันที่</small></h2>
 <div class="list">${up.map(t=>liRow(t,true)).join("")||`<div class="empty">ยังไม่มีงานที่ระบุวันที่</div>`}</div></div>
 </div>`;
@@ -856,8 +894,13 @@ const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 const byDow=DOWFULL.map((_,i)=>routine.filter(t=>(t.rrule.weekdays||[]).includes(i)).length);
 return header("การประชุม","ประชุมประจำ ประชุมเฉพาะกิจ และงานที่ต้องเตรียมข้อมูลก่อนประชุม")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
-(prepNow.length?`<div class="banner bad" ${prepNow[0]?jump("meet",{id:prepNow[0].t._id}):""}>${svg(ICON.bell,19)} ถึงกำหนดเตรียมข้อมูลแล้ว <b>${prepNow.length}</b> การประชุม — ${esc(prepNow.slice(0,2).map(x=>x.t.title).join(" · "))}${prepNow.length>2?" …":""}</div>`:"")+
-(prepSoon.length?`<div class="banner" ${prepSoon[0]?jump("meet",{id:prepSoon[0].t._id}):""}>${svg(ICON.clock,19)} ใกล้ถึงวันเตรียมข้อมูล <b>${prepSoon.length}</b> การประชุมใน 7 วัน</div>`:"")+
+(prepNow.length?`<div class="banner bad" ${regList("prepNow","ถึงกำหนดเตรียมข้อมูลแล้ว",prepNow.map(x=>({id:x.t._id,
+t1:x.t.title,t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${tShow(x.t.time)?" "+tShow(x.t.time):""}${x.t.prepNote?" · "+x.t.prepNote:""}`,
+d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--over-soft)",ic:"var(--over)",
+p:daysTo(x.p)<0?"เลย "+(-daysTo(x.p))+" วัน":"วันนี้",pc:"s-over"})))}>${svg(ICON.bell,19)} ถึงกำหนดเตรียมข้อมูลแล้ว <b>${prepNow.length}</b> การประชุม — ${esc(prepNow.slice(0,2).map(x=>x.t.title).join(" · "))}${prepNow.length>2?" …":""}</div>`:"")+
+(prepSoon.length?`<div class="banner" ${regList("prepSoon","ใกล้ถึงวันเตรียมข้อมูล",prepSoon.map(x=>({id:x.t._id,
+t1:x.t.title,t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${x.t.prepNote?" · "+x.t.prepNote:""}`,
+d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--run-soft)",ic:"var(--run)",p:"อีก "+daysTo(x.p)+" วัน",pc:"s-run"})))}>${svg(ICON.clock,19)} ใกล้ถึงวันเตรียมข้อมูล <b>${prepSoon.length}</b> การประชุมใน 7 วัน</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">การประชุม · ${scopeLabel()}</div>
 <div class="big">${scoped.length}</div>
@@ -888,7 +931,7 @@ const kinds=["กฎหมาย","ภายใน","ภายนอก"];
 const byKind=k=>ty.filter(t=>trainKind(t)===k);
 const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
 const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
-const lawLate=byKind("กฎหมาย").filter(t=>{const d=dueDate(t);return t.status!=="เสร็จสิ้น"&&d&&daysTo(d)<0;});
+const lawLate=byKind("กฎหมาย").filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
 const byMonth=MTH.map((_,i)=>items.filter(t=>isTrain(t)&&monthsOf(t).includes(i+1)).length);
 const card=t=>{const d=dueDate(t);
 return `<div class="li" data-id="${t._id}">
@@ -901,8 +944,13 @@ const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>
 <div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
 return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
-(lawLate.length?`<div class="banner bad" ${jump("train",{id:lawLate[0]._id})}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
-(waiting.length?`<div class="banner" ${jump("train",{id:waiting[0]._id})}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ ${waiting.length} หลักสูตร</div>`:"")+
+(lawLate.length?`<div class="banner bad" ${regList("lawLate","อบรมตามกฎหมายที่เลยกำหนด",lawLate.map(t=>{const d=dueDate(t);return {id:t._id,
+t1:t.title,t2:`${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
+p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
+(waiting.length?`<div class="banner" ${regList("dsdWait","หลักสูตรที่รอยื่นกรมพัฒนาฯ",waiting.map(t=>{const d=dueDate(t);return {id:t._id,
+t1:t.title,t2:`${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไม่ระบุรุ่น"}${t.pax?" · "+t.pax+" คน":""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"รอยื่น",pc:"s-run"};}))}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ ${waiting.length} หลักสูตร</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
 <div class="big">${ty.length}</div>
@@ -926,7 +974,7 @@ ${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}</div>
 ${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน ${bad.length}</span>`:""}</div>
 <div class="list">${[...waiting,...sent,...bad].map(card).join("")||`<div class="empty">ไม่มีหลักสูตรที่ค้างยื่น 🎉</div>`}</div></div>
 <div class="card span4"><h2>เกณฑ์กรมพัฒนาฝีมือแรงงาน ปี ${R.year+543} <small>โครงสร้างตามแบบยื่นของกรมฯ · เฉลี่ยจากจำนวนพนักงานรายเดือน</small></h2>
-<div class="tblwrap"><table>
+<div class="tblwrap wide"><table>
 <thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th><th style="text-align:right">50% ที่ต้องฝึก</th>
 <th style="text-align:right">A ส่งฝึกแล้ว</th><th style="text-align:right">B ฝึกซ้ำ (ครั้ง)</th><th style="text-align:right">C = A−B</th>
 <th style="text-align:right">คิดเป็น %</th><th style="text-align:right">ต้องฝึกอีก</th><th>สถานะ</th><th></th></tr></thead>
@@ -952,7 +1000,7 @@ ${Object.keys(hrdata.dsd||{}).some(k=>dsdRec(k,R.year-1))?`<button class="btn gh
 <b>C = A − B</b> คือจำนวนที่นับได้จริงหลังตัดคนที่ฝึกซ้ำออก · <b>คิดเป็น %</b> = C ÷ พนักงานเฉลี่ย<br>
 ตัวเลขในระบบเป็นของคุณเอง ใช้เทียบกับหน้าเว็บกรมฯ ได้ แต่ไม่ได้ดึงจากกรมฯ อัตโนมัติ</div></div>
 <div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
-<div class="tblwrap"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
+<div class="tblwrap wide"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
 <th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>สถานะ</th></tr></thead><tbody>
 ${(()=>{const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||t.dsdOpenNo||t.dsdCertNo);
 return dl.length?dl.map(t=>`<tr data-id="${t._id}">
@@ -989,8 +1037,12 @@ return `<tr data-lg="${L._id}">
 return header("กฎหมาย & ใบรับรอง","ใบรับรองผู้รับผิดชอบเฉพาะ คำสั่งแต่งตั้ง และข้อกำหนดที่ต้องทำประจำ",false)+
 `<div class="head" style="margin-top:-6px"><div></div>
 <button class="btn addbtn" id="addLegal">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มรายการ</span></button></div>`+
-(late.length?`<div class="banner bad" ${jump("legal",{lg:late[0]._id})}>${svg(ICON.bell,19)} เกินกำหนดแล้ว <b>${late.length}</b> รายการ — ${esc(late.slice(0,2).map(L=>L.title).join(" · "))}${late.length>2?" …":""}</div>`:"")+
-(soon.length?`<div class="banner" ${soon[0]?jump("legal",{lg:soon[0]._id}):""}>${svg(ICON.clock,19)} ใกล้ครบกำหนดใน 90 วัน <b>${soon.length}</b> รายการ</div>`:"")+
+(late.length?`<div class="banner bad" ${regList("lgLate","ใบรับรอง/คำสั่งแต่งตั้งที่เกินกำหนด",late.map(L=>{const d=legalDue(L);return {lg:L._id,
+t1:L.title,t2:`${(L.comps||[]).map(cLabel).join(", ")||"ไม่ระบุบริษัท"}${L.person?" · "+L.person:" · ยังไม่มีผู้รับผิดชอบ"}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",p:legalState(L).t,pc:"s-over"};}))}>${svg(ICON.bell,19)} เกินกำหนดแล้ว <b>${late.length}</b> รายการ — ${esc(late.slice(0,2).map(L=>L.title).join(" · "))}${late.length>2?" …":""}</div>`:"")+
+(soon.length?`<div class="banner" ${regList("lgSoon","ใกล้ครบกำหนดใน 90 วัน",soon.map(L=>{const d=legalDue(L);return {lg:L._id,
+t1:L.title,t2:`${(L.comps||[]).map(cLabel).join(", ")||"ไม่ระบุบริษัท"}${L.person?" · "+L.person:""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:legalState(L).t,pc:"s-run"};}))}>${svg(ICON.clock,19)} ใกล้ครบกำหนดใน 90 วัน <b>${soon.length}</b> รายการ</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">รายการที่ต้องดูแล</div>
 <div class="big">${legal.length}</div>
@@ -1008,6 +1060,82 @@ return header("กฎหมาย & ใบรับรอง","ใบรับ�
 <div class="tblwrap"><table>
 <thead><tr><th>รายการ</th><th>บริษัทที่ต้องมี</th><th>ผู้รับผิดชอบ</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>สถานะ</th></tr></thead>
 <tbody>${list.map(row).join("")||`<tr><td colspan="6"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV ที่หน้าตั้งค่า</div></td></tr>`}</tbody></table></div></div>
+</div>`;
+}
+const IDXSTATUS=["ใช้งานอยู่","กำลังพัฒนา","ไม่ได้ใช้งาน"];
+function idxView(){
+const fg=R.idxGroup||"", fs2=R.idxStatus||"";
+const groups2=[...new Set(idx.map(x=>(x.group||"").trim()).filter(Boolean))].sort();
+const list=idx.filter(x=>(!fg||x.group===fg)&&(!fs2||(x.status||"ใช้งานอยู่")===fs2))
+.sort((a,b)=>((a.group||"")+(a.title||""))<((b.group||"")+(b.title||""))?-1:1);
+const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
+const active=idx.filter(x=>(x.status||"ใช้งานอยู่")==="ใช้งานอยู่").length;
+return header("Index Online","ทะเบียนเอกสารและเว็บไซต์ที่ HR ใช้งาน · รวมลิงก์ไว้ที่เดียว",false)+
+`<div class="head" style="margin-top:-6px"><div></div>
+<button class="btn addbtn" id="addIdx">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มรายการ</span></button></div>
+<div class="dash">
+<div class="card hero span2"><div class="lab">ทะเบียนทั้งหมด</div><div class="big">${idx.length}</div>
+<div class="meta"><span>ใช้งานอยู่ ${active}</span><span>${groups2.length} กลุ่มงาน</span></div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.link,16)}</span> มีลิงก์แล้ว</div>
+<div class="v">${idx.filter(x=>x.url).length}</div><div class="d">จาก ${idx.length} รายการ · ที่เหลือใส่ลิงก์เพิ่มได้</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ผู้ดูแล</div>
+<div class="v">${[...new Set(idx.map(x=>(x.owner||"").trim()).filter(Boolean))].length}</div><div class="d">คน</div></div>
+${(()=>{const withUrl=idx.filter(x=>x.url&&(x.status||"ใช้งานอยู่")!=="ไม่ได้ใช้งาน");
+if(!withUrl.length)return `<div class="card span4"><h2>ลิงก์ด่วน</h2>
+<div class="empty">ยังไม่มีรายการไหนใส่ลิงก์ไว้ — แตะรายการในตารางด้านล่าง แล้วใส่ลิงก์ในช่อง “ลิงก์”<br>
+<span style="font-size:12.5px">ใส่แล้วจะขึ้นเป็นปุ่มกดเปิดได้ทันทีตรงนี้</span></div></div>`;
+const byG={}; withUrl.forEach(x=>{const g=x.group||"อื่นๆ";(byG[g]=byG[g]||[]).push(x);});
+return `<div class="card span4"><h2>ลิงก์ด่วน <small>${withUrl.length} ลิงก์ · แตะเพื่อเปิดในแท็บใหม่</small></h2>
+${Object.keys(byG).sort().map(g=>`<div class="lkgroup"><div class="lkg">${esc(g)}</div>
+<div class="lkrow">${byG[g].map(x=>`<a class="lkchip" href="${esc(x.url)}" target="_blank" rel="noopener">
+${svg(ICON.link,15)}<span>${esc(x.title)}</span></a>`).join("")}</div></div>`).join("")}</div>`;})()}
+<div class="card span4">
+<div class="toolbar" style="margin-bottom:6px">
+<select id="ix-group">${opt([["","ทุกกลุ่มงาน"],...groups2.map(g=>[g,g])],fg)}</select>
+<select id="ix-status">${opt([["","ทุกสถานะ"],...IDXSTATUS.map(x=>[x,x])],fs2)}</select>
+<span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
+<div class="tblwrap"><table>
+<thead><tr><th>สารบัญ / ระบบ</th><th>กลุ่มงาน</th><th>ผู้ดูแล</th><th>รายละเอียด</th><th>สถานะ</th></tr></thead>
+<tbody>${list.map(x=>`<tr data-ix="${x._id}">
+<td><div style="font-weight:600">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1" class="lklink">${esc(x.title)}</a>`:esc(x.title)}</div>
+${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อใส่</div>`}
+${x.note?`<div class="t-note">${esc(x.note)}</div>`:""}</td>
+<td>${esc(x.group||"—")}</td><td>${esc(x.owner||"—")}</td>
+<td><div class="t-note">${esc(x.detail||"—")}</div></td>
+<td><span class="pill ${(x.status||"ใช้งานอยู่")==="ใช้งานอยู่"?"s-done":(x.status==="กำลังพัฒนา"?"s-run":"s-cancel")}">${esc(x.status||"ใช้งานอยู่")}</span></td>
+</tr>`).join("")
+||`<tr><td colspan="5"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV (หัวคอลัมน์แรก “สารบัญ”)</div></td></tr>`}</tbody></table></div></div>
+</div>`;
+}
+const NOTEKIND=["บันทึกการประชุม","โน้ต","ไอเดีย"];
+function noteView(){
+const fk=R.noteKind||"", q=(R.noteQ||"").toLowerCase();
+const list=notes.filter(n=>(!fk||n.kind===fk)&&(!q||((n.title||"")+" "+(n.body||"")+" "+(n.tag||"")).toLowerCase().includes(q)))
+.sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||((b.date||"")<(a.date||"")?-1:1));
+const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
+const cnt=k=>notes.filter(n=>n.kind===k).length;
+return header("บันทึก & ไอเดีย","บันทึกการประชุม โน้ตประจำวัน และไอเดียที่ยังไม่ได้ทำ",false)+
+`<div class="head" style="margin-top:-6px"><div></div>
+<button class="btn addbtn" id="addNote">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เขียนบันทึก</span></button></div>
+<div class="dash">
+<div class="card hero span2"><div class="lab">บันทึกทั้งหมด</div><div class="big">${notes.length}</div>
+<div class="meta">${NOTEKIND.map(k=>`<span>${k} ${cnt(k)}</span>`).join("")}</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.bell,16)}</span> ปักหมุดไว้</div>
+<div class="v">${notes.filter(n=>n.pin).length}</div><div class="d">ขึ้นบนสุดเสมอ</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> บันทึกล่าสุด</div>
+<div class="v" style="font-size:17px">${notes.length?esc((notes.slice().sort((a,b)=>(b.date||"")<(a.date||"")?-1:1)[0].date||"—")):"—"}</div><div class="d">วันที่ล่าสุด</div></div>
+<div class="card span4">
+<div class="toolbar" style="margin-bottom:6px">
+<input type="search" id="nt-q" placeholder="ค้นหาในบันทึก" value="${esc(R.noteQ||"")}">
+<select id="nt-kind">${opt([["","ทุกประเภท"],...NOTEKIND.map(x=>[x,x])],fk)}</select></div>
+<div class="notegrid">${list.map(n=>`<div class="notecard" data-nt="${n._id}" style="border-left:5px solid ${n.color||"var(--accent-2)"}">
+<div class="nh"><span class="tag${n.kind==="ไอเดีย"?" sky":""}">${esc(n.kind||"โน้ต")}</span>
+${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}
+<span style="margin-left:auto;font-size:12px;color:var(--ink-3)">${esc(n.date||"")}</span></div>
+<div class="nt1">${esc(n.title||"(ไม่มีหัวข้อ)")}</div>
+<div class="nb">${esc((n.body||"").slice(0,180))}${(n.body||"").length>180?"…":""}</div>
+${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</div>`).join("")
+||`<div class="empty">ยังไม่มีบันทึก — กด “เขียนบันทึก”</div>`}</div></div>
 </div>`;
 }
 function setView(){
@@ -1145,10 +1273,12 @@ return `<div class="card"><h2>นำเข้างานจากไฟล์ C
 • <b>กลุ่ม</b> และ <b>บริษัท</b> พิมพ์ชื่อให้ตรงกับที่ตั้งไว้ในหน้าตั้งค่า ถ้าไม่ตรงระบบจะสร้างให้ใหม่<br>
 • <b>สถานะ</b> ใช้ได้ 3 แบบ: รอดำเนินการ / กำลังดำเนินการ / เสร็จสิ้น<br>
 • <b>หมวด GL</b> ใส่ "รหัส ชื่อหมวด" หรือชื่อหมวดอย่างเดียวก็ได้ ถ้ายังไม่มีระบบจะสร้างให้<br>
+• งานที่ใช้งบ 2 ก้อน ใส่ <b>หมวด GL รอง</b> กับ <b>งบรอง</b> เพิ่มได้ (เช่น BB-HR-CT กับ HR-LSC)<br>
 • <b>ผู้เข้าอบรม / ชั่วโมง / วิทยากร/สถาบัน / กรมพัฒฯ</b> ใส่เฉพาะงานอบรม (กรมพัฒฯ ใช้ได้: ไม่ต้องยื่น / รอยื่น / ยื่นแล้ว / อนุมัติแล้ว / ไม่ผ่าน)<br>
 • กลุ่มที่มีคำว่า "อบรม" ระบบจะนับเป็นงานฝึกอบรมให้อัตโนมัติ<br>
 • งานเดิมจะไม่ถูกลบ ระบบเพิ่มต่อท้ายเสมอ<br>
-• ถ้าหัวคอลัมน์แรกเป็น <b>ชื่อรายการ</b> ระบบจะถือว่าเป็นทะเบียนกฎหมาย/ใบรับรอง และนำเข้าไปที่เมนู “กฎหมาย” ให้เอง
+• ถ้าหัวคอลัมน์แรกเป็น <b>ชื่อรายการ</b> ระบบจะถือว่าเป็นทะเบียนกฎหมาย/ใบรับรอง และนำเข้าไปที่เมนู “กฎหมาย” ให้เอง<br>
+• ถ้ามีคอลัมน์ <b>สารบัญ</b> ระบบจะนำเข้าไปที่เมนู “Index Online” ให้เอง
 </div></div>`;
 }
 function setConnect(){
@@ -1182,6 +1312,8 @@ Sky Work เป็นเว็บแอปของวิมเอง ติด�
 <button class="btn ghost" id="expTasks">${svg(ICON.file,17)}ดาวน์โหลดงานเป็น CSV</button>
 <button class="btn ghost" id="expLedger">ดาวน์โหลดรายการเงิน</button>
 <button class="btn ghost" id="expLegal">ดาวน์โหลดทะเบียนกฎหมาย</button>
+<button class="btn ghost" id="expIdx">ดาวน์โหลด Index</button>
+<button class="btn ghost" id="expNote">ดาวน์โหลดบันทึก</button>
 <button class="btn ghost" id="signout">ออกจากระบบ</button></div>
 <div id="csvout2"></div></div>
 <div class="card span4" style="box-shadow:inset 0 0 0 2px var(--over-soft)"><h2 style="color:var(--over)">ล้างข้อมูล <small>ใช้เมื่อจะนำเข้าข้อมูลใหม่ทั้งชุด</small></h2>
@@ -1303,9 +1435,24 @@ try{const d=JSON.parse(n.dataset.go);
  if(d.id){const t=items.find(x=>x._id===d.id); if(t){open_(t);return;}}
  if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegal(L);return;}}
  goTo(d.v,{F:d.F,R:d.R});}catch(err){}};});
+document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
+n.onclick=e=>{e.stopPropagation();openListBox(n.dataset.list);};});
+el("pclose")&&(el("pclose").onclick=()=>el("pdlg").close());
 el("add")&&(el("add").onclick=()=>open_(null));
 el("addTx")&&(el("addTx").onclick=()=>openTx(null));
 el("addLegal")&&(el("addLegal").onclick=()=>openLegal(null));
+el("addIdx")&&(el("addIdx").onclick=()=>openIdx(null));
+el("addNote")&&(el("addNote").onclick=()=>openNote(null));
+document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
+if(e.target.closest("[data-stop]"))return;
+const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdx(x);});
+document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=()=>{
+const x=notes.find(v=>v._id===n.dataset.nt); if(x)openNote(x);});
+el("ix-group")&&(el("ix-group").onchange=e=>{R.idxGroup=e.target.value;render();});
+el("ix-status")&&(el("ix-status").onchange=e=>{R.idxStatus=e.target.value;render();});
+el("nt-kind")&&(el("nt-kind").onchange=e=>{R.noteKind=e.target.value;render();});
+el("nt-q")&&(el("nt-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.noteQ=v;render();
+const m=el("nt-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
 document.querySelectorAll("[data-lg]").forEach(n=>n.onclick=()=>{
 const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegal(L);});
 el("lg-comp")&&(el("lg-comp").onchange=e=>{R.legalComp=e.target.value;render();});
@@ -1471,9 +1618,9 @@ el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
-["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","รุ่นที่","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
+["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","รุ่นที่","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
-t.gl1?glLabel(glKeyOf(t.gl1)):"",budgetOf(t),t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",t.batch||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
+t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",t.batch||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
 if(el("health")&&healthState!=="done")checkHealth();
 el("selftest")&&(el("selftest").onclick=async()=>{
 const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
@@ -1508,6 +1655,12 @@ el("preset")&&(el("preset").onclick=async()=>{
 TRAIN_PRESET.forEach(x=>{ if(!groups.some(g=>g.label===x.label))groups.push({key:x.key,label:x.label}); });
 render(); await saveMeta("groups",groups);});
 el("signout")&&(el("signout").onclick=async()=>{if(await ask("ออกจากระบบเครื่องนี้ใช่ไหมคะ?","ออกจากระบบ"))signOut();});
+el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skywork-index",
+["สารบัญ","กลุ่มงาน","ผู้ดูแล","ลิงก์","สถานะ","รายละเอียดเอกสาร","หมายเหตุ"],
+idx.map(x=>[x.title,x.group,x.owner,x.url,x.status,x.detail,x.note])));
+el("expNote")&&(el("expNote").onclick=()=>exportCSV("skywork-notes",
+["หัวข้อ","ประเภท","วันที่","ป้ายกำกับ","เนื้อหา"],
+notes.map(n=>[n.title,n.kind,n.date,n.tag,n.body])));
 el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
 ["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
 legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));
@@ -1553,6 +1706,7 @@ return rows.filter(r=>r.some(c=>c.trim()));
 async function importCSV(txt){
 const out=el("csvout"); if(!txt.trim()){out.innerHTML=`<div class="banner bad">ยังไม่มีข้อมูลให้นำเข้าค่ะ</div>`;return;}
 if(/ชื่อรายการ/.test(txt.split(/\r?\n/)[0]||""))return importLegal(txt,out);
+if(/สารบัญ/.test(txt.split(/\r?\n/)[0]||""))return importIdx(txt,out);
 imp={state:"run",ok:0,fail:0,total:0,msg:"",at:""}; paintImp();
 const COLS=["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","งบ","ใช้จริง","รายละเอียด"];
 const rows=parseCSV(txt);
@@ -1573,6 +1727,13 @@ if(co){c=companies.find(x=>x.label===co);
 if(!c){c={key:"c"+Date.now().toString(36)+added,label:co};companies.push(c);newC.push(co);}}
 const date=get(r,"วันที่");
 let glKey="";
+const mkGL=raw=>{ raw=(raw||"").trim(); if(!raw)return "";
+const m=raw.match(/^(\d{6,9})/); const code=m?m[1]:"";
+const label=(raw.replace(/^\d{6,9}\s*[:.\-]?\s*/,"")||raw).trim();
+let g=gls.find(x=>(code&&x.key===code)||x.label===label||(x.code&&x.code===code));
+if(!g){ g={key:code||label.slice(0,18),code,label:label||code,budget:0,budgets:{}}; gls.push(g); newGL.push(g.label); }
+return g.key; };
+const gl2Key=mkGL(get(r,"หมวด GL รอง")||get(r,"งบก้อนรอง"));
 const glRaw=get(r,"หมวด GL")||get(r,"GL")||get(r,"รหัส GL");
 if(glRaw){
 const m=glRaw.match(/^(\d{6,9})/); const code=m?m[1]:"";
@@ -1586,7 +1747,7 @@ await saveItem({
 title, track:g.key, type:get(r,"ประเภท"), status:STATUS.includes(get(r,"สถานะ"))?get(r,"สถานะ"):"รอดำเนินการ",
 owner:get(r,"ผู้รับผิดชอบ"), date:/^\d{4}-\d{2}-\d{2}$/.test(date)?date:null,
 recurring:/^\d{4}-\d{2}-\d{2}$/.test(date)?null:(date||null),
-company:c?c.key:"", gl1:glKey, b1:+get(r,"งบ")||0, gl2:"", b2:0,
+company:c?c.key:"", gl1:glKey, b1:+get(r,"งบ")||0, gl2:gl2Key, b2:+get(r,"งบรอง")||0,
 actual:+get(r,"ใช้จริง")||0, code:"", note:get(r,"รายละเอียด"), group:"",
 rrule:parseRecur(get(r,"การเกิดซ้ำ")),
 meet:/ประชุม/.test(get(r,"กลุ่ม")+get(r,"ประเภท")+title)||!!get(r,"เวลา"),
@@ -1621,6 +1782,25 @@ out.innerHTML=`<div class="banner bad" style="margin-bottom:10px">นำเข�
 out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} นำเข้าสำเร็จ ${added} งาน${noHead?" (ไม่พบบรรทัดหัวตาราง ระบบอ่านตามลำดับคอลัมน์มาตรฐานให้)":""}${verify}${newG.length?` · สร้างกลุ่มใหม่: ${esc(newG.join(", "))}`:""}${newC.length?` · สร้างบริษัทใหม่: ${esc(newC.join(", "))}`:""}${newGL.length?` · สร้างหมวด GL ใหม่ ${newGL.length} หมวด`:""}</div>`;
 el("csvtext").value="";
 }
+}
+async function importIdx(txt,out){
+imp={state:"run",ok:0,fail:0,total:0,msg:"",at:""}; paintImp();
+const rows=parseCSV(txt); const head=rows[0].map(h=>h.replace(/\uFEFF/g,"").trim());
+const gi=n=>head.indexOf(n), get=(r,n)=>{const i=gi(n);return i<0?"":String(r[i]==null?"":r[i]).trim();};
+const body=rows.slice(1); let ok=0,fail=0,err=null; imp.total=body.length; paintImp();
+for(const r of body){
+const title=get(r,"สารบัญ")||get(r,"ชื่อระบบ"); if(!title)continue;
+try{ await DB.collection("index").add({title,group:get(r,"กลุ่มงาน"),owner:get(r,"ผู้ดูแล")||get(r,"ผู้ดูแลเอกสาร / เว็บไซต์"),
+url:get(r,"ลิงก์")||get(r,"URL"),status:IDXSTATUS.includes(get(r,"สถานะ"))?get(r,"สถานะ"):"ใช้งานอยู่",
+detail:get(r,"รายละเอียดเอกสาร")||get(r,"รายละเอียด"),note:get(r,"หมายเหตุ")}); ok++; }
+catch(e){ fail++; if(!err)err=e; }
+imp.ok=ok; imp.fail=fail; paintImp(); }
+const now=new Date();
+imp.at=now.getDate()+" "+MTH[now.getMonth()]+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+imp.state=fail?"fail":"done"; imp.msg="Index Online"; paintImp();
+out.innerHTML=fail?`<div class="banner bad">นำเข้าได้ ${ok} · ล้มเหลว ${fail}</div>`+errBox(err||{})
+:`<div class="banner ok">${svg(ICON.check,19)} นำเข้า Index Online ${ok} รายการ — ดูที่เมนู “Index Online”</div>`;
+if(!fail)el("csvtext").value=""; render();
 }
 async function importLegal(txt,out){
 imp={state:"run",ok:0,fail:0,total:0,msg:"",at:""}; paintImp();
@@ -1779,6 +1959,61 @@ const t=editing; el("dlg").close();
 if(!await ask("ลบงาน “"+esc(t.title)+"” ออกจากระบบใช่ไหมคะ?","ลบงาน"))return;
 await DB.collection("items").doc(t._id).delete();
 };
+let editingIdx=null, editingNote=null;
+function openIdx(x){
+editingIdx=x;
+el("idlgh").textContent=x?"แก้ไขรายการ Index":"เพิ่มรายการ Index";
+el("idel").style.display=x?"":"none";
+el("i-title").value=x?.title||""; el("i-group").value=x?.group||"";
+el("i-owner").value=x?.owner||""; el("i-url").value=x?.url||"";
+fill("i-status",IDXSTATUS.map(v=>[v,v]),x?.status||"ใช้งานอยู่");
+el("i-detail").value=x?.detail||""; el("i-note").value=x?.note||"";
+el("ixgroups").innerHTML=[...new Set(idx.map(v=>(v.group||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
+el("ixowners").innerHTML=[...new Set(idx.map(v=>(v.owner||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
+el("idlg").showModal();
+}
+el("icancel").onclick=()=>el("idlg").close();
+el("isave").onclick=async()=>{
+if(!el("i-title").value.trim()){el("i-title").focus();return;}
+const d={title:el("i-title").value.trim(),group:el("i-group").value.trim(),owner:el("i-owner").value.trim(),
+url:el("i-url").value.trim(),status:el("i-status").value,detail:el("i-detail").value.trim(),note:el("i-note").value.trim()};
+el("idlg").close();
+try{ editingIdx? await DB.collection("index").doc(editingIdx._id).set(d) : await DB.collection("index").add(d); }
+catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
+};
+el("idel").onclick=async()=>{ if(!editingIdx)return; const x=editingIdx; el("idlg").close();
+if(!await ask("ลบ “"+esc(x.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
+await DB.collection("index").doc(x._id).delete();};
+function openNote(n){
+editingNote=n;
+el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
+el("ndel").style.display=n?"":"none";
+el("n-title").value=n?.title||"";
+fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
+el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
+el("n-tag").value=n?.tag||""; el("n-body").value=n?.body||"";
+el("n-pin").checked=!!n?.pin;
+el("n-colors").innerHTML=[["","ค่าเริ่มต้น"],...TAGCOLORS.map(c=>[c,c])].map(([c])=>
+`<button type="button" class="sw1${(n?.color||"")===c?" on":""}" data-ncolor="${c}" style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
+el("n-colors").querySelectorAll("[data-ncolor]").forEach(b=>b.onclick=()=>{
+el("n-colors").querySelectorAll("[data-ncolor]").forEach(x=>x.classList.remove("on"));
+b.classList.add("on"); el("n-colors").dataset.val=b.dataset.ncolor;});
+el("n-colors").dataset.val=n?.color||"";
+el("ntaglist").innerHTML=[...new Set(notes.map(v=>(v.tag||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
+el("ndlg").showModal();
+}
+el("ncancel").onclick=()=>el("ndlg").close();
+el("nsave").onclick=async()=>{
+const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
+tag:el("n-tag").value.trim(),body:el("n-body").value,color:el("n-colors").dataset.val||"",pin:el("n-pin").checked};
+if(!d.title&&!d.body.trim()){el("n-title").focus();return;}
+el("ndlg").close();
+try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
+catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
+};
+el("ndel").onclick=async()=>{ if(!editingNote)return; const n=editingNote; el("ndlg").close();
+if(!await ask("ลบบันทึกนี้ใช่ไหมคะ?","ลบบันทึก"))return;
+await DB.collection("note").doc(n._id).delete();};
 let editingDsd=null;
 function openDsd(ck){
 const y=R.year, c=companies.find(x=>x.key===ck); if(!c)return;
