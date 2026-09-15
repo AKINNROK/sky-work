@@ -1,4 +1,4 @@
-const APP_VERSION="5.8"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="5.9"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -497,6 +497,7 @@ el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>`<div class="li" da
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
 if(r.id){const t=items.find(x=>x._id===r.id); if(t)open_(t);}
+else if(r.tx){const x=ledger.find(v=>v._id===r.tx); if(x)openTx(x);}
 else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegal(g);}
 });
 el("pdlg").showModal();
@@ -856,12 +857,29 @@ ${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth())}
 <div class="t2">${fmtDate(x.date)} · ${esc(glLabel(x.gl))}${x.company?" · "+esc(cLabel(x.company)):""}</div></div>
 <b style="color:${x.kind==="income"?"var(--ok)":"inherit"};font-variant-numeric:tabular-nums">${x.kind==="income"?"+":"−"}${baht(x.amount)}</b></div>`).join("")
 ||`<div class="empty">ยังไม่มีรายการในช่วงนี้<br><span style="font-size:12.5px">กด “บันทึกเงิน” เพื่อเพิ่มรายรับหรือรายจ่าย</span></div>`}</div></div>
-<div class="card span4"><h2>งบตามหมวด GL <small>ใช้จริง / งบที่ตั้งไว้ · รวมงบจากงานและงบที่ตั้งเองในหน้าตั้งค่า</small></h2>
+<div class="card span4"><h2>งบตามหมวด GL <small>ใช้จริง / งบที่ตั้งไว้ · แตะแถวเพื่อดูที่มาของตัวเลข</small></h2>
+<div class="hint" style="margin:2px 0 10px">
+<b>งบที่ตั้งไว้</b> = ค่าที่มากกว่าระหว่าง “งบตั้งต้นที่ตั้งเองในหน้าตั้งค่า” กับ “ผลรวมช่องงบของทุกงานในหมวดนี้” (ไม่บวกซ้ำ)<br>
+<b>ใช้จริง</b> = ผลรวมช่องใช้จริงของงาน + รายจ่ายที่บันทึกในหน้านี้ ที่แท็กหมวดเดียวกัน</div>
 ${keys.length?keys.sort((x,y)=>(planByGL[y]||0)-(planByGL[x]||0)).map(k=>{
 const a=spentByGL[k]||0,b=planByGL[k]||0,p=b?Math.min(100,a/b*100):(a?100:0);
 const nm=k?glLabel(k):"ยังไม่ระบุหมวด GL";
-return `<div class="glrow"><div class="top"><span>${esc(nm)}</span>
-<span class="amt"${a>b&&b?' style="color:var(--over);font-weight:600"':""}>${baht(a)} / ${baht(b)}</span></div>
+const g=gls.find(x=>x.key===k);
+const ceil=g?glBudget(g,R.year):0;
+const tks=inYear.filter(t=>(glKeyOf(t.gl1)===k||glKeyOf(t.gl2)===k)&&((+t.b1||0)+(+t.b2||0)+(+t.actual||0))>0);
+const txs=ledger.filter(x=>(x.gl||"")===k&&x.date&&new Date(x.date).getFullYear()===R.year);
+const rowsL=[
+...(ceil?[{t1:"งบตั้งต้นที่ตั้งไว้เอง (หน้าตั้งค่า → หมวด GL)",t2:`ปี ${R.year+543}`,d:"ตั้ง",p:baht(ceil)+" ฿",pc:"s-mid",c:"var(--accent-soft)",ic:"var(--accent)"}]:[]),
+...tks.map(t=>{const d=dueDate(t);const mine=(glKeyOf(t.gl1)===k?+t.b1||0:0)+(glKeyOf(t.gl2)===k?+t.b2||0:0);
+return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${glKeyOf(t.gl1)===k&&+t.actual?` · ใช้จริง ${baht(t.actual)} ฿`:""}${t.company?" · "+cLabel(t.company):""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}),
+...txs.map(x=>({tx:x._id,t1:x.note||(x.kind==="income"?"รายรับ":"รายจ่าย"),
+t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.date?`${new Date(x.date).getDate()}<br>${MTH[new Date(x.date).getMonth()]}`:"—",
+p:(x.kind==="income"?"+":"-")+baht(x.amount)+" ฿",pc:x.kind==="income"?"s-done":"s-run",c:"var(--run-soft)",ic:"var(--run)"}))];
+const lk=regList("gl:"+k,esc(nm)+" · ปี "+(R.year+543),rowsL);
+return `<div class="glrow" ${lk} style="cursor:pointer">
+<div class="top"><span>${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
+<span class="amt"${a>b&&b?' style="color:var(--over);font-weight:600"':""}>${baht(a)} / ${baht(b)} ›</span></div>
 <div class="bar"><i class="${a>b&&b?"hot":""}" style="width:${p}%"></i></div></div>`;}).join("")
 :`<div class="empty">ยังไม่มีงบในปีนี้ — ใส่งบในงานแต่ละงาน หรือเพิ่มหมวด GL ที่หน้าตั้งค่า</div>`}
 ${noGL?`<div class="hint">มี <b>${noGL}</b> งานที่ใส่งบไว้แต่ยังไม่ได้เลือกหมวด GL — เปิดงานแล้วเลือกหมวด เพื่อให้ยอดแยกตามหมวดได้</div>`:""}
