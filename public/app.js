@@ -1,4 +1,4 @@
-const APP_VERSION="5.5"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="5.7"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -59,6 +59,7 @@ laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19
 };
 const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
 const TABS=["home","all","meet","train","legal","idx","note","cal","budget","set"];
+const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
 const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -464,8 +465,8 @@ const u=new URL(location.href); u.searchParams.set("r",Date.now()); location.rep
 function renderNav(){
 const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION;
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
-el("tabbar").innerHTML=TABS.map(k=>{const l=VIEWS.find(v=>v[0]===k)[1];
-return `<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k],21)}${l}</button>`;}).join("");
+el("tabbar").innerHTML=TABS.map(k=>{const l=TABLABEL[k]||VIEWS.find(v=>v[0]===k)[1];
+return `<button data-v="${k}" aria-current="${k===view}" title="${esc(VIEWS.find(v=>v[0]===k)[1])}">${svg(ICON[k],19)}<span>${l}</span></button>`;}).join("");
 const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;renderNav();render();window.scrollTo(0,0);};
 el("nav").onclick=go; el("tabbar").onclick=go;
 ["brandBtn","brandBtnM"].forEach(id=>{const n=el(id); if(!n||n._wired)return; n._wired=1;
