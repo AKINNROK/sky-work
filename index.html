@@ -45,7 +45,11 @@
 <div class="f"><label for="f-status">สถานะ</label><select id="f-status"></select></div>
 <div class="f"><label for="f-owner">ผู้รับผิดชอบ</label><input id="f-owner"></div>
 <div class="f"><label for="f-date">วันที่</label><input id="f-date" type="date"></div>
-<div class="f"><label for="f-recur">หรือรอบงาน</label><input id="f-recur" placeholder="รายเดือน / รายสัปดาห์"></div>
+<div class="f"><label for="f-freq">การเกิดซ้ำ</label><select id="f-freq"></select></div>
+<div class="f wide" id="wrap-wd" hidden><label>วันในสัปดาห์</label><div class="months" id="f-wd"></div></div>
+<div class="f wide" id="wrap-nth" hidden><label>สัปดาห์ที่</label><div class="months" id="f-nth"></div></div>
+<div class="f" id="wrap-md" hidden><label for="f-md">วันที่ของเดือน</label><input id="f-md" type="number" min="1" max="31" placeholder="เช่น 10"></div>
+<div class="f" id="wrap-recur"><label for="f-recur">หมายเหตุรอบงาน (เดิม)</label><input id="f-recur" placeholder="เว้นว่างได้"></div>
 <div class="f"><label for="f-gl1">หมวด GL หลัก</label><select id="f-gl1"></select></div>
 <div class="f"><label for="f-b1">งบ GL หลัก</label><input id="f-b1" type="number" step="1"></div>
 <div class="f"><label for="f-gl2">หมวด GL รอง</label><select id="f-gl2"></select></div>
@@ -94,5 +98,5 @@
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=3.0"></script>
+<script src="app.js?v=3.1"></script>
 </body></html>

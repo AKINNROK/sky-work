@@ -1,4 +1,4 @@
-const APP_VERSION="3.0"; const APP_DATE="14 ก.ย. 2026";
+const APP_VERSION="3.1"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -95,8 +95,56 @@ let DB=null, items=[], ledger=[], view="home", settab="groups", editing=null, ed
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
 try{const t=localStorage.getItem("hr-theme");if(t)theme=JSON.parse(t);}catch(e){}
-const YEAR=new Date().getFullYear();
-let R={scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
+const THISYEAR=new Date().getFullYear();
+const DOWFULL=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
+const NTH=[[1,"ที่ 1"],[2,"ที่ 2"],[3,"ที่ 3"],[4,"ที่ 4"],[5,"ที่ 5"],[-1,"สุดท้าย"]];
+const FREQ=[["none","ไม่เกิดซ้ำ"],["day","ทุกวัน"],["week","ทุกสัปดาห์"],["monthday","ทุกเดือน (ตามวันที่)"],["monthnth","ทุกเดือน (ตามวันในสัปดาห์)"],["year","ทุกปี"]];
+const rr=t=>(t&&t.rrule&&t.rrule.freq&&t.rrule.freq!=="none")?t.rrule:null;
+function nthOfMonth(d){ return Math.floor((d.getDate()-1)/7)+1; }
+function isLastWeek(d){ return d.getDate()+7>new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); }
+function occursOn(t,d){
+const R2=rr(t);
+if(R2){
+const start=t.date?new Date(t.date):null;
+if(start&&d<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
+if(R2.freq==="day")return true;
+if(R2.freq==="week")return (R2.weekdays||[]).includes(d.getDay());
+if(R2.freq==="monthday")return d.getDate()===(+R2.monthday||(start?start.getDate():1));
+if(R2.freq==="monthnth"){
+if(!(R2.weekdays||[]).includes(d.getDay()))return false;
+const ns=R2.nth&&R2.nth.length?R2.nth:[1];
+return ns.some(n=>n===-1?isLastWeek(d):nthOfMonth(d)===n);
+}
+if(R2.freq==="year"){ if(!start)return false;
+return d.getMonth()===start.getMonth()&&d.getDate()===start.getDate(); }
+return false;
+}
+if(t.date){const x=new Date(t.date);return x.getFullYear()===d.getFullYear()&&x.getMonth()===d.getMonth()&&x.getDate()===d.getDate();}
+return false;
+}
+function occDays(t,y,m){
+const out=[],last=new Date(y,m+1,0).getDate();
+for(let i=1;i<=last;i++){const d=new Date(y,m,i); if(occursOn(t,d))out.push(i);}
+return out;
+}
+function rruleText(t){
+const R2=rr(t); if(!R2)return "";
+const wd=(R2.weekdays||[]).map(i=>DOWFULL[i]).join(", ");
+if(R2.freq==="day")return "ทุกวัน";
+if(R2.freq==="week")return "ทุกสัปดาห์ · "+(wd||"—");
+if(R2.freq==="monthday")return "ทุกเดือน วันที่ "+(R2.monthday||"—");
+if(R2.freq==="monthnth"){const ns=(R2.nth||[]).map(n=>(NTH.find(x=>x[0]===n)||["",""])[1]).join(" และ ");
+return "ทุกเดือน "+(wd||"—")+" "+(ns||"ที่ 1");}
+if(R2.freq==="year")return "ทุกปี"+(t.date?" · "+fmtDate(t.date):"");
+return "";
+}
+function nextOcc(t,from){
+const d=new Date(from||new Date()); d.setHours(0,0,0,0);
+if(!rr(t))return t.date?new Date(t.date):null;
+for(let i=0;i<800;i++){ if(occursOn(t,d))return new Date(d); d.setDate(d.getDate()+1); }
+return null;
+}
+let R={year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
 const F={q:"",track:"",type:"",status:"",company:""};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -112,6 +160,9 @@ const glLabel=k=>{const g=gls.find(x=>x.key===k);return g?(g.code?g.code+" · ":
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const types=()=>[...new Set(items.map(t=>t.type).filter(Boolean))].sort();
 const monthsOf=t=>{
+const R2=rr(t);
+if(R2){const y=(typeof R!=="undefined"&&R.year)||THISYEAR;
+return [0,1,2,3,4,5,6,7,8,9,10,11].filter(m=>occDays(t,y,m).length).map(m=>m+1);}
 if(Array.isArray(t.months)&&t.months.length)return t.months;
 if(t.date)return[new Date(t.date).getMonth()+1];
 if(t.recurring)return[1,2,3,4,5,6,7,8,9,10,11,12];
@@ -121,6 +172,7 @@ const fmtDate=d=>{if(!d)return"";const x=new Date(d);return x.getDate()+" "+MTH[
 const weekOf=d=>{const x=new Date(d),s=new Date(x.getFullYear(),0,1);return Math.ceil(((x-s)/864e5+s.getDay()+1)/7);};
 const nowWeek=weekOf(new Date());
 function inScope(t){
+if(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year)return false;
 if(R.scope==="year")return true;
 const ms=monthsOf(t);
 if(R.scope==="month")return ms.includes(R.month+1);
@@ -130,9 +182,16 @@ return !!t.recurring||ms.includes(new Date().getMonth()+1);
 }
 return true;
 }
-const scopeLabel=()=>R.scope==="year"?"ทั้งปี "+YEAR:R.scope==="month"?MTHFULL[R.month]:"สัปดาห์นี้";
+function yearList(){
+const ys=new Set([THISYEAR,THISYEAR+1,R.year]);
+items.forEach(t=>{if(t.date)ys.add(new Date(t.date).getFullYear());});
+ledger.forEach(x=>{if(x.date)ys.add(new Date(x.date).getFullYear());});
+return [...ys].filter(y=>y>2000&&y<2100).sort();
+}
+const yearSel=id=>`<select id="${id}" style="border:0;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;box-shadow:var(--sh-s)">${yearList().map(y=>`<option value="${y}"${y===R.year?" selected":""}>พ.ศ. ${y+543} · ${y}</option>`).join("")}</select>`;
+const scopeLabel=()=>R.scope==="year"?"ทั้งปี "+R.year:R.scope==="month"?MTHFULL[R.month]:"สัปดาห์นี้";
 function scopeBar(id){
-return `<div class="seg" id="${id}">
+return `${yearSel("yrSel")} <div class="seg" id="${id}">
 <button data-sc="year" aria-pressed="${R.scope==="year"}">รายปี</button>
 <button data-sc="month" aria-pressed="${R.scope==="month"}">รายเดือน</button>
 <button data-sc="week" aria-pressed="${R.scope==="week"}">รายสัปดาห์</button>
@@ -309,9 +368,11 @@ ${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',
 function liRow(t,showDate){
 const ms=monthsOf(t), d=t.date?fmtDate(t.date).split(" "):null;
 return `<div class="li" data-id="${t._id}">
-<div class="ic" style="background:var(--line-2);color:${sColor(t.status)}">${d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—")}</div>
+<div class="ic" style="background:var(--line-2);color:${sColor(t.status)}">${(()=>{const n=rr(t)?nextOcc(t):null;
+if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
+return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;
 }
 function home(){
@@ -346,7 +407,7 @@ ${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลั
 <div><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
 <div><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
 <div><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div></div></div></div>
-<div class="card span2"><h2>จำนวนงานรายเดือน <small>ทั้งปี ${YEAR}</small></h2>
+<div class="card span2"><h2>จำนวนงานรายเดือน <small>ทั้งปี ${R.year}</small></h2>
 ${bars(byMonth,MTH,v=>v||"",now.getMonth())}</div>
 <div class="card span2"><h2>งานใน${scopeLabel()} <small>${scoped.filter(t=>t.status!=="เสร็จสิ้น").length} รายการที่ยังไม่ปิด</small></h2>
 <div class="list">${scoped.filter(t=>t.status!=="เสร็จสิ้น").slice(0,6).map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานค้างในช่วงนี้ 🎉</div>`}</div></div>
@@ -379,7 +440,7 @@ return header("งานทั้งหมด",`${list.length} จาก ${items
 <td><div style="font-weight:600">${esc(t.title)}</div>${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}</td>
 <td>${esc(t.company?cLabel(t.company):"—")}</td>
 <td><span class="tag sky">${esc(gLabel(t.track))}</span></td>
-<td class="num">${t.date?fmtDate(t.date):esc(t.recurring||"—")}</td>
+<td class="num">${rr(t)?esc(rruleText(t)):(t.date?fmtDate(t.date):esc(t.recurring||"—"))}</td>
 <td>${esc(t.owner||"—")}</td>
 <td class="num">${budgetOf(t)?baht(budgetOf(t)):"—"}</td>
 <td class="num"${(+t.actual||0)>budgetOf(t)&&budgetOf(t)?' style="color:var(--over);font-weight:600"':""}>${t.actual?baht(t.actual):"—"}</td>
@@ -387,13 +448,13 @@ return header("งานทั้งหมด",`${list.length} จาก ${items
 ${list.length?"":`<div class="card"><div class="empty">ไม่พบงานตามเงื่อนไขนี้</div></div>`}</div>`);
 }
 function tasksOnDay(y,m,d){
-const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-return items.filter(t=>t.date===iso);
+const dt=new Date(y,m,d);
+return items.filter(t=>occursOn(t,dt));
 }
 function calView(){
-const today=new Date(), m=R.month, y=YEAR;
+const today=new Date(), m=R.month, y=R.year;
 const first=new Date(y,m,1).getDay(), days=new Date(y,m+1,0).getDate();
-const recurring=items.filter(t=>!t.date&&monthsOf(t).includes(m+1));
+const recurring=items.filter(t=>!rr(t)&&!t.date&&monthsOf(t).includes(m+1));
 const cells=[];
 for(let i=0;i<first;i++)cells.push(`<div class="day blank"></div>`);
 for(let d=1;d<=days;d++){
@@ -413,11 +474,11 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <select id="calMonth" style="border:0;background:var(--card);border-radius:999px;padding:6px 14px;font-weight:600">${MTHFULL.map((x,i)=>`<option value="${i}"${i===m?" selected":""}>${x} ${y+543}</option>`).join("")}</select>
-<button id="nm">›</button></div>`:""}
+<button id="nm">›</button></div>${yearSel("yrSel2")}`:""}
 </div>`+
 (R.calMode==="month"
 ? `<div class="dash">
-<div class="card span3"><h2>${MTHFULL[m]} ${y+543} <small>${items.filter(t=>t.date&&new Date(t.date).getMonth()===m).length} งานที่มีวันที่</small></h2>
+<div class="card span3"><h2>${MTHFULL[m]} ${y+543} <small>${items.filter(t=>occDays(t,y,m).length).length} งานในเดือนนี้</small></h2>
 <div class="mcal">${DOW.map(d=>`<div class="dh">${d}</div>`).join("")}${cells.join("")}</div>
 <div class="legend" style="margin-top:14px">
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
@@ -451,7 +512,7 @@ function ledgerIn(scope,month){
 return ledger.filter(x=>{
 if(!x.date)return false;
 const d=new Date(x.date);
-if(d.getFullYear()!==YEAR)return false;
+if(d.getFullYear()!==R.year)return false;
 if(scope==="month")return d.getMonth()===month;
 if(scope==="week")return weekOf(x.date)===nowWeek;
 return true;
@@ -466,8 +527,8 @@ const B=gls.reduce((s,g)=>s+(+g.budget||0),0);
 const spentByGL={}; ledger.filter(x=>x.kind!=="income").forEach(x=>{spentByGL[x.gl]=(spentByGL[x.gl]||0)+(+x.amount||0);});
 items.forEach(t=>{ const k=glKeyOf(t.gl1); if(k&&t.actual)spentByGL[k]=(spentByGL[k]||0)+(+t.actual||0); });
 const A=Object.values(spentByGL).reduce((s,v)=>s+v,0);
-const monthsInc=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind==="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===YEAR).reduce((s,x)=>s+(+x.amount||0),0));
-const monthsExp=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind!=="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===YEAR).reduce((s,x)=>s+(+x.amount||0),0));
+const monthsInc=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind==="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===R.year).reduce((s,x)=>s+(+x.amount||0),0));
+const monthsExp=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind!=="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===R.year).reduce((s,x)=>s+(+x.amount||0),0));
 const pct=B?Math.min(100,Math.round(A/B*100)):0;
 const recent=tx.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,10);
 return `<div class="head"><div><h1>งบประมาณ & บัญชี</h1><div class="sub">ตั้งงบรายปีต่อหมวด GL แล้วแท็กค่าใช้จ่ายเข้าหมวดได้เลย · ${syncChip()}</div></div>
@@ -479,7 +540,7 @@ return `<div class="head"><div><h1>งบประมาณ & บัญชี</h
 ${scope==="month"?`<select id="budMonth" style="border:0;background:var(--card);border-radius:999px;padding:6px 12px">${MTHFULL.map((x,i)=>`<option value="${i}"${i===m?" selected":""}>${x}</option>`).join("")}</select>`:""}
 </div></div>
 <div class="dash">
-<div class="card hero span2"><div class="lab">ใช้ไปแล้วจากงบทั้งปี ${YEAR+543}</div>
+<div class="card hero span2"><div class="lab">ใช้ไปแล้วจากงบทั้งปี ${R.year+543}</div>
 <div class="big">${pct}%</div>
 <div class="meta"><span>ใช้จริง ${baht(A)} ฿</span><span>งบตั้งไว้ ${baht(B)} ฿</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
@@ -487,7 +548,7 @@ ${scope==="month"?`<select id="budMonth" style="border:0;background:var(--card);
 <div class="v" style="color:var(--ok)">${baht(inc)}</div><div class="d">${scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"}</div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.down,16)}</span> รายจ่าย</div>
 <div class="v">${baht(exp)}</div><div class="d">สุทธิ ${baht(inc-exp)} ฿</div></div>
-<div class="card span2"><h2>รายรับ – รายจ่ายรายเดือน <small>ปี ${YEAR+543}</small></h2>
+<div class="card span2"><h2>รายรับ – รายจ่ายรายเดือน <small>ปี ${R.year+543}</small></h2>
 ${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth())}
 <div class="legend"><span><i style="background:var(--ok)"></i>รายรับ</span><span><i style="background:var(--accent-2)"></i>รายจ่าย</span></div></div>
 <div class="card span2"><h2>รายการล่าสุด <small>${tx.length} รายการในช่วงนี้</small></h2>
@@ -732,6 +793,7 @@ const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
 const sc=el("sc1");
 if(sc){sc.onclick=e=>{const b=e.target.closest("button[data-sc]");if(!b)return;R.scope=b.dataset.sc;render();};
 el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
+["yrSel","yrSel2"].forEach(id=>{const n=el(id); if(n)n.onchange=e=>{R.year=+e.target.value;R.selDay=null;render();};});
 const bs=el("budsc");
 if(bs){bs.onclick=e=>{const b=e.target.closest("button[data-bs]");if(!b)return;R.budScope=b.dataset.bs;render();};
 el("budMonth")&&(el("budMonth").onchange=e=>{R.budMonth=+e.target.value;render();});}
@@ -917,7 +979,7 @@ const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
 const csv="\ufeff"+[head.map(q).join(","),...rows.map(r=>r.map(q).join(","))].join("\n");
 const a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
-a.download=name+"-"+YEAR+".csv"; document.body.appendChild(a); a.click();
+a.download=name+"-"+R.year+".csv"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 const out=el("csvout2"); if(out)out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} ดาวน์โหลดไฟล์แล้วค่ะ</div>`;
 }
@@ -927,6 +989,15 @@ try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
 if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
 function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
+function syncFreq(){
+const f=el("f-freq").value;
+el("wrap-wd").hidden=!(f==="week"||f==="monthnth");
+el("wrap-nth").hidden=(f!=="monthnth");
+el("wrap-md").hidden=(f!=="monthday");
+el("wrap-recur").hidden=(f!=="none");
+const dl=el("f-date").parentElement.querySelector("label");
+if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เริ่มต้น";
+}
 function open_(t){
 editing=t;
 el("dlgh").textContent=t?"แก้ไขงาน":"เพิ่มงานใหม่";
@@ -940,6 +1011,12 @@ el("typelist").innerHTML=types().map(x=>`<option value="${esc(x)}">`).join("");
 el("f-type").value=t?.type||"";
 el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||"";
 el("f-date").value=t?.date||""; el("f-recur").value=t?.recurring||"";
+const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
+fill("f-freq",FREQ,RU.freq||"none");
+el("f-wd").innerHTML=DOWFULL.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d.slice(0,2)}</label>`).join("");
+el("f-nth").innerHTML=NTH.map(([v,l])=>`<label><input type="checkbox" class="nth" value="${v}"${(RU.nth||[]).includes(v)?" checked":""}>${l}</label>`).join("");
+el("f-md").value=RU.monthday||"";
+syncFreq();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
@@ -947,6 +1024,7 @@ const ms=t?.months||[];
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
 el("dlg").showModal();
 }
+el("f-freq").onchange=syncFreq;
 el("cancel").onclick=()=>el("dlg").close();
 el("save").onclick=async()=>{
 if(!el("f-title").value.trim()){el("f-title").focus();return;}
@@ -955,6 +1033,11 @@ title:el("f-title").value.trim(), company:el("f-company").value,
 track:el("f-track").value, type:el("f-type").value.trim(),
 status:el("f-status").value, owner:el("f-owner").value.trim(),
 date:el("f-date").value||null, recurring:el("f-recur").value.trim()||null,
+rrule:(()=>{const f=el("f-freq").value; if(f==="none")return null;
+return {freq:f,
+weekdays:[...el("f-wd").querySelectorAll("input:checked")].map(i=>+i.value),
+nth:[...el("f-nth").querySelectorAll("input:checked")].map(i=>+i.value),
+monthday:+el("f-md").value||null};})(),
 gl1:el("f-gl1").value, b1:+el("f-b1").value||0,
 gl2:el("f-gl2").value, b2:+el("f-b2").value||0,
 actual:+el("f-actual").value||0, code:el("f-code").value.trim(),
