@@ -1,4 +1,4 @@
-const APP_VERSION="5.9"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="6.1"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -33,6 +33,15 @@ return {k:"ok",t:"อีก "+n+" วัน",c:"s-done"}; }
 if(miss)return {k:"noperson",t:"ยังไม่มีผู้รับผิดชอบ",c:"s-wait"};
 if(L.lifetime)return {k:"ok",t:"ไม่มีวันหมดอายุ",c:"s-done"};
 return {k:"noperson",t:"ยังไม่ระบุวันครบกำหนด",c:"s-wait"}; };
+const SKILLS=["Soft Skill","Hard Skill","Safety"];
+const MODES=["In-House","Public","OJT","Online","สัมมนา","อื่นๆ"];
+const SKILLC={"Soft Skill":"#3d86d6","Hard Skill":"#7d5bd0","Safety":"#e0606d"};
+const MODEC={"In-House":"#2fa36b","Public":"#e0932b","OJT":"#2bb3c9","Online":"#4a5fc4","สัมมนา":"#d6549b","อื่นๆ":"#6b7785"};
+const SAFETYRE=/ความปลอดภัย|ดับเพลิง|อพยพ|จป\.?|คปอ|ปั้นจั่น|โฟล์คลิฟท์|forklift|สารเคมี|ไฟฟ้า|ที่สูง|ปฐมพยาบาล|first aid|อัคคีภัย|ก๊าซ|เชื่อม/i;
+const guessSkill=t=>{const s2=(t.title||"")+" "+(t.type||"")+" "+gLabel(t.track);
+if(SAFETYRE.test(s2))return "Safety";
+if(/ภาวะผู้นำ|leadership|สื่อสาร|communication|team|บทบาท|ทัศนคติ|บริการ|mindset|coaching/i.test(s2))return "Soft Skill";
+return ""; };
 const DSD=["ไม่ต้องยื่น","รอยื่น","ยื่นแล้ว","อนุมัติแล้ว","ไม่ผ่าน"];
 const dsdCls=d=>d==="อนุมัติแล้ว"?"s-done":d==="ยื่นแล้ว"?"s-run":d==="ไม่ผ่าน"?"s-over":"s-wait";
 const DEFAULT_COMPANIES=[{key:"lkl",label:"LeKise (LKL)"},{key:"lks",label:"LeKise Solar (LKS)"},{key:"lsc",label:"LSC Center"}];
@@ -44,6 +53,7 @@ budget:'<path d="M12 4v16"/><path d="M16 8c0-2-2-3-4-3s-4 1-4 3 2 2.6 4 3 4 1 4 
 train:'<path d="M12 4 2.5 9 12 14l9.5-5L12 4z"/><path d="M6.5 11.2V16c0 1.5 2.6 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4.8"/><path d="M21.5 9v5"/>',
 idx:'<path d="M4 5.5A2 2 0 0 1 6 3.5h12v17H6a2 2 0 0 1-2-2z"/><path d="M8 8h7M8 12h7"/>',
 note:'<path d="M12.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="m15.5 4.8 3.7 3.7L14 13.7l-3.7.4.4-3.7z"/>',
+dsd:'<path d="M6.5 3.5h11v17l-5.5-3-5.5 3z"/><path d="M9.4 9.6l2 2 3.2-3.4"/>',
 legal:'<path d="M12 3.5 4.5 6.5v5c0 4.4 3.1 8.2 7.5 9.2 4.4-1 7.5-4.8 7.5-9.2v-5L12 3.5z"/><path d="M9.2 12.2l2 2 3.6-3.8"/>',
 meet:'<circle cx="9" cy="8" r="2.8"/><circle cx="16.5" cy="9.5" r="2.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16.5 14c2.4 0 4 1.7 4 4"/>',
 pipeline:'<circle cx="6.5" cy="7" r="2.6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M9 7h4a4 4 0 0 1 4 4v3"/>',
@@ -57,9 +67,9 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
-const TABS=["home","all","meet","train","legal","idx","note","cal","budget","set"];
-const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
+const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
+const TABS=["home","all","meet","train","dsd","legal","idx","note","cal","budget","set"];
+const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
 const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -510,11 +520,11 @@ view=v; renderNav(); render(); window.scrollTo({top:0,behavior:"smooth"});
 const jump=(v,payload)=>`data-go="${esc(JSON.stringify({v,...payload||{}}))}"`;
 function render(){
 LISTBOX={};
-el("view").innerHTML={home,all,meet,train,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,pipeline,set:setView}[view]();
+el("view").innerHTML={home,all,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,pipeline,set:setView}[view]();
 paintSync(); wire();
 }
 function header(title,sub,btn=true){
-const lab=view==="train"?"เพิ่มหลักสูตร":view==="meet"?"เพิ่มการประชุม":"เพิ่มงาน";
+const lab=(view==="train"||view==="dsd")?"เพิ่มหลักสูตร":view==="meet"?"เพิ่มการประชุม":"เพิ่มงาน";
 return `<div class="head"><div><h1>${title}</h1><div class="sub">${sub} · ${syncChip()}</div></div>
 ${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>${lab}</span></button>`:""}</div>`;
 }
@@ -663,7 +673,7 @@ card(ICON.train,"ฝึกอบรม",tr.length+" หลักสูตร",`�
 card(ICON.legal,"กฎหมาย",legal.length,lgLate?`เกินกำหนด ${lgLate} · ใกล้ครบ ${lgSoon}`:(lgNo?`ยังไม่มีผู้รับผิดชอบ ${lgNo}`:"เรียบร้อยทั้งหมด"),jump("legal"),lgLate),
 card(ICON.budget,"งบประมาณ",baht(bud-act)+" ฿",`ใช้ไป ${baht(act)} จาก ${baht(bud)}`,jump("budget"),act>bud&&bud>0),
 card(ICON.cal,"ปฏิทิน",byMonth.reduce((a,b)=>a+b,0),`งานที่มีกำหนดในปี ${R.year+543}`,jump("cal")),
-card(ICON.train,"เกณฑ์กรมพัฒนาฯ",dsdList(R.year).length?(need?"ขาด "+need+" คน":"ครบเกณฑ์"):"ยังไม่ตั้งค่า",dsdList(R.year).length?(need?"ยังไม่ถึง 50% ในบางบริษัท":"ทุกสถานประกอบกิจการผ่านแล้ว"):"เพิ่มสถานประกอบกิจการที่หน้าฝึกอบรม",jump("train"),need),
+card(ICON.dsd,"เกณฑ์กรมพัฒนาฯ",dsdList(R.year).length?(need?"ขาด "+need+" คน":"ครบเกณฑ์"):"ยังไม่ตั้งค่า",dsdList(R.year).length?(need?"ยังไม่ถึง 50% ในบางบริษัท":"ทุกสถานประกอบกิจการผ่านแล้ว"):"เพิ่มสถานประกอบกิจการที่หน้ากรมพัฒนาฯ",jump("dsd"),need),
 card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใกล้สุด ${pr[0].t.title.slice(0,18)}`:"ว่าง",jump("meet"),pr.length)
 ].join("");})()}
 </div></div>
@@ -951,58 +961,32 @@ ${bars(byDow,DOW,v=>v||"",new Date().getDay())}</div>
 <div class="list">${oneoff.slice(0,20).map(t=>row(t,dueDate(t),prepDate(t))).join("")||`<div class="empty">ยังไม่มี</div>`}</div></div>
 </div>`;
 }
-function train(){
+function dsdView(){
 const ty=items.filter(t=>isTrain(t)&&inScope(t));
-const sum=(a,k)=>a.reduce((x,t)=>x+(+t[k]||0),0);
-const pax=sum(ty,"pax"), hrs=ty.reduce((x,t)=>x+(+t.hours||0)*(+t.pax||1),0);
-const cost=ty.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
-const done=ty.filter(t=>t.status==="เสร็จสิ้น").length;
-const kinds=["กฎหมาย","ภายใน","ภายนอก"];
-const byKind=k=>ty.filter(t=>trainKind(t)===k);
 const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
 const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
-const lawLate=byKind("กฎหมาย").filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
-const byMonth=MTH.map((_,i)=>items.filter(t=>isTrain(t)&&monthsOf(t).includes(i+1)).length);
+const need=dsdList(R.year).map(c=>dsdCalc(dsdRec(c.key,R.year)).need).reduce((a,b)=>a+b,0);
 const card=t=>{const d=dueDate(t);
 return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${t.hours?" · "+t.hours+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
-${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">กรมพัฒฯ ${esc(t.dsd)}</span>`:""}
+<div class="t2">${t.company?esc(cLabel(t.company))+" · ":""}${esc(t.batch||"ยังไม่ระบุรุ่น")}${t.pax?" · "+t.pax+" คน":""}</div></div>
+${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">${esc(t.dsd)}</span>`:""}
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
-const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>${arr.length} หลักสูตร</small></h2>
-<div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
-return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
+return header("กรมพัฒนาฝีมือแรงงาน","เกณฑ์ 50% ต่อปี และทะเบียนการยื่นรับรองหลักสูตร")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
-(lawLate.length?`<div class="banner bad" ${regList("lawLate","อบรมตามกฎหมายที่เลยกำหนด",lawLate.map(t=>{const d=dueDate(t);return {id:t._id,
-t1:t.title,t2:`${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
-d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
-p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
 (waiting.length?`<div class="banner" ${regList("dsdWait","หลักสูตรที่รอยื่นกรมพัฒนาฯ",waiting.map(t=>{const d=dueDate(t);return {id:t._id,
 t1:t.title,t2:`${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไม่ระบุรุ่น"}${t.pax?" · "+t.pax+" คน":""}`,
-d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"รอยื่น",pc:"s-run"};}))}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ ${waiting.length} หลักสูตร</div>`:"")+
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"รอยื่น",pc:"s-run"};}))}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ <b>${waiting.length}</b> หลักสูตร</div>`:"")+
+(need?`<div class="banner bad">${svg(ICON.bell,19)} ยังไม่ถึงเกณฑ์ 50% — ต้องฝึกอีกรวม <b>${baht(need)}</b> คน</div>`:"")+
 `<div class="dash">
-<div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
-<div class="big">${ty.length}</div>
-<div class="meta"><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${ty.length-done}</span></div>
-<div class="prog"><i style="width:${ty.length?Math.round(done/ty.length*100):0}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> ผู้เข้าอบรม</div>
-<div class="v">${baht(pax)}</div><div class="d">รวม ${baht(Math.round(hrs))} คน-ชั่วโมง</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
-<div class="v">${pax?baht(Math.round(cost/pax)):"—"}</div><div class="d">ค่าใช้จ่ายรวม ${baht(cost)} ฿</div></div>
-<div class="card span2"><h2>สัดส่วนประเภทหลักสูตร <small>${ty.length} หลักสูตร</small></h2>
-<div class="donutwrap">
-${donut(kinds.map((k,i)=>({n:k,v:byKind(k).length,c:["var(--over)","var(--accent)","var(--run)"][i]})),ty.length,"หลักสูตร")}
-<div class="dlist">${kinds.map((k,i)=>`<div><i style="background:${["var(--over)","var(--accent)","var(--run)"][i]}"></i>${k}<b>${byKind(k).length}</b></div>`).join("")}</div></div></div>
-<div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
-${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}</div>
-<div class="card span4"><h2>กรมพัฒนาฝีมือแรงงาน <small>สถานะการยื่นรับรองหลักสูตร</small></h2>
-<div class="legend" style="margin:10px 0 2px">
-<span><i style="background:var(--wait)"></i>รอยื่น ${waiting.length}</span>
-<span><i style="background:var(--run)"></i>ยื่นแล้ว ${sent.length}</span>
-<span><i style="background:var(--ok)"></i>อนุมัติแล้ว ${okd.length}</span>
-${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน ${bad.length}</span>`:""}</div>
-<div class="list">${[...waiting,...sent,...bad].map(card).join("")||`<div class="empty">ไม่มีหลักสูตรที่ค้างยื่น 🎉</div>`}</div></div>
+<div class="card hero span2"><div class="lab">สถานประกอบกิจการที่ยื่น · ปี ${R.year+543}</div>
+<div class="big">${dsdList(R.year).length}</div>
+<div class="meta"><span>${need?"ต้องฝึกอีก "+baht(need)+" คน":"ครบเกณฑ์ทุกแห่ง"}</span></div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> รอยื่น</div>
+<div class="v" style="color:${waiting.length?"var(--run)":"inherit"}">${waiting.length}</div><div class="d">ยื่นแล้ว ${sent.length} · อนุมัติ ${okd.length}</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.check,16)}</span> อนุมัติแล้ว</div>
+<div class="v" style="color:var(--ok)">${okd.length}</div><div class="d">${bad.length?"ไม่ผ่าน "+bad.length+" หลักสูตร":"ไม่มีรายการไม่ผ่าน"}</div></div>
 <div class="card span4"><h2>เกณฑ์กรมพัฒนาฝีมือแรงงาน ปี ${R.year+543} <small>โครงสร้างตามแบบยื่นของกรมฯ · เฉลี่ยจากจำนวนพนักงานรายเดือน</small></h2>
 <div class="tblwrap wide"><table>
 <thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th><th style="text-align:right">50% ที่ต้องฝึก</th>
@@ -1041,6 +1025,71 @@ return dl.length?dl.map(t=>`<tr data-id="${t._id}">
 <td class="num">${t.pax||"—"}</td><td><span class="pill ${dsdCls(t.dsd)}">${esc(t.dsd||"—")}</span></td></tr>`).join("")
 :`<tr><td colspan="9"><div class="empty">ยังไม่มีหลักสูตรที่ต้องยื่น — เปิดหลักสูตรแล้วเลือกสถานะกรมพัฒฯ</div></td></tr>`;})()}
 </tbody></table></div></div>
+<div class="card span4"><h2>สถานะการยื่นรับรองหลักสูตร <small>แตะรายการเพื่อแก้ไข</small></h2>
+<div class="legend" style="margin:10px 0 2px">
+<span><i style="background:var(--wait)"></i>รอยื่น ${waiting.length}</span>
+<span><i style="background:var(--run)"></i>ยื่นแล้ว ${sent.length}</span>
+<span><i style="background:var(--ok)"></i>อนุมัติแล้ว ${okd.length}</span>
+${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน ${bad.length}</span>`:""}</div>
+<div class="list">${[...waiting,...sent,...bad].map(card).join("")||`<div class="empty">ไม่มีหลักสูตรที่ค้างยื่น 🎉</div>`}</div></div>
+</div>`;
+}
+function train(){
+const ty=items.filter(t=>isTrain(t)&&inScope(t));
+const sum=(a,k)=>a.reduce((x,t)=>x+(+t[k]||0),0);
+const pax=sum(ty,"pax"), hrs=ty.reduce((x,t)=>x+(+t.hours||0)*(+t.pax||1),0);
+const cost=ty.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
+const done=ty.filter(t=>t.status==="เสร็จสิ้น").length;
+const kinds=["กฎหมาย","ภายใน","ภายนอก"];
+const byKind=k=>ty.filter(t=>trainKind(t)===k);
+const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
+const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
+const lawLate=byKind("กฎหมาย").filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
+const byMonth=MTH.map((_,i)=>items.filter(t=>isTrain(t)&&monthsOf(t).includes(i+1)).length);
+const card=t=>{const d=dueDate(t);
+return `<div class="li" data-id="${t._id}">
+<div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
+<div class="tx"><div class="t1">${esc(t.title)}</div>
+<div class="t2">${t.skill?esc(t.skill)+" · ":""}${t.mode?esc(t.mode)+" · ":""}${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${t.hours?" · "+t.hours+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">กรมพัฒฯ ${esc(t.dsd)}</span>`:""}
+<span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
+const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>${arr.length} หลักสูตร</small></h2>
+<div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
+return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
+`<div class="toolbar">${scopeBar("sc1")}</div>`+
+(lawLate.length?`<div class="banner bad" ${regList("lawLate","อบรมตามกฎหมายที่เลยกำหนด",lawLate.map(t=>{const d=dueDate(t);return {id:t._id,
+t1:t.title,t2:`${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
+p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
+`<div class="dash">
+<div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
+<div class="big">${ty.length}</div>
+<div class="meta"><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${ty.length-done}</span></div>
+<div class="prog"><i style="width:${ty.length?Math.round(done/ty.length*100):0}%"></i></div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> ผู้เข้าอบรม</div>
+<div class="v">${baht(pax)}</div><div class="d">รวม ${baht(Math.round(hrs))} คน-ชั่วโมง</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
+<div class="v">${pax?baht(Math.round(cost/pax)):"—"}</div><div class="d">ค่าใช้จ่ายรวม ${baht(cost)} ฿</div></div>
+<div class="card span2"><h2>ประเภทการอบรม <small>Soft / Hard / Safety</small></h2>
+<div class="donutwrap">
+${(()=>{const n=k=>ty.filter(t=>(t.skill||"")===k).length, un=ty.filter(t=>!t.skill).length;
+const parts=[...SKILLS.map(k=>({n:k,v:n(k),c:SKILLC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+return donut(parts,ty.length,"หลักสูตร")+
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"ประเภทการอบรม · "+p.n,ty.filter(t=>(t.skill||"")===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${t.mode||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
+</div></div>
+<div class="card span2"><h2>รูปแบบการอบรม <small>In-House · Public · OJT · Online · สัมมนา</small></h2>
+<div class="donutwrap">
+${(()=>{const n=k=>ty.filter(t=>(t.mode||"")===k).length, un=ty.filter(t=>!t.mode).length;
+const parts=[...MODES.filter(k=>n(k)).map(k=>({n:k,v:n(k),c:MODEC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+return donut(parts,ty.length,"หลักสูตร")+
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,ty.filter(t=>(t.mode||"")===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${t.skill||"ยังไม่ระบุประเภท"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
+</div></div>
+<div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
+${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}</div>
 ${board("อบรมตามกฎหมาย",byKind("กฎหมาย"),"ยังไม่มีหลักสูตรตามกฎหมายในช่วงนี้")}
 ${board("อบรมภายใน",byKind("ภายใน"))}
 ${board("อบรมภายนอก",byKind("ภายนอก"))}
@@ -1648,9 +1697,9 @@ el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
-["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","รุ่นที่","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
+["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","ประเภทการอบรม","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รุ่นที่","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
-t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",t.batch||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
+t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.batch||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
 if(el("health")&&healthState!=="done")checkHealth();
 el("selftest")&&(el("selftest").onclick=async()=>{
 const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
@@ -1786,6 +1835,8 @@ prepDays:+get(r,"เตรียมล่วงหน้า(วัน)")||+get(r
 tag:get(r,"ป้ายกำกับ"), color:/^#[0-9a-fA-F]{6}$/.test(get(r,"สี"))?get(r,"สี"):"",
 pax:+get(r,"ผู้เข้าอบรม")||0, hours:+get(r,"ชั่วโมง")||0,
 vendor:get(r,"วิทยากร/สถาบัน")||get(r,"วิทยากร"), dsd:DSD.includes(get(r,"กรมพัฒฯ"))?get(r,"กรมพัฒฯ"):"",
+skill:SKILLS.includes(get(r,"ประเภทการอบรม"))?get(r,"ประเภทการอบรม"):"",
+mode:MODES.includes(get(r,"รูปแบบการอบรม"))?get(r,"รูปแบบการอบรม"):"",
 batch:get(r,"รุ่นที่"), dsdOpenDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นเปิดหลักสูตร"))?get(r,"วันที่ยื่นเปิดหลักสูตร"):null,
 dsdOpenNo:get(r,"เลขคำขอเปิด"), dsdCertDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นรับรองรุ่น"))?get(r,"วันที่ยื่นรับรองรุ่น"):null,
 dsdCertNo:get(r,"เลขคำขอรับรอง"),
@@ -1891,7 +1942,7 @@ if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เร
 let formCtx="";
 function open_(t){
 editing=t;
-formCtx = t ? (isTrain(t)?"train":isMeet(t)?"meet":"") : (view==="train"?"train":view==="meet"?"meet":"");
+formCtx = t ? (isTrain(t)?"train":isMeet(t)?"meet":"") : ((view==="train"||view==="dsd")?"train":view==="meet"?"meet":"");
 el("dlgh").textContent=(t?"แก้ไข":"เพิ่ม")+(formCtx==="train"?"หลักสูตรอบรม":formCtx==="meet"?"การประชุม":(t?"งาน":"งานใหม่"));
 el("lbl-title").textContent=formCtx==="train"?"ชื่อหลักสูตร":"ชื่องาน";
 el("lbl-code").textContent=formCtx==="train"?"รหัสหลักสูตร":"รหัสอ้างอิง (ไม่บังคับ)";
@@ -1922,6 +1973,8 @@ el("f-prepn").value=t?.prepNote||"";
 syncMeet();
 el("f-train").checked=formCtx?formCtx==="train":isTrain(t||{});
 el("f-tplace").value=t?.place||"";
+fill("f-skill",[["","— ยังไม่ระบุ —"],...SKILLS.map(v=>[v,v])],t?.skill||(t?"":guessSkill({title:el("f-title").value,type:el("f-type").value,track:el("f-track").value})));
+fill("f-mode",[["","— ยังไม่ระบุ —"],...MODES.map(v=>[v,v])],t?.mode||"");
 el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
 el("f-dsdopenno").value=t?.dsdOpenNo||""; el("f-dsdcert").value=t?.dsdCertDate||"";
 el("f-dsdcertno").value=t?.dsdCertNo||"";
@@ -1973,7 +2026,7 @@ place:(el("f-train").checked&&!el("f-meet").checked)?el("f-tplace").value.trim()
 attendees:el("f-att").value.trim(), prepDays:+el("f-prepd").value||0, prepNote:el("f-prepn").value.trim(),
 train:el("f-train").checked, pax:+el("f-pax").value||0, hours:+el("f-hours").value||0,
 vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
-batch:el("f-batch").value.trim(), dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
+skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
 dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
 tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||"",
