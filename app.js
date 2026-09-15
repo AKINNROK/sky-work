@@ -1,4 +1,4 @@
-const APP_VERSION="4.3"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.4"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -393,8 +393,9 @@ el("view").innerHTML={home,all,meet,train,cal:calView,budget,pipeline,set:setVie
 paintSync(); wire();
 }
 function header(title,sub,btn=true){
+const lab=view==="train"?"เพิ่มหลักสูตร":view==="meet"?"เพิ่มการประชุม":"เพิ่มงาน";
 return `<div class="head"><div><h1>${title}</h1><div class="sub">${sub} · ${syncChip()}</div></div>
-${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มงาน</span></button>`:""}</div>`;
+${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>${lab}</span></button>`:""}</div>`;
 }
 function liRow(t,showDate){
 const ms=monthsOf(t), d=t.date?fmtDate(t.date).split(" "):null;
@@ -574,6 +575,7 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <div class="seg" id="calmode">
 <button data-cm="month" aria-pressed="${R.calMode==="month"}">รายเดือน</button>
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
+${R.calMode==="year"?yearSel("yrSel2"):""}
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <select id="calMonth" style="border:0;background:var(--card);border-radius:999px;padding:6px 14px;font-weight:600">${MTHFULL.map((x,i)=>`<option value="${i}"${i===m?" selected":""}>${x} ${y+543}</option>`).join("")}</select>
 <button id="nm">›</button></div>${yearSel("yrSel2")}`:""}
@@ -596,19 +598,32 @@ ${R.selDay?`<button class="btn ghost sm" id="clearDay" style="margin-top:12px">�
 </div></div>`
 : yearGrid());
 }
+const CATS=[["อบรม",t=>isTrain(t)],["ประชุม",t=>!isTrain(t)&&isMeet(t)],
+["โปรเจค",t=>!isTrain(t)&&!isMeet(t)&&/โปรเจค|project/i.test(gLabel(t.track)+" "+(t.type||""))],
+["กิจกรรม",t=>!isTrain(t)&&!isMeet(t)&&/กิจกรรม/.test(gLabel(t.track)+" "+(t.type||""))],
+["อื่นๆ",()=>true]];
+const catOf=t=>(CATS.find(([,f])=>f(t))||CATS[CATS.length-1])[0];
 function yearGrid(){
-const now=new Date().getMonth()+1;
-const list=items.filter(t=>monthsOf(t).length).sort((a,b)=>monthsOf(a)[0]-monthsOf(b)[0]);
+const thisYear=new Date().getFullYear();
+const now=(R.year===thisYear)?new Date().getMonth()+1:0;
+const list=items.filter(t=>monthsOf(t).length&&!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year))
+.sort((a,b)=>monthsOf(a)[0]-monthsOf(b)[0]);
+const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,i)=>`<div class="mh${i+1===now?" now":""}">${x}</div>`).join("")}`;
+const rows=CATS.map(([name])=>{
+const g=list.filter(t=>catOf(t)===name);
+if(!g.length)return "";
+return `<div class="cgroup">${esc(name)} <span>${g.length}</span></div>`+
+MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
+g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
+MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${sColor(t.status)}"></span>`:""}</div>`).join("");}).join("");
+}).join("");
 return `<div class="card">
 <div class="legend">
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
-<span><i style="background:var(--wait)"></i>รอดำเนินการ</span></div>
-<div class="cal"><div class="calgrid">
-<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,i)=>`<div class="mh${i+1===now?" now":""}">${x}</div>`).join("")}
-${list.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
-MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${sColor(t.status)}"></span>`:""}</div>`).join("");}).join("")}
-</div></div></div>`;
+<span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
+<span style="margin-left:auto;color:var(--ink-3)">แยกตามหมวด · ${list.length} งานในปี ${R.year+543}</span></div>
+<div class="cal"><div class="calgrid">${head}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>`}</div></div></div>`;
 }
 function ledgerIn(scope,month){
 return ledger.filter(x=>{
@@ -1329,12 +1344,20 @@ el("wrap-recur").hidden=(f!=="none");
 const dl=el("f-date").parentElement.querySelector("label");
 if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เริ่มต้น";
 }
+let formCtx="";
 function open_(t){
 editing=t;
-el("dlgh").textContent=t?"แก้ไขงาน":"เพิ่มงานใหม่";
+formCtx = t ? (isTrain(t)?"train":isMeet(t)?"meet":"") : (view==="train"?"train":view==="meet"?"meet":"");
+el("dlgh").textContent=(t?"แก้ไข":"เพิ่ม")+(formCtx==="train"?"หลักสูตรอบรม":formCtx==="meet"?"การประชุม":(t?"งาน":"งานใหม่"));
+el("lbl-title").textContent=formCtx==="train"?"ชื่อหลักสูตร":"ชื่องาน";
+el("lbl-code").textContent=formCtx==="train"?"รหัสหลักสูตร":"รหัสอ้างอิง (ไม่บังคับ)";
+el("f-code").placeholder=formCtx==="train"?"เช่น TRN-2026-014":"เช่น 1.0 หรือเลขที่เอกสาร";
+el("wrap-flags").hidden=!!formCtx;
 el("del").style.display=t?"":"none";
 fill("f-company",[["","— ไม่ระบุ —"],...visible(companies).map(c=>[c.key,c.label])],t?.company||"");
-fill("f-track",visible(groups).map(g=>[g.key,g.label]),t?.track||groups[0]?.key);
+fill("f-track",visible(groups).map(g=>[g.key,g.label]),t?.track||
+(formCtx==="train"?(visible(groups).find(g=>/อบรม/.test(g.label))||{}).key:
+ formCtx==="meet"?(visible(groups).find(g=>/ประจำเดือน|ประชุม/.test(g.label))||{}).key:"")||groups[0]?.key);
 fill("f-status",STATUS.map(x=>[x,x]),t?.status||"รอดำเนินการ");
 const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(g=>[g.key,glLabel(g.key)])];
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
@@ -1348,12 +1371,13 @@ el("f-wd").innerHTML=DOW.map((d,i)=>`<label><input type="checkbox" class="wd" va
 el("f-nth").innerHTML=NTH.map(([v,l])=>`<label><input type="checkbox" class="nth" value="${v}"${(RU.nth||[]).includes(v)?" checked":""}>${l}</label>`).join("");
 el("f-md").value=RU.monthday||"";
 syncFreq();
-el("f-meet").checked=isMeet(t||{});
+el("f-meet").checked=formCtx?formCtx==="meet":isMeet(t||{});
 el("f-time").value=t?.time||""; el("f-place").value=t?.place||"";
 el("f-att").value=t?.attendees||""; el("f-prepd").value=t?.prepDays||"";
 el("f-prepn").value=t?.prepNote||"";
 syncMeet();
-el("f-train").checked=isTrain(t||{});
+el("f-train").checked=formCtx?formCtx==="train":isTrain(t||{});
+el("f-tplace").value=t?.place||"";
 el("f-pax").value=t?.pax||""; el("f-hours").value=t?.hours||"";
 el("f-vendor").value=t?.vendor||"";
 fill("f-dsd",[["","— ไม่ระบุ —"],...DSD.map(x=>[x,x])],t?.dsd||"");
@@ -1388,7 +1412,8 @@ monthday:+el("f-md").value||null};})(),
 gl1:el("f-gl1").value, b1:+el("f-b1").value||0,
 gl2:el("f-gl2").value, b2:+el("f-b2").value||0,
 actual:+el("f-actual").value||0, code:el("f-code").value.trim(),
-meet:el("f-meet").checked, time:hhmm(el("f-time").value), place:el("f-place").value.trim(),
+meet:el("f-meet").checked, time:hhmm(el("f-time").value),
+place:(el("f-train").checked&&!el("f-meet").checked)?el("f-tplace").value.trim():el("f-place").value.trim(),
 attendees:el("f-att").value.trim(), prepDays:+el("f-prepd").value||0, prepNote:el("f-prepn").value.trim(),
 train:el("f-train").checked, pax:+el("f-pax").value||0, hours:+el("f-hours").value||0,
 vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
