@@ -1,4 +1,4 @@
-const APP_VERSION="3.1"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="3.2"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1013,7 +1013,7 @@ el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||"";
 el("f-date").value=t?.date||""; el("f-recur").value=t?.recurring||"";
 const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
-el("f-wd").innerHTML=DOWFULL.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d.slice(0,2)}</label>`).join("");
+el("f-wd").innerHTML=DOW.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d}.</label>`).join("");
 el("f-nth").innerHTML=NTH.map(([v,l])=>`<label><input type="checkbox" class="nth" value="${v}"${(RU.nth||[]).includes(v)?" checked":""}>${l}</label>`).join("");
 el("f-md").value=RU.monthday||"";
 syncFreq();
