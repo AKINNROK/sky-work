@@ -1,4 +1,4 @@
-const APP_VERSION="4.2"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.3"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -295,6 +295,18 @@ doc:id=>DBShim.doc(name+"/"+(id||uuid())),
 add:async d=>{const id=uuid();await up(name,id,d);return{id};},
 onSnapshot:(cb,err)=>{listeners[name].push(cb);emit(name);return()=>{};}};}
 };
+const isSysRow=t=>!!(t&&(/^__(healthcheck|ทดสอบระบบ)__$/.test(t.title||"")));
+async function purgeSysRows(){
+try{
+const {data}=await SB.from("rows").select("id,data").eq("uid",uid).eq("kind","items");
+const bad=(data||[]).filter(r=>isSysRow(r.data)).map(r=>r.id);
+for(let i=0;i<bad.length;i+=200){
+await SB.from("rows").delete().eq("uid",uid).in("id",bad.slice(i,i+200));
+}
+if(bad.length){ bad.forEach(id=>cache.items.delete(id)); emit("items"); render(); }
+return bad.length;
+}catch(e){ return 0; }
+}
 async function loadAll(){
 const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid);
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
@@ -325,7 +337,7 @@ sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{if(Array.isArray(d.list))gls=d.list;});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
-items=s.docs.map(d=>Object.assign({_id:d.id},d.data()));
+items=s.docs.map(d=>Object.assign({_id:d.id},d.data())).filter(t=>!isSysRow(t));
 if(!gls.length&&items.length)seedGL();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
 DBShim.collection("ledger").onSnapshot(s=>{
@@ -333,6 +345,8 @@ ledger=s.docs.map(d=>Object.assign({_id:d.id},d.data())); render();});
 setFoot("กำลังโหลด…");
 await loadAll(); liveSync();
 setFoot(items.length+" งาน · ซิงก์แล้ว");
+const purged=await purgeSysRows();
+if(purged)setFoot(items.length+" งาน · ลบรายการทดสอบค้าง "+purged+" แถวแล้ว");
 try{ notifyToday(false); }catch(e){}
 }
 function sub(path,fn){ DBShim.doc(path).onSnapshot(s=>{ if(s.exists){fn(s.data());render();} }); }
@@ -986,8 +1000,14 @@ ${imp.state==="run"?`<div class="bar" style="flex:1;min-width:120px;margin:0"><i
 </div>${imp.msg?`<div style="font-size:12.5px;color:var(--ink-3);margin-top:8px">${imp.msg}</div>`:""}`;
 }
 function paintImp(){const n=el("impstat");if(n)n.innerHTML=impPill();}
+let healthState="idle";
 async function checkHealth(){
 const box=el("health"); if(!box)return;
+if(healthState==="run")return;
+healthState="run";
+try{ await runHealth(box); } finally { healthState="done"; }
+}
+async function runHealth(box){
 const line=(ok,t,d)=>`<div style="display:flex;gap:10px;align-items:flex-start;padding:7px 0">
 <span style="color:${ok?"var(--ok)":"var(--over)"};flex:none;margin-top:2px">${svg(ok?ICON.check:ICON.bell,16)}</span>
 <div><div style="font-size:13.5px;font-weight:600">${esc(t)}</div>${d?`<div style="font-size:12.5px;color:var(--ink-3)">${d}</div>`:""}</div></div>`;
@@ -1001,7 +1021,7 @@ if(r.error){ html+=line(false,"ตาราง rows ในฐานข้อม�
 else{
 html+=line(true,"ตาราง rows ในฐานข้อมูล","อ่านได้ · มี "+(r.count||0)+" แถวของบัญชีนี้");
 const id="healthcheck-"+Date.now();
-const w=await SB.from("rows").upsert({id,uid,kind:"items",data:{title:"__healthcheck__",track:"annual",status:"รอดำเนินการ",months:[]},updated_at:new Date().toISOString()});
+const w=await SB.from("rows").upsert({id,uid,kind:"sys",data:{t:"healthcheck"},updated_at:new Date().toISOString()});
 if(w.error){ html+=line(false,"สิทธิ์เขียนข้อมูล","เขียนไม่ได้"); fatal=fatal||w.error; }
 else{ html+=line(true,"สิทธิ์เขียนข้อมูล","เขียนและลบทดสอบสำเร็จ"); await SB.from("rows").delete().eq("id",id).eq("uid",uid); }
 }}
@@ -1059,7 +1079,7 @@ el("nm")&&(el("nm").onclick=()=>{R.month=(R.month+1)%12;R.selDay=null;render();}
 el("clearDay")&&(el("clearDay").onclick=()=>{R.selDay=null;render();});
 document.querySelectorAll("[data-day]").forEach(n=>n.onclick=()=>{
 const d=+n.dataset.day; R.selDay=R.selDay===d?null:d; render();});
-el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;render();});
+el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";render();});
 const bind=(id,key)=>{const n=el(id);if(!n)return;n.oninput=n.onchange=()=>{
 F[key]=n.value;const p=n.selectionStart,srch=n.type==="search";render();
 const m=el(id);if(m&&srch){m.focus();m.setSelectionRange(p,p);}};};
@@ -1145,11 +1165,11 @@ el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
 ["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
 t.gl1?glLabel(glKeyOf(t.gl1)):"",budgetOf(t),t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",rruleText(t),t.note])));
-if(el("health"))checkHealth();
+if(el("health")&&healthState!=="done")checkHealth();
 el("selftest")&&(el("selftest").onclick=async()=>{
 const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
 const id="selftest-"+Date.now();
-const w=await SB.from("rows").upsert({id,uid,kind:"items",data:{title:"__ทดสอบระบบ__",track:"annual",status:"รอดำเนินการ",months:[]},updated_at:new Date().toISOString()});
+const w=await SB.from("rows").upsert({id,uid,kind:"sys",data:{t:"selftest"},updated_at:new Date().toISOString()});
 if(w.error){out.innerHTML=errBox(w.error);return;}
 const rd=await SB.from("rows").select("id",{count:"exact",head:true}).eq("uid",uid);
 await SB.from("rows").delete().eq("id",id).eq("uid",uid);
