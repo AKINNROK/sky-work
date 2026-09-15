@@ -1,4 +1,4 @@
-const APP_VERSION="4.6"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.8"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -14,6 +14,23 @@ const DEFAULT_GROUPS=[
 {key:"ops",label:"งานประจำ/ต่ออายุ"},{key:"secretary",label:"งานเลขา"},
 {key:"recruit",label:"งานสรรหา"},{key:"idea",label:"ไอเดีย"}];
 const TRAIN_PRESET=[{key:"train_law",label:"อบรมตามกฎหมาย"},{key:"train_in",label:"อบรมภายใน"},{key:"train_out",label:"อบรมภายนอก"},{key:"project",label:"โปรเจคเสริม"},{key:"monthly",label:"งานประจำเดือน"},{key:"annual",label:"กิจกรรมประจำปี"}];
+const LEGALCAT=["ใบรับรอง / ผู้รับผิดชอบเฉพาะ","คำสั่งแต่งตั้ง / คณะกรรมการ","ข้อกำหนดที่ต้องทำประจำ"];
+const CYCLES=[["","ไม่มีรอบทบทวน"],["12","ทบทวนทุก 1 ปี"],["24","ทบทวนทุก 2 ปี"],["36","ต่ออายุทุก 3 ปี"],["60","ต่ออายุทุก 5 ปี"]];
+const addMonths=(d,m)=>{const x=new Date(d);x.setMonth(x.getMonth()+ +m);return x;};
+const legalDue=L=>{ if(!L)return null;
+if(L.expires)return new Date(L.expires);
+if(L.issued&&+L.cycle)return addMonths(L.issued,+L.cycle);
+return null; };
+const legalState=L=>{
+const d=legalDue(L), miss=!L.person;
+if(d){ const n=daysTo(d);
+if(n<0)return {k:"late",t:"เกินกำหนด "+(-n)+" วัน",c:"s-over"};
+if(n<=90)return {k:"soon",t:"อีก "+n+" วัน"+(miss?" · ยังไม่มีผู้รับผิดชอบ":""),c:"s-run"};
+if(miss)return {k:"noperson",t:"ยังไม่มีผู้รับผิดชอบ",c:"s-wait"};
+return {k:"ok",t:"อีก "+n+" วัน",c:"s-done"}; }
+if(miss)return {k:"noperson",t:"ยังไม่มีผู้รับผิดชอบ",c:"s-wait"};
+if(L.lifetime)return {k:"ok",t:"ไม่มีวันหมดอายุ",c:"s-done"};
+return {k:"noperson",t:"ยังไม่ระบุวันครบกำหนด",c:"s-wait"}; };
 const DSD=["ไม่ต้องยื่น","รอยื่น","ยื่นแล้ว","อนุมัติแล้ว","ไม่ผ่าน"];
 const dsdCls=d=>d==="อนุมัติแล้ว"?"s-done":d==="ยื่นแล้ว"?"s-run":d==="ไม่ผ่าน"?"s-over":"s-wait";
 const DEFAULT_COMPANIES=[{key:"lkl",label:"LeKise (LKL)"},{key:"lks",label:"LeKise Solar (LKS)"},{key:"lsc",label:"LSC Center"}];
@@ -23,6 +40,7 @@ all:'<path d="M4 7h16M4 12h16M4 17h10"/>',
 cal:'<rect x="3.5" y="5" width="17" height="15" rx="4.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
 budget:'<path d="M12 4v16"/><path d="M16 8c0-2-2-3-4-3s-4 1-4 3 2 2.6 4 3 4 1 4 3-2 3-4 3-4-1-4-3"/>',
 train:'<path d="M12 4 2.5 9 12 14l9.5-5L12 4z"/><path d="M6.5 11.2V16c0 1.5 2.6 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4.8"/><path d="M21.5 9v5"/>',
+legal:'<path d="M12 3.5 4.5 6.5v5c0 4.4 3.1 8.2 7.5 9.2 4.4-1 7.5-4.8 7.5-9.2v-5L12 3.5z"/><path d="M9.2 12.2l2 2 3.6-3.8"/>',
 meet:'<circle cx="9" cy="8" r="2.8"/><circle cx="16.5" cy="9.5" r="2.2"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16.5 14c2.4 0 4 1.7 4 4"/>',
 pipeline:'<circle cx="6.5" cy="7" r="2.6"/><circle cx="17.5" cy="17" r="2.6"/><path d="M9 7h4a4 4 0 0 1 4 4v3"/>',
 set:'<circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19.4l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 15a2 2 0 1 1 0-4 1.6 1.6 0 0 0 1.6-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 11 3a2 2 0 1 1 4 0 1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.6 1.6 0 0 0 21 11a2 2 0 1 1 0 4z"/>',
@@ -35,8 +53,8 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
-const TABS=["home","all","meet","train","cal","set"];
+const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["legal","กฎหมาย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
+const TABS=["home","all","meet","train","legal","set"];
 const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -166,6 +184,10 @@ const sCls=s=>s==="เสร็จสิ้น"?"s-done":s==="กำลังด
 const sColor=s=>s==="เสร็จสิ้น"?"var(--ok)":s==="กำลังดำเนินการ"?"var(--run)":"var(--wait)";
 const visible=a=>a.filter(x=>!x.hidden);
 const gLabel=k=>(groups.find(g=>g.key===k)||{}).label||k||"ไม่ระบุกลุ่ม";
+const isGroupCo=c=>!!(c&&c.isGroup);
+const realCos=()=>visible(companies).filter(c=>!isGroupCo(c));
+const groupCos=()=>visible(companies).filter(isGroupCo);
+const childrenOf=g=>visible(companies).filter(c=>!isGroupCo(c)&&c.parent===g.key);
 const cLabel=k=>(companies.find(g=>g.key===k)||{}).label||k||"—";
 const glLabel=k=>{const g=gls.find(x=>x.key===k);return g?(g.code?g.code+" · ":"")+g.label:(k||"ไม่ระบุ GL");};
 const isMeet=t=>!!(t&&(t.meet||/ประชุม|meeting/i.test((t.title||"")+" "+(t.type||""))));
@@ -259,8 +281,9 @@ const CFG_BAKED={url:"",key:""};
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{}};
-const cache={items:new Map(),ledger:new Map(),meta:new Map()};
-const listeners={items:[],ledger:[],meta:new Map()};
+let legal=[];
+const cache={items:new Map(),ledger:new Map(),legal:new Map(),meta:new Map()};
+const listeners={items:[],ledger:[],legal:[],meta:new Map()};
 const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}});
 const emit=coll=>{
 const docs=[...cache[coll].entries()].map(([id,d])=>snapDoc(id,d));
@@ -318,7 +341,7 @@ const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid);
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
-emit("items");emit("ledger");[...cache.meta.keys()].forEach(emitMeta);
+emit("items");emit("ledger");emit("legal");[...cache.meta.keys()].forEach(emitMeta);
 ["groups","companies","gl","theme","hr"].forEach(emitMeta);
 }
 function liveSync(){
@@ -347,6 +370,8 @@ DBShim.collection("items").onSnapshot(s=>{
 items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
 if(!gls.length&&items.length)seedGL();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
+DBShim.collection("legal").onSnapshot(s=>{
+legal=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
 DBShim.collection("ledger").onSnapshot(s=>{
 ledger=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
 setFoot("กำลังโหลด…");
@@ -417,8 +442,14 @@ return `<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k],21)}${l}<
 const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;renderNav();render();window.scrollTo(0,0);};
 el("nav").onclick=go; el("tabbar").onclick=go;
 }
+function goTo(v,f){
+Object.assign(F,{q:"",track:"",type:"",status:"",company:""},f&&f.F||{});
+if(f&&f.R)Object.assign(R,f.R);
+view=v; renderNav(); render(); window.scrollTo({top:0,behavior:"smooth"});
+}
+const jump=(v,payload)=>`data-go="${esc(JSON.stringify({v,...payload||{}}))}"`;
 function render(){
-el("view").innerHTML={home,all,meet,train,cal:calView,budget,pipeline,set:setView}[view]();
+el("view").innerHTML={home,all,meet,train,legal:legalView,cal:calView,budget,pipeline,set:setView}[view]();
 paintSync(); wire();
 }
 function header(title,sub,btn=true){
@@ -480,6 +511,12 @@ out.push("BEGIN:VEVENT","UID:"+uidv+"@skywork","DTSTAMP:"+stamp(now)+"T090000Z",
 "DESCRIPTION:"+esc2([gLabel(t.track),t.place,t.attendees,t.company?cLabel(t.company):"",t.owner,t.note].filter(Boolean).join(" · ")),
 "BEGIN:VALARM","TRIGGER:-P2D","ACTION:DISPLAY","DESCRIPTION:"+esc2(t.title),"END:VALARM","END:VEVENT");
 });});
+legal.forEach(L=>{const d=legalDue(L); if(!d)return;
+out.push("BEGIN:VEVENT","UID:lg-"+L._id+"@skywork","DTSTAMP:"+stamp(now)+"T090000Z",
+"DTSTART;VALUE=DATE:"+stamp(d),"DTEND;VALUE=DATE:"+stamp(new Date(d.getTime()+864e5)),
+"SUMMARY:"+esc2("[ครบกำหนด] "+L.title),
+"DESCRIPTION:"+esc2([L.unit,L.person,(L.comps||[]).map(cLabel).join(", "),L.note].filter(Boolean).join(" · ")),
+"BEGIN:VALARM","TRIGGER:-P30D","ACTION:DISPLAY","DESCRIPTION:"+esc2("ใกล้ครบกำหนด "+L.title),"END:VALARM","END:VEVENT");});
 out.push("END:VCALENDAR");
 return out.join("\r\n");
 }
@@ -517,21 +554,50 @@ const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
 return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
 (()=>{const w=dueSoon();
+const lg=legal.filter(L=>{const k=legalState(L).k;return k==="late"||k==="soon";});
 const pr=prepDue(3);
-return (pr.length?`<div class="banner bad">${svg(ICON.meet,19)} ต้องเตรียมข้อมูลก่อนประชุม <b>${pr.length}</b> รายการ — ${esc(pr.slice(0,2).map(x=>x.t.title).join(" · "))}${pr.length>2?" …":""}</div>`:"")
-+(w.late.length?`<div class="banner bad">${svg(ICON.bell,19)} เลยกำหนดแล้ว <b>${w.late.length}</b> งาน — ${esc(w.late.slice(0,2).map(t=>t.title).join(" · "))}${w.late.length>2?" …":""}</div>`:"")
-+(w.soon.length?`<div class="banner">${svg(ICON.bell,19)} ครบกำหนดใน 7 วัน <b>${w.soon.length}</b> งาน — ${esc(w.soon.slice(0,2).map(t=>t.title).join(" · "))}${w.soon.length>2?" …":""}</div>`:"");})()+
-(over.length?`<div class="banner">${svg(ICON.bell,19)} มี ${over.length} งานที่ใช้งบเกินแผน — ดูที่หน้างบประมาณ</div>`:"")+
+return (lg.filter(L=>legalState(L).k==="late").length?`<div class="banner bad" ${jump("legal")}>${svg(ICON.legal,19)} ใบรับรอง/คำสั่งแต่งตั้ง <b>${lg.filter(L=>legalState(L).k==="late").length}</b> รายการเกินกำหนดแล้ว — ดูที่หน้ากฎหมาย</div>`:"")
++(pr.length?`<div class="banner bad" ${jump("meet")}>${svg(ICON.meet,19)} ต้องเตรียมข้อมูลก่อนประชุม <b>${pr.length}</b> รายการ — ${esc(pr.slice(0,2).map(x=>x.t.title).join(" · "))}${pr.length>2?" …":""}</div>`:"")
++(w.late.length?`<div class="banner bad" ${jump("all",{F:{status:"รอดำเนินการ"}})}>${svg(ICON.bell,19)} เลยกำหนดแล้ว <b>${w.late.length}</b> งาน — ${esc(w.late.slice(0,2).map(t=>t.title).join(" · "))}${w.late.length>2?" …":""}</div>`:"")
++(w.soon.length?`<div class="banner" ${jump("all")}>${svg(ICON.bell,19)} ครบกำหนดใน 7 วัน <b>${w.soon.length}</b> งาน — ${esc(w.soon.slice(0,2).map(t=>t.title).join(" · "))}${w.soon.length>2?" …":""}</div>`:"");})()+
+(over.length?`<div class="banner" ${jump("budget")}>${svg(ICON.bell,19)} มี ${over.length} งานที่ใช้งบเกินแผน — ดูที่หน้างบประมาณ</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
 <div class="big">${pct}%</div>
 <div class="meta"><span>เสร็จแล้ว ${done} งาน</span><span>เหลืออีก ${A.length-done} งาน</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
-<div class="v">${run}</div><div class="d">รอเริ่มอีก ${wait} งาน</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
+<div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
+<div class="v">${run}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
+<div class="card stat" ${jump("budget")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
 <div class="v">${baht(bud-act)}</div><div class="d">ใช้ไป ${baht(act)} จาก ${baht(bud)}</div>
 <div class="bar"><i class="${act>bud?"hot":""}" style="width:${bud?Math.min(100,act/bud*100):0}%"></i></div></div>
+<div class="card span4"><h2>สรุปทุกหมวด <small>แตะการ์ดเพื่อไปดูที่มาของตัวเลข · ${scopeLabel()}</small></h2>
+<div class="modgrid">
+${(()=>{
+const ms=items.filter(t=>isMeet(t)&&inScope(t)), pr=prepDue(7);
+const tr=items.filter(t=>isTrain(t)&&inScope(t));
+const pax=tr.reduce((n,t)=>n+(+t.pax||0),0);
+const dsdWait=items.filter(t=>isTrain(t)&&t.dsd==="รอยื่น").length;
+const lgLate=legal.filter(L=>legalState(L).k==="late").length;
+const lgSoon=legal.filter(L=>legalState(L).k==="soon").length;
+const lgNo=legal.filter(L=>legalState(L).k==="noperson").length;
+const need=realCos().map(c=>{const mp=mpOf(c.key,R.year); if(mp<100)return 0;
+const cert=certOf(c.key,R.year); const used=cert==null?trainedPax(c.key,R.year):cert;
+return Math.max(0,Math.ceil(mp*0.5)-used);}).reduce((a,b)=>a+b,0);
+const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go}>
+<div class="modh"><span class="ic">${svg(icon,16)}</span>${name}</div>
+<div class="modv">${big}</div><div class="mods">${sub}</div></div>`;
+return [
+card(ICON.all,"งานทั้งหมด",A.length,`ค้าง ${A.length-done} · เสร็จ ${done}`,jump("all")),
+card(ICON.meet,"การประชุม",ms.length,pr.length?`ต้องเตรียมข้อมูล ${pr.length} รายการ`:"ไม่มีที่ต้องเตรียม",jump("meet"),pr.length),
+card(ICON.train,"ฝึกอบรม",tr.length+" หลักสูตร",`ผู้เข้าอบรม ${baht(pax)} คน${dsdWait?" · รอยื่นกรมพัฒฯ "+dsdWait:""}`,jump("train"),dsdWait),
+card(ICON.legal,"กฎหมาย",legal.length,lgLate?`เกินกำหนด ${lgLate} · ใกล้ครบ ${lgSoon}`:(lgNo?`ยังไม่มีผู้รับผิดชอบ ${lgNo}`:"เรียบร้อยทั้งหมด"),jump("legal"),lgLate),
+card(ICON.budget,"งบประมาณ",baht(bud-act)+" ฿",`ใช้ไป ${baht(act)} จาก ${baht(bud)}`,jump("budget"),act>bud&&bud>0),
+card(ICON.cal,"ปฏิทิน",byMonth.reduce((a,b)=>a+b,0),`งานที่มีกำหนดในปี ${R.year+543}`,jump("cal")),
+card(ICON.train,"เกณฑ์กรมพัฒนาฯ",need?"ขาด "+need+" คน":"ครบเกณฑ์",need?`ยังไม่ถึง 50% ในบางบริษัท`:"ทุกบริษัทที่เข้าเกณฑ์ผ่านแล้ว",jump("train"),need),
+card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใกล้สุด ${pr[0].t.title.slice(0,18)}`:"ว่าง",jump("meet"),pr.length)
+].join("");})()}
+</div></div>
 <div class="card span2"><h2>สัดส่วนสถานะงาน <small>${scopeLabel()} · ${A.length} งาน</small></h2>
 <div class="donutwrap">
 ${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
@@ -770,8 +836,8 @@ const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 const byDow=DOWFULL.map((_,i)=>routine.filter(t=>(t.rrule.weekdays||[]).includes(i)).length);
 return header("การประชุม","ประชุมประจำ ประชุมเฉพาะกิจ และงานที่ต้องเตรียมข้อมูลก่อนประชุม")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
-(prepNow.length?`<div class="banner bad">${svg(ICON.bell,19)} ถึงกำหนดเตรียมข้อมูลแล้ว <b>${prepNow.length}</b> การประชุม — ${esc(prepNow.slice(0,2).map(x=>x.t.title).join(" · "))}${prepNow.length>2?" …":""}</div>`:"")+
-(prepSoon.length?`<div class="banner">${svg(ICON.clock,19)} ใกล้ถึงวันเตรียมข้อมูล <b>${prepSoon.length}</b> การประชุมใน 7 วัน</div>`:"")+
+(prepNow.length?`<div class="banner bad" ${prepNow[0]?jump("meet",{id:prepNow[0].t._id}):""}>${svg(ICON.bell,19)} ถึงกำหนดเตรียมข้อมูลแล้ว <b>${prepNow.length}</b> การประชุม — ${esc(prepNow.slice(0,2).map(x=>x.t.title).join(" · "))}${prepNow.length>2?" …":""}</div>`:"")+
+(prepSoon.length?`<div class="banner" ${prepSoon[0]?jump("meet",{id:prepSoon[0].t._id}):""}>${svg(ICON.clock,19)} ใกล้ถึงวันเตรียมข้อมูล <b>${prepSoon.length}</b> การประชุมใน 7 วัน</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">การประชุม · ${scopeLabel()}</div>
 <div class="big">${scoped.length}</div>
@@ -815,8 +881,8 @@ const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>
 <div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
 return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
-(lawLate.length?`<div class="banner bad">${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
-(waiting.length?`<div class="banner">${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ ${waiting.length} หลักสูตร</div>`:"")+
+(lawLate.length?`<div class="banner bad" ${jump("train",{id:lawLate[0]._id})}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
+(waiting.length?`<div class="banner" ${jump("train",{id:waiting[0]._id})}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ ${waiting.length} หลักสูตร</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
 <div class="big">${ty.length}</div>
@@ -842,7 +908,7 @@ ${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน 
 <div class="card span4"><h2>เกณฑ์กรมพัฒนาฝีมือแรงงาน ปี ${R.year+543} <small>ลูกจ้างตั้งแต่ 100 คนขึ้นไป ต้องฝึกอบรมไม่น้อยกว่า 50% ต่อปี</small></h2>
 <div class="tblwrap"><table><thead><tr><th>บริษัท</th><th style="text-align:right">พนักงาน</th><th style="text-align:right">เป้า 50%</th>
 <th style="text-align:right">ผ่านรับรองแล้ว</th><th style="text-align:right">คิดเป็น</th><th>ความคืบหน้า</th></tr></thead><tbody>
-${visible(companies).map(c=>{
+${realCos().map(c=>{
 const mp=mpOf(c.key,R.year), auto=trainedPax(c.key,R.year);
 const cert=certOf(c.key,R.year), used=cert==null?auto:cert;
 const target=Math.ceil(mp*0.5), pct=mp?Math.round(used/mp*1000)/10:0;
@@ -854,8 +920,20 @@ return `<tr data-nolink="1"><td><div style="font-weight:600">${esc(c.label)}</di
 <td class="num"><input class="minput" data-cert="${esc(c.key)}" type="number" min="0" value="${cert==null?"":cert}" placeholder="${auto}"></td>
 <td class="num"${req&&pct<50?' style="color:var(--over);font-weight:600"':req?' style="color:var(--ok);font-weight:600"':""}>${mp?pct+"%":"—"}</td>
 <td style="min-width:150px"><div class="bar"><i class="${req&&pct<50?"hot":""}" style="width:${Math.min(100,pct*2)}%"></i></div></td></tr>`;}).join("")}
+${groupCos().map(g=>{const kids=childrenOf(g); if(!kids.length)return "";
+const mp=kids.reduce((n,c)=>n+mpOf(c.key,R.year),0);
+const used=kids.reduce((n,c)=>{const v=certOf(c.key,R.year);return n+(v==null?trainedPax(c.key,R.year):v);},0);
+const target=Math.ceil(mp*0.5), pct=mp?Math.round(used/mp*1000)/10:0;
+return `<tr data-nolink="1" style="background:var(--line-2)">
+<td><div style="font-weight:700">${esc(g.label)} <span class="tag">รวมกลุ่ม</span></div>
+<div class="t-note">รวม ${kids.length} บริษัท: ${esc(kids.map(k=>k.label).join(" · "))}</div></td>
+<td class="num" style="font-weight:600">${mp?baht(mp):"—"}</td><td class="num">${mp?baht(target):"—"}</td>
+<td class="num" style="font-weight:600">${baht(used)}</td>
+<td class="num" style="font-weight:600">${mp?pct+"%":"—"}</td>
+<td style="min-width:150px"><div class="bar"><i style="width:${Math.min(100,pct*2)}%"></i></div></td></tr>`;}).join("")}
 </tbody></table></div>
-<div class="hint">ช่อง <b>ผ่านรับรองแล้ว</b> เว้นว่างไว้ ระบบจะนับจากผู้เข้าอบรมในหลักสูตรที่ปิดงานแล้วให้อัตโนมัติ (ตัวเลขสีจาง) — แต่ถ้าคนเดิมอบรมหลายหลักสูตร ระบบจะนับซ้ำ ให้พิมพ์ทับด้วยจำนวนคนจริงที่ไม่ซ้ำได้เลย · แถบเต็มที่ 50%</div></div>
+<div class="hint">แถวเทาคือ <b>กลุ่มบริษัท</b> — รวมตัวเลขจากบริษัทลูกให้อัตโนมัติ ไม่ต้องคีย์ซ้ำ (ตั้งค่ากลุ่มได้ที่ ตั้งค่า → บริษัท) · กรมพัฒนาฯ นับรายนิติบุคคล ตัวเลขที่ใช้ยื่นจริงคือแถวของแต่ละบริษัท<br>
+ช่อง <b>ผ่านรับรองแล้ว</b> เว้นว่างไว้ ระบบจะนับจากผู้เข้าอบรมในหลักสูตรที่ปิดงานแล้วให้อัตโนมัติ (ตัวเลขสีจาง) — แต่ถ้าคนเดิมอบรมหลายหลักสูตร ระบบจะนับซ้ำ ให้พิมพ์ทับด้วยจำนวนคนจริงที่ไม่ซ้ำได้เลย · แถบเต็มที่ 50%</div></div>
 <div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
 <div class="tblwrap"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
 <th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>สถานะ</th></tr></thead><tbody>
@@ -871,6 +949,48 @@ return dl.length?dl.map(t=>`<tr data-id="${t._id}">
 ${board("อบรมตามกฎหมาย",byKind("กฎหมาย"),"ยังไม่มีหลักสูตรตามกฎหมายในช่วงนี้")}
 ${board("อบรมภายใน",byKind("ภายใน"))}
 ${board("อบรมภายนอก",byKind("ภายนอก"))}
+</div>`;
+}
+function legalView(){
+const fc=R.legalComp||"", fk=R.legalCat||"";
+const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk))
+.sort((a,b)=>{const A=legalDue(a),B=legalDue(b);
+if(A&&B)return A-B; if(A)return -1; if(B)return 1; return (a.title||"")<(b.title||"")?-1:1;});
+const st=L=>legalState(L);
+const late=legal.filter(L=>st(L).k==="late"), soon=legal.filter(L=>st(L).k==="soon");
+const noP=legal.filter(L=>st(L).k==="noperson"||st(L).k==="none");
+const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
+const row=L=>{const S=st(L), d=legalDue(L);
+return `<tr data-lg="${L._id}">
+<td><div style="font-weight:600">${esc(L.title)}</div>
+<div class="t-note">${esc(L.unit||"")}${L.note?(L.unit?" · ":"")+esc(String(L.note).slice(0,70))+(String(L.note).length>70?"…":""):""}</div></td>
+<td>${(L.comps||[]).length?(L.comps||[]).map(k=>`<span class="tag" style="margin:1px">${esc(cLabel(k))}</span>`).join(""):"—"}</td>
+<td>${esc(L.person||"—")}</td>
+<td class="num">${L.issued?fmtDate(L.issued)+" "+(new Date(L.issued).getFullYear()+543-2500):"—"}</td>
+<td class="num">${L.lifetime?"ไม่มีกำหนด":(d?fmtDate(d)+" "+(d.getFullYear()+543-2500):"—")}</td>
+<td><span class="pill ${S.c}">${esc(S.t)}</span></td></tr>`;};
+return header("กฎหมาย & ใบรับรอง","ใบรับรองผู้รับผิดชอบเฉพาะ คำสั่งแต่งตั้ง และข้อกำหนดที่ต้องทำประจำ",false)+
+`<div class="head" style="margin-top:-6px"><div></div>
+<button class="btn addbtn" id="addLegal">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มรายการ</span></button></div>`+
+(late.length?`<div class="banner bad" ${jump("legal",{lg:late[0]._id})}>${svg(ICON.bell,19)} เกินกำหนดแล้ว <b>${late.length}</b> รายการ — ${esc(late.slice(0,2).map(L=>L.title).join(" · "))}${late.length>2?" …":""}</div>`:"")+
+(soon.length?`<div class="banner" ${soon[0]?jump("legal",{lg:soon[0]._id}):""}>${svg(ICON.clock,19)} ใกล้ครบกำหนดใน 90 วัน <b>${soon.length}</b> รายการ</div>`:"")+
+`<div class="dash">
+<div class="card hero span2"><div class="lab">รายการที่ต้องดูแล</div>
+<div class="big">${legal.length}</div>
+<div class="meta"><span>เรียบร้อย ${legal.filter(L=>st(L).k==="ok").length}</span><span>ต้องจัดการ ${late.length+soon.length+noP.length}</span></div>
+<div class="prog"><i style="width:${legal.length?Math.round(legal.filter(L=>st(L).k==="ok").length/legal.length*100):0}%"></i></div></div>
+<div class="card stat"><div class="k"><span class="ic" style="background:var(--over-soft);color:var(--over)">${svg(ICON.bell,16)}</span> เกินกำหนด</div>
+<div class="v" style="color:${late.length?"var(--over)":"inherit"}">${late.length}</div><div class="d">ใกล้ครบอีก ${soon.length} รายการ</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ยังไม่มีผู้รับผิดชอบ</div>
+<div class="v">${noP.length}</div><div class="d">จาก ${legal.length} รายการ</div></div>
+<div class="card span4">
+<div class="toolbar" style="margin-bottom:6px">
+<select id="lg-comp">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],fc)}</select>
+<select id="lg-cat">${opt([["","ทุกหมวด"],...LEGALCAT.map(x=>[x,x])],fk)}</select>
+<span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
+<div class="tblwrap"><table>
+<thead><tr><th>รายการ</th><th>บริษัทที่ต้องมี</th><th>ผู้รับผิดชอบ</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>สถานะ</th></tr></thead>
+<tbody>${list.map(row).join("")||`<tr><td colspan="6"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV ที่หน้าตั้งค่า</div></td></tr>`}</tbody></table></div></div>
 </div>`;
 }
 function setView(){
@@ -932,11 +1052,17 @@ return `<div class="card"><h2>บริษัทในเครือ <small>${c
 return `<div class="rw${c.hidden?" off":""}">${nameInput("data-renc",c.key,c.label)}
 <button class="gcbtn" data-see="company:${esc(c.key)}" title="ดูงานของบริษัทนี้">${n} งาน</button>
 <button class="iconbtn" data-move="company:${esc(c.key)}" title="ย้ายงานทั้งหมดไปบริษัทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
+<select class="cosel" data-parent="${esc(c.key)}" title="กลุ่มบริษัท">
+<option value="">— บริษัทเดี่ยว —</option>
+<option value="__group__"${c.isGroup?" selected":""}>เป็นกลุ่มบริษัท</option>
+${companies.filter(x=>x.isGroup&&x.key!==c.key).map(x=>`<option value="${esc(x.key)}"${(!c.isGroup&&c.parent===x.key)?" selected":""}>อยู่ในกลุ่ม ${esc(x.label)}</option>`).join("")}
+</select>
 ${moveBtns("companies",i,companies.length,c.hidden)}
 <button class="btn danger sm" data-delc="${esc(c.key)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีบริษัท</div>`}</div>
 <div class="addg"><input id="newc" placeholder="ชื่อบริษัท เช่น LeKise Trading">
 <button class="btn" id="addc">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มบริษัท</button></div>
-<div class="hint">เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
+<div class="hint">ช่องขวาสุดใช้บอกว่าแถวนั้นเป็น <b>กลุ่มบริษัท</b> (เช่น LeKise Group) หรือเป็นบริษัทที่อยู่ในกลุ่มไหน — หน้าฝึกอบรมจะรวมตัวเลขของกลุ่มให้เอง และยังแยกรายบริษัทไว้สำหรับยื่นกรมพัฒนาฯ<br>
+เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
 function setGL(){
 const y=R.glYear||R.year;
@@ -1004,7 +1130,8 @@ return `<div class="card"><h2>นำเข้างานจากไฟล์ C
 • <b>หมวด GL</b> ใส่ "รหัส ชื่อหมวด" หรือชื่อหมวดอย่างเดียวก็ได้ ถ้ายังไม่มีระบบจะสร้างให้<br>
 • <b>ผู้เข้าอบรม / ชั่วโมง / วิทยากร/สถาบัน / กรมพัฒฯ</b> ใส่เฉพาะงานอบรม (กรมพัฒฯ ใช้ได้: ไม่ต้องยื่น / รอยื่น / ยื่นแล้ว / อนุมัติแล้ว / ไม่ผ่าน)<br>
 • กลุ่มที่มีคำว่า "อบรม" ระบบจะนับเป็นงานฝึกอบรมให้อัตโนมัติ<br>
-• งานเดิมจะไม่ถูกลบ ระบบเพิ่มต่อท้ายเสมอ
+• งานเดิมจะไม่ถูกลบ ระบบเพิ่มต่อท้ายเสมอ<br>
+• ถ้าหัวคอลัมน์แรกเป็น <b>ชื่อรายการ</b> ระบบจะถือว่าเป็นทะเบียนกฎหมาย/ใบรับรอง และนำเข้าไปที่เมนู “กฎหมาย” ให้เอง
 </div></div>`;
 }
 function setConnect(){
@@ -1037,6 +1164,7 @@ Sky Work เป็นเว็บแอปของวิมเอง ติด�
 <div class="addg"><button class="btn" id="selftest">${svg(ICON.check,17)}ทดสอบการบันทึกข้อมูล</button>
 <button class="btn ghost" id="expTasks">${svg(ICON.file,17)}ดาวน์โหลดงานเป็น CSV</button>
 <button class="btn ghost" id="expLedger">ดาวน์โหลดรายการเงิน</button>
+<button class="btn ghost" id="expLegal">ดาวน์โหลดทะเบียนกฎหมาย</button>
 <button class="btn ghost" id="signout">ออกจากระบบ</button></div>
 <div id="csvout2"></div></div>
 <div class="card span4" style="box-shadow:inset 0 0 0 2px var(--over-soft)"><h2 style="color:var(--over)">ล้างข้อมูล <small>ใช้เมื่อจะนำเข้าข้อมูลใหม่ทั้งชุด</small></h2>
@@ -1152,8 +1280,19 @@ codeWanted=null;
 el("cdlg").close();cResolve&&cResolve(true);};
 el("cno").onclick=()=>{codeWanted=null;el("cdlg").close();cResolve&&cResolve(false);};
 function wire(){
+document.querySelectorAll("[data-go]").forEach(n=>{n.style.cursor="pointer";
+n.onclick=e=>{e.stopPropagation();
+try{const d=JSON.parse(n.dataset.go);
+ if(d.id){const t=items.find(x=>x._id===d.id); if(t){open_(t);return;}}
+ if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegal(L);return;}}
+ goTo(d.v,{F:d.F,R:d.R});}catch(err){}};});
 el("add")&&(el("add").onclick=()=>open_(null));
 el("addTx")&&(el("addTx").onclick=()=>openTx(null));
+el("addLegal")&&(el("addLegal").onclick=()=>openLegal(null));
+document.querySelectorAll("[data-lg]").forEach(n=>n.onclick=()=>{
+const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegal(L);});
+el("lg-comp")&&(el("lg-comp").onchange=e=>{R.legalComp=e.target.value;render();});
+el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
 const t=items.find(x=>x._id===n.dataset.id); if(t)open_(t);};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
@@ -1247,6 +1386,12 @@ el("addc").onclick=async()=>{const v=el("newc").value.trim();if(!v)return;
 companies=[...companies,{key:"c"+Date.now().toString(36),label:v}];el("newc").value="";render();await saveMeta("companies",companies);};
 el("newc").onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();el("addc").click();}};
 }
+document.querySelectorAll("[data-parent]").forEach(n=>n.onchange=async()=>{
+const c=companies.find(x=>x.key===n.dataset.parent); if(!c)return;
+const v=n.value;
+if(v==="__group__"){c.isGroup=true;delete c.parent;}
+else{delete c.isGroup; if(v)c.parent=v; else delete c.parent;}
+render(); await saveMeta("companies",companies);});
 document.querySelectorAll("[data-renc]").forEach(n=>n.onchange=async()=>{
 const c=companies.find(x=>x.key===n.dataset.renc), v=n.value.trim();
 if(!c||!v){render();return;} c.label=v; await saveMeta("companies",companies); render();});
@@ -1332,6 +1477,9 @@ el("preset")&&(el("preset").onclick=async()=>{
 TRAIN_PRESET.forEach(x=>{ if(!groups.some(g=>g.label===x.label))groups.push({key:x.key,label:x.label}); });
 render(); await saveMeta("groups",groups);});
 el("signout")&&(el("signout").onclick=async()=>{if(await ask("ออกจากระบบเครื่องนี้ใช่ไหมคะ?","ออกจากระบบ"))signOut();});
+el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
+["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
+legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));
 el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
 ["วันที่","ประเภท","หมวด GL","จำนวนเงิน","บริษัท","รายละเอียด"],
 ledger.map(x=>[x.date,x.kind==="income"?"รายรับ":"รายจ่าย",glLabel(x.gl),x.amount,cLabel(x.company),x.note])));
@@ -1373,6 +1521,7 @@ return rows.filter(r=>r.some(c=>c.trim()));
 }
 async function importCSV(txt){
 const out=el("csvout"); if(!txt.trim()){out.innerHTML=`<div class="banner bad">ยังไม่มีข้อมูลให้นำเข้าค่ะ</div>`;return;}
+if(/ชื่อรายการ/.test(txt.split(/\r?\n/)[0]||""))return importLegal(txt,out);
 imp={state:"run",ok:0,fail:0,total:0,msg:"",at:""}; paintImp();
 const COLS=["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","งบ","ใช้จริง","รายละเอียด"];
 const rows=parseCSV(txt);
@@ -1441,6 +1590,38 @@ out.innerHTML=`<div class="banner bad" style="margin-bottom:10px">นำเข�
 out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} นำเข้าสำเร็จ ${added} งาน${noHead?" (ไม่พบบรรทัดหัวตาราง ระบบอ่านตามลำดับคอลัมน์มาตรฐานให้)":""}${verify}${newG.length?` · สร้างกลุ่มใหม่: ${esc(newG.join(", "))}`:""}${newC.length?` · สร้างบริษัทใหม่: ${esc(newC.join(", "))}`:""}${newGL.length?` · สร้างหมวด GL ใหม่ ${newGL.length} หมวด`:""}</div>`;
 el("csvtext").value="";
 }
+}
+async function importLegal(txt,out){
+imp={state:"run",ok:0,fail:0,total:0,msg:"",at:""}; paintImp();
+const rows=parseCSV(txt);
+const head=rows[0].map(h=>h.replace(/\uFEFF/g,"").trim());
+const idx=n=>head.indexOf(n), get=(r,n)=>{const i=idx(n);return i<0?"":String(r[i]==null?"":r[i]).trim();};
+const body=rows.slice(1);
+let ok=0,fail=0,err=null,newC=[];
+imp.total=body.length; paintImp();
+const iso=v=>/^\d{4}-\d{2}-\d{2}$/.test(v)?v:null;
+for(const r of body){
+const title=get(r,"ชื่อรายการ"); if(!title)continue;
+const comps=get(r,"บริษัทที่ต้องมี").split(/[,;|]/).map(x=>x.trim()).filter(Boolean).map(lab=>{
+let c=companies.find(x=>x.label===lab||x.label.includes(lab));
+if(!c){c={key:"c"+Date.now().toString(36)+ok+Math.floor(Math.random()*99),label:lab};companies.push(c);newC.push(lab);}
+return c.key;});
+const cat=LEGALCAT.includes(get(r,"หมวด"))?get(r,"หมวด"):LEGALCAT[0];
+try{ await DB.collection("legal").add({title,cat,unit:get(r,"ตำแหน่ง/หน่วยงาน")||get(r,"หน่วยงาน"),
+person:get(r,"ผู้รับผิดชอบ"),comps,issued:iso(get(r,"วันที่ออก")),expires:iso(get(r,"วันหมดอายุ")),
+cycle:+get(r,"รอบทบทวน(เดือน)")||0,lifetime:/^(true|1|ใช่|ไม่มีกำหนด)$/i.test(get(r,"ไม่มีวันหมดอายุ")),
+note:get(r,"เงื่อนไข/หมายเหตุ")||get(r,"หมายเหตุ")}); ok++; }
+catch(e){ fail++; if(!err)err=e; }
+imp.ok=ok; imp.fail=fail; paintImp();
+}
+try{ if(newC.length)await saveMeta("companies",companies); }catch(e){}
+const now=new Date();
+imp.at=now.getDate()+" "+MTH[now.getMonth()]+" "+String(now.getHours()).padStart(2,"0")+":"+String(now.getMinutes()).padStart(2,"0");
+imp.state=fail?"fail":"done"; imp.msg="ทะเบียนกฎหมาย"; paintImp();
+out.innerHTML=fail?`<div class="banner bad">นำเข้าได้ ${ok} · ล้มเหลว ${fail}</div>`+errBox(err||{})
+:`<div class="banner ok">${svg(ICON.check,19)} นำเข้าทะเบียนกฎหมาย ${ok} รายการ${newC.length?" · สร้างบริษัทใหม่ "+esc(newC.join(", ")):""} — ดูที่เมนู “กฎหมาย”</div>`;
+if(!fail)el("csvtext").value="";
+render();
 }
 function exportCSV(name,head,rows){
 const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
@@ -1566,6 +1747,40 @@ if(!editing)return;
 const t=editing; el("dlg").close();
 if(!await ask("ลบงาน “"+esc(t.title)+"” ออกจากระบบใช่ไหมคะ?","ลบงาน"))return;
 await DB.collection("items").doc(t._id).delete();
+};
+let editingLegal=null;
+function openLegal(L){
+editingLegal=L;
+el("ldlgh").textContent=L?"แก้ไขรายการกฎหมาย":"เพิ่มรายการกฎหมาย";
+el("ldel").style.display=L?"":"none";
+el("l-title").value=L?.title||"";
+fill("l-cat",LEGALCAT.map(x=>[x,x]),L?.cat||LEGALCAT[0]);
+el("l-unit").value=L?.unit||"";
+el("l-person").value=L?.person||"";
+el("l-comps").innerHTML=visible(companies).map(c=>`<label class="flag" style="padding:8px 12px"><input type="checkbox" value="${esc(c.key)}"${(L?.comps||[]).includes(c.key)?" checked":""}><span style="font-size:13.5px">${esc(c.label)}</span></label>`).join("")||`<div class="hint" style="margin:0">ยังไม่มีบริษัท เพิ่มที่หน้าตั้งค่า</div>`;
+el("l-issued").value=L?.issued||"";
+el("l-expires").value=L?.expires||"";
+fill("l-cycle",CYCLES,String(L?.cycle||""));
+el("l-life").checked=!!L?.lifetime;
+el("l-note").value=L?.note||"";
+el("ldlg").showModal();
+}
+el("lcancel").onclick=()=>el("ldlg").close();
+el("lsave").onclick=async()=>{
+if(!el("l-title").value.trim()){el("l-title").focus();return;}
+const data={title:el("l-title").value.trim(), cat:el("l-cat").value, unit:el("l-unit").value.trim(),
+person:el("l-person").value.trim(),
+comps:[...el("l-comps").querySelectorAll("input:checked")].map(i=>i.value),
+issued:el("l-issued").value||null, expires:el("l-expires").value||null,
+cycle:+el("l-cycle").value||0, lifetime:el("l-life").checked, note:el("l-note").value.trim()};
+el("ldlg").close();
+try{ editingLegal? await DB.collection("legal").doc(editingLegal._id).set(data) : await DB.collection("legal").add(data); }
+catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div style="font-size:13px;margin-top:8px;line-height:1.7">'+x.fix+"</div>":"")); }
+};
+el("ldel").onclick=async()=>{
+if(!editingLegal)return; const L=editingLegal; el("ldlg").close();
+if(!await ask("ลบรายการ “"+esc(L.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
+await DB.collection("legal").doc(L._id).delete();
 };
 function openTx(x){
 editingTx=x;
