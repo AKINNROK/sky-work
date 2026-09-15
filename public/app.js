@@ -1,8 +1,12 @@
-const APP_VERSION="4.4"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.5"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
 const STATUS=["รอดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น"];
+const TAGCOLORS=["#e0606d","#e8743b","#e0932b","#d9c02e","#8fbf3f","#2fa36b","#1a9f86","#2bb3c9",
+"#3d86d6","#4a5fc4","#7d5bd0","#b155c4","#d6549b","#8a6a55","#6b7785","#a9a29a"];
+const tagsOf=()=>[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].sort();
+const tagColor=name=>{const t=items.find(x=>(x.tag||"").trim()===name&&x.color);return t?t.color:"";};
 const DEFAULT_GROUPS=[
 {key:"train_law",label:"อบรมตามกฎหมาย"},{key:"train_in",label:"อบรมภายใน"},
 {key:"train_out",label:"อบรมภายนอก"},{key:"project",label:"โปรเจคเสริม"},
@@ -173,6 +177,7 @@ const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.tes
 const trainKind=t=>t.track==="train_law"||/กฎหมาย/.test(gLabel(t.track))?"กฎหมาย":t.track==="train_out"||/ภายนอก/.test(gLabel(t.track))?"ภายนอก":"ภายใน";
 const dueDate=t=>{const R2=rr(t); if(R2)return nextOcc(t); return t.date?new Date(t.date):null;};
 const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/864e5);};
+const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const types=()=>[...new Set(items.map(t=>t.type).filter(Boolean))].sort();
 const monthsOf=t=>{
@@ -271,11 +276,11 @@ if(error){
 lastErr=error;
 if(prev===undefined)cache[coll].delete(id); else cache[coll].set(id,prev);
 coll==="meta"?emitMeta(id):emit(coll);
-setFoot("บันทึกไม่สำเร็จ","var(--over)");
+setFoot("บันทึกไม่สำเร็จ · แตะดูสาเหตุ","var(--over)");
 render();
 throw error;
 }
-lastErr=null;
+lastErr=null; if(sync.color)setFoot(items.length+" งาน · ซิงก์แล้ว");
 return id;
 }
 async function del(coll,id){
@@ -337,11 +342,11 @@ sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{if(Array.isArray(d.list))gls=d.list;});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
-items=s.docs.map(d=>Object.assign({_id:d.id},d.data())).filter(t=>!isSysRow(t));
+items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
 if(!gls.length&&items.length)seedGL();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
 DBShim.collection("ledger").onSnapshot(s=>{
-ledger=s.docs.map(d=>Object.assign({_id:d.id},d.data())); render();});
+ledger=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
 setFoot("กำลังโหลด…");
 await loadAll(); liveSync();
 setFoot(items.length+" งาน · ซิงก์แล้ว");
@@ -359,10 +364,19 @@ paintSync();
 }
 function paintSync(){
 document.querySelectorAll(".syncchip").forEach(n=>{
-n.innerHTML=`<span class="dotlive"${sync.color?` style="background:${sync.color}"`:""}></span>${esc(sync.txt)}`;
+n.innerHTML=`<span class="dotlive"${sync.color?` style="background:${sync.color}"`:""}></span>${esc(sync.txt)}${lastErr?" · แตะดูสาเหตุ":""}`;
+n.classList.toggle("bad",!!lastErr);
+n.onclick=lastErr?showLastErr:null;
 });
 }
-const syncChip=()=>`<span class="syncchip"><span class="dotlive"></span>${esc(sync.txt)}</span>`;
+const syncChip=()=>`<span class="syncchip${lastErr?" bad":""}"${lastErr?' role="button" tabindex="0" title="แตะเพื่อดูสาเหตุ"':""}><span class="dotlive"></span>${esc(sync.txt)}${lastErr?" · แตะดูสาเหตุ":""}</span>`;
+function showLastErr(){
+if(!lastErr){tell("ตอนนี้บันทึกข้อมูลได้ปกติค่ะ");return;}
+const x=explainErr(lastErr);
+tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div style="font-size:13px;margin-top:8px;line-height:1.7">'+x.fix+"</div>":"")+
+'<div style="font-size:11.5px;margin-top:10px;opacity:.75;font-family:var(--mono);word-break:break-all">'+esc(x.raw)+"</div>"+
+'<div style="font-size:12.5px;margin-top:10px">ลองแก้แล้วกด <b>ตั้งค่า → การเชื่อมต่อ → ทดสอบการบันทึกข้อมูล</b> เพื่อตรวจซ้ำได้ค่ะ</div>');
+}
 function seedGL(){
 const found={};
 items.forEach(t=>[t.gl1,t.gl2].forEach(g=>{ g=(g||"").trim(); if(!g)return;
@@ -377,9 +391,16 @@ put(t.gl1,t.b1); put(t.gl2,t.b2);
 gls=Object.values(found).sort((a,b)=>b.budget-a.budget);
 if(gls.length&&DB)DB.doc("meta/gl").set({list:gls});
 }
+const glBudget=(g,y)=>{ if(!g)return 0;
+if(g.budgets&&typeof g.budgets==="object"&&g.budgets[y]!=null)return +g.budgets[y]||0;
+if(!g.budgets&&+g.budget)return (y===THISYEAR)?+g.budget:0;
+return 0; };
+const setGlBudget=(g,y,v)=>{ if(!g.budgets||typeof g.budgets!=="object"){ g.budgets = (+g.budget)?{[THISYEAR]:+g.budget}:{}; }
+if(v)g.budgets[y]=v; else delete g.budgets[y]; g.budget=g.budgets[THISYEAR]||0; };
+const glYears=g=>Object.keys((g&&g.budgets)||{}).filter(y=>+g.budgets[y]).map(Number).sort();
 const glKeyOf=g=>{g=(g||"").trim();if(!g)return"";const m=g.match(/^(\d{6,9})/);return m?m[1]:g.slice(0,18);};
 const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); } };
-async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
+async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); if(data&&"_id" in data)delete data._id; return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
 function renderNav(){
 const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION;
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
@@ -404,7 +425,7 @@ return `<div class="li" data-id="${t._id}">
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;
 }
 function prepDue(days){
@@ -566,7 +587,7 @@ const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d
 const sel=R.selDay===d;
 cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}">
 <span class="dn">${d}</span>
-<span class="dots">${ts.slice(0,4).map(t=>`<i style="background:${sColor(t.status)}" title="${esc(t.title)}"></i>`).join("")}</span>
+<span class="dots">${ts.slice(0,4).map(t=>`<i style="background:${itemColor(t)}" title="${esc(t.title)}${t.tag?" · "+esc(t.tag):""}"></i>`).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
@@ -615,7 +636,7 @@ if(!g.length)return "";
 return `<div class="cgroup">${esc(name)} <span>${g.length}</span></div>`+
 MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
-MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${sColor(t.status)}"></span>`:""}</div>`).join("");}).join("");
+MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${itemColor(t)}" title="${esc(t.tag||t.status)}"></span>`:""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
@@ -623,6 +644,8 @@ return `<div class="card">
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
 <span style="margin-left:auto;color:var(--ink-3)">แยกตามหมวด · ${list.length} งานในปี ${R.year+543}</span></div>
+${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
+return tg.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">${tg.map(n=>`<span><i style="background:${tagColor(n)||"var(--ink-3)"}"></i>${esc(n)}</span>`).join("")}</div>`:"";})()}
 <div class="cal"><div class="calgrid">${head}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>`}</div></div></div>`;
 }
 function ledgerIn(scope,month){
@@ -648,7 +671,7 @@ const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"";
 add(taskPlan,k1,+t.b1||0); add(taskPlan,k2||k1,+t.b2||0);
 add(spentByGL,k1,+t.actual||0);
 });
-gls.forEach(g=>{ planByGL[g.key]=Math.max(+g.budget||0, taskPlan[g.key]||0); });
+gls.forEach(g=>{ planByGL[g.key]=Math.max(glBudget(g,R.year), taskPlan[g.key]||0); });
 Object.keys(taskPlan).forEach(k=>{ if(planByGL[k]==null)planByGL[k]=taskPlan[k]; });
 ledger.filter(x=>x.kind!=="income"&&x.date&&new Date(x.date).getFullYear()===R.year)
  .forEach(x=>add(spentByGL,x.gl||"",+x.amount||0));
@@ -820,6 +843,7 @@ return header("ตั้งค่า","ทุกอย่างที่ปร�
 ${SETTABS.map(([k,l])=>`<button data-st="${k}" aria-pressed="${k===settab}">${l}</button>`).join("")}
 </div></div>${body}`;
 }
+const ICON_MOVE='<path d="M4 12h13"/><path d="M13 7l5 5-5 5"/><path d="M20 5v14"/>';
 const ICON_UP='<path d="M12 19V5M6 11l6-6 6 6"/>', ICON_DN='<path d="M12 5v14M6 13l6 6 6-6"/>';
 const ICON_EYE='<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>';
 const ICON_EYEOFF='<path d="M4 4l16 16"/><path d="M9.9 5.9A9.8 9.8 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-3.3 4M6.3 8A17 17 0 0 0 2.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"/>';
@@ -855,7 +879,9 @@ ${can?"":`<div class="banner bad" style="margin-top:12px">เครื่อง�
 function setGroups(){
 return `<div class="card"><h2>กลุ่มงาน <small>${groups.length} กลุ่ม</small></h2>
 <div class="rows">${groups.map((g,i)=>{const n=items.filter(t=>t.track===g.key).length;
-return `<div class="rw${g.hidden?" off":""}">${nameInput("data-ren",g.key,g.label)}<span class="gc">${n} งาน</span>
+return `<div class="rw${g.hidden?" off":""}">${nameInput("data-ren",g.key,g.label)}
+<button class="gcbtn" data-see="track:${esc(g.key)}" title="ดูงานในกลุ่มนี้">${n} งาน</button>
+<button class="iconbtn" data-move="track:${esc(g.key)}" title="ย้ายงานทั้งหมดไปกลุ่มอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
 ${moveBtns("groups",i,groups.length,g.hidden)}
 <button class="btn danger sm" data-delg="${esc(g.key)}">ลบ</button></div>`;}).join("")}</div>
 <div class="addg"><input id="newg" placeholder="ชื่อกลุ่มใหม่ เช่น งานฝึกอบรม">
@@ -866,7 +892,9 @@ ${TRAIN_PRESET.every(x=>groups.some(g=>g.label===x.label))?"":`<div class="addg"
 function setCompanies(){
 return `<div class="card"><h2>บริษัทในเครือ <small>${companies.length} บริษัท</small></h2>
 <div class="rows">${companies.map((c,i)=>{const n=items.filter(t=>t.company===c.key).length;
-return `<div class="rw${c.hidden?" off":""}">${nameInput("data-renc",c.key,c.label)}<span class="gc">${n} งาน</span>
+return `<div class="rw${c.hidden?" off":""}">${nameInput("data-renc",c.key,c.label)}
+<button class="gcbtn" data-see="company:${esc(c.key)}" title="ดูงานของบริษัทนี้">${n} งาน</button>
+<button class="iconbtn" data-move="company:${esc(c.key)}" title="ย้ายงานทั้งหมดไปบริษัทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
 ${moveBtns("companies",i,companies.length,c.hidden)}
 <button class="btn danger sm" data-delc="${esc(c.key)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีบริษัท</div>`}</div>
 <div class="addg"><input id="newc" placeholder="ชื่อบริษัท เช่น LeKise Trading">
@@ -874,20 +902,27 @@ ${moveBtns("companies",i,companies.length,c.hidden)}
 <div class="hint">เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
 function setGL(){
-const tot=gls.reduce((s,g)=>s+(+g.budget||0),0);
-return `<div class="card"><h2>หมวดงบประมาณ (GL) <small>${gls.length} หมวด · รวม ${baht(tot)} ฿</small></h2>
+const y=R.glYear||R.year;
+const tot=gls.reduce((s,g)=>s+glBudget(g,y),0);
+return `<div class="card"><h2>หมวดงบประมาณ (GL) <small>${gls.length} หมวด · งบปี ${y+543} รวม ${baht(tot)} ฿</small></h2>
+<div class="toolbar" style="margin:12px 0 0">
+<span style="font-size:13.5px;color:var(--ink-3)">กำลังตั้งงบของปี</span>
+<select id="glYearSel" style="border:0;background:var(--paper);border-radius:999px;padding:9px 16px;font-weight:600">
+${yearList().map(v=>`<option value="${v}"${v===y?" selected":""}>พ.ศ. ${v+543} · ${v}</option>`).join("")}</select>
+<button class="btn ghost sm" id="glCopy">คัดลอกงบจากปี ${y+542} มาใส่ปีนี้</button></div>
 <div class="rows">${gls.map((g,i)=>`<div class="rw${g.hidden?" off":""}">
 <input class="glcode" data-renc2="${esc(g.key)}" value="${esc(g.code||"")}" placeholder="รหัส GL" aria-label="รหัส GL">
 ${nameInput("data-reng",g.key,g.label)}
-<input type="number" class="glb" data-glb="${esc(g.key)}" value="${+g.budget||0}" aria-label="งบ ${esc(g.label)}">
+<input type="number" class="glb" data-glb="${esc(g.key)}" value="${glBudget(g,y)||""}" placeholder="งบปี ${y+543}" aria-label="งบ ${esc(g.label)} ปี ${y+543}">
+<span class="glyears">${(()=>{const ys=glYears(g).filter(v=>v!==y);return ys.length?ys.map(v=>`${v+543}: ${kbaht(glBudget(g,v))}`).join(" · "):"";})()}</span>
 ${moveBtns("gl",i,gls.length,g.hidden)}
 <button class="btn danger sm" data-delgl="${esc(g.key)}">ลบ</button></div>`).join("")||`<div class="empty">ยังไม่มีหมวด GL</div>`}</div>
 <div class="addg">
 <input id="glcode" placeholder="รหัส GL เช่น 785000000" style="max-width:190px">
 <input id="glname" placeholder="ชื่อหมวด เช่น ค่าอบรมและสัมมนา">
-<input id="glbud" type="number" placeholder="งบทั้งปี" style="max-width:150px">
+<input id="glbud" type="number" placeholder="งบปี ${y+543}" style="max-width:170px">
 <button class="btn" id="addgl">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหมวด</button></div>
-<div class="hint">แก้รหัส ชื่อ หรืองบได้ในช่อง กดนอกช่องแล้วบันทึกทันที · เลื่อนลำดับให้หมวดที่ใช้บ่อยอยู่บนสุด · หมวดที่ซ่อนจะไม่ขึ้นในตัวเลือก แต่ตัวเลขยังรวมอยู่ในสรุปงบ</div></div>`;
+<div class="hint">งบแยกตามปี — เปลี่ยนปีด้านบนเพื่อวางงบล่วงหน้าได้เลย ตัวเลขปีอื่นแสดงไว้ข้างช่อง · แก้รหัส ชื่อ หรืองบได้ในช่อง กดนอกช่องแล้วบันทึกทันที · เลื่อนลำดับให้หมวดที่ใช้บ่อยอยู่บนสุด · หมวดที่ซ่อนจะไม่ขึ้นในตัวเลือก แต่ตัวเลขยังรวมอยู่ในสรุปงบ</div></div>`;
 }
 function setTheme_(){
 const cur=theme.preset;
@@ -1060,6 +1095,12 @@ codeWanted=code;
 return new Promise(r=>{cResolve=r;});
 }
 let codeWanted=null;
+function askPick(msg,optionsHtml,yes="ยืนยัน"){
+el("cmsg").innerHTML=msg+`<div style="margin-top:14px"><select id="cpick" style="width:100%;background:var(--paper);border:0;border-radius:var(--r-xs);padding:12px 14px;font-size:15px">${optionsHtml}</select></div>`;
+el("cyes").textContent=yes; el("cyes").style.display=""; el("cno").textContent="ยกเลิก";
+el("cdlg").showModal();
+return new Promise(r=>{cResolve=v=>r(v?(el("cpick")&&el("cpick").value):null);});
+}
 function tell(msg){
 el("cmsg").innerHTML=msg; el("cyes").style.display="none"; el("cno").textContent="ปิด";
 el("cdlg").showModal();
@@ -1102,6 +1143,30 @@ bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","
 el("modeseg")&&(el("modeseg").onclick=async e=>{
 const b=e.target.closest("button[data-md]"); if(!b)return;
 await setTheme({preset:theme.preset,custom:theme.custom,mode:b.dataset.md});});
+document.querySelectorAll("[data-see]").forEach(b=>b.onclick=()=>{
+const [k,v]=b.dataset.see.split(":");
+F.q="";F.track="";F.type="";F.status="";F.company="";F[k]=v;
+R.scope="year"; view="all"; renderNav(); render(); window.scrollTo(0,0);});
+document.querySelectorAll("[data-move]").forEach(b=>b.onclick=async()=>{
+const [k,v]=b.dataset.move.split(":");
+const list=items.filter(t=>(t[k]||"")===v);
+if(!list.length){tell("ไม่มีงานให้ย้ายค่ะ");return;}
+const arr=k==="track"?visible(groups):visible(companies);
+const opts=arr.filter(x=>x.key!==v).map(x=>`<option value="${esc(x.key)}">${esc(x.label)}</option>`).join("");
+if(!opts){tell("ต้องมีปลายทางอย่างน้อย 1 รายการก่อนนะคะ");return;}
+const name=k==="track"?gLabel(v):cLabel(v);
+const to=await askPick(`ย้ายงานทั้งหมด <b>${list.length}</b> รายการ จาก “${esc(name)}” ไปที่`,opts,"ย้ายงาน");
+if(!to)return;
+let ok=0,fail=0,err=null;
+setFoot("กำลังย้าย 0/"+list.length+" …");
+for(const t of list){
+try{ const {_id,...rest}=t; await saveItem(Object.assign({},rest,{[k]:to}),_id); ok++; }catch(e){ fail++; if(!err)err=e; }
+setFoot("กำลังย้าย "+ok+"/"+list.length+" …");
+}
+render();
+if(fail)tell("<b>ย้ายได้ "+ok+" รายการ · ไม่สำเร็จ "+fail+" รายการ</b>"+errBox(err));
+else tell("<b>ย้ายเรียบร้อย "+ok+" รายการ</b><div style=\"font-size:13px;margin-top:8px\">ไปที่ “"+esc(k==="track"?gLabel(to):cLabel(to))+"” แล้วค่ะ</div>");
+});
 document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
 const [kind,i,d]=b.dataset.mv.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:gls;
 const a=+i, t=a+(+d); if(t<0||t>=arr.length)return;
@@ -1151,13 +1216,21 @@ const code=el("glcode").value.trim(), label=el("glname").value.trim(), b=+el("gl
 if(!label&&!code){tell("ใส่ชื่อหมวดหรือรหัส GL อย่างน้อยหนึ่งอย่างค่ะ");return;}
 const key=code||label.slice(0,18);
 if(gls.some(g=>g.key===key)){tell("มีหมวดนี้แล้วค่ะ");return;}
-gls=[...gls,{key,code,label:label||code,budget:b}];
+gls=[...gls,{key,code,label:label||code,budget:0,budgets:b?{[(R.glYear||R.year)]:b}:{}}];
 el("glcode").value=el("glname").value=el("glbud").value="";
 render();await saveMeta("gl",gls);};
 }
 document.querySelectorAll("[data-glb]").forEach(n=>n.onchange=async()=>{
 const g=gls.find(x=>x.key===n.dataset.glb);if(!g)return;
-g.budget=+n.value||0;await saveMeta("gl",gls);render();});
+setGlBudget(g,R.glYear||R.year,+n.value||0);await saveMeta("gl",gls);render();});
+el("glYearSel")&&(el("glYearSel").onchange=e=>{R.glYear=+e.target.value;render();});
+el("glCopy")&&(el("glCopy").onclick=async()=>{
+const y=R.glYear||R.year, from=y-1;
+const n=gls.filter(g=>glBudget(g,from)).length;
+if(!n){tell("ปี "+(from+543)+" ยังไม่มีงบให้คัดลอกค่ะ");return;}
+if(!await ask(`คัดลอกงบ <b>${n}</b> หมวด จากปี ${from+543} มาทับปี ${y+543} ใช่ไหมคะ?`,"คัดลอก"))return;
+gls.forEach(g=>{const v=glBudget(g,from); if(v)setGlBudget(g,y,v);});
+render(); await saveMeta("gl",gls);});
 document.querySelectorAll("[data-reng]").forEach(n=>n.onchange=async()=>{
 const g=gls.find(x=>x.key===n.dataset.reng), v=n.value.trim();
 if(!g||!v){render();return;} g.label=v; await saveMeta("gl",gls); render();});
@@ -1177,9 +1250,9 @@ el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
-["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","การเกิดซ้ำ","รายละเอียด"],
+["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
-t.gl1?glLabel(glKeyOf(t.gl1)):"",budgetOf(t),t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",rruleText(t),t.note])));
+t.gl1?glLabel(glKeyOf(t.gl1)):"",budgetOf(t),t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",rruleText(t),t.note])));
 if(el("health")&&healthState!=="done")checkHealth();
 el("selftest")&&(el("selftest").onclick=async()=>{
 const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
@@ -1294,6 +1367,7 @@ rrule:parseRecur(get(r,"การเกิดซ้ำ")),
 meet:/ประชุม/.test(get(r,"กลุ่ม")+get(r,"ประเภท")+title)||!!get(r,"เวลา"),
 time:get(r,"เวลา"), place:get(r,"สถานที่"), attendees:get(r,"ผู้เข้าร่วม"),
 prepDays:+get(r,"เตรียมล่วงหน้า(วัน)")||+get(r,"เตรียมล่วงหน้า")||0, prepNote:get(r,"สิ่งที่ต้องเตรียม"),
+tag:get(r,"ป้ายกำกับ"), color:/^#[0-9a-fA-F]{6}$/.test(get(r,"สี"))?get(r,"สี"):"",
 pax:+get(r,"ผู้เข้าอบรม")||0, hours:+get(r,"ชั่วโมง")||0,
 vendor:get(r,"วิทยากร/สถาบัน")||get(r,"วิทยากร"), dsd:DSD.includes(get(r,"กรมพัฒฯ"))?get(r,"กรมพัฒฯ"):"",
 train:/อบรม/.test(g.label)||!!get(r,"ผู้เข้าอบรม"),
@@ -1385,6 +1459,15 @@ syncTrain();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
+el("f-tag").value=t?.tag||"";
+el("taglist").innerHTML=tagsOf().map(x=>`<option value="${esc(x)}">`).join("");
+el("f-colors").innerHTML=[["","ตามสถานะ"],...TAGCOLORS.map(c=>[c,c])].map(([c,lab])=>
+`<button type="button" class="sw1${(t?.color||"")===c?" on":""}" data-color="${c}" title="${c?c:"ใช้สีตามสถานะงาน"}"
+style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
+el("f-colors").querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>{
+el("f-colors").querySelectorAll("[data-color]").forEach(x=>x.classList.remove("on"));
+b.classList.add("on"); el("f-colors").dataset.val=b.dataset.color;});
+el("f-colors").dataset.val=t?.color||"";
 const ms=t?.months||[];
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
 el("dlg").showModal();
@@ -1418,6 +1501,7 @@ attendees:el("f-att").value.trim(), prepDays:+el("f-prepd").value||0, prepNote:e
 train:el("f-train").checked, pax:+el("f-pax").value||0, hours:+el("f-hours").value||0,
 vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
 note:el("f-note").value.trim(), group:editing?.group||"",
+tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value)
 };
 el("dlg").close();
