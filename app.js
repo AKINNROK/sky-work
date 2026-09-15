@@ -1,4 +1,4 @@
-const APP_VERSION="6.1"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="6.3"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -67,8 +67,8 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["set","ตั้งค่า"]];
-const TABS=["home","all","meet","train","dsd","legal","idx","note","cal","budget","set"];
+const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
+const TABS=["home","all","cal","budget","meet","train","dsd","legal","idx","note","set"];
 const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
 const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
@@ -212,7 +212,32 @@ const prepDate=t=>{const d=dueDate(t); if(!d||!(+t.prepDays))return null;
 const p=new Date(d); p.setDate(p.getDate()-(+t.prepDays)); return p;};
 const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.test(gLabel(t.track))));
 const trainKind=t=>t.track==="train_law"||/กฎหมาย/.test(gLabel(t.track))?"กฎหมาย":t.track==="train_out"||/ภายนอก/.test(gLabel(t.track))?"ภายนอก":"ภายใน";
-const dueDate=t=>{const R2=rr(t); if(R2)return nextOcc(t); return t.date?new Date(t.date):null;};
+const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
+function occList(t,from,months){
+const out=[]; const s0=new Date(from);
+for(let k=0;k<months;k++){const m=new Date(s0.getFullYear(),s0.getMonth()+k,1);
+occDays(t,m.getFullYear(),m.getMonth()).forEach(dd=>out.push(new Date(m.getFullYear(),m.getMonth(),dd)));}
+return out.sort((a,b)=>a-b);
+}
+function nextOpenOcc(t){
+const today=new Date(); today.setHours(0,0,0,0);
+const st=t.date?new Date(t.date):today;
+const from=new Date(Math.min(st.getTime(),today.getTime()));
+const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d));
+const past=list.filter(d=>d<today);
+return past.length?past[0]:(list.find(d=>d>=today)||null);
+}
+function occState(t){
+if(!rr(t))return {label:t.status,cls:sCls(t.status),recur:false,d:t.date?new Date(t.date):null};
+const d=nextOpenOcc(t);
+if(!d)return {label:"ปิดครบทุกรอบแล้ว",cls:"s-done",recur:true,d:null};
+const n=daysTo(d);
+if(n<0)return {label:"รอบ "+d.getDate()+" "+MTH[d.getMonth()]+" ยังไม่ปิด",cls:"s-over",recur:true,d};
+if(n===0)return {label:"รอบวันนี้",cls:"s-run",recur:true,d};
+return {label:"อีก "+n+" วัน",cls:"s-wait",recur:true,d};
+}
+const dueDate=t=>{const R2=rr(t); if(R2)return nextOpenOcc(t); return t.date?new Date(t.date):null;};
 const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/864e5);};
 const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
@@ -531,12 +556,14 @@ ${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',
 function liRow(t,showDate){
 const ms=monthsOf(t), d=t.date?fmtDate(t.date).split(" "):null;
 return `<div class="li" data-id="${t._id}">
-<div class="ic" style="background:var(--line-2);color:${sColor(t.status)}">${(()=>{const n=rr(t)?nextOcc(t):null;
+<div class="ic" style="background:var(--line-2);color:${sColor(t.status)}">${(()=>{const n=rr(t)?dueDate(t):null;
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
 <div class="t2">${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
-<span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;
+${(()=>{const S=occState(t);
+return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
+(S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบวันที่ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>`:"");})()}</div>`;
 }
 function prepDue(days){
 days=days||7;
@@ -550,7 +577,7 @@ days=days||7;
 const late=[], soon=[];
 items.forEach(t=>{ if(!isOpenStatus(t.status))return;
 const d=dueDate(t); if(!d)return; const n=daysTo(d);
-if(n<0&&!rr(t))late.push(t); else if(n>=0&&n<=days)soon.push(t); });
+if(n<0)late.push(t); else if(n>=0&&n<=days)soon.push(t); });
 const by=(a,b)=>dueDate(a)-dueDate(b);
 return {late:late.sort(by),soon:soon.sort(by)};
 }
@@ -742,7 +769,8 @@ const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d
 const sel=R.selDay===d;
 cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}">
 <span class="dn">${d}</span>
-<span class="dots">${ts.slice(0,4).map(t=>`<i style="background:${itemColor(t)}" title="${esc(t.title)}${t.tag?" · "+esc(t.tag):""}"></i>`).join("")}</span>
+<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=rr(t)?(occDone(t,dt)?"var(--ok)":itemColor(t)):itemColor(t);
+return `<i style="background:${cl}" title="${esc(t.title)}${rr(t)&&occDone(t,dt)?" · ปิดรอบแล้ว":""}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
@@ -925,7 +953,9 @@ return `<div class="li" data-id="${t._id}">
 <div class="tx"><div class="t1">${esc(t.title)}</div>
 <div class="t2">${tShow(t.time)?`<b style="color:var(--accent)">${tShow(t.time)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${n!=null?(n===0?"วันนี้":n===1?"พรุ่งนี้":n<0?"ผ่านไปแล้ว":"อีก "+n+" วัน"):""}${t.place?" · "+esc(t.place):""}${t.attendees?" · "+esc(t.attendees):""}</div></div>
 ${p?`<span class="tag${daysTo(p)<=0?"":" sky"}" ${daysTo(p)<=0?'style="background:var(--over-soft);color:var(--over);font-weight:600"':""}>เตรียม ${daysTo(p)<=0?"แล้ว!":"อีก "+daysTo(p)+" ว."}</span>`:""}
-<span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
+${(()=>{const S=occState(t);
+return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
+(S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบนี้">${svg(ICON.check,15)}</button>`:"");})()}</div>`;};
 const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 <div class="ic" style="background:${daysTo(x.p)<=0?"var(--over-soft)":"var(--run-soft)"};color:${daysTo(x.p)<=0?"var(--over)":"var(--run)"}">${x.p.getDate()}<br>${MTH[x.p.getMonth()]}</div>
 <div class="tx"><div class="t1">${esc(x.t.title)}</div>
@@ -1517,6 +1547,16 @@ try{const d=JSON.parse(n.dataset.go);
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();openListBox(n.dataset.list);};});
 el("pclose")&&(el("pclose").onclick=()=>el("pdlg").close());
+document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async e=>{
+e.stopPropagation();
+const [id,iso]=b.dataset.done.split("|");
+const t=items.find(x=>x._id===id); if(!t)return;
+const done=[...(t.done||[])];
+const i=done.indexOf(iso); if(i>=0)done.splice(i,1); else done.push(iso);
+const {_id,...rest}=t;
+try{ await saveItem({...rest,done},_id); }
+catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); }
+});
 el("add")&&(el("add").onclick=()=>open_(null));
 el("addTx")&&(el("addTx").onclick=()=>openTx(null));
 el("addLegal")&&(el("addLegal").onclick=()=>openLegal(null));
@@ -1930,6 +1970,11 @@ try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
 if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
 function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
+function syncStatusLabel(){
+const lb=el("lbl-status"); if(!lb)return;
+const on=el("f-freq")&&el("f-freq").value!=="none";
+lb.innerHTML=on?'สถานะรวมของรายการ <span style="font-weight:400">— รอบแต่ละครั้งติ๊กที่ “ปิดงานรายรอบ” ด้านล่าง</span>':"สถานะ";
+}
 function syncFreq(){
 const f=el("f-freq").value;
 el("wrap-wd").hidden=!(f==="week"||f==="monthnth");
@@ -1995,8 +2040,27 @@ el("f-colors").querySelectorAll("[data-color]").forEach(x=>x.classList.remove("o
 b.classList.add("on"); el("f-colors").dataset.val=b.dataset.color;});
 el("f-colors").dataset.val=t?.color||"";
 const ms=t?.months||[];
+paintOccs(t); syncStatusLabel();
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
 el("dlg").showModal();
+}
+function paintOccs(t){
+const wrap=el("wrap-occ");
+const R2=(t&&rr(t))||null;
+const f=el("f-freq")?el("f-freq").value:"none";
+if(!t||!R2||f==="none"){ wrap.hidden=true; el("f-occs").innerHTML=""; return; }
+wrap.hidden=false;
+const today=new Date(); today.setHours(0,0,0,0);
+const st=t.date?new Date(t.date):today;
+const from=new Date(Math.min(st.getTime(),today.getTime()));
+const all=occList(t,new Date(from.getFullYear(),from.getMonth()-2,1),16);
+const past=all.filter(d=>d<=today).slice(-5), fut=all.filter(d=>d>today).slice(0,4);
+const show=[...past,...fut];
+el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d),dn=occDone(t,iso?new Date(iso):d);
+return `<label class="occ${d<=today?"":" fut"}"><input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}>
+<span>${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500}</span>
+<i>${d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง"}</i></label>`;}).join("")
+||`<div class="hint" style="margin:0">ยังไม่มีรอบให้แสดง</div>`;
 }
 function syncMeet(){ el("wrap-meet").hidden=!el("f-meet").checked; }
 el("f-meet").onchange=syncMeet;
@@ -2004,7 +2068,7 @@ function syncTrain(){ el("wrap-train").hidden=!el("f-train").checked; }
 el("f-train").onchange=syncTrain;
 el("f-track").addEventListener("change",()=>{ const g=groups.find(x=>x.key===el("f-track").value);
 if(g&&/อบรม/.test(g.label)&&!el("f-train").checked){ el("f-train").checked=true; syncTrain(); } });
-el("f-freq").onchange=syncFreq;
+el("f-freq").onchange=()=>{syncFreq();paintOccs(editing);syncStatusLabel();};
 el("cancel").onclick=()=>el("dlg").close();
 el("save").onclick=async()=>{
 if(!el("f-title").value.trim()){el("f-title").focus();return;}
@@ -2030,7 +2094,11 @@ skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.tr
 dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
 tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||"",
-months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value)
+months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
+done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
+const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
+const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
+return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
 el("dlg").close();
 try{ await saveItem(data,editing?._id); }

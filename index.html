@@ -99,7 +99,16 @@ font-weight:600;cursor:pointer;box-shadow:var(--sh-s);white-space:nowrap;font-va
 .f input[list]{appearance:none;-webkit-appearance:none;padding-right:38px;cursor:pointer;
 background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%234a6480' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>");
 background-repeat:no-repeat;background-position:right 14px center}
-.f input[list]::-webkit-calendar-picker-indicator{opacity:0;width:32px;margin-right:-32px;cursor:pointer}.f.wide{grid-column:1/-1}.f label{font-size:12.5px;color:var(--ink-3);font-weight:500}.f input,.f select,.f textarea{background:var(--paper);border:0;border-radius:var(--r-xs);padding:11px 14px;width:100%;max-width:100%;box-shadow:inset 0 0 0 1.5px transparent;font-size:15px}.f input:focus,.f select:focus,.f textarea:focus{box-shadow:inset 0 0 0 2px var(--accent-2)}.f textarea{min-height:70px;resize:vertical}.months{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;min-width:0}.months label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink-2);background:var(--paper);border-radius:999px;padding:6px 11px;cursor:pointer}.months input{accent-color:var(--accent-2)}.tabbar{display:none}@media(max-width:820px){.shell{grid-template-columns:1fr}.side{display:none}main{padding:0 14px 104px;max-width:none}.mtop{display:flex;align-items:center;gap:12px;padding:16px 2px 12px}.mtop .logo{width:40px;height:40px}.mtop b{font-family:var(--head);font-weight:500;font-size:17px;display:block;line-height:1.25}.mtop span{font-size:12px;color:var(--ink-3)}.head{margin-bottom:14px;gap:10px}h1{font-size:20px}.dash{grid-template-columns:repeat(2,1fr);gap:12px}.dash>*{grid-column:span 2}.dash>.stat{grid-column:span 1}.card{padding:16px;border-radius:20px}.hero .big{font-size:34px}.tabbar{display:flex;align-items:center;position:fixed;left:8px;right:8px;bottom:8px;
+.f input[list]::-webkit-calendar-picker-indicator{opacity:0;width:32px;margin-right:-32px;cursor:pointer}.f.wide{grid-column:1/-1}.f label{font-size:12.5px;color:var(--ink-3);font-weight:500}.f input,.f select,.f textarea{background:var(--paper);border:0;border-radius:var(--r-xs);padding:11px 14px;width:100%;max-width:100%;box-shadow:inset 0 0 0 1.5px transparent;font-size:15px}.f input:focus,.f select:focus,.f textarea:focus{box-shadow:inset 0 0 0 2px var(--accent-2)}.f textarea{min-height:70px;resize:vertical}.occs{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px}
+@media(max-width:560px){.occs{grid-template-columns:1fr}}
+.occ{display:flex;align-items:center;gap:9px;background:var(--paper);border-radius:var(--r-xs);padding:9px 12px;cursor:pointer;margin:0}
+.occ.fut{opacity:.6}
+.f .occ input{width:18px;min-width:18px;height:18px;accent-color:var(--accent-2);flex:none;padding:0;box-shadow:none;background:var(--card)}
+.occ span{font-size:13.5px;font-weight:600;color:var(--ink)}
+.occ i{margin-left:auto;font-style:normal;font-size:11.5px;color:var(--ink-3)}
+.okbtn{border:0;background:var(--ok-soft);color:var(--ok);width:30px;height:30px;border-radius:10px;display:grid;place-items:center;cursor:pointer;flex:none;margin-left:6px}
+.okbtn:hover{background:var(--ok);color:#fff}
+.months{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;min-width:0}.months label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink-2);background:var(--paper);border-radius:999px;padding:6px 11px;cursor:pointer}.months input{accent-color:var(--accent-2)}.tabbar{display:none}@media(max-width:820px){.shell{grid-template-columns:1fr}.side{display:none}main{padding:0 14px 104px;max-width:none}.mtop{display:flex;align-items:center;gap:12px;padding:16px 2px 12px}.mtop .logo{width:40px;height:40px}.mtop b{font-family:var(--head);font-weight:500;font-size:17px;display:block;line-height:1.25}.mtop span{font-size:12px;color:var(--ink-3)}.head{margin-bottom:14px;gap:10px}h1{font-size:20px}.dash{grid-template-columns:repeat(2,1fr);gap:12px}.dash>*{grid-column:span 2}.dash>.stat{grid-column:span 1}.card{padding:16px;border-radius:20px}.hero .big{font-size:34px}.tabbar{display:flex;align-items:center;position:fixed;left:8px;right:8px;bottom:8px;
 background:var(--card);border-radius:22px;box-shadow:var(--sh-l);padding:6px;gap:1px;z-index:20}.tabbar button{flex:1 1 0;min-width:0;border:0;background:none;color:var(--ink-3);padding:9px 0;border-radius:16px;
 display:flex;flex-direction:row;align-items:center;justify-content:center;gap:5px;font-size:11px;cursor:pointer;
 line-height:1;transition:flex-grow .18s,background .18s}
@@ -146,7 +155,7 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <div class="f"><label for="f-company">บริษัท</label><select id="f-company"></select></div>
 <div class="f"><label for="f-track">กลุ่มงาน</label><select id="f-track"></select></div>
 <div class="f"><label for="f-type">ประเภท</label><input id="f-type" list="typelist"><datalist id="typelist"></datalist></div>
-<div class="f"><label for="f-status">สถานะ</label><select id="f-status"></select></div>
+<div class="f"><label for="f-status" id="lbl-status">สถานะ</label><select id="f-status"></select></div>
 <div class="f"><label for="f-owner">ผู้รับผิดชอบ</label><input id="f-owner"></div>
 <div class="f"><label for="f-date">วันที่</label><input id="f-date" type="date"></div>
 <div class="f"><label for="f-freq">การเกิดซ้ำ</label><select id="f-freq"></select></div>
@@ -192,6 +201,8 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <div class="f"><label for="f-tag">ป้ายกำกับ</label><input id="f-tag" list="taglist" placeholder="เช่น ความปลอดภัย, ผู้บริหาร"><datalist id="taglist"></datalist></div>
 <div class="f"><label>สีในปฏิทิน</label><div class="swrow" id="f-colors"></div></div>
 <div class="f wide"><label for="f-note">รายละเอียด</label><textarea id="f-note"></textarea></div>
+<div class="f wide" id="wrap-occ" hidden><label>ปิดงานรายรอบ <span style="font-weight:400;color:var(--ink-3)">— ติ๊กเฉพาะรอบที่ทำเสร็จแล้ว รอบอื่นยังคงเตือนตามปกติ</span></label>
+<div class="occs" id="f-occs"></div></div>
 <div class="f wide"><label>เดือนที่มีงาน</label><div class="months" id="f-months"></div></div>
 </div>
 <div class="dlg-f">
@@ -308,5 +319,5 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=6.1"></script>
+<script src="app.js?v=6.3"></script>
 </body></html>
