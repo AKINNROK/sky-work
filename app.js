@@ -1,4 +1,4 @@
-const APP_VERSION="5.7"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="5.8"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -368,12 +368,12 @@ uid=session.user.id; DB=DBShim;
 el("gate").close();
 sub("meta/groups",d=>{if(Array.isArray(d.list)&&d.list.length)groups=d.list;});
 sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
-sub("meta/gl",d=>{if(Array.isArray(d.list))gls=d.list;});
+sub("meta/gl",d=>{seedGL._done=true; if(Array.isArray(d.list))gls=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
 items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
-if(!gls.length&&items.length)seedGL();
+maybeSeedGL();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
 DBShim.collection("index").onSnapshot(s=>{
 idx=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
@@ -413,6 +413,15 @@ tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div style="font-size:13px;margin-top:8px
 '<div style="font-size:11.5px;margin-top:10px;opacity:.75;font-family:var(--mono);word-break:break-all">'+esc(x.raw)+"</div>"+
 '<div style="font-size:12.5px;margin-top:10px">ลองแก้แล้วกด <b>ตั้งค่า → การเชื่อมต่อ → ทดสอบการบันทึกข้อมูล</b> เพื่อตรวจซ้ำได้ค่ะ</div>');
 }
+function maybeSeedGL(){
+// สร้างหมวด GL อัตโนมัติได้ครั้งเดียวเท่านั้น และเฉพาะบัญชีที่ยังไม่เคยมีหมวด GL เลย
+if(seedGL._done)return;
+if(cache.meta.has("gl")){ seedGL._done=true; return; }   // เคยบันทึกหมวด GL ไว้แล้ว (ถึงจะว่างก็ห้ามสร้างทับ)
+if(!items.length)return;
+if(gls.length){ seedGL._done=true; return; }
+seedGL._done=true;
+seedGL();
+}
 function seedGL(){
 const found={};
 items.forEach(t=>[t.gl1,t.gl2].forEach(g=>{ g=(g||"").trim(); if(!g)return;
@@ -424,8 +433,10 @@ items.forEach(t=>{
 const put=(g,b)=>{g=(g||"").trim();if(!g||!b)return;const m=g.match(/^(\d{6,9})/);const key=m?m[1]:g.slice(0,18);if(found[key])found[key].budget+=+b||0;};
 put(t.gl1,t.b1); put(t.gl2,t.b2);
 });
-gls=Object.values(found).sort((a,b)=>b.budget-a.budget);
-if(gls.length&&DB)DB.doc("meta/gl").set({list:gls});
+const list=Object.values(found).sort((a,b)=>b.budget-a.budget);
+if(!list.length)return;
+gls=list;
+if(DB)DB.doc("meta/gl").set({list:gls});
 }
 const glBudget=(g,y)=>{ if(!g)return 0;
 if(g.budgets&&typeof g.budgets==="object"&&g.budgets[y]!=null)return +g.budgets[y]||0;
@@ -1610,7 +1621,7 @@ document.querySelectorAll("[data-delgl]").forEach(b=>b.onclick=async()=>{
 const k=b.dataset.delgl,n=ledger.filter(x=>x.gl===k).length;
 if(n){tell("หมวดนี้มี <b>"+n+"</b> รายการเงินผูกอยู่ค่ะ ลบหรือย้ายรายการก่อนนะคะ");return;}
 if(!await ask("ลบหมวด “"+esc(glLabel(k))+"” ใช่ไหมคะ?","ลบหมวด"))return;
-gls=gls.filter(g=>g.key!==k);render();await saveMeta("gl",gls);});
+gls=gls.filter(g=>g.key!==k);seedGL._done=true;render();await saveMeta("gl",gls);});
 if(el("csvgo")){
 el("csvgo").onclick=()=>importCSV(el("csvtext").value);
 el("csvsample").onclick=()=>{el("csvtext").value=
