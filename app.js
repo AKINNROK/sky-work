@@ -1,4 +1,4 @@
-const APP_VERSION="4.1"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.2"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -938,6 +938,14 @@ Sky Work เป็นเว็บแอปของวิมเอง ติด�
 <button class="btn ghost" id="expLedger">ดาวน์โหลดรายการเงิน</button>
 <button class="btn ghost" id="signout">ออกจากระบบ</button></div>
 <div id="csvout2"></div></div>
+<div class="card span4" style="box-shadow:inset 0 0 0 2px var(--over-soft)"><h2 style="color:var(--over)">ล้างข้อมูล <small>ใช้เมื่อจะนำเข้าข้อมูลใหม่ทั้งชุด</small></h2>
+<div class="hint" style="margin-top:0">ลบข้อมูลของบัญชีนี้ออกจากเซิร์ฟเวอร์ถาวร กู้คืนไม่ได้ · การตั้งค่า (กลุ่มงาน บริษัท หมวด GL ธีมสี) จะไม่ถูกลบ<br>
+<b>ดาวน์โหลด CSV เก็บไว้ก่อนทุกครั้ง</b> ปุ่มอยู่ด้านบน</div>
+<div class="addg">
+<button class="btn danger" id="wipeTasks">ล้างงานทั้งหมด (${items.length} รายการ)</button>
+<button class="btn danger" id="wipeLedger">ล้างรายการเงิน (${ledger.length} รายการ)</button>
+</div>
+<div id="wipeout"></div></div>
 </div>`;
 }
 function explainErr(e){
@@ -1007,13 +1015,29 @@ el("cyes").style.display=""; el("cno").textContent="ยกเลิก";
 el("cdlg").showModal();
 return new Promise(r=>{cResolve=r;});
 }
+function askCode(msg,code,yes="ยืนยันการลบ"){
+el("cmsg").innerHTML=msg+`<div style="margin-top:14px"><input id="cinput" placeholder="พิมพ์รหัสยืนยันที่นี่" autocomplete="off"
+style="width:100%;background:var(--paper);border:0;border-radius:var(--r-xs);padding:12px 14px;font-size:16px;font-family:var(--mono);box-shadow:inset 0 0 0 1.5px transparent"></div>
+<div id="cerr" style="color:var(--over);font-size:13px;margin-top:8px"></div>`;
+el("cyes").textContent=yes; el("cyes").style.display=""; el("cno").textContent="ยกเลิก";
+el("cdlg").showModal(); setTimeout(()=>el("cinput")&&el("cinput").focus(),80);
+codeWanted=code;
+return new Promise(r=>{cResolve=r;});
+}
+let codeWanted=null;
 function tell(msg){
 el("cmsg").innerHTML=msg; el("cyes").style.display="none"; el("cno").textContent="ปิด";
 el("cdlg").showModal();
 return new Promise(r=>{cResolve=r;});
 }
-el("cyes").onclick=()=>{el("cdlg").close();cResolve&&cResolve(true);};
-el("cno").onclick=()=>{el("cdlg").close();cResolve&&cResolve(false);};
+el("cyes").onclick=()=>{
+if(codeWanted){
+const v=(el("cinput")&&el("cinput").value||"").trim();
+if(v!==codeWanted){ const e=el("cerr"); if(e)e.textContent="รหัสไม่ตรงค่ะ ต้องพิมพ์ให้ตรงทุกตัวอักษร"; if(el("cinput"))el("cinput").select(); return; }
+codeWanted=null;
+}
+el("cdlg").close();cResolve&&cResolve(true);};
+el("cno").onclick=()=>{codeWanted=null;el("cdlg").close();cResolve&&cResolve(false);};
 function wire(){
 el("add")&&(el("add").onclick=()=>open_(null));
 el("addTx")&&(el("addTx").onclick=()=>openTx(null));
@@ -1132,6 +1156,21 @@ await SB.from("rows").delete().eq("id",id).eq("uid",uid);
 out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} เขียน อ่าน และลบข้อมูลได้ปกติ · ตอนนี้มี ${rd.count!=null?rd.count-1:"?"} แถวบนเซิร์ฟเวอร์</div>`;
 });
 el("icsgo")&&(el("icsgo").onclick=downloadICS);
+const wipe=async(kind,label,arr)=>{
+const out=el("wipeout");
+if(!arr.length){ tell("ยังไม่มี"+label+"ให้ลบค่ะ"); return; }
+const CODE="ลบ"+arr.length;
+const ok=await askCode(`กำลังจะลบ <b>${label} ${arr.length} รายการ</b> ออกถาวร กู้คืนไม่ได้นะคะ<br><br>
+ถ้าแน่ใจแล้ว พิมพ์ <b style="font-family:var(--mono);background:var(--over-soft);color:var(--over);padding:2px 9px;border-radius:8px">${CODE}</b> เพื่อยืนยัน`,CODE);
+if(!ok)return;
+out.innerHTML=`<div class="banner">กำลังลบ…</div>`;
+const {error}=await SB.from("rows").delete().eq("uid",uid).eq("kind",kind);
+if(error){ out.innerHTML=errBox(error); return; }
+cache[kind].clear(); emit(kind); render();
+tell(`<b>ลบ${label}เรียบร้อยแล้ว</b><div style="font-size:13.5px;margin-top:8px;line-height:1.7">ตอนนี้เหลือ 0 รายการ พร้อมนำเข้าข้อมูลชุดใหม่ที่ ตั้งค่า → นำเข้า CSV ค่ะ</div>`);
+};
+el("wipeTasks")&&(el("wipeTasks").onclick=()=>wipe("items","งาน",items));
+el("wipeLedger")&&(el("wipeLedger").onclick=()=>wipe("ledger","รายการเงิน",ledger));
 el("notifOn")&&(el("notifOn").onclick=async()=>{
 const ok=await notifyToday(true);
 if(!ok)tell("เบราว์เซอร์ไม่อนุญาตให้แจ้งเตือนค่ะ — เปิดสิทธิ์ที่รูปแม่กุญแจหน้าช่อง URL แล้วลองใหม่ หรือใช้วิธีซิงก์เข้า Google Calendar แทน");
