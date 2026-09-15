@@ -31,6 +31,9 @@ font-size:11px;color:var(--ink-3);line-height:1;display:grid;place-items:center;
 .gcbtn{background:var(--card);border:0;border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--accent);
 font-weight:600;cursor:pointer;box-shadow:var(--sh-s);white-space:nowrap;font-variant-numeric:tabular-nums}
 .gcbtn:hover{background:var(--accent-soft)}
+.minput{width:104px;text-align:right;background:var(--paper);border:0;border-radius:var(--r-xs);padding:9px 12px;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1.5px transparent}
+.minput:hover{box-shadow:inset 0 0 0 1.5px var(--accent-2)}
+.minput:focus{box-shadow:inset 0 0 0 2px var(--accent-2)}
 .glyears{font-size:11.5px;color:var(--ink-3);font-family:var(--mono);white-space:nowrap}
 .syncchip.bad{background:var(--over-soft);color:var(--over);font-weight:600;cursor:pointer}
 .syncchip.bad .dotlive{background:var(--over)}
@@ -97,6 +100,12 @@ background-repeat:no-repeat;background-position:right 14px center}
 <div class="f"><label for="f-vendor">วิทยากร / สถาบัน</label><input id="f-vendor" placeholder="ชื่อวิทยากรหรือสถาบันภายนอก"></div>
 <div class="f"><label for="f-dsd">ยื่นกรมพัฒนาฝีมือแรงงาน</label><select id="f-dsd"></select></div>
 <div class="f" style="grid-column:1/-1"><label for="f-tplace">สถานที่อบรม</label><input id="f-tplace" placeholder="เช่น ห้องประชุมใหญ่ LKL หรือ สถาบันภายนอก"></div>
+<div class="f" style="grid-column:1/-1"><label style="color:var(--accent);font-weight:600">ทะเบียนยื่นกรมพัฒนาฝีมือแรงงาน</label></div>
+<div class="f"><label for="f-batch">รุ่นที่</label><input id="f-batch" placeholder="เช่น รุ่น 1"></div>
+<div class="f"><label for="f-dsdopen">วันที่ยื่นขอเปิดหลักสูตร</label><input id="f-dsdopen" type="date"></div>
+<div class="f"><label for="f-dsdopenno">เลขคำขอเปิดหลักสูตร</label><input id="f-dsdopenno" placeholder="เช่น รง 0438/ยป1-1250"></div>
+<div class="f"><label for="f-dsdcert">วันที่ยื่นรับรองรุ่น</label><input id="f-dsdcert" type="date"></div>
+<div class="f"><label for="f-dsdcertno">เลขคำขอรับรองรุ่น</label><input id="f-dsdcertno" placeholder="เช่น รง 0438/รง1-4367"></div>
 </div></div>
 <div class="f"><label for="f-gl1">หมวด GL หลัก</label><select id="f-gl1"></select></div>
 <div class="f"><label for="f-b1">งบ GL หลัก</label><input id="f-b1" type="number" step="1"></div>
@@ -148,5 +157,5 @@ background-repeat:no-repeat;background-position:right 14px center}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=4.5"></script>
+<script src="app.js?v=4.6"></script>
 </body></html>

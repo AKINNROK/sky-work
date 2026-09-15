@@ -1,4 +1,4 @@
-const APP_VERSION="4.5"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.6"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -258,6 +258,7 @@ return `<g><rect x="${x}" y="${120-hi2}" width="${w}" height="${hi2}" rx="4" fil
 const CFG_BAKED={url:"",key:""};
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
+let hrdata={manpower:{},certified:{}};
 const cache={items:new Map(),ledger:new Map(),meta:new Map()};
 const listeners={items:[],ledger:[],meta:new Map()};
 const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}});
@@ -318,7 +319,7 @@ if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
 emit("items");emit("ledger");[...cache.meta.keys()].forEach(emitMeta);
-["groups","companies","gl","theme"].forEach(emitMeta);
+["groups","companies","gl","theme","hr"].forEach(emitMeta);
 }
 function liveSync(){
 SB.channel("rows-"+uid).on("postgres_changes",{event:"*",schema:"public",table:"rows",filter:"uid=eq."+uid},p=>{
@@ -340,6 +341,7 @@ el("gate").close();
 sub("meta/groups",d=>{if(Array.isArray(d.list)&&d.list.length)groups=d.list;});
 sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{if(Array.isArray(d.list))gls=d.list;});
+sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
 items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
@@ -399,6 +401,12 @@ const setGlBudget=(g,y,v)=>{ if(!g.budgets||typeof g.budgets!=="object"){ g.budg
 if(v)g.budgets[y]=v; else delete g.budgets[y]; g.budget=g.budgets[THISYEAR]||0; };
 const glYears=g=>Object.keys((g&&g.budgets)||{}).filter(y=>+g.budgets[y]).map(Number).sort();
 const glKeyOf=g=>{g=(g||"").trim();if(!g)return"";const m=g.match(/^(\d{6,9})/);return m?m[1]:g.slice(0,18);};
+const mpOf=(c,y)=>+((hrdata.manpower[c]||{})[y])||0;
+const certOf=(c,y)=>{const v=(hrdata.certified[c]||{})[y]; return v==null?null:+v||0;};
+const saveHR=async()=>{ if(!DB)return; try{ await DB.doc("meta/hr").set({manpower:hrdata.manpower,certified:hrdata.certified}); }
+catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div style="font-size:13px;margin-top:8px;line-height:1.7">'+x.fix+"</div>":"")); } };
+const trainedPax=(c,y)=>items.filter(t=>isTrain(t)&&(t.company||"")===c&&t.status==="เสร็จสิ้น"
+&&(()=>{const d=dueDate(t);return d?d.getFullYear()===y:false;})()).reduce((n,t)=>n+(+t.pax||0),0);
 const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); } };
 async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); if(data&&"_id" in data)delete data._id; return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
 function renderNav(){
@@ -831,6 +839,35 @@ ${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}</div>
 <span><i style="background:var(--ok)"></i>อนุมัติแล้ว ${okd.length}</span>
 ${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน ${bad.length}</span>`:""}</div>
 <div class="list">${[...waiting,...sent,...bad].map(card).join("")||`<div class="empty">ไม่มีหลักสูตรที่ค้างยื่น 🎉</div>`}</div></div>
+<div class="card span4"><h2>เกณฑ์กรมพัฒนาฝีมือแรงงาน ปี ${R.year+543} <small>ลูกจ้างตั้งแต่ 100 คนขึ้นไป ต้องฝึกอบรมไม่น้อยกว่า 50% ต่อปี</small></h2>
+<div class="tblwrap"><table><thead><tr><th>บริษัท</th><th style="text-align:right">พนักงาน</th><th style="text-align:right">เป้า 50%</th>
+<th style="text-align:right">ผ่านรับรองแล้ว</th><th style="text-align:right">คิดเป็น</th><th>ความคืบหน้า</th></tr></thead><tbody>
+${visible(companies).map(c=>{
+const mp=mpOf(c.key,R.year), auto=trainedPax(c.key,R.year);
+const cert=certOf(c.key,R.year), used=cert==null?auto:cert;
+const target=Math.ceil(mp*0.5), pct=mp?Math.round(used/mp*1000)/10:0;
+const need=Math.max(0,target-used), req=mp>=100;
+return `<tr data-nolink="1"><td><div style="font-weight:600">${esc(c.label)}</div>
+<div class="t-note">${req?`เข้าเกณฑ์ · ${need?`ขาดอีก <b style="color:var(--over)">${need}</b> คน`:"ครบแล้ว ✓"}`:mp?"ต่ำกว่า 100 คน ไม่เข้าเกณฑ์":"ยังไม่ได้ใส่จำนวนพนักงาน"}</div></td>
+<td class="num"><input class="minput" data-mp="${esc(c.key)}" type="number" min="0" value="${mp||""}" placeholder="—"></td>
+<td class="num">${mp?baht(target):"—"}</td>
+<td class="num"><input class="minput" data-cert="${esc(c.key)}" type="number" min="0" value="${cert==null?"":cert}" placeholder="${auto}"></td>
+<td class="num"${req&&pct<50?' style="color:var(--over);font-weight:600"':req?' style="color:var(--ok);font-weight:600"':""}>${mp?pct+"%":"—"}</td>
+<td style="min-width:150px"><div class="bar"><i class="${req&&pct<50?"hot":""}" style="width:${Math.min(100,pct*2)}%"></i></div></td></tr>`;}).join("")}
+</tbody></table></div>
+<div class="hint">ช่อง <b>ผ่านรับรองแล้ว</b> เว้นว่างไว้ ระบบจะนับจากผู้เข้าอบรมในหลักสูตรที่ปิดงานแล้วให้อัตโนมัติ (ตัวเลขสีจาง) — แต่ถ้าคนเดิมอบรมหลายหลักสูตร ระบบจะนับซ้ำ ให้พิมพ์ทับด้วยจำนวนคนจริงที่ไม่ซ้ำได้เลย · แถบเต็มที่ 50%</div></div>
+<div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
+<div class="tblwrap"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
+<th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>สถานะ</th></tr></thead><tbody>
+${(()=>{const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||t.dsdOpenNo||t.dsdCertNo);
+return dl.length?dl.map(t=>`<tr data-id="${t._id}">
+<td><div style="font-weight:600">${esc(t.title)}</div>${t.code?`<div class="t-note">${esc(t.code)}</div>`:""}</td>
+<td>${esc(t.company?cLabel(t.company):"—")}</td><td>${esc(t.batch||"—")}</td>
+<td class="num">${t.dsdOpenDate?fmtDate(t.dsdOpenDate):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(t.dsdOpenNo||"—")}</td>
+<td class="num">${t.dsdCertDate?fmtDate(t.dsdCertDate):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(t.dsdCertNo||"—")}</td>
+<td class="num">${t.pax||"—"}</td><td><span class="pill ${dsdCls(t.dsd)}">${esc(t.dsd||"—")}</span></td></tr>`).join("")
+:`<tr><td colspan="9"><div class="empty">ยังไม่มีหลักสูตรที่ต้องยื่น — เปิดหลักสูตรแล้วเลือกสถานะกรมพัฒฯ</div></td></tr>`;})()}
+</tbody></table></div></div>
 ${board("อบรมตามกฎหมาย",byKind("กฎหมาย"),"ยังไม่มีหลักสูตรตามกฎหมายในช่วงนี้")}
 ${board("อบรมภายใน",byKind("ภายใน"))}
 ${board("อบรมภายนอก",byKind("ภายนอก"))}
@@ -1117,8 +1154,8 @@ el("cno").onclick=()=>{codeWanted=null;el("cdlg").close();cResolve&&cResolve(fal
 function wire(){
 el("add")&&(el("add").onclick=()=>open_(null));
 el("addTx")&&(el("addTx").onclick=()=>openTx(null));
-document.querySelectorAll("[data-id]").forEach(n=>n.onclick=()=>{
-const t=items.find(x=>x._id===n.dataset.id); if(t)open_(t);});
+document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
+const t=items.find(x=>x._id===n.dataset.id); if(t)open_(t);};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
 const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
 const sc=el("sc1");
@@ -1143,6 +1180,14 @@ bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","
 el("modeseg")&&(el("modeseg").onclick=async e=>{
 const b=e.target.closest("button[data-md]"); if(!b)return;
 await setTheme({preset:theme.preset,custom:theme.custom,mode:b.dataset.md});});
+document.querySelectorAll("[data-mp]").forEach(n=>n.onchange=async()=>{
+const k=n.dataset.mp; hrdata.manpower[k]=hrdata.manpower[k]||{};
+const v=+n.value||0; if(v)hrdata.manpower[k][R.year]=v; else delete hrdata.manpower[k][R.year];
+render(); await saveHR();});
+document.querySelectorAll("[data-cert]").forEach(n=>n.onchange=async()=>{
+const k=n.dataset.cert; hrdata.certified[k]=hrdata.certified[k]||{};
+if(n.value.trim()==="")delete hrdata.certified[k][R.year]; else hrdata.certified[k][R.year]=+n.value||0;
+render(); await saveHR();});
 document.querySelectorAll("[data-see]").forEach(b=>b.onclick=()=>{
 const [k,v]=b.dataset.see.split(":");
 F.q="";F.track="";F.type="";F.status="";F.company="";F[k]=v;
@@ -1250,9 +1295,9 @@ el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
-["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","การเกิดซ้ำ","รายละเอียด"],
+["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","วิทยากร/สถาบัน","กรมพัฒฯ","รุ่นที่","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
-t.gl1?glLabel(glKeyOf(t.gl1)):"",budgetOf(t),t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",rruleText(t),t.note])));
+t.gl1?glLabel(glKeyOf(t.gl1)):"",budgetOf(t),t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.vendor||"",t.dsd||"",t.batch||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
 if(el("health")&&healthState!=="done")checkHealth();
 el("selftest")&&(el("selftest").onclick=async()=>{
 const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
@@ -1370,6 +1415,9 @@ prepDays:+get(r,"เตรียมล่วงหน้า(วัน)")||+get(r
 tag:get(r,"ป้ายกำกับ"), color:/^#[0-9a-fA-F]{6}$/.test(get(r,"สี"))?get(r,"สี"):"",
 pax:+get(r,"ผู้เข้าอบรม")||0, hours:+get(r,"ชั่วโมง")||0,
 vendor:get(r,"วิทยากร/สถาบัน")||get(r,"วิทยากร"), dsd:DSD.includes(get(r,"กรมพัฒฯ"))?get(r,"กรมพัฒฯ"):"",
+batch:get(r,"รุ่นที่"), dsdOpenDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นเปิดหลักสูตร"))?get(r,"วันที่ยื่นเปิดหลักสูตร"):null,
+dsdOpenNo:get(r,"เลขคำขอเปิด"), dsdCertDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นรับรองรุ่น"))?get(r,"วันที่ยื่นรับรองรุ่น"):null,
+dsdCertNo:get(r,"เลขคำขอรับรอง"),
 train:/อบรม/.test(g.label)||!!get(r,"ผู้เข้าอบรม"),
 months:/^\d{4}-\d{2}-\d{2}$/.test(date)?[new Date(date).getMonth()+1]:[]
 });
@@ -1452,6 +1500,9 @@ el("f-prepn").value=t?.prepNote||"";
 syncMeet();
 el("f-train").checked=formCtx?formCtx==="train":isTrain(t||{});
 el("f-tplace").value=t?.place||"";
+el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
+el("f-dsdopenno").value=t?.dsdOpenNo||""; el("f-dsdcert").value=t?.dsdCertDate||"";
+el("f-dsdcertno").value=t?.dsdCertNo||"";
 el("f-pax").value=t?.pax||""; el("f-hours").value=t?.hours||"";
 el("f-vendor").value=t?.vendor||"";
 fill("f-dsd",[["","— ไม่ระบุ —"],...DSD.map(x=>[x,x])],t?.dsd||"");
@@ -1500,6 +1551,8 @@ place:(el("f-train").checked&&!el("f-meet").checked)?el("f-tplace").value.trim()
 attendees:el("f-att").value.trim(), prepDays:+el("f-prepd").value||0, prepNote:el("f-prepn").value.trim(),
 train:el("f-train").checked, pax:+el("f-pax").value||0, hours:+el("f-hours").value||0,
 vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
+batch:el("f-batch").value.trim(), dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
+dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
 tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value)
