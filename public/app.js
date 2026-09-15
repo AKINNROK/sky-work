@@ -1,4 +1,4 @@
-const APP_VERSION="4.8"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="4.9"; const APP_DATE="15 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -434,6 +434,12 @@ const trainedPax=(c,y)=>items.filter(t=>isTrain(t)&&(t.company||"")===c&&t.statu
 &&(()=>{const d=dueDate(t);return d?d.getFullYear()===y:false;})()).reduce((n,t)=>n+(+t.pax||0),0);
 const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); } };
 async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); if(data&&"_id" in data)delete data._id; return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
+async function hardRefresh(){
+setFoot("กำลังรีเฟรช…");
+try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.filter(k=>/skywork/i.test(k)).map(k=>caches.delete(k))); } }catch(e){}
+try{ if(navigator.serviceWorker){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.update().catch(()=>{}))); } }catch(e){}
+const u=new URL(location.href); u.searchParams.set("r",Date.now()); location.replace(u.toString());
+}
 function renderNav(){
 const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION;
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
@@ -441,6 +447,9 @@ el("tabbar").innerHTML=TABS.map(k=>{const l=VIEWS.find(v=>v[0]===k)[1];
 return `<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k],21)}${l}</button>`;}).join("");
 const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;renderNav();render();window.scrollTo(0,0);};
 el("nav").onclick=go; el("tabbar").onclick=go;
+["brandBtn","brandBtnM"].forEach(id=>{const n=el(id); if(!n||n._wired)return; n._wired=1;
+n.onclick=hardRefresh;
+n.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();hardRefresh();}};});
 }
 function goTo(v,f){
 Object.assign(F,{q:"",track:"",type:"",status:"",company:""},f&&f.F||{});
