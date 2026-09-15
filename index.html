@@ -51,6 +51,27 @@
 <div class="f wide" id="wrap-nth" hidden><label>สัปดาห์ที่</label><div class="months" id="f-nth"></div></div>
 <div class="f" id="wrap-md" hidden><label for="f-md">วันที่ของเดือน</label><input id="f-md" type="number" min="1" max="31" placeholder="เช่น 10"></div>
 <div class="f" id="wrap-recur"><label for="f-recur">หมายเหตุรอบงาน (เดิม)</label><input id="f-recur" placeholder="เว้นว่างได้"></div>
+<div class="f wide" style="flex-direction:row;align-items:center;gap:9px;background:var(--paper);border-radius:var(--r-xs);padding:11px 14px">
+<input type="checkbox" id="f-meet" style="width:20px;height:20px;accent-color:var(--accent-2);flex:none">
+<label for="f-meet" style="font-size:14.5px;color:var(--ink);font-weight:600;margin:0;cursor:pointer">งานนี้เป็นการประชุม</label></div>
+<div class="f wide" id="wrap-meet" hidden>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+<div class="f"><label for="f-time">เวลาเริ่ม</label><input id="f-time" type="time"></div>
+<div class="f"><label for="f-place">สถานที่ / ลิงก์</label><input id="f-place" placeholder="ห้องประชุม 2 หรือ Zoom"></div>
+<div class="f"><label for="f-att">ผู้เข้าร่วม / ประธาน</label><input id="f-att" placeholder="เช่น บอร์ดผู้บริหาร"></div>
+<div class="f"><label for="f-prepd">เตรียมข้อมูลล่วงหน้า (วัน)</label><input id="f-prepd" type="number" min="0" max="60" step="1" placeholder="เช่น 3"></div>
+<div class="f wide" style="grid-column:1/-1"><label for="f-prepn">สิ่งที่ต้องเตรียม</label><input id="f-prepn" placeholder="เช่น สรุปอัตรากำลัง + ตัวเลข Turnover"></div>
+</div></div>
+<div class="f wide" style="flex-direction:row;align-items:center;gap:9px;background:var(--paper);border-radius:var(--r-xs);padding:11px 14px">
+<input type="checkbox" id="f-train" style="width:20px;height:20px;accent-color:var(--accent-2);flex:none">
+<label for="f-train" style="font-size:14.5px;color:var(--ink);font-weight:600;margin:0;cursor:pointer">งานนี้เป็นงานฝึกอบรม</label></div>
+<div class="f wide" id="wrap-train" hidden>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+<div class="f"><label for="f-pax">จำนวนผู้เข้าอบรม (คน)</label><input id="f-pax" type="number" min="0" step="1"></div>
+<div class="f"><label for="f-hours">ชั่วโมงอบรม (ต่อคน)</label><input id="f-hours" type="number" min="0" step="0.5"></div>
+<div class="f"><label for="f-vendor">วิทยากร / สถาบัน</label><input id="f-vendor" placeholder="ชื่อวิทยากรหรือสถาบันภายนอก"></div>
+<div class="f"><label for="f-dsd">ยื่นกรมพัฒนาฝีมือแรงงาน</label><select id="f-dsd"></select></div>
+</div></div>
 <div class="f"><label for="f-gl1">หมวด GL หลัก</label><select id="f-gl1"></select></div>
 <div class="f"><label for="f-b1">งบ GL หลัก</label><input id="f-b1" type="number" step="1"></div>
 <div class="f"><label for="f-gl2">หมวด GL รอง</label><select id="f-gl2"></select></div>
@@ -99,5 +120,5 @@
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=3.2"></script>
+<script src="app.js?v=4.1"></script>
 </body></html>
