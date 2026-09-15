@@ -49,6 +49,16 @@ font-size:11px;color:var(--ink-3);line-height:1;display:grid;place-items:center;
 .gcbtn{background:var(--card);border:0;border-radius:999px;padding:7px 14px;font-size:12.5px;color:var(--accent);
 font-weight:600;cursor:pointer;box-shadow:var(--sh-s);white-space:nowrap;font-variant-numeric:tabular-nums}
 .gcbtn:hover{background:var(--accent-soft)}
+.mgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
+@media(max-width:620px){.mgrid{grid-template-columns:repeat(3,1fr)}}
+.mcell{display:flex;flex-direction:column;gap:4px}
+.mcell span{font-size:11.5px;color:var(--ink-3);text-align:center}
+.f .mcell input{text-align:center;padding:9px 6px;font-size:14px}
+.dcalc{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;background:var(--paper);border-radius:var(--r-sm);padding:14px}
+@media(max-width:620px){.dcalc{grid-template-columns:repeat(2,1fr)}}
+.dcalc div{display:flex;flex-direction:column;gap:2px}
+.dcalc span{font-size:11.5px;color:var(--ink-3)}
+.dcalc b{font-family:var(--head);font-weight:500;font-size:18px;font-variant-numeric:tabular-nums}
 .minput{width:104px;text-align:right;background:var(--paper);border:0;border-radius:var(--r-xs);padding:9px 12px;font-variant-numeric:tabular-nums;box-shadow:inset 0 0 0 1.5px transparent}
 .minput:hover{box-shadow:inset 0 0 0 1.5px var(--accent-2)}
 .minput:focus{box-shadow:inset 0 0 0 2px var(--accent-2)}
@@ -149,6 +159,27 @@ background-repeat:no-repeat;background-position:right 14px center}
 </div>
 <div class="dlg-f"><button type="button" class="btn" id="gatego">ถัดไป</button></div>
 </form></dialog>
+<dialog id="ddlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h" id="ddlgh">กรมพัฒนาฯ</div>
+<div class="dlg-b" style="grid-template-columns:1fr">
+<div class="f"><label for="d-id">เลขทะเบียน / ID ในระบบกรมพัฒนาฯ</label><input id="d-id" placeholder="เช่น 113471"></div>
+<div class="f"><label>จำนวนพนักงานทั้งหมดของสถานประกอบกิจการทุกสาขา ในแต่ละเดือน</label>
+<div class="mgrid" id="d-months"></div>
+<div class="hint" style="margin-top:8px">เดือนที่ยังไม่ถึง เว้นว่างไว้ ระบบจะไม่นำมาหารเฉลี่ย</div></div>
+<div class="f"><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+<div class="f"><label for="d-sent">A · ปัจจุบันส่งฝึกแล้ว (คน)</label><input id="d-sent" type="number" min="0"></div>
+<div class="f"><label for="d-rt">B · เลขบัตรฯ ที่มีการฝึกซ้ำ (ครั้ง)</label><input id="d-rt" type="number" min="0"></div>
+<div class="f"><label for="d-rp">เลขบัตรฯ ที่มีการฝึกซ้ำ (คน)</label><input id="d-rp" type="number" min="0"></div>
+<div class="f"><label for="d-ps">ผู้ผ่านการรับรองความรู้ความสามารถ</label><input id="d-ps" type="number" min="0"></div>
+<div class="f"><label for="d-pd">ผู้ผ่านการทดสอบมาตรฐานฝีมือแรงงาน</label><input id="d-pd" type="number" min="0"></div>
+</div></div>
+<div class="f"><div id="d-calc"></div><div class="hint" id="d-hint" style="margin-top:8px"></div></div>
+</div>
+<div class="dlg-f">
+<button type="button" class="btn danger" id="ddel">ลบข้อมูลปีนี้</button>
+<button type="button" class="btn ghost" id="dcancel">ยกเลิก</button>
+<button type="button" class="btn" id="dsave">บันทึก</button>
+</div></form></dialog>
 <dialog id="ldlg"><form method="dialog" onsubmit="return false">
 <div class="dlg-h" id="ldlgh">เพิ่มรายการกฎหมาย</div>
 <div class="dlg-b">
@@ -195,5 +226,5 @@ background-repeat:no-repeat;background-position:right 14px center}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=4.9"></script>
+<script src="app.js?v=5.0"></script>
 </body></html>
