@@ -1,4 +1,4 @@
-const APP_VERSION="7.2"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.3"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -205,7 +205,7 @@ const realCos=()=>visible(companies).filter(c=>!isGroupCo(c));
 const groupCos=()=>visible(companies).filter(isGroupCo);
 const childrenOf=g=>visible(companies).filter(c=>!isGroupCo(c)&&c.parent===g.key);
 const cLabel=k=>(companies.find(g=>g.key===k)||{}).label||k||"—";
-const glLabel=k=>{const g=gls.find(x=>x.key===k);return g?(g.code?g.code+" · ":"")+g.label:(k||"ไม่ระบุ GL");};
+const glLabel=k=>{const g=gls.find(x=>x.key===k);return g?(g.dept?g.dept+" · ":"")+(g.code?g.code+" · ":"")+g.label:(k||"ไม่ระบุ GL");};
 const isMeet=t=>!!(t&&(t.meet||/ประชุม|meeting/i.test((t.title||"")+" "+(t.type||""))));
 const hhmm=v=>/^\d{1,2}:\d{2}$/.test(v||"")?(v.length===4?"0"+v:v):"";
 const tShow=v=>hhmm(v)?hhmm(v)+" น.":"";
@@ -949,7 +949,7 @@ t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.
 p:(x.kind==="income"?"+":"-")+baht(x.amount)+" ฿",pc:x.kind==="income"?"s-done":"s-run",c:"var(--run-soft)",ic:"var(--run)"}))];
 const lk=regList("gl:"+k,esc(nm)+" · ปี "+(R.year+543),rowsL);
 return `<div class="glrow" ${lk} style="cursor:pointer">
-<div class="top"><span>${(()=>{const gg=gls.find(x=>x.key===k);return gg&&gg.dept?`<small style="color:var(--ink-3);font-weight:600">${esc(gg.dept)} · </small>`:"";})()}${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
+<div class="top"><span>${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
 <span class="amt"${a>b&&b?' style="color:var(--over);font-weight:600"':""}>${baht(a)} / ${baht(b)} ›</span></div>
 <div class="bar"><i class="${a>b&&b?"hot":""}" style="width:${p}%"></i></div></div>`;}).join("")
 :`<div class="empty">ยังไม่มีงบในปีนี้ — ใส่งบในงานแต่ละงาน หรือเพิ่มหมวด GL ที่หน้าตั้งค่า</div>`}
@@ -1902,8 +1902,10 @@ el("addgl").onclick=async()=>{
 const code=el("glcode").value.trim(), label=el("glname").value.trim(), b=+el("glbud").value||0;
 const dept=el("gldept").value.trim();
 if(!label&&!code){tell("ใส่ชื่อหมวดหรือรหัส GL อย่างน้อยหนึ่งอย่างค่ะ");return;}
-const key=code||label.slice(0,18);
-if(gls.some(g=>g.key===key)){tell("มีหมวดนี้แล้วค่ะ");return;}
+let key=(dept?dept+"|":"")+(code||label.slice(0,18));
+if(gls.some(g=>(g.dept||"")===dept&&(g.code||"")===code&&g.label===(label||code))){
+tell("มีหมวดนี้แล้วค่ะ <div style=\"font-size:13px;margin-top:8px\">ซ้ำทั้ง Budget Dept. รหัส GL และชื่อหมวด — ถ้าตั้งใจแยกก้อนงบ ให้ใส่ Budget Dept. หรือชื่อหมวดให้ต่างกันค่ะ</div>");return;}
+if(gls.some(g=>g.key===key)){let i=2; while(gls.some(g=>g.key===key+"#"+i))i++; key=key+"#"+i;}
 gls=[...gls,{key,code,dept,label:label||code,budget:0,budgets:b?{[(R.glYear||R.year)]:b}:{}}];
 el("gldept").value=el("glcode").value=el("glname").value=el("glbud").value="";
 render();await saveMeta("gl",gls);};
