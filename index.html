@@ -199,6 +199,8 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <div class="f"><label for="f-skill">ประเภทการอบรม</label><select id="f-skill"></select></div>
 <div class="f"><label for="f-mode">รูปแบบการอบรม</label><select id="f-mode"></select></div>
 <div class="f"><label for="f-batch">รุ่นที่</label><input id="f-batch" placeholder="เช่น รุ่น 1"></div>
+<div class="f"><label for="f-yp">แบบที่ยื่น (ยป.)</label><select id="f-yp"></select></div>
+<div class="f"><label for="f-dsdend">วันที่ฝึกเสร็จสิ้น</label><input id="f-dsdend" type="date"></div>
 <div class="f"><label for="f-dsdopen">วันที่ยื่นขอเปิดหลักสูตร</label><input id="f-dsdopen" type="date"></div>
 <div class="f"><label for="f-dsdopenno">เลขคำขอเปิดหลักสูตร</label><input id="f-dsdopenno" placeholder="เช่น รง 0438/ยป1-1250"></div>
 <div class="f"><label for="f-dsdcert">วันที่ยื่นรับรองรุ่น</label><input id="f-dsdcert" type="date"></div>
@@ -277,12 +279,18 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <div class="hint" style="margin-top:8px">เดือนที่ยังไม่ถึง เว้นว่างไว้ ระบบจะไม่นำมาหารเฉลี่ย</div></div>
 <div class="f"><div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
 <div class="f"><label for="d-sent">A · ปัจจุบันส่งฝึกแล้ว (คน)</label><input id="d-sent" type="number" min="0"></div>
-<div class="f"><label for="d-rt">B · เลขบัตรฯ ที่มีการฝึกซ้ำ (ครั้ง)</label><input id="d-rt" type="number" min="0"></div>
-<div class="f"><label for="d-rp">เลขบัตรฯ ที่มีการฝึกซ้ำ (คน)</label><input id="d-rp" type="number" min="0"></div>
-<div class="f"><label for="d-ps">ผู้ผ่านการรับรองความรู้ความสามารถ</label><input id="d-ps" type="number" min="0"></div>
-<div class="f"><label for="d-pd">ผู้ผ่านการทดสอบมาตรฐานฝีมือแรงงาน</label><input id="d-pd" type="number" min="0"></div>
-<div class="f"><label for="d-std">ในจำนวนนั้น จ่ายค่าจ้างตามมาตรฐานฝีมือ ≥180 วัน (คน)</label><input id="d-std" type="number" min="0" placeholder="ใช้ขอคืน 1,000 ฿/คน"></div>
+<div class="f"><label for="d-rt">B · จำนวน "ครั้งที่ซ้ำ" (นับเฉพาะส่วนที่เกินครั้งแรก)</label><input id="d-rt" type="number" min="0" placeholder="เช่น นาย A เข้า 3 หลักสูตร = ซ้ำ 2 ครั้ง"></div>
+<div class="f"><label for="d-rp">มีกี่คนที่ถูกส่งซ้ำ (ไว้ดูเฉยๆ ไม่เข้าสูตร)</label><input id="d-rp" type="number" min="0" placeholder="เช่น นาย A คนเดียว = 1"></div>
+<div class="f"><label for="d-ps">ผู้ผ่านการรับรองความรู้ความสามารถ (คน)</label>
+<input id="d-ps" type="number" min="0" placeholder="= C (หัวคนไม่ซ้ำ)"><div class="hint" id="d-pshint" style="margin-top:6px"></div></div>
 <div class="f"><label for="d-fund">เงินสมทบที่นำส่งกองทุนปีที่แล้ว (บาท)</label><input id="d-fund" type="number" min="0" placeholder="ใช้ขอคืน 10%"></div>
+</div></div>
+<div class="f"><label>สถานะการยื่นขอรับรอง สท.2</label>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
+<div class="f"><label for="d-st2">ขั้นตอนตอนนี้</label><select id="d-st2"></select></div>
+<div class="f"><label for="d-st2date">วันที่ยื่น / กำหนดยื่น</label><input id="d-st2date" type="date"></div>
+<div class="f"><label for="d-st2no">เลขที่รับเรื่อง / อ้างอิง</label><input id="d-st2no" placeholder="จากระบบออนไลน์กรมฯ"></div>
+<div class="f"><label for="d-st2note">บันทึกช่วยจำ</label><input id="d-st2note" placeholder="เช่น รอ สปส. เดือน ธ.ค."></div>
 </div></div>
 <div class="f"><div id="d-calc"></div><div class="hint" id="d-hint" style="margin-top:8px"></div></div>
 </div>
@@ -350,5 +358,5 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=8.0"></script>
+<script src="app.js?v=8.2"></script>
 </body></html>
