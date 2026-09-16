@@ -1,4 +1,4 @@
-const APP_VERSION="7.3"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.4"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -244,10 +244,16 @@ const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const TYPEBASE=["อบรม","ประชุม","โปรเจค","กิจกรรม","งานประจำ/ต่ออายุ","เอกสารราชการ","สุขภาพ","อื่นๆ"];
 const typeUsed=x=>items.filter(t=>(t.type||"")===x).length;
-const types=()=>{
-const base=typeList.length?typeList.slice():TYPEBASE.slice();
-const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.includes(x)).sort();
+const tName=x=>typeof x==="string"?x:(x&&x.name)||"";
+const tTrack=x=>(typeof x==="string"?"":(x&&x.track)||"");
+// รายการประเภทแบบเต็ม [{name,track}] — track ว่าง = ใช้ได้ทุกกลุ่มงาน
+const typeDefs=()=>{
+const base=(typeList.length?typeList:TYPEBASE).map(x=>({name:tName(x),track:tTrack(x)})).filter(x=>x.name);
+const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.some(b=>b.name===x)).sort().map(name=>({name,track:""}));
 return [...base,...extra];};
+const types=()=>typeDefs().map(x=>x.name);
+// ประเภทที่ใช้ได้กับกลุ่มงานนั้น: ของกลุ่มนั้น + ที่ไม่ผูกกลุ่ม
+const typesFor=tr=>typeDefs().filter(x=>!x.track||x.track===tr).map(x=>x.name);
 const monthsOf=t=>{
 const R2=rr(t);
 if(R2){const y=(typeof R!=="undefined"&&R.year)||THISYEAR;
@@ -1449,20 +1455,26 @@ ${moveBtns("companies",i,companies.length,c.hidden)}
 เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
 function setTypes(){
-const list=types();
+const defs=typeDefs(), list=defs.map(x=>x.name);
 const none=items.filter(t=>!t.type).length;
 return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน</small></h2>
-<div class="rows">${list.map((x,i)=>{const n=typeUsed(x);
+<div class="rows">${defs.map((D,i)=>{const x=D.name, tr=D.track, n=typeUsed(x);
 return `<div class="rw">${nameInput("data-rent",x,x)}
+<select class="cosel" data-trt="${esc(x)}" title="อยู่ใต้กลุ่มงานไหน">
+<option value="">— ใช้ได้ทุกกลุ่มงาน —</option>
+${groups.map(g=>`<option value="${esc(g.key)}"${tr===g.key?" selected":""}>อยู่ใต้ ${esc(g.label)}</option>`).join("")}
+</select>
 <button class="gcbtn" data-see="type:${esc(x)}" title="ดูงานที่ใช้ประเภทนี้"${n?"":" disabled"}>${n} งาน</button>
 <button class="iconbtn" data-movet="${esc(x)}" title="ย้ายงานทั้งหมดไปประเภทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
 <button class="iconbtn" data-mvt="${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
-<button class="iconbtn" data-mvt="${i}:1"${i===list.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button class="iconbtn" data-mvt="${i}:1"${i===defs.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
 <button class="btn danger sm" data-delt="${esc(x)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีประเภท</div>`}</div>
 <div class="addg"><input id="newt" placeholder="ชื่อประเภทใหม่ เช่น ตรวจประเมิน">
+<select id="newtg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(g=>`<option value="${esc(g.key)}">อยู่ใต้ ${esc(g.label)}</option>`).join("")}</select>
 <button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
 ${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไม่ได้ระบุประเภท — เปิดงานแล้วเลือกประเภทได้เลย</div>`:""}
-<div class="hint">พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
+<div class="hint"><b>กลุ่มงาน</b> คือกองใหญ่ · <b>ประเภทงาน</b> คือชนิดย่อยในกองนั้น — ช่องที่สองบอกว่าประเภทนี้อยู่ใต้กลุ่มไหน ตอนเพิ่มงานระบบจะโชว์เฉพาะประเภทของกลุ่มที่เลือก (บวกกับประเภทที่ตั้งเป็น “ใช้ได้ทุกกลุ่มงาน”)<br>
+พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
 }
 function setGL(){
 const y=R.glYear||R.year;
@@ -1813,7 +1825,7 @@ if(el("addt")){
 el("addt").onclick=async()=>{
 const v=el("newt").value.trim(); if(!v){tell("ใส่ชื่อประเภทก่อนนะคะ");return;}
 if(types().includes(v)){tell("มีประเภทนี้แล้วค่ะ");return;}
-typeList=[...types(),v]; el("newt").value=""; render(); await saveMeta("types",typeList);};
+typeList=[...typeDefs(),{name:v,track:el("newtg").value||""}]; el("newt").value=""; render(); await saveMeta("types",typeList);};
 }
 document.querySelectorAll("[data-rent]").forEach(n=>n.onchange=async()=>{
 const from=n.dataset.rent, to=n.value.trim();
@@ -1822,7 +1834,7 @@ if(!types().includes(from)||renameLock){render();return;}   // เปลี่�
 renameLock=true; setTimeout(()=>renameLock=false,800);
 if(types().includes(to)){tell("มีประเภท “"+esc(to)+"” อยู่แล้วค่ะ ถ้าต้องการรวมเข้าด้วยกันให้ใช้ปุ่มย้ายงานแทน");render();return;}
 const used=typeUsed(from);
-typeList=types().map(x=>x===from?to:x);
+typeList=typeDefs().map(x=>x.name===from?{name:to,track:x.track}:x);
 await saveMeta("types",typeList);
 if(used){const r=await retagType(from,to);
 render();
@@ -1842,10 +1854,14 @@ document.querySelectorAll("[data-delt]").forEach(b=>b.onclick=async()=>{
 const x=b.dataset.delt, n=typeUsed(x);
 if(n){tell("ประเภทนี้มี <b>"+n+"</b> งานใช้อยู่ค่ะ กดปุ่มย้ายงานไปประเภทอื่นก่อนนะคะ");return;}
 if(!await ask("ลบประเภท “"+esc(x)+"” ใช่ไหมคะ?","ลบประเภท"))return;
-typeList=types().filter(y=>y!==x); render(); await saveMeta("types",typeList);});
+typeList=typeDefs().filter(y=>y.name!==x); render(); await saveMeta("types",typeList);});
+document.querySelectorAll("[data-trt]").forEach(n=>n.onchange=async()=>{
+const nm=n.dataset.trt;
+typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:n.value}:x);
+render(); await saveMeta("types",typeList);});
 document.querySelectorAll("[data-mvt]").forEach(b=>b.onclick=async()=>{
 const [i,d]=b.dataset.mvt.split(":").map(Number);
-const arr=types(); const t=i+d; if(t<0||t>=arr.length)return;
+const arr=typeDefs(); const t=i+d; if(t<0||t>=arr.length)return;
 const tmp=arr[i]; arr[i]=arr[t]; arr[t]=tmp;
 typeList=arr; render(); await saveMeta("types",typeList);});
 document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
@@ -2175,6 +2191,12 @@ t.mode=t.mode||theme.mode||"auto"; theme=t; applyTheme._last=isNight(); applyThe
 try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
 if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
+function paintTypeOpts(cur){
+const tr=el("f-track")?el("f-track").value:"";
+const list=typesFor(tr);
+if(cur&&!list.includes(cur))list.unshift(cur);
+fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x]),["__new__","＋ เพิ่มประเภทใหม่…"]],cur||"");
+}
 function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
 function syncStatusLabel(){
 const lb=el("lbl-status"); if(!lb)return;
@@ -2207,15 +2229,14 @@ fill("f-track",visible(groups).map(g=>[g.key,g.label]),t?.track||
 fill("f-status",STATUS.map(x=>[x,x]),t?.status||"รอดำเนินการ");
 const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(g=>[g.key,glLabel(g.key)])];
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
-(()=>{const cur=t?.type||(formCtx==="train"?"อบรม":formCtx==="meet"?"ประชุม":"");
-const list=[...types()]; if(cur&&!list.includes(cur))list.unshift(cur);
-fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x]),["__new__","＋ เพิ่มประเภทใหม่…"]],cur);})();
+paintTypeOpts(t?.type||(formCtx==="train"?"อบรม":formCtx==="meet"?"ประชุม":""));
 el("f-type").onchange=()=>{const n=el("f-type");
 if(n.value!=="__new__")return;
 const v=(window.prompt("ชื่อประเภทใหม่")||"").trim();
 if(!v){n.value="";return;}
 if(![...n.options].some(o=>o.value===v))n.add(new Option(v,v),1);
-n.value=v;};
+n.value=v;
+if(!types().includes(v)){typeList=[...typeDefs(),{name:v,track:el("f-track").value||""}]; saveMeta("types",typeList).catch(()=>{});}};
 el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||"";
 el("f-date").value=t?.date||""; el("f-recur").value=t?.recurring||"";
 const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
@@ -2279,6 +2300,7 @@ function syncMeet(){ el("wrap-meet").hidden=!el("f-meet").checked; }
 el("f-meet").onchange=syncMeet;
 function syncTrain(){ el("wrap-train").hidden=!el("f-train").checked; }
 el("f-train").onchange=syncTrain;
+el("f-track").addEventListener("change",()=>paintTypeOpts(el("f-type").value));
 el("f-track").addEventListener("change",()=>{ const g=groups.find(x=>x.key===el("f-track").value);
 if(g&&/อบรม/.test(g.label)&&!el("f-train").checked){ el("f-train").checked=true; syncTrain(); } });
 el("f-freq").onchange=()=>{syncFreq();paintOccs(editing);syncStatusLabel();};
