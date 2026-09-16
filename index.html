@@ -61,6 +61,7 @@ td .t-note{max-width:34ch}table{border-collapse:separate;border-spacing:0 8px;wi
 .iconbtn:disabled{opacity:.35;cursor:default}
 .iconbtn.on{background:var(--accent-soft);color:var(--accent)}.addg{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.addg input,.addg select{flex:1;min-width:150px;background:var(--paper);border:0;border-radius:999px;padding:11px 18px}.hint{color:var(--ink-3);font-size:13.5px;margin-top:14px}.code{font-family:var(--mono);font-size:12.5px;background:var(--paper);padding:12px 14px;border-radius:var(--r-xs);overflow-x:auto;white-space:pre;margin-top:10px}textarea.csv{width:100%;min-height:150px;background:var(--paper);border:0;border-radius:var(--r-xs);padding:13px 15px;font-family:var(--mono);font-size:12.5px;resize:vertical;margin-top:10px}.swgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px;margin-top:12px}.swcard{text-align:left;background:var(--paper);border:2px solid transparent;border-radius:14px;padding:10px;cursor:pointer;font:inherit;color:inherit;transition:transform .14s}.swcard:hover{transform:translateY(-3px)}.swcard.on{border-color:var(--accent-2);background:var(--card);box-shadow:var(--sh-m)}.sw{display:flex;gap:3px;margin-bottom:7px}.sw span{flex:1;height:26px;border-radius:8px}.swname{font-family:var(--head);font-weight:500;font-size:13px;line-height:1.35}.swnote{font-size:11px;color:var(--ink-3);line-height:1.4}.swhex{display:none}.mixer{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}.mixc{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-3)}.mixc input[type=color]{width:66px;height:50px;border:0;border-radius:var(--r-xs);background:var(--paper);padding:5px;cursor:pointer;box-shadow:var(--sh-s)}dialog{border:0;border-radius:28px;background:var(--card);color:var(--ink);padding:0;width:min(680px,94vw);box-shadow:0 40px 80px -30px rgba(18,58,94,.6)}dialog::backdrop{background:rgba(18,58,94,.38);backdrop-filter:blur(3px)}.dlg-h{padding:20px 24px;font-family:var(--head);font-weight:500;font-size:17px;background:linear-gradient(135deg,var(--sky),var(--accent));color:#fff}.dlg-b{padding:20px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px;max-height:62vh;overflow-y:auto;overflow-x:hidden}.dlg-f{padding:16px 24px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;background:var(--paper)}.f{display:flex;flex-direction:column;gap:6px;min-width:0}
 [hidden]{display:none!important}
+.tagdot{width:14px;height:14px;border-radius:50%;flex:none}
 .swrow{display:flex;flex-wrap:wrap;gap:6px;padding:6px 0}
 .swrow .sw1{width:26px;height:26px;border-radius:9px;border:2px solid transparent;cursor:pointer;padding:0;
 font-size:11px;color:var(--ink-3);line-height:1;display:grid;place-items:center;transition:transform .12s}
@@ -209,7 +210,7 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <div class="f"><label for="f-b2">งบ GL รอง</label><input id="f-b2" type="number" step="1"></div>
 <div class="f"><label for="f-actual">ใช้จริง</label><input id="f-actual" type="number" step="1"></div>
 <div class="f"><label for="f-code" id="lbl-code">รหัสอ้างอิง (ไม่บังคับ)</label><input id="f-code" placeholder="เช่น 1.0 หรือเลขที่เอกสาร"></div>
-<div class="f"><label for="f-tag">ป้ายกำกับ</label><input id="f-tag" list="taglist" placeholder="เช่น ความปลอดภัย, ผู้บริหาร"><datalist id="taglist"></datalist></div>
+<div class="f"><label for="f-tag">ป้ายกำกับ</label><select id="f-tag"></select></div>
 <div class="f"><label>สีในปฏิทิน</label><div class="swrow" id="f-colors"></div></div>
 <div class="f wide"><label for="f-note">รายละเอียด</label><textarea id="f-note"></textarea></div>
 <div class="f wide" id="wrap-occ" hidden><label>ปิดงานรายรอบ <span style="font-weight:400;color:var(--ink-3)">— ติ๊กเฉพาะรอบที่ทำเสร็จแล้ว รอบอื่นยังคงเตือนตามปกติ</span></label>
@@ -336,5 +337,5 @@ h1{font-size:19px}.months{grid-template-columns:repeat(4,1fr)}.addbtn{position:f
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=7.4"></script>
+<script src="app.js?v=7.5"></script>
 </body></html>

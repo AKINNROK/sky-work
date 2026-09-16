@@ -1,4 +1,4 @@
-const APP_VERSION="7.4"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.5"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -7,8 +7,14 @@ const STATUS_DONE="เสร็จสิ้น", STATUS_CANCEL="ยกเลิ�
 const isOpenStatus=x=>x!==STATUS_DONE&&x!==STATUS_CANCEL;
 const TAGCOLORS=["#e0606d","#e8743b","#e0932b","#d9c02e","#8fbf3f","#2fa36b","#1a9f86","#2bb3c9",
 "#3d86d6","#4a5fc4","#7d5bd0","#b155c4","#d6549b","#8a6a55","#6b7785","#a9a29a"];
-const tagsOf=()=>[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].sort();
-const tagColor=name=>{const t=items.find(x=>(x.tag||"").trim()===name&&x.color);return t?t.color:"";};
+const tagDefs=()=>{
+const base=(tagList||[]).map(x=>typeof x==="string"?{name:x,color:""}:{name:x.name,color:x.color||""}).filter(x=>x.name);
+const extra=[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].filter(n=>!base.some(b=>b.name===n)).sort()
+.map(name=>({name,color:(items.find(x=>(x.tag||"").trim()===name&&x.color)||{}).color||""}));
+return [...base,...extra];};
+const tagsOf=()=>tagDefs().map(x=>x.name);
+const tagColor=name=>{const d=tagDefs().find(x=>x.name===name);return d?d.color:"";};
+const tagUsed=name=>items.filter(t=>(t.tag||"").trim()===name).length;
 const DEFAULT_GROUPS=[
 {key:"train_law",label:"อบรมตามกฎหมาย"},{key:"train_in",label:"อบรมภายใน"},
 {key:"train_out",label:"อบรมภายนอก"},{key:"project",label:"โปรเจคเสริม"},
@@ -70,7 +76,7 @@ laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19
 const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
 const TABS=["home","all","cal","budget","meet","train","dsd","legal","idx","note","set"];
 const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
-const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["types","ประเภทงาน"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
+const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
 {key:"above",   name:"เหนือหมู่เมฆ", note:"ฟ้าสดใส", ramp:["#F2F8FF","#D7E7F7","#7FC1EE","#4A93D4","#2A5E96"]},
@@ -135,9 +141,9 @@ document.documentElement.style.colorScheme="light";
 }
 }
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
-let DB=null, items=[], ledger=[], view="home", settab="groups", editing=null, editingTx=null;
+let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
-let typeList=[];
+let typeList=[], tagList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
 try{const t=localStorage.getItem("hr-theme");if(t)theme=JSON.parse(t);}catch(e){}
 const THISYEAR=new Date().getFullYear();
@@ -418,6 +424,7 @@ sub("meta/groups",d=>{if(Array.isArray(d.list)&&d.list.length)groups=d.list;});
 sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{seedGL._done=true; if(Array.isArray(d.list))gls=d.list;});
 sub("meta/types",d=>{if(Array.isArray(d.list))typeList=d.list;});
+sub("meta/tags",d=>{if(Array.isArray(d.list))tagList=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
@@ -837,7 +844,9 @@ ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 R.selDay
 ? (selTasks.map(t=>liRow(t)).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
 : (recurring.map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานประจำในเดือนนี้</div>`)}</div>
-${R.selDay?`<button class="btn ghost sm" id="clearDay" style="margin-top:12px">ดูงานประจำเดือนแทน</button>`:""}
+${R.selDay?`<div class="addg" style="margin-top:12px">
+<button class="btn sm" id="addOnDay">${svg('<path d="M12 5v14M5 12h14"/>',16)}เพิ่มงานวันที่ ${R.selDay} ${MTH[m]}</button>
+<button class="btn ghost sm" id="clearDay">ดูงานประจำเดือนแทน</button></div>`:""}
 </div></div>`
 : yearGrid());
 }
@@ -1520,7 +1529,18 @@ return `<div class="card"><h2>โหมดกลางวัน / กลาง�
 <div class="mixer">${custom.map((c,i)=>`<label class="mixc"><input type="color" id="cc${i}" value="${c}">
 <span>${["อ่อนสุด","อ่อน","กลาง","เข้ม","เข้มสุด"][i]}</span></label>`).join("")}</div>
 <div class="addg"><button class="btn" id="useCustom">${svg(ICON.check,17)}ใช้สีชุดนี้</button>
-<button class="btn ghost" id="fromCur">ดึงค่าจากชุดที่ใช้อยู่</button></div></div>`;
+<button class="btn ghost" id="fromCur">ดึงค่าจากชุดที่ใช้อยู่</button></div></div>
+<div class="card" style="margin-top:16px"><h2>ป้ายกำกับ & สีในปฏิทิน <small>${tagDefs().length} ป้าย</small></h2>
+<div class="rows">${tagDefs().map((g,i)=>{const n=tagUsed(g.name);
+return `<div class="rw">
+<span class="tagdot" style="background:${g.color||"var(--wait)"}"></span>
+${nameInput("data-rentag",g.name,g.name)}
+<span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-tagcol="${esc(g.name)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
+<button class="gcbtn" data-see="tag:${esc(g.name)}" title="ดูงานที่ติดป้ายนี้"${n?"":" disabled"}>${n} งาน</button>
+<button class="btn danger sm" data-deltag="${esc(g.name)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีป้ายกำกับ</div>`}</div>
+<div class="addg"><input id="newtag" placeholder="ชื่อป้ายใหม่ เช่น ความปลอดภัย">
+<button class="btn" id="addtag">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มป้าย</button></div>
+<div class="hint">ป้ายกำกับใช้ได้ทุกหน้า — สีที่เลือกตรงนี้คือสีที่ขึ้นในปฏิทินและจุดสีหน้ารายการ เปลี่ยนที่นี่ที่เดียว ทุกงานที่ติดป้ายนั้นเปลี่ยนตาม · “ตามสถานะ” (ช่องประ) = ใช้สีตามสถานะงานเหมือนเดิม · ลบป้ายไม่ลบงาน แต่ป้ายจะหายจากตัวเลือก</div></div>`;
 }
 function setImport(){
 return `<div class="card"><h2>นำเข้างานจากไฟล์ CSV</h2>
@@ -1752,6 +1772,36 @@ el("calMonth")&&(el("calMonth").onchange=e=>{R.month=+e.target.value;R.selDay=nu
 el("pm")&&(el("pm").onclick=()=>{R.month=(R.month+11)%12;R.selDay=null;render();});
 el("nm")&&(el("nm").onclick=()=>{R.month=(R.month+1)%12;R.selDay=null;render();});
 el("clearDay")&&(el("clearDay").onclick=()=>{R.selDay=null;render();});
+el("addOnDay")&&(el("addOnDay").onclick=()=>open_(null));
+if(el("addtag")){
+el("addtag").onclick=async()=>{const v=el("newtag").value.trim();
+if(!v){tell("ใส่ชื่อป้ายก่อนนะคะ");return;}
+if(tagsOf().includes(v)){tell("มีป้ายนี้แล้วค่ะ");return;}
+tagList=[...tagDefs(),{name:v,color:""}]; el("newtag").value=""; render(); await saveMeta("tags",tagList);};}
+document.querySelectorAll("[data-tagcol]").forEach(b=>b.onclick=async()=>{
+const [nm,c]=b.dataset.tagcol.split("|");
+tagList=tagDefs().map(x=>x.name===nm?{name:nm,color:c}:x);
+render(); await saveMeta("tags",tagList);
+const list=items.filter(t=>(t.tag||"").trim()===nm&&(t.color||"")!==c);
+for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{color:c}),_id);}catch(e){}}
+render();});
+document.querySelectorAll("[data-rentag]").forEach(n=>n.onchange=async()=>{
+const from=n.dataset.rentag, to=n.value.trim();
+if(!to||to===from||!tagsOf().includes(from)||renameLock){render();return;}
+if(tagsOf().includes(to)){tell("มีป้าย “"+esc(to)+"” อยู่แล้วค่ะ");render();return;}
+renameLock=true; setTimeout(()=>renameLock=false,800);
+tagList=tagDefs().map(x=>x.name===from?{name:to,color:x.color}:x);
+await saveMeta("tags",tagList);
+const list=items.filter(t=>(t.tag||"").trim()===from);
+for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{tag:to}),_id);}catch(e){}}
+render(); setFoot("เปลี่ยนชื่อป้ายและอัปเดต "+list.length+" งานแล้ว");});
+document.querySelectorAll("[data-deltag]").forEach(b=>b.onclick=async()=>{
+const nm=b.dataset.deltag, n=tagUsed(nm);
+if(!await ask("ลบป้าย “"+esc(nm)+"”"+(n?` — ป้ายจะหายจาก <b>${n}</b> งานด้วย`:"")+" ใช่ไหมคะ?","ลบป้าย"))return;
+tagList=tagDefs().filter(x=>x.name!==nm); await saveMeta("tags",tagList);
+const list=items.filter(t=>(t.tag||"").trim()===nm);
+for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{tag:""}),_id);}catch(e){}}
+render();});
 document.querySelectorAll("[data-day]").forEach(n=>n.onclick=()=>{
 const d=+n.dataset.day; R.selDay=R.selDay===d?null:d; render();});
 el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";render();});
@@ -1789,7 +1839,8 @@ if(n.value.trim()==="")delete hrdata.certified[k][R.year]; else hrdata.certified
 render(); await saveHR();});
 document.querySelectorAll("[data-see]").forEach(b=>b.onclick=()=>{
 const [k,v]=b.dataset.see.split(":");
-F.q="";F.track="";F.type="";F.status="";F.company="";F[k]=v;
+F.q="";F.track="";F.type="";F.status="";F.company="";
+if(k==="tag")F.q=v; else F[k]=v;
 R.scope="year"; view="all"; renderNav(); render(); window.scrollTo(0,0);});
 document.querySelectorAll("[data-move]").forEach(b=>b.onclick=async()=>{
 const [k,v]=b.dataset.move.split(":");
@@ -2195,7 +2246,7 @@ function paintTypeOpts(cur){
 const tr=el("f-track")?el("f-track").value:"";
 const list=typesFor(tr);
 if(cur&&!list.includes(cur))list.unshift(cur);
-fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x]),["__new__","＋ เพิ่มประเภทใหม่…"]],cur||"");
+fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x])],cur||"");
 }
 function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
 function syncStatusLabel(){
@@ -2214,6 +2265,7 @@ if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เร
 }
 let formCtx="";
 function open_(t){
+const preDate=(!t&&view==="cal"&&R.selDay)?`${R.year}-${String(R.month+1).padStart(2,"0")}-${String(R.selDay).padStart(2,"0")}`:"";
 editing=t;
 formCtx = t ? (isTrain(t)?"train":isMeet(t)?"meet":"") : ((view==="train"||view==="dsd")?"train":view==="meet"?"meet":"");
 el("dlgh").textContent=(t?"แก้ไข":"เพิ่ม")+(formCtx==="train"?"หลักสูตรอบรม":formCtx==="meet"?"การประชุม":(t?"งาน":"งานใหม่"));
@@ -2230,15 +2282,9 @@ fill("f-status",STATUS.map(x=>[x,x]),t?.status||"รอดำเนินกา�
 const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(g=>[g.key,glLabel(g.key)])];
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
 paintTypeOpts(t?.type||(formCtx==="train"?"อบรม":formCtx==="meet"?"ประชุม":""));
-el("f-type").onchange=()=>{const n=el("f-type");
-if(n.value!=="__new__")return;
-const v=(window.prompt("ชื่อประเภทใหม่")||"").trim();
-if(!v){n.value="";return;}
-if(![...n.options].some(o=>o.value===v))n.add(new Option(v,v),1);
-n.value=v;
-if(!types().includes(v)){typeList=[...typeDefs(),{name:v,track:el("f-track").value||""}]; saveMeta("types",typeList).catch(()=>{});}};
+
 el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||"";
-el("f-date").value=t?.date||""; el("f-recur").value=t?.recurring||"";
+el("f-date").value=t?.date||preDate||""; el("f-recur").value=t?.recurring||"";
 const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
 el("f-wd").innerHTML=DOW.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d}.</label>`).join("");
@@ -2264,8 +2310,11 @@ syncTrain();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
-el("f-tag").value=t?.tag||"";
-el("taglist").innerHTML=tagsOf().map(x=>`<option value="${esc(x)}">`).join("");
+(()=>{const cur=(t?.tag||"").trim(), list=tagsOf();
+if(cur&&!list.includes(cur))list.unshift(cur);
+fill("f-tag",[["","— ไม่มีป้าย —"],...list.map(x=>[x,x])],cur);})();
+el("f-tag").onchange=()=>{const c=tagColor(el("f-tag").value);
+if(c)el("f-colors").querySelectorAll("[data-color]").forEach(b=>{if(b.dataset.color===c)b.click();});};
 el("f-colors").innerHTML=[["","ตามสถานะ"],...TAGCOLORS.map(c=>[c,c])].map(([c,lab])=>
 `<button type="button" class="sw1${(t?.color||"")===c?" on":""}" data-color="${c}" title="${c?c:"ใช้สีตามสถานะงาน"}"
 style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
@@ -2328,7 +2377,7 @@ vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
 skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
 dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
-tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||"",
+tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||tagColor(el("f-tag").value)||"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
 const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
