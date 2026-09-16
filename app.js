@@ -1,4 +1,4 @@
-const APP_VERSION="6.9"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.0"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -766,8 +766,9 @@ return header("งานทั้งหมด",`${list.length} จาก ${items
 (mobile
 ? `<div class="card"><div class="list">${list.map(t=>liRow(t,true)).join("")||`<div class="empty">ไม่พบงานตามเงื่อนไขนี้</div>`}</div></div>`
 : `<div class="tblwrap"><table>
-<thead><tr><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
+<thead><tr><th>ประเภท</th><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
 <tbody>${list.map(t=>`<tr data-id="${t._id}">
+<td><span class="tag">${esc(t.type||"—")}</span></td>
 <td><div style="font-weight:600">${esc(t.title)}</div>${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}</td>
 <td>${esc(t.company?cLabel(t.company):"—")}</td>
 <td><span class="tag sky">${esc(gLabel(t.track))}</span></td>
