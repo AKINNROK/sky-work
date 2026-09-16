@@ -1,4 +1,4 @@
-const APP_VERSION="7.1"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.2"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -70,7 +70,7 @@ laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19
 const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
 const TABS=["home","all","cal","budget","meet","train","dsd","legal","idx","note","set"];
 const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
-const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
+const SETTABS=[["groups","กลุ่มงาน"],["companies","บริษัท"],["types","ประเภทงาน"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
 {key:"above",   name:"เหนือหมู่เมฆ", note:"ฟ้าสดใส", ramp:["#F2F8FF","#D7E7F7","#7FC1EE","#4A93D4","#2A5E96"]},
@@ -137,6 +137,7 @@ document.documentElement.style.colorScheme="light";
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let DB=null, items=[], ledger=[], view="home", settab="groups", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
+let typeList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
 try{const t=localStorage.getItem("hr-theme");if(t)theme=JSON.parse(t);}catch(e){}
 const THISYEAR=new Date().getFullYear();
@@ -242,7 +243,11 @@ const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/
 const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 const TYPEBASE=["อบรม","ประชุม","โปรเจค","กิจกรรม","งานประจำ/ต่ออายุ","เอกสารราชการ","สุขภาพ","อื่นๆ"];
-const types=()=>[...TYPEBASE,...[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!TYPEBASE.includes(x)).sort()];
+const typeUsed=x=>items.filter(t=>(t.type||"")===x).length;
+const types=()=>{
+const base=typeList.length?typeList.slice():TYPEBASE.slice();
+const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.includes(x)).sort();
+return [...base,...extra];};
 const monthsOf=t=>{
 const R2=rr(t);
 if(R2){const y=(typeof R!=="undefined"&&R.year)||THISYEAR;
@@ -406,6 +411,7 @@ el("gate").close();
 sub("meta/groups",d=>{if(Array.isArray(d.list)&&d.list.length)groups=d.list;});
 sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{seedGL._done=true; if(Array.isArray(d.list))gls=d.list;});
+sub("meta/types",d=>{if(Array.isArray(d.list))typeList=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
@@ -1372,7 +1378,7 @@ ${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</d
 </div>`;
 }
 function setView(){
-const body={groups:setGroups,companies:setCompanies,gl:setGL,theme:setTheme_,remind:setRemind,import:setImport,connect:setConnect}[settab]();
+const body={groups:setGroups,companies:setCompanies,types:setTypes,gl:setGL,theme:setTheme_,remind:setRemind,import:setImport,connect:setConnect}[settab]();
 return header("ตั้งค่า","ทุกอย่างที่ปรับได้อยู่ในนี้ · เปลี่ยนแล้วมีผลทุกหน้าและทุกเครื่อง",false)+
 `<div class="toolbar"><div class="seg" id="settabs">
 ${SETTABS.map(([k,l])=>`<button data-st="${k}" aria-pressed="${k===settab}">${l}</button>`).join("")}
@@ -1441,6 +1447,22 @@ ${moveBtns("companies",i,companies.length,c.hidden)}
 <button class="btn" id="addc">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มบริษัท</button></div>
 <div class="hint">ช่องขวาสุดใช้บอกว่าแถวนั้นเป็น <b>กลุ่มบริษัท</b> (เช่น LeKise Group) หรือเป็นบริษัทที่อยู่ในกลุ่มไหน — หน้าฝึกอบรมจะรวมตัวเลขของกลุ่มให้เอง และยังแยกรายบริษัทไว้สำหรับยื่นกรมพัฒนาฯ<br>
 เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
+}
+function setTypes(){
+const list=types();
+const none=items.filter(t=>!t.type).length;
+return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน</small></h2>
+<div class="rows">${list.map((x,i)=>{const n=typeUsed(x);
+return `<div class="rw">${nameInput("data-rent",x,x)}
+<button class="gcbtn" data-see="type:${esc(x)}" title="ดูงานที่ใช้ประเภทนี้"${n?"":" disabled"}>${n} งาน</button>
+<button class="iconbtn" data-movet="${esc(x)}" title="ย้ายงานทั้งหมดไปประเภทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
+<button class="iconbtn" data-mvt="${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvt="${i}:1"${i===list.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button class="btn danger sm" data-delt="${esc(x)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีประเภท</div>`}</div>
+<div class="addg"><input id="newt" placeholder="ชื่อประเภทใหม่ เช่น ตรวจประเมิน">
+<button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
+${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไม่ได้ระบุประเภท — เปิดงานแล้วเลือกประเภทได้เลย</div>`:""}
+<div class="hint">พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
 }
 function setGL(){
 const y=R.glYear||R.year;
@@ -1777,6 +1799,55 @@ render();
 if(fail)tell("<b>ย้ายได้ "+ok+" รายการ · ไม่สำเร็จ "+fail+" รายการ</b>"+errBox(err));
 else tell("<b>ย้ายเรียบร้อย "+ok+" รายการ</b><div style=\"font-size:13px;margin-top:8px\">ไปที่ “"+esc(k==="track"?gLabel(to):cLabel(to))+"” แล้วค่ะ</div>");
 });
+let renameLock=false;
+async function retagType(from,to){
+const list=items.filter(t=>(t.type||"")===from);
+let ok=0,fail=0,err=null;
+for(const t of list){
+try{ const {_id,...rest}=t; await saveItem(Object.assign({},rest,{type:to}),_id); ok++; }catch(e){ fail++; if(!err)err=e; }
+setFoot("กำลังย้าย "+ok+"/"+list.length+" …");}
+return {ok,fail,err,n:list.length};
+}
+async function saveTypes(){ await saveMeta("types",types()); }
+if(el("addt")){
+el("addt").onclick=async()=>{
+const v=el("newt").value.trim(); if(!v){tell("ใส่ชื่อประเภทก่อนนะคะ");return;}
+if(types().includes(v)){tell("มีประเภทนี้แล้วค่ะ");return;}
+typeList=[...types(),v]; el("newt").value=""; render(); await saveMeta("types",typeList);};
+}
+document.querySelectorAll("[data-rent]").forEach(n=>n.onchange=async()=>{
+const from=n.dataset.rent, to=n.value.trim();
+if(!to||to===from){render();return;}
+if(!types().includes(from)||renameLock){render();return;}   // เปลี่ยนไปแล้ว / event ซ้ำ — ไม่ต้องเตือน
+renameLock=true; setTimeout(()=>renameLock=false,800);
+if(types().includes(to)){tell("มีประเภท “"+esc(to)+"” อยู่แล้วค่ะ ถ้าต้องการรวมเข้าด้วยกันให้ใช้ปุ่มย้ายงานแทน");render();return;}
+const used=typeUsed(from);
+typeList=types().map(x=>x===from?to:x);
+await saveMeta("types",typeList);
+if(used){const r=await retagType(from,to);
+render();
+if(r.fail)tell("<b>เปลี่ยนชื่อแล้ว แต่ย้ายงานได้ "+r.ok+"/"+r.n+"</b>"+errBox(r.err));
+else setFoot("เปลี่ยนชื่อประเภทและอัปเดต "+r.ok+" งานแล้ว");}
+else render();});
+document.querySelectorAll("[data-movet]").forEach(b=>b.onclick=async()=>{
+const from=b.dataset.movet, n=typeUsed(from);
+if(!n){tell("ไม่มีงานให้ย้ายค่ะ");return;}
+const opts=types().filter(x=>x!==from).map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")+`<option value="">— ไม่ระบุประเภท —</option>`;
+const to=await askPick(`ย้ายงานทั้งหมด <b>${n}</b> รายการ จากประเภท “${esc(from)}” ไปที่`,opts,"ย้ายงาน");
+if(to===null)return;
+const r=await retagType(from,to); render();
+if(r.fail)tell("<b>ย้ายได้ "+r.ok+" · ไม่สำเร็จ "+r.fail+"</b>"+errBox(r.err));
+else tell("<b>ย้ายเรียบร้อย "+r.ok+" รายการ</b>");});
+document.querySelectorAll("[data-delt]").forEach(b=>b.onclick=async()=>{
+const x=b.dataset.delt, n=typeUsed(x);
+if(n){tell("ประเภทนี้มี <b>"+n+"</b> งานใช้อยู่ค่ะ กดปุ่มย้ายงานไปประเภทอื่นก่อนนะคะ");return;}
+if(!await ask("ลบประเภท “"+esc(x)+"” ใช่ไหมคะ?","ลบประเภท"))return;
+typeList=types().filter(y=>y!==x); render(); await saveMeta("types",typeList);});
+document.querySelectorAll("[data-mvt]").forEach(b=>b.onclick=async()=>{
+const [i,d]=b.dataset.mvt.split(":").map(Number);
+const arr=types(); const t=i+d; if(t<0||t>=arr.length)return;
+const tmp=arr[i]; arr[i]=arr[t]; arr[t]=tmp;
+typeList=arr; render(); await saveMeta("types",typeList);});
 document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
 const [kind,i,d]=b.dataset.mv.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:gls;
 const a=+i, t=a+(+d); if(t<0||t>=arr.length)return;
