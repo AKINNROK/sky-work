@@ -1,4 +1,4 @@
-const APP_VERSION="6.7"; const APP_DATE="15 ก.ย. 2026";
+const APP_VERSION="6.9"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -266,7 +266,8 @@ return !!t.recurring||ms.includes(new Date().getMonth()+1);
 return true;
 }
 function yearList(){
-const ys=new Set([THISYEAR,THISYEAR+1,R.year]);
+const ys=new Set([R.year]);
+for(let y=THISYEAR-3;y<=THISYEAR+5;y++)ys.add(y);
 items.forEach(t=>{if(t.date)ys.add(new Date(t.date).getFullYear());});
 ledger.forEach(x=>{if(x.date)ys.add(new Date(x.date).getFullYear());});
 return [...ys].filter(y=>y>2000&&y<2100).sort();
@@ -894,7 +895,7 @@ const pct=B?Math.min(100,Math.round(A/B*100)):0;
 const recent=tx.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,10);
 return `<div class="head"><div><h1>งบประมาณ & บัญชี</h1><div class="sub">ตั้งงบรายปีต่อหมวด GL แล้วแท็กค่าใช้จ่ายเข้าหมวดได้เลย · ${syncChip()}</div></div>
 <button class="btn addbtn" id="addTx">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>บันทึกเงิน</span></button></div>
-<div class="toolbar"><div class="seg" id="budsc">
+<div class="toolbar">${yearSel("yrSelB")} <div class="seg" id="budsc">
 <button data-bs="year" aria-pressed="${scope==="year"}">รายปี</button>
 <button data-bs="month" aria-pressed="${scope==="month"}">รายเดือน</button>
 <button data-bs="week" aria-pressed="${scope==="week"}">รายสัปดาห์</button>
@@ -940,7 +941,7 @@ t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.
 p:(x.kind==="income"?"+":"-")+baht(x.amount)+" ฿",pc:x.kind==="income"?"s-done":"s-run",c:"var(--run-soft)",ic:"var(--run)"}))];
 const lk=regList("gl:"+k,esc(nm)+" · ปี "+(R.year+543),rowsL);
 return `<div class="glrow" ${lk} style="cursor:pointer">
-<div class="top"><span>${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
+<div class="top"><span>${(()=>{const gg=gls.find(x=>x.key===k);return gg&&gg.dept?`<small style="color:var(--ink-3);font-weight:600">${esc(gg.dept)} · </small>`:"";})()}${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
 <span class="amt"${a>b&&b?' style="color:var(--over);font-weight:600"':""}>${baht(a)} / ${baht(b)} ›</span></div>
 <div class="bar"><i class="${a>b&&b?"hot":""}" style="width:${p}%"></i></div></div>`;}).join("")
 :`<div class="empty">ยังไม่มีงบในปีนี้ — ใส่งบในงานแต่ละงาน หรือเพิ่มหมวด GL ที่หน้าตั้งค่า</div>`}
@@ -1449,6 +1450,7 @@ return `<div class="card"><h2>หมวดงบประมาณ (GL) <small>$
 ${yearList().map(v=>`<option value="${v}"${v===y?" selected":""}>พ.ศ. ${v+543} · ${v}</option>`).join("")}</select>
 <button class="btn ghost sm" id="glCopy">คัดลอกงบจากปี ${y+542} มาใส่ปีนี้</button></div>
 <div class="rows">${gls.map((g,i)=>`<div class="rw${g.hidden?" off":""}">
+<input class="gldept" data-rend="${esc(g.key)}" value="${esc(g.dept||"")}" placeholder="Budget Dept." aria-label="Budget Department">
 <input class="glcode" data-renc2="${esc(g.key)}" value="${esc(g.code||"")}" placeholder="รหัส GL" aria-label="รหัส GL">
 ${nameInput("data-reng",g.key,g.label)}
 <input type="number" class="glb" data-glb="${esc(g.key)}" value="${glBudget(g,y)||""}" placeholder="งบปี ${y+543}" aria-label="งบ ${esc(g.label)} ปี ${y+543}">
@@ -1456,11 +1458,12 @@ ${nameInput("data-reng",g.key,g.label)}
 ${moveBtns("gl",i,gls.length,g.hidden)}
 <button class="btn danger sm" data-delgl="${esc(g.key)}">ลบ</button></div>`).join("")||`<div class="empty">ยังไม่มีหมวด GL</div>`}</div>
 <div class="addg">
+<input id="gldept" placeholder="Budget Dept. เช่น HR" style="max-width:170px">
 <input id="glcode" placeholder="รหัส GL เช่น 785000000" style="max-width:190px">
 <input id="glname" placeholder="ชื่อหมวด เช่น ค่าอบรมและสัมมนา">
 <input id="glbud" type="number" placeholder="งบปี ${y+543}" style="max-width:170px">
 <button class="btn" id="addgl">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหมวด</button></div>
-<div class="hint">งบแยกตามปี — เปลี่ยนปีด้านบนเพื่อวางงบล่วงหน้าได้เลย ตัวเลขปีอื่นแสดงไว้ข้างช่อง · แก้รหัส ชื่อ หรืองบได้ในช่อง กดนอกช่องแล้วบันทึกทันที · เลื่อนลำดับให้หมวดที่ใช้บ่อยอยู่บนสุด · หมวดที่ซ่อนจะไม่ขึ้นในตัวเลือก แต่ตัวเลขยังรวมอยู่ในสรุปงบ</div></div>`;
+<div class="hint">ช่องแรก <b>Budget Department</b> คือฝ่ายที่เป็นเจ้าของงบก้อนนั้น (เช่น HR, HRD, Admin) · งบแยกตามปี — เปลี่ยนปีด้านบนเพื่อวางงบล่วงหน้าได้เลย ตัวเลขปีอื่นแสดงไว้ข้างช่อง · แก้รหัส ชื่อ หรืองบได้ในช่อง กดนอกช่องแล้วบันทึกทันที · เลื่อนลำดับให้หมวดที่ใช้บ่อยอยู่บนสุด · หมวดที่ซ่อนจะไม่ขึ้นในตัวเลือก แต่ตัวเลขยังรวมอยู่ในสรุปงบ</div></div>`;
 }
 function setTheme_(){
 const cur=theme.preset;
@@ -1704,7 +1707,7 @@ const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
 const sc=el("sc1");
 if(sc){sc.onclick=e=>{const b=e.target.closest("button[data-sc]");if(!b)return;R.scope=b.dataset.sc;render();};
 el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
-["yrSel","yrSel2"].forEach(id=>{const n=el(id); if(n)n.onchange=e=>{R.year=+e.target.value;R.selDay=null;render();};});
+["yrSel","yrSel2","yrSelB"].forEach(id=>{const n=el(id); if(n)n.onchange=e=>{R.year=+e.target.value;R.selDay=null;render();};});
 const bs=el("budsc");
 if(bs){bs.onclick=e=>{const b=e.target.closest("button[data-bs]");if(!b)return;R.budScope=b.dataset.bs;render();};
 el("budMonth")&&(el("budMonth").onchange=e=>{R.budMonth=+e.target.value;render();});}
@@ -1824,11 +1827,12 @@ companies=companies.filter(c=>c.key!==k);render();await saveMeta("companies",com
 if(el("addgl")){
 el("addgl").onclick=async()=>{
 const code=el("glcode").value.trim(), label=el("glname").value.trim(), b=+el("glbud").value||0;
+const dept=el("gldept").value.trim();
 if(!label&&!code){tell("ใส่ชื่อหมวดหรือรหัส GL อย่างน้อยหนึ่งอย่างค่ะ");return;}
 const key=code||label.slice(0,18);
 if(gls.some(g=>g.key===key)){tell("มีหมวดนี้แล้วค่ะ");return;}
-gls=[...gls,{key,code,label:label||code,budget:0,budgets:b?{[(R.glYear||R.year)]:b}:{}}];
-el("glcode").value=el("glname").value=el("glbud").value="";
+gls=[...gls,{key,code,dept,label:label||code,budget:0,budgets:b?{[(R.glYear||R.year)]:b}:{}}];
+el("gldept").value=el("glcode").value=el("glname").value=el("glbud").value="";
 render();await saveMeta("gl",gls);};
 }
 document.querySelectorAll("[data-glb]").forEach(n=>n.onchange=async()=>{
@@ -1845,6 +1849,9 @@ render(); await saveMeta("gl",gls);});
 document.querySelectorAll("[data-reng]").forEach(n=>n.onchange=async()=>{
 const g=gls.find(x=>x.key===n.dataset.reng), v=n.value.trim();
 if(!g||!v){render();return;} g.label=v; await saveMeta("gl",gls); render();});
+document.querySelectorAll("[data-rend]").forEach(n=>n.onchange=async()=>{
+const g=gls.find(x=>x.key===n.dataset.rend);if(!g)return;
+g.dept=n.value.trim(); await saveMeta("gl",gls); render();});
 document.querySelectorAll("[data-renc2]").forEach(n=>n.onchange=async()=>{
 const g=gls.find(x=>x.key===n.dataset.renc2);if(!g)return;
 g.code=n.value.trim(); await saveMeta("gl",gls); render();});
