@@ -1,4 +1,4 @@
-const APP_VERSION="7.0"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.1"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -241,7 +241,8 @@ const dueDate=t=>{const R2=rr(t); if(R2)return nextOpenOcc(t); return t.date?new
 const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/864e5);};
 const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-const types=()=>[...new Set(items.map(t=>t.type).filter(Boolean))].sort();
+const TYPEBASE=["อบรม","ประชุม","โปรเจค","กิจกรรม","งานประจำ/ต่ออายุ","เอกสารราชการ","สุขภาพ","อื่นๆ"];
+const types=()=>[...TYPEBASE,...[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!TYPEBASE.includes(x)).sort()];
 const monthsOf=t=>{
 const R2=rr(t);
 if(R2){const y=(typeof R!=="undefined"&&R.year)||THISYEAR;
@@ -2133,8 +2134,15 @@ fill("f-track",visible(groups).map(g=>[g.key,g.label]),t?.track||
 fill("f-status",STATUS.map(x=>[x,x]),t?.status||"รอดำเนินการ");
 const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(g=>[g.key,glLabel(g.key)])];
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
-el("typelist").innerHTML=types().map(x=>`<option value="${esc(x)}">`).join("");
-el("f-type").value=t?.type||"";
+(()=>{const cur=t?.type||(formCtx==="train"?"อบรม":formCtx==="meet"?"ประชุม":"");
+const list=[...types()]; if(cur&&!list.includes(cur))list.unshift(cur);
+fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x]),["__new__","＋ เพิ่มประเภทใหม่…"]],cur);})();
+el("f-type").onchange=()=>{const n=el("f-type");
+if(n.value!=="__new__")return;
+const v=(window.prompt("ชื่อประเภทใหม่")||"").trim();
+if(!v){n.value="";return;}
+if(![...n.options].some(o=>o.value===v))n.add(new Option(v,v),1);
+n.value=v;};
 el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||"";
 el("f-date").value=t?.date||""; el("f-recur").value=t?.recurring||"";
 const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
@@ -2206,7 +2214,7 @@ el("save").onclick=async()=>{
 if(!el("f-title").value.trim()){el("f-title").focus();return;}
 const data={
 title:el("f-title").value.trim(), company:el("f-company").value,
-track:el("f-track").value, type:el("f-type").value.trim(),
+track:el("f-track").value, type:(el("f-type").value==="__new__"?"":el("f-type").value).trim(),
 status:el("f-status").value, owner:el("f-owner").value.trim(),
 date:el("f-date").value||null, recurring:el("f-recur").value.trim()||null,
 rrule:(()=>{const f=el("f-freq").value; if(f==="none")return null;
