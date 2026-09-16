@@ -1,4 +1,4 @@
-const APP_VERSION="7.5"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="7.6"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -202,6 +202,17 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const baht=n=>(+n||0).toLocaleString("th-TH",{maximumFractionDigits:0});
 const kbaht=n=>n>=1000000?(n/1000000).toFixed(1)+"ล.":n>=1000?Math.round(n/1000)+"พ.":String(Math.round(n));
 const budgetOf=t=>(+t.b1||0)+(+t.b2||0);
+// GL ที่งานนี้ผูกไว้ ไม่สนว่าหลักหรือรอง — ช่องไหนที่เลือกไว้ถือว่าใช้ได้หมด
+const glKeysOf=t=>[glKeyOf(t.gl1)||"",glKeyOf(t.gl2)||""].filter(Boolean);
+const hasGL=t=>glKeysOf(t).length>0;
+// งบของงานที่ตกเข้าหมวด k (ช่องที่ไม่ได้เลือก GL จะไปรวมกับช่องที่เลือกไว้)
+function glShare(t,k){
+const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"";
+const b1=+t.b1||0, b2=+t.b2||0;
+let v=0;
+if((k1||k2)===k)v+=b1;
+if((k2||k1)===k)v+=b2;
+return v;}
 const sCls=x=>x==="เสร็จสิ้น"?"s-done":x==="ยกเลิก"?"s-cancel":x==="กำลังดำเนินการ"?"s-run":x==="อยู่ระหว่างดำเนินการ"?"s-mid":"s-wait";
 const sColor=x=>x==="เสร็จสิ้น"?"var(--ok)":x==="ยกเลิก"?"var(--ink-3)":x==="กำลังดำเนินการ"?"var(--run)":x==="อยู่ระหว่างดำเนินการ"?"var(--sky)":"var(--wait)";
 const visible=a=>a.filter(x=>!x.hidden);
@@ -899,8 +910,8 @@ const taskPlan={}, spentByGL={}, planByGL={};
 const add=(o,k,v)=>{if(!v)return;o[k]=(o[k]||0)+v;};
 inYear.forEach(t=>{
 const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"";
-add(taskPlan,k1,+t.b1||0); add(taskPlan,k2||k1,+t.b2||0);
-add(spentByGL,k1,+t.actual||0);
+add(taskPlan,k1||k2,+t.b1||0); add(taskPlan,k2||k1,+t.b2||0);
+add(spentByGL,k1||k2,+t.actual||0);
 });
 gls.forEach(g=>{ planByGL[g.key]=Math.max(glBudget(g,R.year), taskPlan[g.key]||0); });
 Object.keys(taskPlan).forEach(k=>{ if(planByGL[k]==null)planByGL[k]=taskPlan[k]; });
@@ -910,7 +921,7 @@ const keys=[...new Set([...gls.map(g=>g.key),...Object.keys(planByGL),...Object.
  .filter(k=>planByGL[k]||spentByGL[k]);
 const B=keys.reduce((s,k)=>s+(planByGL[k]||0),0);
 const A=keys.reduce((s,k)=>s+(spentByGL[k]||0),0);
-const noGL=inYear.filter(t=>budgetOf(t)>0&&!glKeyOf(t.gl1)&&!glKeyOf(t.gl2)).length;
+const noGL=inYear.filter(t=>(budgetOf(t)>0||(+t.actual||0)>0)&&!hasGL(t)).length;
 const ceilOnly=gls.filter(g=>(+g.budget||0)>(taskPlan[g.key]||0)&&(+g.budget||0)>0).length;
 const monthsInc=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind==="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===R.year).reduce((s,x)=>s+(+x.amount||0),0));
 const monthsExp=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind!=="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===R.year).reduce((s,x)=>s+(+x.amount||0),0));
@@ -952,12 +963,14 @@ const a=spentByGL[k]||0,b=planByGL[k]||0,p=b?Math.min(100,a/b*100):(a?100:0);
 const nm=k?glLabel(k):"ยังไม่ระบุหมวด GL";
 const g=gls.find(x=>x.key===k);
 const ceil=g?glBudget(g,R.year):0;
-const tks=inYear.filter(t=>(glKeyOf(t.gl1)===k||glKeyOf(t.gl2)===k)&&((+t.b1||0)+(+t.b2||0)+(+t.actual||0))>0);
+const tks=inYear.filter(t=>k?(glKeysOf(t).includes(k)&&(glShare(t,k)+(+t.actual||0))>0)
+:(!hasGL(t)&&((+t.b1||0)+(+t.b2||0)+(+t.actual||0))>0));
 const txs=ledger.filter(x=>(x.gl||"")===k&&x.date&&new Date(x.date).getFullYear()===R.year);
 const rowsL=[
 ...(ceil?[{t1:"งบตั้งต้นที่ตั้งไว้เอง (หน้าตั้งค่า → หมวด GL)",t2:`ปี ${R.year+543}`,d:"ตั้ง",p:baht(ceil)+" ฿",pc:"s-mid",c:"var(--accent-soft)",ic:"var(--accent)"}]:[]),
-...tks.map(t=>{const d=dueDate(t);const mine=(glKeyOf(t.gl1)===k?+t.b1||0:0)+(glKeyOf(t.gl2)===k?+t.b2||0:0);
-return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${glKeyOf(t.gl1)===k&&+t.actual?` · ใช้จริง ${baht(t.actual)} ฿`:""}${t.company?" · "+cLabel(t.company):""}`,
+...tks.map(t=>{const d=dueDate(t);const mine=k?glShare(t,k):budgetOf(t);
+const mineAct=(k?((glKeyOf(t.gl1)||glKeyOf(t.gl2))===k):!hasGL(t))?(+t.actual||0):0;
+return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${mineAct?` · ใช้จริง ${baht(mineAct)} ฿`:""}${t.company?" · "+cLabel(t.company):""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}),
 ...txs.map(x=>({tx:x._id,t1:x.note||(x.kind==="income"?"รายรับ":"รายจ่าย"),
 t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.date?`${new Date(x.date).getDate()}<br>${MTH[new Date(x.date).getMonth()]}`:"—",
