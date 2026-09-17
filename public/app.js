@@ -1,4 +1,4 @@
-const APP_VERSION="9.9"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="10.1"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -975,22 +975,29 @@ const totRow=`<div class="msum" style="text-align:left">รวมทุกหม
 MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
 return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
 const byTrack=(R.calGroup||"track")==="track";
-const buckets=byTrack?visible(groups).map(x=>[x.label,x.key]):CATS.map(([n])=>[n,null]);
-const rows=buckets.map(([name,key])=>{
-const g=byTrack?list.filter(t=>t.track===key):list.filter(t=>catOf(t)===name);
-if(!g.length)return "";
-return `<div class="cgroup">${byTrack?`<span class="tagdot" style="background:${gColor(key)||"var(--wait)"};width:10px;height:10px;display:inline-block;margin-right:6px"></span>`:""}${esc(name)} <span>${g.length}</span></div>`+
+// แยกตามกลุ่มงาน: แสดงทุกกลุ่มที่ตั้งไว้ (รวมกลุ่มที่ยังไม่มีงาน) + กองงานที่ไม่มีกลุ่ม/กลุ่มถูกลบ
+const orphan=list.filter(t=>!t.track||!groups.some(g=>g.key===t.track));
+const buckets=byTrack
+?[...groups.map(x=>[x.label,x.key,x.hidden]),...(orphan.length?[["ยังไม่ระบุกลุ่มงาน","__none__",false]]:[])]
+:CATS.map(([n])=>[n,null,false]);
+const rows=buckets.map(([name,key,hid])=>{
+const g=byTrack?(key==="__none__"?orphan:list.filter(t=>t.track===key)):list.filter(t=>catOf(t)===name);
+if(!byTrack&&!g.length)return "";
+return `<div class="cgroup${g.length?"":" zero"}">${byTrack?`<span class="tagdot" style="background:${gColor(key)||"var(--wait)"};width:10px;height:10px;display:inline-block;margin-right:6px"></span>`:""}${esc(name)}${hid?' <small style="color:var(--ink-3)">· ซ่อนอยู่</small>':""} <span>${g.length?g.length:"ยังไม่มีงาน"}</span></div>`+
 MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
-MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${itemColor(t)}" title="${esc(t.tag||t.status)}"></span>`:""}</div>`).join("");}).join("");
+MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
+?`<span class="mark" title="${esc((byTrack?gLabel(t.track):catOf(t))+" · "+t.status)}">
+<i class="mdot" style="background:${itemColor(t)}"></i><i class="mbar" style="background:${sColor(t.status)}"></i></span>`:""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
+<span style="color:var(--ink-3)">จุดกลม = กลุ่มงาน · ขีด = สถานะ:</span>
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
-<span style="margin-left:auto;color:var(--ink-3)">แยกตามหมวด · ${list.length} งานในปี ${R.year+543}</span></div>
-${(()=>{const gs=visible(groups).filter(g=>g.color&&list.some(t=>t.track===g.key));
+<span style="margin-left:auto;color:var(--ink-3)">${byTrack?`แยกตามกลุ่มงาน · ${groups.length} กลุ่ม`:"แยกตามหมวด"} · ${list.length} งานในปี ${R.year+543}</span></div>
+${(()=>{const gs=groups.filter(g=>g.color);
 return gs.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">
 <span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
 ${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
