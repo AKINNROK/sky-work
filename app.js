@@ -1,4 +1,4 @@
-const APP_VERSION="8.6"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="8.7"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -195,7 +195,7 @@ if(!rr(t))return t.date?new Date(t.date):null;
 for(let i=0;i<800;i++){ if(occursOn(t,d))return new Date(d); d.setDate(d.getDate()+1); }
 return null;
 }
-let R={year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
+let R={pq:"", year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
 const F={q:"",track:"",type:"",status:"",company:""};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -316,6 +316,10 @@ return [...ys].filter(y=>y>2000&&y<2100).sort();
 }
 const yearSel=id=>`<select id="${id}" style="border:0;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;box-shadow:var(--sh-s)">${yearList().map(y=>`<option value="${y}"${y===R.year?" selected":""}>พ.ศ. ${y+543} · ${y}</option>`).join("")}</select>`;
 const scopeLabel=()=>R.scope==="year"?"ทั้งปี "+(R.year+543):R.scope==="month"?MTHFULL[R.month]:"สัปดาห์นี้";
+// ช่องค้นหาประจำหน้า
+const pqBox=(ph)=>`<input type="search" id="pq" placeholder="${esc(ph||"ค้นหาในหน้านี้")}" value="${esc(R.pq||"")}" style="flex:1;min-width:180px;background:var(--card);border:0;border-radius:999px;padding:9px 16px;box-shadow:var(--sh-s)">`;
+const pqHit=(...parts)=>{const q=(R.pq||"").trim().toLowerCase(); if(!q)return true;
+return parts.filter(Boolean).join(" ").toLowerCase().includes(q);};
 function scopeBar(id){
 return `${yearSel("yrSel")} <div class="seg" id="${id}">
 <button data-sc="year" aria-pressed="${R.scope==="year"}">รายปี</button>
@@ -637,7 +641,7 @@ const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VE
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
 el("tabbar").innerHTML=TABS.map(k=>{const l=TABLABEL[k]||VIEWS.find(v=>v[0]===k)[1];
 return `<button data-v="${k}" aria-current="${k===view}" title="${esc(VIEWS.find(v=>v[0]===k)[1])}">${svg(ICON[k],19)}<span>${l}</span></button>`;}).join("");
-const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;renderNav();render();window.scrollTo(0,0);};
+const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;R.pq="";renderNav();render();window.scrollTo(0,0);};
 el("nav").onclick=go; el("tabbar").onclick=go;
 ["brandBtn","brandBtnM"].forEach(id=>{const n=el(id); if(!n||n._wired)return; n._wired=1;
 n.onclick=hardRefresh;
@@ -1099,7 +1103,7 @@ const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 <span class="pill ${daysTo(x.p)<=0?"s-wait":sCls(x.t.status)}">${daysTo(x.p)<0?"เลยวันเตรียม "+(-daysTo(x.p))+" วัน":daysTo(x.p)===0?"เตรียมวันนี้":"อีก "+daysTo(x.p)+" วัน"}</span></div>`;
 const byDow=DOWFULL.map((_,i)=>routine.filter(t=>(t.rrule.weekdays||[]).includes(i)).length);
 return header("การประชุม","ประชุมประจำ ประชุมเฉพาะกิจ และงานที่ต้องเตรียมข้อมูลก่อนประชุม")+
-`<div class="toolbar">${scopeBar("sc1")}</div>`+
+`<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาการประชุม / ผู้เข้าร่วม / สถานที่")}</div>`+
 (prepNow.length?`<div class="banner bad" ${regList("prepNow","ถึงกำหนดเตรียมข้อมูลแล้ว",prepNow.map(x=>({id:x.t._id,
 t1:x.t.title,t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${tShow(x.t.time)?" "+tShow(x.t.time):""}${x.t.prepNote?" · "+x.t.prepNote:""}`,
 d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--over-soft)",ic:"var(--over)",
@@ -1146,7 +1150,7 @@ return t;
 const fmtStamp=iso=>{if(!iso)return "";const d=new Date(iso);
 return `${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500} เวลา ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
 function dsdView(){
-const ty=items.filter(t=>isTrain(t)&&inScope(t));
+const ty=items.filter(t=>isTrain(t)&&inScope(t)&&pqHit(t.title,t.batch,t.course,t.code,ypNoOf(t),t.dsdCertNo,t.company&&cLabel(t.company)));
 const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
 const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
 const need=dsdList(R.year).map(c=>dsdCalc(dsdRec(c.key,R.year)).need).reduce((a,b)=>a+b,0);
@@ -1167,7 +1171,7 @@ c:y.cls==="s-over"?"var(--over-soft)":"var(--run-soft)",ic:y.cls==="s-over"?"var
 const now=new Date(), yearEndLeft=Math.round((new Date(R.year,11,31)-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/86400000);
 const anyShort=dsdList(R.year).some(c=>{const k=dsdCalc(dsdRec(c.key,R.year));return k.avg&&k.need>0;});
 return header("กรมพัฒนาฝีมือแรงงาน","เกณฑ์ 50% ต่อปี และทะเบียนการยื่นรับรองหลักสูตร")+
-`<div class="toolbar">${scopeBar("sc1")}</div>`+
+`<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาหลักสูตร / เลขคำขอ / บริษัท")}</div>`+
 (late.length?`<div class="banner bad" ${regList("ypLate","เลยกำหนดยื่นตามขั้นตอนกรมพัฒนาฯ",mkRows(late))}>${svg(ICON.bell,19)} เลยกำหนดยื่นแล้ว <b>${late.length}</b> หลักสูตร — ยื่นย้อนหลังไม่ได้ ตรวจด่วน</div>`:"")+
 (soon.length?`<div class="banner" ${regList("ypSoon","ใกล้ถึงกำหนดยื่น (ภายใน 14 วัน)",mkRows(soon))}>${svg(ICON.clock,19)} ใกล้ถึงกำหนดยื่น <b>${soon.length}</b> หลักสูตร ภายใน 14 วัน</div>`:"")+
 ((now.getMonth()>=10&&yearEndLeft>=0&&anyShort&&now.getFullYear()===R.year)
@@ -1317,7 +1321,7 @@ ${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน 
 </div>`;
 }
 function train(){
-const ty=items.filter(t=>isTrain(t)&&inScope(t));
+const ty=items.filter(t=>isTrain(t)&&inScope(t)&&pqHit(t.title,t.batch,t.vendor,t.course,t.code,t.company&&cLabel(t.company),t.skill,t.mode));
 const sum=(a,k)=>a.reduce((x,t)=>x+(+t[k]||0),0);
 const pax=sum(ty,"pax"), hrs=ty.reduce((x,t)=>x+(+t.hours||0)*(+t.pax||1),0);
 const nCourse=uniqCourses(ty);
@@ -1339,7 +1343,7 @@ ${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">ก�
 const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>${uniqCourses(arr)} หลักสูตร · ${arr.length} รุ่น</small></h2>
 <div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
 return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
-`<div class="toolbar">${scopeBar("sc1")}</div>`+
+`<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาหลักสูตร / รุ่น / วิทยากร / รหัส")}</div>`+
 (lawLate.length?`<div class="banner bad" ${regList("lawLate","อบรมตามกฎหมายที่เลยกำหนด",lawLate.map(t=>{const d=dueDate(t);return {id:t._id,
 t1:t.title,t2:`${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
@@ -1380,7 +1384,7 @@ ${board("อบรมภายนอก",byKind("ภายนอก"))}
 }
 function legalView(){
 const fc=R.legalComp||"", fk=R.legalCat||"";
-const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk))
+const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk)&&pqHit(L.title,L.owner,L.no,L.cat,L.note))
 .sort((a,b)=>{const A=legalDue(a),B=legalDue(b);
 if(A&&B)return A-B; if(A)return -1; if(B)return 1; return (a.title||"")<(b.title||"")?-1:1;});
 const st=L=>legalState(L);
@@ -1415,7 +1419,7 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ยังไม่มีผู้รับผิดชอบ</div>
 <div class="v">${noP.length}</div><div class="d">จาก ${legal.length} รายการ</div></div>
 <div class="card span4">
-<div class="toolbar" style="margin-bottom:6px">
+<div class="toolbar">${pqBox("ค้นหารายการกฎหมาย / ผู้รับผิดชอบ")}
 <select id="lg-comp">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],fc)}</select>
 <select id="lg-cat">${opt([["","ทุกหมวด"],...LEGALCAT.map(x=>[x,x])],fk)}</select>
 <span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
@@ -1881,6 +1885,8 @@ const x=notes.find(v=>v._id===n.dataset.nt); if(x)openNote(x);});
 el("ix-group")&&(el("ix-group").onchange=e=>{R.idxGroup=e.target.value;render();});
 el("ix-status")&&(el("ix-status").onchange=e=>{R.idxStatus=e.target.value;render();});
 el("nt-kind")&&(el("nt-kind").onchange=e=>{R.noteKind=e.target.value;render();});
+el("pq")&&(el("pq").oninput=e=>{const v=e.target.value,p2=e.target.selectionStart;R.pq=v;render();
+const m=el("pq"); if(m){m.focus();m.setSelectionRange(p2,p2);}});
 el("nt-q")&&(el("nt-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.noteQ=v;render();
 const m=el("nt-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
 document.querySelectorAll("[data-lg]").forEach(n=>n.onclick=()=>{
@@ -1935,7 +1941,7 @@ for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},
 render();});
 document.querySelectorAll("[data-day]").forEach(n=>n.onclick=()=>{
 const d=+n.dataset.day; R.selDay=R.selDay===d?null:d; render();});
-el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";render();});
+el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";R.pq="";render();});
 const bind=(id,key)=>{const n=el(id);if(!n)return;n.oninput=n.onchange=()=>{
 F[key]=n.value;const p=n.selectionStart,srch=n.type==="search";render();
 const m=el(id);if(m&&srch){m.focus();m.setSelectionRange(p,p);}};};
@@ -2396,6 +2402,11 @@ t.mode=t.mode||theme.mode||"auto"; theme=t; applyTheme._last=isNight(); applyThe
 try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
 if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
+function syncCrsName(){
+const linked=!!crsOf(el("f-course").value);
+const w=el("f-title").closest(".f");
+if(w)w.hidden=linked&&!el("wrap-course").hidden;
+}
 function paintCrsHint(){
 const code=el("f-course").value, c=crsOf(code);
 if(!c){el("f-crshint").innerHTML="เลือกหลักสูตรจากทะเบียนเพื่อให้ระบบนับ “หลักสูตร” ไม่ซ้ำ แล้วใส่แค่รุ่นที่ · จัดการทะเบียนที่ ตั้งค่า → หลักสูตรอบรม";return;}
@@ -2464,8 +2475,8 @@ fill("f-skill",[["","— ยังไม่ระบุ —"],...SKILLS.map(v=>[
 fill("f-mode",[["","— ยังไม่ระบุ —"],...MODES.map(v=>[v,v])],t?.mode||"");
 el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
 (()=>{const cur=t?.course||"";
-fill("f-course",[["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],...visible(courses).map(c=>[c.code,c.code+" · "+c.name])],cur);
-el("f-crscode").value=cur||""; paintCrsHint();})();
+fill("f-course",[["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],...visible(courses).map(c=>[c.code,c.code+" · "+c.name]),["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"]],cur);
+el("f-crscode").value=cur||""; paintCrsHint(); syncCrsName();})();
 fill("f-yp",YP,t?.yp||""); el("f-dsdend").value=t?.dsdEnd||"";
 el("f-dsdopenno").value=t?.dsdOpenNo||""; el("f-dsdcert").value=t?.dsdCertDate||"";
 el("f-dsdcertno").value=t?.dsdCertNo||"";
@@ -2521,9 +2532,21 @@ const q=el("f-crscode").value.trim().toLowerCase(); if(!q)return;
 const hit=courses.find(c=>c.code.toLowerCase()===q)||courses.find(c=>c.code.toLowerCase().endsWith(q))
 ||courses.find(c=>c.code.toLowerCase().includes(q)||c.name.toLowerCase().includes(q));
 if(hit){ el("f-course").value=hit.code; el("f-course").onchange(); }};
-el("f-course").onchange=()=>{
+el("f-course").onchange=async()=>{
+if(el("f-course").value==="__newcrs__"){
+const nm=(window.prompt("ชื่อหลักสูตรใหม่ (ระบบจะรันรหัสให้อัตโนมัติ)")||"").trim();
+if(!nm){el("f-course").value="";syncCrsName();return;}
+const dup=courses.find(x=>x.name===nm);
+if(dup){ el("f-course").value=dup.code; tell("มีหลักสูตรนี้อยู่แล้วค่ะ — ใช้ <b>"+esc(dup.code)+"</b> ให้เลย"); }
+else{ const code=nextCourseCode(); courses=[...courses,{code,name:nm,skill:"",mode:"",hours:0}];
+await saveMeta("courses",courses);
+const cur=el("f-course").value;
+fill("f-course",[["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],...visible(courses).map(x=>[x.code,x.code+" · "+x.name]),["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"]],code);
+setFoot("เพิ่มหลักสูตร "+code+" ในทะเบียนแล้ว"); }
+}
 const c=crsOf(el("f-course").value);
-if(c){ el("f-crscode").value=c.code; if(!el("f-title").value.trim()||confirmSwap)el("f-title").value=c.name;
+syncCrsName();
+if(c){ el("f-crscode").value=c.code; el("f-title").value=c.name;
 if(c.skill)el("f-skill").value=c.skill; if(c.mode)el("f-mode").value=c.mode;
 if(c.hours&&!el("f-hours").value)el("f-hours").value=c.hours;
 if(!el("f-code").value.trim())el("f-code").value=c.code; }
