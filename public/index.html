@@ -317,6 +317,10 @@ h1{font-size:17px}
 <div class="swrow" id="f-colors" hidden></div>
 <div class="f wide"><label for="f-note">รายละเอียด</label><textarea id="f-note"></textarea></div>
 <div class="f wide" id="wrap-occ" hidden><label>ปิดงานรายรอบ <span style="font-weight:400;color:var(--ink-3)">— ติ๊กเฉพาะรอบที่ทำเสร็จแล้ว รอบอื่นยังคงเตือนตามปกติ</span></label>
+<div class="addg" style="margin:6px 0 2px">
+<button type="button" class="btn ghost sm" id="occAll">ดูทุกรอบของปีนี้</button>
+<button type="button" class="btn ghost sm" id="occPast">ติ๊กรอบที่ผ่านมาทั้งหมด</button>
+<button type="button" class="btn ghost sm" id="occClear">ล้างเครื่องหมายทั้งหมด</button></div>
 <div class="occs" id="f-occs"></div></div>
 <div class="f wide"><label>เดือนที่มีงาน</label><div class="months" id="f-months"></div></div>
 </div>
@@ -477,5 +481,5 @@ h1{font-size:17px}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=10.4"></script>
+<script src="app.js?v=10.9"></script>
 </body></html>
