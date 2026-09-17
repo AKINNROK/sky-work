@@ -1,4 +1,4 @@
-const APP_VERSION="9.6"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.7"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -162,6 +162,7 @@ function nthOfMonth(d){ return Math.floor((d.getDate()-1)/7)+1; }
 function isLastWeek(d){ return d.getDate()+7>new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); }
 function occursOn(t,d){
 const R2=rr(t);
+if(R2&&occSkip(t,d))return false;
 if(R2){
 const start=t.date?new Date(t.date):null;
 if(start&&d<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
@@ -239,6 +240,8 @@ const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.tes
 const trainKind=t=>t.track==="train_law"||/กฎหมาย/.test(gLabel(t.track))?"กฎหมาย":t.track==="train_out"||/ภายนอก/.test(gLabel(t.track))?"ภายนอก":"ภายใน";
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
+// งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
+const occSkip=(t,d)=>(((t&&t.skip)||[]).includes(isoOf(d)));
 function occList(t,from,months){
 const out=[]; const s0=new Date(from);
 for(let k=0;k<months;k++){const m=new Date(s0.getFullYear(),s0.getMonth()+k,1);
@@ -249,7 +252,7 @@ function nextOpenOcc(t){
 const today=new Date(); today.setHours(0,0,0,0);
 const st=t.date?new Date(t.date):today;
 const from=new Date(Math.min(st.getTime(),today.getTime()));
-const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d));
+const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d));
 const past=list.filter(d=>d<today);
 return past.length?past[0]:(list.find(d=>d>=today)||null);
 }
@@ -1118,7 +1121,8 @@ return `<div class="li" data-id="${t._id}">
 ${p&&isOpenStatus(t.status)?`<span class="tag${daysTo(p)<=0?"":" sky"}" ${daysTo(p)<=0?'style="background:var(--over-soft);color:var(--over);font-weight:600"':""}>เตรียม ${daysTo(p)<=0?"แล้ว!":"อีก "+daysTo(p)+" ว."}</span>`:""}
 ${(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
-(S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบนี้">${svg(ICON.check,15)}</button>`:"");})()}</div>`;};
+(S.recur&&S.d?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>
+<button class="okbtn skipnow" data-skipnow="${t._id}|${isoOf(S.d)}" title="งดรอบ ${S.d.getDate()} ${MTH[S.d.getMonth()]} (ไม่จัดรอบนี้)">งด</button>`:"");})()}</div>`;};
 const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 <div class="ic" style="background:${daysTo(x.p)<=0?"var(--over-soft)":"var(--run-soft)"};color:${daysTo(x.p)<=0?"var(--over)":"var(--run)"}">${x.p.getDate()}<br>${MTH[x.p.getMonth()]}</div>
 <div class="tx"><div class="t1">${esc(x.t.title)}</div>
@@ -1900,6 +1904,16 @@ try{const d=JSON.parse(n.dataset.go);
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();openListBox(n.dataset.list);};});
 el("pclose")&&(el("pclose").onclick=()=>el("pdlg").close());
+document.querySelectorAll("[data-skipnow]").forEach(b=>b.onclick=async e=>{
+e.stopPropagation();
+const [id,iso]=b.dataset.skipnow.split("|");
+const t=items.find(x=>x._id===id); if(!t)return;
+const skip=[...(t.skip||[])];
+const i=skip.indexOf(iso); if(i>=0)skip.splice(i,1); else skip.push(iso);
+const {_id,...rest}=t;
+try{ await saveItem({...rest,skip},_id); setFoot(i>=0?"กลับมาจัดรอบนี้ตามเดิม":"งดรอบ "+iso+" แล้ว รอบอื่นไม่กระทบ"); }
+catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); }
+});
 document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async e=>{
 e.stopPropagation();
 const [id,iso]=b.dataset.done.split("|");
@@ -2564,12 +2578,15 @@ el("f-colors").querySelectorAll("[data-color]").forEach(x=>x.classList.remove("o
 b.classList.add("on"); el("f-colors").dataset.val=b.dataset.color;});
 el("f-colors").dataset.val=t?.color||"";
 const ms=t?.months||[];
+occSkipDraft=[...((t&&t.skip)||[])];
 paintOccs(t); syncStatusLabel();
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
 el("dlg").showModal();
 }
+let occSkipDraft=[];
 function paintOccs(t){
 const wrap=el("wrap-occ");
+
 const R2=(t&&rr(t))||null;
 const f=el("f-freq")?el("f-freq").value:"none";
 if(!t||!R2||f==="none"){ wrap.hidden=true; el("f-occs").innerHTML=""; return; }
@@ -2580,11 +2597,18 @@ const from=new Date(Math.min(st.getTime(),today.getTime()));
 const all=occList(t,new Date(from.getFullYear(),from.getMonth()-2,1),16);
 const past=all.filter(d=>d<=today).slice(-5), fut=all.filter(d=>d>today).slice(0,4);
 const show=[...past,...fut];
-el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d),dn=occDone(t,iso?new Date(iso):d);
-return `<label class="occ${d<=today?"":" fut"}"><input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}>
+el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d), sk=occSkipDraft.includes(iso);
+return `<label class="occ${d<=today?"":" fut"}${sk?" skip":""}">
+<input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}${sk?" disabled":""}>
 <span>${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500}</span>
-<i>${d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง"}</i></label>`;}).join("")
+<i>${sk?"งดรอบนี้":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
+<button type="button" class="skipbtn${sk?" on":""}" data-skip="${iso}" title="${sk?"กลับมาจัดตามปกติ":"งดรอบนี้ (ไม่จัด)"}">${sk?"↺ จัดตามเดิม":"งด"}</button></label>`;}).join("")
 ||`<div class="hint" style="margin:0">ยังไม่มีรอบให้แสดง</div>`;
+el("f-occs").querySelectorAll("[data-skip]").forEach(b=>b.onclick=ev=>{
+ev.preventDefault(); ev.stopPropagation();
+const iso=b.dataset.skip, i=occSkipDraft.indexOf(iso);
+if(i>=0)occSkipDraft.splice(i,1); else occSkipDraft.push(iso);
+paintOccs(t);});
 }
 function syncMeet(){ el("wrap-meet").hidden=!el("f-meet").checked; }
 el("f-meet").onchange=syncMeet;
@@ -2653,6 +2677,7 @@ dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(
 note:el("f-note").value.trim(), group:editing?.group||"",
 tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||tagColor(el("f-tag").value)||"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
+skip:(el("wrap-occ").hidden?(editing?.skip||[]):occSkipDraft.slice()),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
 const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
