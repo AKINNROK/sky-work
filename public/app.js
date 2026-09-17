@@ -1,4 +1,4 @@
-const APP_VERSION="9.1"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.2"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2503,6 +2503,7 @@ el("f-dsdcertno").value=t?.dsdCertNo||"";
 el("f-pax").value=t?.pax||""; el("f-hours").value=t?.hours||"";
 el("f-vendor").value=t?.vendor||"";
 fill("f-dsd",[["","— ไม่ระบุ —"],...DSD.map(x=>[x,x])],t?.dsd||"");
+if(!t)el("f-train").checked=(formCtx==="train")||trainish();
 syncTrain();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
@@ -2544,8 +2545,25 @@ return `<label class="occ${d<=today?"":" fut"}"><input type="checkbox" class="oc
 }
 function syncMeet(){ el("wrap-meet").hidden=!el("f-meet").checked; }
 el("f-meet").onchange=syncMeet;
-function syncTrain(){ const on=el("f-train").checked; el("wrap-train").hidden=!on; el("wrap-course").hidden=!on; }
+// งานนี้ถือเป็นงานอบรมไหม — ดูจากกลุ่มงาน / ประเภท / ติ๊กเอง
+function trainish(){
+const g=groups.find(x=>x.key===el("f-track").value);
+return /อบรม|training/i.test((g&&g.label)||"")||/อบรม/.test(el("f-type").value||"");
+}
+function syncTrain(){
+const on=el("f-train").checked;
+el("wrap-train").hidden=!on;
+el("wrap-course").hidden=!on;
+if(!on&&el("f-course").value){ el("f-course").value=""; el("f-crscode").value=""; }
+syncCrsName();
+}
 el("f-train").onchange=syncTrain;
+// เปลี่ยนกลุ่ม/ประเภท → เปิดหรือปิดส่วนอบรมให้อัตโนมัติ ไม่ต้องนั่งติ๊กเอง
+function autoTrain(){
+const want=trainish();
+if(want!==el("f-train").checked){ el("f-train").checked=want; }
+syncTrain();
+}
 el("f-track").addEventListener("change",()=>paintTypeOpts(el("f-type").value));
 el("f-crscode").oninput=()=>{
 const q=el("f-crscode").value.trim().toLowerCase(); if(!q)return;
@@ -2560,8 +2578,8 @@ if(c.skill)el("f-skill").value=c.skill; if(c.mode)el("f-mode").value=c.mode;
 if(c.hours&&!el("f-hours").value)el("f-hours").value=c.hours;
 if(!el("f-code").value.trim())el("f-code").value=c.code; }
 paintCrsHint();};
-el("f-track").addEventListener("change",()=>{ const g=groups.find(x=>x.key===el("f-track").value);
-if(g&&/อบรม/.test(g.label)&&!el("f-train").checked){ el("f-train").checked=true; syncTrain(); } });
+el("f-track").addEventListener("change",autoTrain);
+el("f-type").addEventListener("change",autoTrain);
 el("f-freq").onchange=()=>{syncFreq();paintOccs(editing);syncStatusLabel();};
 let dupNext=false;
 el("dupBatch")&&(el("dupBatch").onclick=()=>{dupNext=true; el("save").click();});
