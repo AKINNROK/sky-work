@@ -1,4 +1,4 @@
-const APP_VERSION="9.7"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.8"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -932,7 +932,9 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <div class="seg" id="calmode">
 <button data-cm="month" aria-pressed="${R.calMode==="month"}">รายเดือน</button>
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
-${R.calMode==="year"?yearSel("yrSel2"):""}
+${R.calMode==="year"?yearSel("yrSel2")+` <div class="seg" id="calgrp">
+<button data-cg="cat" aria-pressed="${(R.calGroup||"cat")==="cat"}">แยกตามหมวด</button>
+<button data-cg="track" aria-pressed="${R.calGroup==="track"}">แยกตามกลุ่มงาน</button></div>`:""}
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <select id="calMonth" style="border:0;background:var(--card);border-radius:999px;padding:6px 14px;font-weight:600">${MTHFULL.map((x,i)=>`<option value="${i}"${i===m?" selected":""}>${x} ${y+543}</option>`).join("")}</select>
 <button id="nm">›</button></div>${yearSel("yrSel2")}`:""}
@@ -972,10 +974,12 @@ const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,
 const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
 MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
 return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
-const rows=CATS.map(([name])=>{
-const g=list.filter(t=>catOf(t)===name);
+const byTrack=(R.calGroup==="track");
+const buckets=byTrack?visible(groups).map(x=>[x.label,x.key]):CATS.map(([n])=>[n,null]);
+const rows=buckets.map(([name,key])=>{
+const g=byTrack?list.filter(t=>t.track===key):list.filter(t=>catOf(t)===name);
 if(!g.length)return "";
-return `<div class="cgroup">${esc(name)} <span>${g.length}</span></div>`+
+return `<div class="cgroup">${byTrack?`<span class="tagdot" style="background:${gColor(key)||"var(--wait)"};width:10px;height:10px;display:inline-block;margin-right:6px"></span>`:""}${esc(name)} <span>${g.length}</span></div>`+
 MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
 MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${itemColor(t)}" title="${esc(t.tag||t.status)}"></span>`:""}</div>`).join("");}).join("");
@@ -986,6 +990,9 @@ return `<div class="card">
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
 <span style="margin-left:auto;color:var(--ink-3)">แยกตามหมวด · ${list.length} งานในปี ${R.year+543}</span></div>
+${(()=>{const gs=visible(groups).filter(g=>g.color&&list.some(t=>t.track===g.key));
+return gs.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">
+<span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
 ${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
 return tg.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">${tg.map(n=>`<span><i style="background:${tagColor(n)||"var(--ink-3)"}"></i>${esc(n)}</span>`).join("")}</div>`:"";})()}
 <div class="cal"><div class="calgrid">${head}${totRow}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>`}</div></div></div>`;
@@ -1956,6 +1963,7 @@ el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
 const bs=el("budsc");
 if(bs){bs.onclick=e=>{const b=e.target.closest("button[data-bs]");if(!b)return;R.budScope=b.dataset.bs;render();};
 el("budMonth")&&(el("budMonth").onchange=e=>{R.budMonth=+e.target.value;render();});}
+el("calgrp")&&(el("calgrp").onclick=e=>{const b=e.target.closest("button[data-cg]");if(!b)return;R.calGroup=b.dataset.cg;render();});
 el("calmode")&&(el("calmode").onclick=e=>{const b=e.target.closest("button[data-cm]");if(!b)return;R.calMode=b.dataset.cm;R.selDay=null;render();});
 el("calMonth")&&(el("calMonth").onchange=e=>{R.month=+e.target.value;R.selDay=null;render();});
 el("pm")&&(el("pm").onclick=()=>{R.month=(R.month+11)%12;R.selDay=null;render();});
