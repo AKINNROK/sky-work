@@ -233,6 +233,11 @@ h1{font-size:17px}
 <dialog id="dlg"><form method="dialog">
 <div class="dlg-h" id="dlgh">แก้ไขงาน</div>
 <div class="dlg-b">
+<div class="f wide" id="wrap-course" hidden><label for="f-course">หลักสูตรจากทะเบียน</label>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<input id="f-crscode" placeholder="พิมพ์รหัส เช่น 001" style="max-width:170px;font-family:var(--mono)">
+<select id="f-course" style="flex:1;min-width:200px"></select></div>
+<div class="hint" id="f-crshint" style="margin-top:6px"></div></div>
 <div class="f wide"><label for="f-title" id="lbl-title">ชื่องาน</label><input id="f-title" required></div>
 <div class="f"><label for="f-company">บริษัท</label><select id="f-company"></select></div>
 <div class="f"><label for="f-track">กลุ่มงาน</label><select id="f-track"></select></div>
@@ -260,8 +265,6 @@ h1{font-size:17px}
 
 <div class="f wide" id="wrap-train" hidden>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
-<div class="f" style="grid-column:1/-1"><label for="f-course">หลักสูตรจากทะเบียน</label><select id="f-course"></select>
-<div class="hint" id="f-crshint" style="margin-top:6px"></div></div>
 <div class="f"><label for="f-pax">จำนวนผู้เข้าอบรม (คน)</label><input id="f-pax" type="number" min="0" step="1"></div>
 <div class="f"><label for="f-hours">ชั่วโมงอบรม (ต่อคน)</label><input id="f-hours" type="number" min="0" step="0.5"></div>
 <div class="f"><label for="f-vendor">วิทยากร / สถาบัน</label><input id="f-vendor" placeholder="ชื่อวิทยากรหรือสถาบันภายนอก"></div>
@@ -372,6 +375,24 @@ h1{font-size:17px}
 <button type="button" class="btn ghost" id="dcancel">ยกเลิก</button>
 <button type="button" class="btn" id="dsave">บันทึก</button>
 </div></form></dialog>
+<dialog id="crsdlg" style="width:min(940px,96vw)"><form method="dialog" onsubmit="return false">
+<div class="dlg-h" id="crsdlgh">รายละเอียดหลักสูตร</div>
+<div class="dlg-b" style="grid-template-columns:1fr">
+<div class="f"><div id="crs-kpi" class="dcalc"></div></div>
+<div class="f"><label>คำขอ ยป. ของหลักสูตรนี้ <span style="font-weight:400">— แยกรายปี เพราะต้องยื่นเปิดหลักสูตรใหม่ทุกปี · ทุกรุ่นในปีนั้นที่ยังไม่มีเลขจะใช้ร่วมกัน</span></label>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">
+<div class="f"><label for="crs-fyear">ปีที่ยื่น</label><select id="crs-fyear"></select></div>
+<div class="f"><label for="crs-yp">แบบที่ยื่น</label><select id="crs-yp"></select></div>
+<div class="f"><label for="crs-openno">เลขคำขอเปิดหลักสูตร</label><input id="crs-openno" placeholder="เช่น รง 0438/ยป1-1250"></div>
+<div class="f"><label for="crs-opendate">วันที่ยื่นเปิดหลักสูตร</label><input id="crs-opendate" type="date"></div>
+</div><div class="hint" id="crs-fhint" style="margin-top:8px"></div></div>
+<div class="f"><label>รุ่นทั้งหมด</label><div id="crs-rows" class="list"></div></div>
+</div>
+<div class="dlg-f">
+<button type="button" class="btn ghost" id="crs-copy">คัดลอกทุกรุ่นไปปีถัดไป</button>
+<button type="button" class="btn ghost" id="crscancel">ปิด</button>
+<button type="button" class="btn" id="crssave">บันทึกคำขอ ยป.</button>
+</div></form></dialog>
 <dialog id="gbdlg" style="width:min(980px,96vw)"><form method="dialog" onsubmit="return false">
 <div class="dlg-h" id="gbdlgh">ตั้งงบรายเดือน</div>
 <div class="dlg-b" style="grid-template-columns:1fr">
@@ -431,5 +452,5 @@ h1{font-size:17px}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=8.4"></script>
+<script src="app.js?v=8.6"></script>
 </body></html>
