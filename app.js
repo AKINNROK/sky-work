@@ -1,4 +1,4 @@
-const APP_VERSION="9.2"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.3"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -247,6 +247,7 @@ const past=list.filter(d=>d<today);
 return past.length?past[0]:(list.find(d=>d>=today)||null);
 }
 function occState(t){
+if(t.status===STATUS_CANCEL)return {label:STATUS_CANCEL,cls:"s-cancel",recur:false,d:null};
 if(!rr(t))return {label:t.status,cls:sCls(t.status),recur:false,d:t.date?new Date(t.date):null};
 const d=nextOpenOcc(t);
 if(!d)return {label:"ปิดครบทุกรอบแล้ว",cls:"s-done",recur:true,d:null};
@@ -1083,10 +1084,11 @@ return header("โปรเจค & กลุ่มงาน","ทุกกล�
 function meet(){
 const ms=items.filter(t=>isMeet(t));
 const scoped=ms.filter(inScope);
-const withNext=ms.map(t=>({t,d:dueDate(t),p:prepDate(t)})).filter(x=>x.d);
+// รายการที่ยกเลิกแล้วไม่ต้องเข้าคิวเตือน/ตารางล่วงหน้า
+const withNext=ms.filter(t=>t.status!==STATUS_CANCEL).map(t=>({t,d:dueDate(t),p:prepDate(t)})).filter(x=>x.d);
 const today=new Date(); today.setHours(0,0,0,0);
 const upcoming=withNext.filter(x=>daysTo(x.d)>=0&&daysTo(x.d)<=14).sort((a,b)=>a.d-b.d);
-const prep=withNext.filter(x=>x.p&&x.t.status!=="เสร็จสิ้น"&&daysTo(x.d)>=0).sort((a,b)=>a.p-b.p);
+const prep=withNext.filter(x=>x.p&&isOpenStatus(x.t.status)&&daysTo(x.d)>=0).sort((a,b)=>a.p-b.p);
 const prepNow=prep.filter(x=>daysTo(x.p)<=0), prepSoon=prep.filter(x=>daysTo(x.p)>0&&daysTo(x.p)<=7);
 const routine=ms.filter(t=>rr(t)).sort((a,b)=>(nextOcc(a)||0)-(nextOcc(b)||0));
 const oneoff=ms.filter(t=>!rr(t)&&t.date).sort((a,b)=>a.date<b.date?-1:1);
@@ -1095,7 +1097,7 @@ return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
 <div class="t2">${tShow(t.time)?`<b style="color:var(--accent)">${tShow(t.time)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${n!=null?(n===0?"วันนี้":n===1?"พรุ่งนี้":n<0?"ผ่านไปแล้ว":"อีก "+n+" วัน"):""}${t.place?" · "+esc(t.place):""}${t.attendees?" · "+esc(t.attendees):""}</div></div>
-${p?`<span class="tag${daysTo(p)<=0?"":" sky"}" ${daysTo(p)<=0?'style="background:var(--over-soft);color:var(--over);font-weight:600"':""}>เตรียม ${daysTo(p)<=0?"แล้ว!":"อีก "+daysTo(p)+" ว."}</span>`:""}
+${p&&isOpenStatus(t.status)?`<span class="tag${daysTo(p)<=0?"":" sky"}" ${daysTo(p)<=0?'style="background:var(--over-soft);color:var(--over);font-weight:600"':""}>เตรียม ${daysTo(p)<=0?"แล้ว!":"อีก "+daysTo(p)+" ว."}</span>`:""}
 ${(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
 (S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบนี้">${svg(ICON.check,15)}</button>`:"");})()}</div>`;};
@@ -1165,8 +1167,9 @@ return `<div class="li" data-id="${t._id}">
 ${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">${esc(t.dsd)}</span>`:""}
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
 const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||ypNoOf(t)||t.dsdCertNo);
-const late=dl.map(t=>({t,y:ypState(t)})).filter(x=>x.y.n!=null&&x.y.n<0);
-const soon=dl.map(t=>({t,y:ypState(t)})).filter(x=>x.y.n!=null&&x.y.n>=0&&x.y.n<=14);
+const dlOpen=dl.filter(t=>t.status!==STATUS_CANCEL);
+const late=dlOpen.map(t=>({t,y:ypState(t)})).filter(x=>x.y.n!=null&&x.y.n<0);
+const soon=dlOpen.map(t=>({t,y:ypState(t)})).filter(x=>x.y.n!=null&&x.y.n>=0&&x.y.n<=14);
 const mkRows=arr=>arr.map(({t,y})=>({id:t._id,t1:t.title,
 t2:`${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไม่ระบุรุ่น"} · ${y.step}${y.note?" · "+y.note:""}`,
 d:y.due?`${y.due.getDate()}<br>${MTH[y.due.getMonth()]}`:"—",p:y.msg||"",pc:y.cls,
