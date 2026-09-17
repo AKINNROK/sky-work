@@ -1,4 +1,4 @@
-const APP_VERSION="8.9"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.1"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1186,9 +1186,9 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 `<div class="dash">
 ${(()=>{const T=dsdTotals(R.year);
 const pass=T.pct>=50;
-return `<div class="card hero span4" style="padding-bottom:22px">
+return `<div class="card hero span2" style="padding-bottom:20px">
 <div class="lab">สรุปเกณฑ์กรมพัฒนาฝีมือแรงงาน · ปี ${R.year+543} · ${T.n} สถานประกอบกิจการ</div>
-<div style="display:flex;flex-wrap:wrap;gap:26px;align-items:flex-end;margin-top:6px;position:relative;z-index:1">
+<div style="display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-top:4px;position:relative;z-index:1">
 <div><div class="big" style="margin:0">${T.mp?T.pct+"%":"—"}</div>
 <div style="font-size:13px;opacity:.9">ของลูกจ้างทั้งหมด · เกณฑ์กฎหมาย ${LAWPCT}%${T.goalPct>LAWPCT?` · เป้าที่ตั้งเอง ${T.goalPct}%`:""}</div></div>
 <div class="kpis">
@@ -1201,7 +1201,7 @@ ${T.goalTarget>T.target?`<div><span>ขาดถึงเป้าเรา</spa
 <div><span>ผ่านเกณฑ์</span><b>${T.done}/${T.n} แห่ง</b></div>
 <div><span>เงินอุดหนุนคาดว่าได้</span><b style="color:${T.subTotal?"#8ef0c8":"inherit"}">${T.subTotal?baht(T.subTotal)+" ฿":"—"}</b></div>
 </div></div>
-<div class="prog goalbar" style="height:14px">
+<div class="prog goalbar" style="height:12px;margin-top:10px">
 <i style="width:${Math.min(100,T.pct)}%;background:${T.pct>=T.goalPct?"#8ef0c8":pass?"#bfe9ff":"#ffd08a"}"></i>
 <u style="left:${LAWPCT}%"></u>${T.goalPct>LAWPCT?`<u class="g2" style="left:${Math.min(100,T.goalPct)}%"></u>`:""}</div>
 <div style="display:flex;font-size:11.5px;opacity:.9;margin-top:6px;position:relative;height:16px">
@@ -1209,9 +1209,10 @@ ${T.goalTarget>T.target?`<div><span>ขาดถึงเป้าเรา</spa
 <span style="position:absolute;left:${LAWPCT}%;transform:translateX(-50%)">กฎหมาย ${LAWPCT}%</span>
 ${T.goalPct>LAWPCT?`<span style="position:absolute;left:${Math.min(96,T.goalPct)}%;transform:translateX(-50%);color:#ffe7a8;font-weight:600">เป้าเรา ${T.goalPct}%</span>`:""}
 <span style="position:absolute;right:0">100%</span></div>
-<div style="font-size:12px;opacity:.85;margin-top:10px">
+<div style="font-size:11.5px;opacity:.8;margin-top:7px">
 ${T.updated?`ข้อมูลอัปเดตล่าสุด ${fmtStamp(T.updated)}`:"ยังไม่เคยบันทึกข้อมูล — กด “แก้ไข” ในตารางด้านล่าง"}</div></div>
-<div class="card span2"><h2>ความคืบหน้ารายบริษัท <small>เทียบเป้า 50%</small></h2>
+<div class="card span2" style="align-self:stretch"><h2>ความคืบหน้ารายบริษัท <small>เทียบเป้า 50%</small></h2>
+<div class="cgrid2">
 ${T.rows.length?T.rows.map(({c,k})=>{const p=k.avg?Math.min(100,Math.round(k.pct)):0;
 const st=k.avg?(k.pct>=k.goal?"var(--ok)":k.pct>=LAWPCT?"var(--accent)":"var(--over)"):"var(--ink-3)";
 return `<div class="glrow"><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT?` <small style="color:var(--ink-3);font-weight:400">· เป้า ${k.goal}%</small>`:""}</span>
@@ -1219,14 +1220,14 @@ return `<div class="glrow"><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT
 <div class="bar goalbar"><i class="${k.avg&&k.pct<LAWPCT?"hot":""}" style="width:${p}%;${k.avg&&k.pct>=k.goal?"background:var(--ok)":""}"></i>
 <u style="left:${LAWPCT}%"></u>${k.goal>LAWPCT?`<u class="g2" style="left:${Math.min(100,k.goal)}%"></u>`:""}</div>
 <div class="t-note" style="margin-top:4px">ทำได้ ${baht(k.C)} · เกณฑ์ ${baht(k.target)} คน${k.need?` (ขาด ${baht(k.need)})`:" ✓"}${k.goal>LAWPCT?` · เป้าเรา ${baht(k.goalTarget)} คน${k.needGoal?` (ขาด ${baht(k.needGoal)})`:" ✓"}`:""}</div></div>`;}).join("")
-:`<div class="empty">ยังไม่มีสถานประกอบกิจการ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง</div>`}</div>
+:`<div class="empty">ยังไม่มีสถานประกอบกิจการ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง</div>`}</div></div>
 <div class="card span4"><h2>เงินอุดหนุนกองทุนพัฒนาฝีมือแรงงาน <small>ผลงานปี ${R.year+543} → ยื่นภายใน 31 ส.ค. ${R.year+544}</small></h2>
 ${(()=>{const T=dsdTotals(R.year);
 const rows=T.rows.filter(x=>x.k.avg||x.k.sub.stdN||x.k.sub.fundPaid);
-return `<div class="hint" style="margin:2px 0 12px">
+return `<details class="foldbox"><summary>วิธีคิดเงินอุดหนุน 3 ช่องทาง</summary><div class="hint" style="margin:8px 0 2px">
 <b>ช่องทางที่ 1 — ฝึกอบรมเกิน ${subPct()}%</b> &nbsp;(ส่วนที่เกิน) × ${baht(subRate())} ฿ ต่อคน · นับ<b>คนไม่ซ้ำ</b> เริ่มนับตั้งแต่คนที่เกิน ${subPct()}% เป็นต้นไป<br>
 <b>ช่องทางที่ 2 — ทดสอบมาตรฐานฝีมือแรงงานแห่งชาติ</b> &nbsp;จำนวนคนที่ผ่านทดสอบ × ${baht(STD_RATE)} ฿ (ต้องจ่ายค่าจ้างตามมาตรฐานฝีมือไม่น้อยกว่า 180 วันก่อนยื่น · <b>ไม่เกินปีละ ${baht(STD_CAP)} ฿</b>)<br>
-<b>ช่องทางที่ 3 — คืนเงินสมทบ ${FUND_PCT}%</b> &nbsp;เงินสมทบที่นำส่งกองทุน × ${FUND_PCT}% (กรณีปีที่ผ่านมาส่งเงินสมทบ แล้วปีถัดมาพัฒนาครบตามสัดส่วน)</div>
+<b>ช่องทางที่ 3 — คืนเงินสมทบ ${FUND_PCT}%</b> &nbsp;เงินสมทบที่นำส่งกองทุน × ${FUND_PCT}% (กรณีปีที่ผ่านมาส่งเงินสมทบ แล้วปีถัดมาพัฒนาครบตามสัดส่วน)</div></details>
 <div class="tblwrap wide"><table><thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th>
 <th style="text-align:right">ฐาน ${subPct()}%</th><th style="text-align:right">ผ่านรับรอง (C)</th>
 <th style="text-align:right">ส่วนที่เกิน</th><th style="text-align:right">1) อบรมเกิน ${subPct()}%</th>
@@ -1294,9 +1295,9 @@ return `<tr data-nolink="1">
 </tbody></table></div>
 <div class="addg"><button class="btn ghost" id="dsdAdd">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มสถานประกอบกิจการ</button>
 ${Object.keys(hrdata.dsd||{}).some(k=>dsdRec(k,R.year-1))?`<button class="btn ghost" id="dsdCopy">คัดลอกโครงจากปี ${R.year+542}</button>`:""}</div>
-<div class="hint"><b>พนักงานเฉลี่ย</b> คิดจากเดือนที่กรอกตัวเลขไว้เท่านั้น เดือนที่ยังไม่ถึงหรือเว้นว่างจะไม่ถูกนำมาหาร (ตรงกับวิธีของกรมฯ)<br>
+<details class="foldbox"><summary>วิธีอ่านตารางนี้</summary><div class="hint"><b>พนักงานเฉลี่ย</b> คิดจากเดือนที่กรอกตัวเลขไว้เท่านั้น เดือนที่ยังไม่ถึงหรือเว้นว่างจะไม่ถูกนำมาหาร (ตรงกับวิธีของกรมฯ)<br>
 <b>C = A − B</b> คือจำนวนที่นับได้จริงหลังตัดคนที่ฝึกซ้ำออก · <b>คิดเป็น %</b> = C ÷ พนักงานเฉลี่ย<br>
-ตัวเลขในระบบเป็นของคุณเอง ใช้เทียบกับหน้าเว็บกรมฯ ได้ แต่ไม่ได้ดึงจากกรมฯ อัตโนมัติ</div></div>
+ตัวเลขในระบบเป็นของคุณเอง ใช้เทียบกับหน้าเว็บกรมฯ ได้ แต่ไม่ได้ดึงจากกรมฯ อัตโนมัติ</div></details></div>
 <div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
 <div class="tblwrap wide"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
 <th>แบบ</th><th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>ขั้นตอน / กำหนด</th><th>สถานะ</th></tr></thead><tbody>
