@@ -1,4 +1,4 @@
-const APP_VERSION="8.2"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="8.3"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -834,7 +834,7 @@ const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" sele
 const mobile=matchMedia("(max-width:820px)").matches;
 return header("งานทั้งหมด",`${list.length} จาก ${items.length} รายการ · แตะเพื่อแก้ไข`)+
 `<div class="toolbar">${scopeBar("sc1")}</div>
-<div class="toolbar">
+<div class="toolbar filters">
 <input type="search" id="q" placeholder="ค้นหางาน / ผู้รับผิดชอบ" value="${esc(F.q)}">
 <select id="fl-company">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],F.company)}</select>
 <select id="fl-track">${opt([["","ทุกกลุ่ม"],...visible(groups).map(g=>[g.key,g.label])],F.track)}</select>
