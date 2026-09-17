@@ -63,6 +63,12 @@ td .t-note{max-width:34ch}table{border-collapse:separate;border-spacing:0 8px;wi
 [hidden]{display:none!important}
 .crscode{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);
 background:var(--accent-soft);border-radius:999px;padding:6px 12px;flex:none;white-space:nowrap}
+.msum{background:linear-gradient(135deg,var(--sky),var(--accent));color:#fff;font-weight:600;font-size:13px;
+padding:7px 10px;text-align:center;position:sticky;top:0;z-index:2}
+.msum:first-of-type{border-radius:10px 0 0 10px;padding-left:14px}
+.msum:last-of-type{border-radius:0 10px 10px 0}
+.msum span{font-weight:400;opacity:.85;font-size:11.5px}
+.msum.now{box-shadow:inset 0 -3px 0 #ffd76a}
 .cgrid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 22px;margin-top:4px}
 .cgrid2 .glrow{border-bottom:0;padding:8px 0}
 .foldbox{margin:2px 0 12px;border-radius:12px;background:var(--paper)}
@@ -461,5 +467,5 @@ h1{font-size:17px}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=9.3"></script>
+<script src="app.js?v=9.4"></script>
 </body></html>

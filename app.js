@@ -1,4 +1,4 @@
-const APP_VERSION="9.3"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.4"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -951,6 +951,10 @@ const now=(R.year===thisYear)?new Date().getMonth()+1:0;
 const list=items.filter(t=>monthsOf(t).length&&!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year))
 .sort((a,b)=>monthsOf(a)[0]-monthsOf(b)[0]);
 const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,i)=>`<div class="mh${i+1===now?" now":""}">${x}</div>`).join("")}`;
+// แถวสรุปจำนวนงานรายเดือน (ทุกหมวดรวมกัน) ใต้หัวตาราง
+const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
+MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
+return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
 const rows=CATS.map(([name])=>{
 const g=list.filter(t=>catOf(t)===name);
 if(!g.length)return "";
@@ -967,7 +971,7 @@ return `<div class="card">
 <span style="margin-left:auto;color:var(--ink-3)">แยกตามหมวด · ${list.length} งานในปี ${R.year+543}</span></div>
 ${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
 return tg.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">${tg.map(n=>`<span><i style="background:${tagColor(n)||"var(--ink-3)"}"></i>${esc(n)}</span>`).join("")}</div>`:"";})()}
-<div class="cal"><div class="calgrid">${head}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>`}</div></div></div>`;
+<div class="cal"><div class="calgrid">${head}${totRow}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>`}</div></div></div>`;
 }
 function ledgerIn(scope,month){
 return ledger.filter(x=>{
