@@ -1,4 +1,4 @@
-const APP_VERSION="8.7"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="8.8"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2403,12 +2403,16 @@ try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
 if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
 function syncCrsName(){
-const linked=!!crsOf(el("f-course").value);
+const v=el("f-course").value, linked=!!crsOf(v);
 const w=el("f-title").closest(".f");
 if(w)w.hidden=linked&&!el("wrap-course").hidden;
+const lb=el("lbl-title");
+if(lb)lb.textContent=(v==="__newcrs__")?"ชื่อหลักสูตรใหม่":(formCtx==="train"?"ชื่อหลักสูตร":"ชื่องาน");
+if(v==="__newcrs__"&&el("f-title"))setTimeout(()=>el("f-title").focus(),60);
 }
 function paintCrsHint(){
 const code=el("f-course").value, c=crsOf(code);
+if(code==="__newcrs__"){el("f-crshint").innerHTML="พิมพ์ชื่อหลักสูตรในช่องด้านล่าง — ระบบจะรันรหัสให้อัตโนมัติตอนกดบันทึก และเพิ่มเข้าทะเบียนให้เอง";return;}
 if(!c){el("f-crshint").innerHTML="เลือกหลักสูตรจากทะเบียนเพื่อให้ระบบนับ “หลักสูตร” ไม่ซ้ำ แล้วใส่แค่รุ่นที่ · จัดการทะเบียนที่ ตั้งค่า → หลักสูตรอบรม";return;}
 const bs=crsBatches(c.code).filter(x=>x._id!==(editing&&editing._id));
 el("f-crshint").innerHTML=`รหัส <b>${esc(c.code)}</b> · หลักสูตรนี้มีอยู่แล้ว <b>${bs.length}</b> รุ่น`
@@ -2532,18 +2536,7 @@ const q=el("f-crscode").value.trim().toLowerCase(); if(!q)return;
 const hit=courses.find(c=>c.code.toLowerCase()===q)||courses.find(c=>c.code.toLowerCase().endsWith(q))
 ||courses.find(c=>c.code.toLowerCase().includes(q)||c.name.toLowerCase().includes(q));
 if(hit){ el("f-course").value=hit.code; el("f-course").onchange(); }};
-el("f-course").onchange=async()=>{
-if(el("f-course").value==="__newcrs__"){
-const nm=(window.prompt("ชื่อหลักสูตรใหม่ (ระบบจะรันรหัสให้อัตโนมัติ)")||"").trim();
-if(!nm){el("f-course").value="";syncCrsName();return;}
-const dup=courses.find(x=>x.name===nm);
-if(dup){ el("f-course").value=dup.code; tell("มีหลักสูตรนี้อยู่แล้วค่ะ — ใช้ <b>"+esc(dup.code)+"</b> ให้เลย"); }
-else{ const code=nextCourseCode(); courses=[...courses,{code,name:nm,skill:"",mode:"",hours:0}];
-await saveMeta("courses",courses);
-const cur=el("f-course").value;
-fill("f-course",[["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],...visible(courses).map(x=>[x.code,x.code+" · "+x.name]),["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"]],code);
-setFoot("เพิ่มหลักสูตร "+code+" ในทะเบียนแล้ว"); }
-}
+el("f-course").onchange=()=>{
 const c=crsOf(el("f-course").value);
 syncCrsName();
 if(c){ el("f-crscode").value=c.code; el("f-title").value=c.name;
@@ -2587,6 +2580,17 @@ const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
 return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
+if(el("f-course").value==="__newcrs__"){
+const nm=(data.title||"").trim();
+if(!nm){el("f-title").focus();return;}
+const dup=courses.find(x=>x.name===nm);
+if(dup){ data.course=dup.code; setFoot("มีหลักสูตรนี้อยู่แล้ว — ใช้รหัส "+dup.code); }
+else{ const code=nextCourseCode();
+courses=[...courses,{code,name:nm,skill:data.skill||"",mode:data.mode||"",hours:data.hours||0}];
+data.course=code; if(!data.code)data.code=code;
+try{ await saveMeta("courses",courses); }catch(e){}
+setFoot("เพิ่มหลักสูตร "+code+" ในทะเบียนแล้ว"); }
+}
 const again=dupNext; dupNext=false;
 el("dlg").close();
 try{ await saveItem(data,editing?._id); }
