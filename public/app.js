@@ -1,19 +1,26 @@
-const APP_VERSION="9.5"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.6"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
 const STATUS=["รอดำเนินการ","อยู่ระหว่างดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
 const STATUS_DONE="เสร็จสิ้น", STATUS_CANCEL="ยกเลิก";
 const isOpenStatus=x=>x!==STATUS_DONE&&x!==STATUS_CANCEL;
-const TAGCOLORS=["#e0606d","#e8743b","#e0932b","#d9c02e","#8fbf3f","#2fa36b","#1a9f86","#2bb3c9",
-"#3d86d6","#4a5fc4","#7d5bd0","#b155c4","#d6549b","#8a6a55","#6b7785","#a9a29a"];
+const TAGCOLORS=[
+"#9e1f52","#d92662","#e08a86","#d40000","#f2542d","#ef7d1a","#f28c00","#f5b921",
+"#dcc63a","#c3d33f","#8fbf3f","#1a7a3c","#35c491",
+"#12a08a","#159ee8","#3d86d6","#7f8fd0","#3b49b5","#b3a9ea","#9d6fc4","#9412c4",
+"#8a6a55","#5b5b5b","#b3a99a","#6b7785","#d6549b"];
 const tagDefs=()=>{
-const base=(tagList||[]).map(x=>typeof x==="string"?{name:x,color:""}:{name:x.name,color:x.color||""}).filter(x=>x.name);
+const base=(tagList||[]).map(x=>typeof x==="string"?{name:x,color:"",track:""}:{name:x.name,color:x.color||"",track:x.track||""}).filter(x=>x.name);
 const extra=[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].filter(n=>!base.some(b=>b.name===n)).sort()
 .map(name=>({name,color:(items.find(x=>(x.tag||"").trim()===name&&x.color)||{}).color||""}));
 return [...base,...extra];};
 const tagsOf=()=>tagDefs().map(x=>x.name);
-const tagColor=name=>{const d=tagDefs().find(x=>x.name===name);return d?d.color:"";};
+const tagColor=name=>{const d=tagDefs().find(x=>x.name===name);
+if(!d)return ""; if(d.color)return d.color;
+const g=groups.find(x=>x.key===d.track); return (g&&g.color)||"";};
+const tagTrack=name=>{const d=tagDefs().find(x=>x.name===name);return d?d.track:"";};
+const tagsFor=tr=>tagDefs().filter(x=>!x.track||x.track===tr).map(x=>x.name);
 const tagUsed=name=>items.filter(t=>(t.tag||"").trim()===name).length;
 const DEFAULT_GROUPS=[
 {key:"train_law",label:"อบรมตามกฎหมาย"},{key:"train_in",label:"อบรมภายใน"},
@@ -258,7 +265,14 @@ return {label:"อีก "+n+" วัน",cls:"s-wait",recur:true,d};
 }
 const dueDate=t=>{const R2=rr(t); if(R2)return nextOpenOcc(t); return t.date?new Date(t.date):null;};
 const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/864e5);};
-const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
+const gColor=k=>{const g=groups.find(x=>x.key===k);return (g&&g.color)||"";};
+// ลำดับสี: สีที่ตั้งในงาน → สีของป้ายกำกับ → สีของกลุ่มงาน → สีตามสถานะ
+const itemColor=t=>{ if(!t)return sColor("");
+if(t.color)return t.color;
+const tc=(t.tag&&typeof tagColor==="function")?tagColor(String(t.tag).trim()):"";
+if(tc)return tc;
+const gc=gColor(t.track); if(gc)return gc;
+return sColor(t.status); };
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 // ทะเบียนหลักสูตร — รหัสรันอัตโนมัติ กันคีย์มือผิด
 const CRSPREFIX="TRN";
@@ -1558,7 +1572,10 @@ ${can?"":`<div class="banner bad" style="margin-top:12px">เครื่อง�
 function setGroups(){
 return `<div class="card"><h2>กลุ่มงาน <small>${groups.length} กลุ่ม</small></h2>
 <div class="rows">${groups.map((g,i)=>{const n=items.filter(t=>t.track===g.key).length;
-return `<div class="rw${g.hidden?" off":""}">${nameInput("data-ren",g.key,g.label)}
+return `<div class="rw${g.hidden?" off":""}">
+<span class="tagdot" style="background:${g.color||"var(--wait)"}"></span>
+${nameInput("data-ren",g.key,g.label)}
+<span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-gcol="${esc(g.key)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
 <button class="gcbtn" data-see="track:${esc(g.key)}" title="ดูงานในกลุ่มนี้">${n} งาน</button>
 <button class="iconbtn" data-move="track:${esc(g.key)}" title="ย้ายงานทั้งหมดไปกลุ่มอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
 ${moveBtns("groups",i,groups.length,g.hidden)}
@@ -1566,7 +1583,8 @@ ${moveBtns("groups",i,groups.length,g.hidden)}
 <div class="addg"><input id="newg" placeholder="ชื่อกลุ่มใหม่ เช่น งานฝึกอบรม">
 <button class="btn" id="addg">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มกลุ่ม</button></div>
 ${TRAIN_PRESET.every(x=>groups.some(g=>g.label===x.label))?"":`<div class="addg" style="margin-top:10px"><button class="btn ghost" id="preset">${svg(ICON.train,17)}เพิ่มชุดกลุ่มงานฝึกอบรม (${esc(TRAIN_PRESET.filter(x=>!groups.some(g=>g.label===x.label)).map(x=>x.label).join(", "))})</button></div>`}
-<div class="hint">พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
+<div class="hint"><b>สีของกลุ่มงาน</b> คือสีที่ขึ้นในปฏิทินของทุกงานในกลุ่มนั้น (ถ้างานนั้นไม่ได้ตั้งสีเอง และป้ายกำกับไม่ได้กำหนดสีไว้) · ช่องประ = ใช้สีตามสถานะเหมือนเดิม<br>
+พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
 }
 function setCompanies(){
 return `<div class="card"><h2>บริษัทในเครือ <small>${companies.length} บริษัท</small></h2>
@@ -1682,14 +1700,20 @@ return `<div class="card"><h2>โหมดกลางวัน / กลาง�
 <div class="card" style="margin-top:16px"><h2>ป้ายกำกับ & สีในปฏิทิน <small>${tagDefs().length} ป้าย</small></h2>
 <div class="rows">${tagDefs().map((g,i)=>{const n=tagUsed(g.name);
 return `<div class="rw">
-<span class="tagdot" style="background:${g.color||"var(--wait)"}"></span>
+<span class="tagdot" style="background:${tagColor(g.name)||"var(--wait)"}"></span>
 ${nameInput("data-rentag",g.name,g.name)}
+<select class="cosel" data-tagtrack="${esc(g.name)}" title="ป้ายนี้ใช้กับกลุ่มงานไหน">
+<option value="">— ใช้ได้ทุกกลุ่มงาน —</option>
+${groups.map(x=>`<option value="${esc(x.key)}"${g.track===x.key?" selected":""}>อยู่ใต้ ${esc(x.label)}</option>`).join("")}
+</select>
 <span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-tagcol="${esc(g.name)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
 <button class="gcbtn" data-see="tag:${esc(g.name)}" title="ดูงานที่ติดป้ายนี้"${n?"":" disabled"}>${n} งาน</button>
 <button class="btn danger sm" data-deltag="${esc(g.name)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีป้ายกำกับ</div>`}</div>
 <div class="addg"><input id="newtag" placeholder="ชื่อป้ายใหม่ เช่น ความปลอดภัย">
+<select id="newtagg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(x=>`<option value="${esc(x.key)}">อยู่ใต้ ${esc(x.label)}</option>`).join("")}</select>
 <button class="btn" id="addtag">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มป้าย</button></div>
-<div class="hint">ป้ายกำกับใช้ได้ทุกหน้า — สีที่เลือกตรงนี้คือสีที่ขึ้นในปฏิทินและจุดสีหน้ารายการ เปลี่ยนที่นี่ที่เดียว ทุกงานที่ติดป้ายนั้นเปลี่ยนตาม · “ตามสถานะ” (ช่องประ) = ใช้สีตามสถานะงานเหมือนเดิม · ลบป้ายไม่ลบงาน แต่ป้ายจะหายจากตัวเลือก</div></div>`;
+<div class="hint"><b>ผูกกับกลุ่มงานได้</b> — เลือกกลุ่มให้ป้าย แล้วตอนเพิ่มงานระบบจะโชว์เฉพาะป้ายของกลุ่มนั้น (บวกป้ายกลาง) · ถ้าป้ายไม่ได้ตั้งสีเอง จะใช้สีของกลุ่มงานให้อัตโนมัติ<br>
+ป้ายกำกับใช้ได้ทุกหน้า — สีที่เลือกตรงนี้คือสีที่ขึ้นในปฏิทินและจุดสีหน้ารายการ เปลี่ยนที่นี่ที่เดียว ทุกงานที่ติดป้ายนั้นเปลี่ยนตาม · “ตามสถานะ” (ช่องประ) = ใช้สีตามสถานะงานเหมือนเดิม · ลบป้ายไม่ลบงาน แต่ป้ายจะหายจากตัวเลือก</div></div>`;
 }
 function setImport(){
 return `<div class="card"><h2>นำเข้างานจากไฟล์ CSV</h2>
@@ -1928,10 +1952,18 @@ if(el("addtag")){
 el("addtag").onclick=async()=>{const v=el("newtag").value.trim();
 if(!v){tell("ใส่ชื่อป้ายก่อนนะคะ");return;}
 if(tagsOf().includes(v)){tell("มีป้ายนี้แล้วค่ะ");return;}
-tagList=[...tagDefs(),{name:v,color:""}]; el("newtag").value=""; render(); await saveMeta("tags",tagList);};}
+tagList=[...tagDefs(),{name:v,color:"",track:(el("newtagg")?el("newtagg").value:"")}]; el("newtag").value=""; render(); await saveMeta("tags",tagList);};}
+document.querySelectorAll("[data-gcol]").forEach(b=>b.onclick=async()=>{
+const [k,c]=b.dataset.gcol.split("|");
+const g=groups.find(x=>x.key===k); if(!g)return;
+g.color=c; render(); await saveMeta("groups",groups);});
+document.querySelectorAll("[data-tagtrack]").forEach(n=>n.onchange=async()=>{
+const nm=n.dataset.tagtrack;
+tagList=tagDefs().map(x=>x.name===nm?{name:x.name,color:x.color,track:n.value}:x);
+render(); await saveMeta("tags",tagList);});
 document.querySelectorAll("[data-tagcol]").forEach(b=>b.onclick=async()=>{
 const [nm,c]=b.dataset.tagcol.split("|");
-tagList=tagDefs().map(x=>x.name===nm?{name:nm,color:c}:x);
+tagList=tagDefs().map(x=>x.name===nm?{name:nm,color:c,track:x.track}:x);
 render(); await saveMeta("tags",tagList);
 const list=items.filter(t=>(t.tag||"").trim()===nm&&(t.color||"")!==c);
 for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{color:c}),_id);}catch(e){}}
@@ -1941,7 +1973,7 @@ const from=n.dataset.rentag, to=n.value.trim();
 if(!to||to===from||!tagsOf().includes(from)||renameLock){render();return;}
 if(tagsOf().includes(to)){tell("มีป้าย “"+esc(to)+"” อยู่แล้วค่ะ");render();return;}
 renameLock=true; setTimeout(()=>renameLock=false,800);
-tagList=tagDefs().map(x=>x.name===from?{name:to,color:x.color}:x);
+tagList=tagDefs().map(x=>x.name===from?{name:to,color:x.color,track:x.track}:x);
 await saveMeta("tags",tagList);
 const list=items.filter(t=>(t.tag||"").trim()===from);
 for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{tag:to}),_id);}catch(e){}}
@@ -2442,6 +2474,12 @@ el("f-crshint").innerHTML=`รหัส <b>${esc(c.code)}</b> · หลักส
 +(bs.length?" ("+bs.map(x=>esc(x.batch||"ไม่ระบุรุ่น")).slice(0,6).join(", ")+")":"")
 +(c.hours?` · ชั่วโมงมาตรฐาน ${c.hours} ชม.`:"");
 }
+function paintTagOpts(cur){
+const tr=el("f-track")?el("f-track").value:"";
+const list=tagsFor(tr);
+if(cur&&!list.includes(cur))list.unshift(cur);
+fill("f-tag",[["","— ไม่มีป้าย —"],...list.map(x=>[x,x])],cur||"");
+}
 function paintTypeOpts(cur){
 const tr=el("f-track")?el("f-track").value:"";
 const list=typesFor(tr);
@@ -2515,9 +2553,7 @@ syncTrain();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
-(()=>{const cur=(t?.tag||"").trim(), list=tagsOf();
-if(cur&&!list.includes(cur))list.unshift(cur);
-fill("f-tag",[["","— ไม่มีป้าย —"],...list.map(x=>[x,x])],cur);})();
+paintTagOpts((t?.tag||"").trim());
 el("f-tag").onchange=()=>{const c=tagColor(el("f-tag").value);
 if(c)el("f-colors").querySelectorAll("[data-color]").forEach(b=>{if(b.dataset.color===c)b.click();});};
 el("f-colors").innerHTML=[["","ตามสถานะ"],...TAGCOLORS.map(c=>[c,c])].map(([c,lab])=>
@@ -2585,6 +2621,7 @@ if(c.skill)el("f-skill").value=c.skill; if(c.mode)el("f-mode").value=c.mode;
 if(c.hours&&!el("f-hours").value)el("f-hours").value=c.hours;
 if(!el("f-code").value.trim())el("f-code").value=c.code; }
 paintCrsHint();};
+el("f-track").addEventListener("change",()=>paintTagOpts(el("f-tag").value));
 el("f-track").addEventListener("change",autoTrain);
 el("f-type").addEventListener("change",autoTrain);
 el("f-freq").onchange=()=>{syncFreq();paintOccs(editing);syncStatusLabel();};
