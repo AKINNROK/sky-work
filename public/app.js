@@ -1,4 +1,4 @@
-const APP_VERSION="9.8"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="9.9"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -203,7 +203,7 @@ if(!rr(t))return t.date?new Date(t.date):null;
 for(let i=0;i<800;i++){ if(occursOn(t,d))return new Date(d); d.setDate(d.getDate()+1); }
 return null;
 }
-let R={pq:"", year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
+let R={pq:"", calGroup:"track", year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
 const F={q:"",track:"",type:"",status:"",company:""};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -933,8 +933,8 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <button data-cm="month" aria-pressed="${R.calMode==="month"}">รายเดือน</button>
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
 ${R.calMode==="year"?yearSel("yrSel2")+` <div class="seg" id="calgrp">
-<button data-cg="cat" aria-pressed="${(R.calGroup||"cat")==="cat"}">แยกตามหมวด</button>
-<button data-cg="track" aria-pressed="${R.calGroup==="track"}">แยกตามกลุ่มงาน</button></div>`:""}
+<button data-cg="cat" aria-pressed="${R.calGroup==="cat"}">แยกตามหมวด</button>
+<button data-cg="track" aria-pressed="${(R.calGroup||"track")==="track"}">แยกตามกลุ่มงาน</button></div>`:""}
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <select id="calMonth" style="border:0;background:var(--card);border-radius:999px;padding:6px 14px;font-weight:600">${MTHFULL.map((x,i)=>`<option value="${i}"${i===m?" selected":""}>${x} ${y+543}</option>`).join("")}</select>
 <button id="nm">›</button></div>${yearSel("yrSel2")}`:""}
@@ -974,7 +974,7 @@ const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,
 const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
 MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
 return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
-const byTrack=(R.calGroup==="track");
+const byTrack=(R.calGroup||"track")==="track";
 const buckets=byTrack?visible(groups).map(x=>[x.label,x.key]):CATS.map(([n])=>[n,null]);
 const rows=buckets.map(([name,key])=>{
 const g=byTrack?list.filter(t=>t.track===key):list.filter(t=>catOf(t)===name);
@@ -1593,6 +1593,9 @@ ${moveBtns("groups",i,groups.length,g.hidden)}
 <button class="btn danger sm" data-delg="${esc(g.key)}">ลบ</button></div>`;}).join("")}</div>
 <div class="addg"><input id="newg" placeholder="ชื่อกลุ่มใหม่ เช่น งานฝึกอบรม">
 <button class="btn" id="addg">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มกลุ่ม</button></div>
+${(()=>{const ov=items.filter(t=>t.color&&t.track&&gColor(t.track)&&t.color!==gColor(t.track)).length;
+return ov?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${ov}</b> งานที่ตั้งสีเฉพาะตัวไว้ สีในปฏิทินจึงไม่ตรงกับสีกลุ่มงาน
+<button class="btn sm" id="fixcolor" style="margin-left:auto">ใช้สีตามกลุ่มงาน</button></div>`:"";})()}
 ${TRAIN_PRESET.every(x=>groups.some(g=>g.label===x.label))?"":`<div class="addg" style="margin-top:10px"><button class="btn ghost" id="preset">${svg(ICON.train,17)}เพิ่มชุดกลุ่มงานฝึกอบรม (${esc(TRAIN_PRESET.filter(x=>!groups.some(g=>g.label===x.label)).map(x=>x.label).join(", "))})</button></div>`}
 <div class="hint"><b>สีของกลุ่มงาน</b> คือสีที่ขึ้นในปฏิทินของทุกงานในกลุ่มนั้น (ถ้างานนั้นไม่ได้ตั้งสีเอง และป้ายกำกับไม่ได้กำหนดสีไว้) · ช่องประ = ใช้สีตามสถานะเหมือนเดิม<br>
 พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
@@ -1975,6 +1978,14 @@ el("addtag").onclick=async()=>{const v=el("newtag").value.trim();
 if(!v){tell("ใส่ชื่อป้ายก่อนนะคะ");return;}
 if(tagsOf().includes(v)){tell("มีป้ายนี้แล้วค่ะ");return;}
 tagList=[...tagDefs(),{name:v,color:"",track:(el("newtagg")?el("newtagg").value:"")}]; el("newtag").value=""; render(); await saveMeta("tags",tagList);};}
+el("fixcolor")&&(el("fixcolor").onclick=async()=>{
+const list=items.filter(t=>t.color&&t.track&&gColor(t.track)&&t.color!==gColor(t.track));
+if(!list.length)return;
+if(!await ask(`ล้างสีเฉพาะตัวของ <b>${list.length}</b> งาน ให้กลับไปใช้สีของกลุ่มงาน ใช่ไหมคะ?<div style="font-size:13px;margin-top:8px">ข้อมูลอื่นไม่เปลี่ยน · ถ้าอยากให้งานไหนสีต่างจากกลุ่ม ตั้งใหม่ทีหลังได้</div>`,"ใช้สีตามกลุ่ม"))return;
+let ok=0;
+for(const t of list){ try{ const {_id,...r}=t; await saveItem(Object.assign({},r,{color:""}),_id); ok++; }catch(e){}
+setFoot("กำลังปรับสี "+ok+"/"+list.length+" …"); }
+render(); tell("<b>ปรับแล้ว "+ok+" งาน</b> ตอนนี้สีในปฏิทินตรงกับกลุ่มงานทั้งหมด");});
 document.querySelectorAll("[data-gcol]").forEach(b=>b.onclick=async()=>{
 const [k,c]=b.dataset.gcol.split("|");
 const g=groups.find(x=>x.key===k); if(!g)return;
