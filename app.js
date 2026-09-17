@@ -1,4 +1,4 @@
-const APP_VERSION="10.3"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="10.4"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1000,11 +1000,11 @@ g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${e
 MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
 ?(()=>{const S=monthState(t,R.year,i);
 return `<span class="mark" title="${esc(gLabel(t.track)+" · "+S.n)}">
-<i class="mdot" style="background:${itemColor(t)}"></i><i class="mbar" style="background:${S.c}"></i></span>`;})():""}</div>`).join("");}).join("");
+<i class="mdot" style="background:${S.c}"></i><i class="mbar" style="background:${itemColor(t)}"></i></span>`;})():""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
-<span style="color:var(--ink-3)">จุดกลม = กลุ่มงาน · ขีด = สถานะ:</span>
+<span style="color:var(--ink-3)">จุดกลม = สถานะ · ขีด = กลุ่มงาน:</span>
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
