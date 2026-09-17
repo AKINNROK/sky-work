@@ -1,4 +1,4 @@
-const APP_VERSION="10.1"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="10.3"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -17,8 +17,7 @@ const extra=[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].filte
 return [...base,...extra];};
 const tagsOf=()=>tagDefs().map(x=>x.name);
 const tagColor=name=>{const d=tagDefs().find(x=>x.name===name);
-if(!d)return ""; if(d.color)return d.color;
-const g=groups.find(x=>x.key===d.track); return (g&&g.color)||"";};
+const g=d&&groups.find(x=>x.key===d.track); return (g&&g.color)||"";};
 const tagTrack=name=>{const d=tagDefs().find(x=>x.name===name);return d?d.track:"";};
 const tagsFor=tr=>tagDefs().filter(x=>!x.track||x.track===tr).map(x=>x.name);
 const tagUsed=name=>items.filter(t=>(t.tag||"").trim()===name).length;
@@ -270,12 +269,9 @@ const dueDate=t=>{const R2=rr(t); if(R2)return nextOpenOcc(t); return t.date?new
 const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/864e5);};
 const gColor=k=>{const g=groups.find(x=>x.key===k);return (g&&g.color)||"";};
 // ลำดับสี: สีที่ตั้งในงาน → สีของป้ายกำกับ → สีของกลุ่มงาน → สีตามสถานะ
+// กฎเดียว: สีของงาน = สีกลุ่มงาน (ถ้ากลุ่มยังไม่ตั้งสี ใช้สีตามสถานะ)
 const itemColor=t=>{ if(!t)return sColor("");
-if(t.color)return t.color;
-const tc=(t.tag&&typeof tagColor==="function")?tagColor(String(t.tag).trim()):"";
-if(tc)return tc;
-const gc=gColor(t.track); if(gc)return gc;
-return sColor(t.status); };
+return gColor(t.track)||sColor(t.status); };
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 // ทะเบียนหลักสูตร — รหัสรันอัตโนมัติ กันคีย์มือผิด
 const CRSPREFIX="TRN";
@@ -932,9 +928,7 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <div class="seg" id="calmode">
 <button data-cm="month" aria-pressed="${R.calMode==="month"}">รายเดือน</button>
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
-${R.calMode==="year"?yearSel("yrSel2")+` <div class="seg" id="calgrp">
-<button data-cg="cat" aria-pressed="${R.calGroup==="cat"}">แยกตามหมวด</button>
-<button data-cg="track" aria-pressed="${(R.calGroup||"track")==="track"}">แยกตามกลุ่มงาน</button></div>`:""}
+${R.calMode==="year"?yearSel("yrSel2"):""}
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <select id="calMonth" style="border:0;background:var(--card);border-radius:999px;padding:6px 14px;font-weight:600">${MTHFULL.map((x,i)=>`<option value="${i}"${i===m?" selected":""}>${x} ${y+543}</option>`).join("")}</select>
 <button id="nm">›</button></div>${yearSel("yrSel2")}`:""}
@@ -946,7 +940,8 @@ ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <div class="legend" style="margin-top:14px">
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
-<span><i style="background:var(--wait)"></i>รอดำเนินการ</span></div></div>
+<span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
+<span><i style="background:var(--over)"></i>ค้างรอบที่ผ่านมา</span></div></div>
 <div class="card">
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานประจำเดือนนี้"}</h2>
 <div class="list">${
@@ -964,6 +959,22 @@ const CATS=[["อบรม",t=>isTrain(t)],["ประชุม",t=>!isTrain(t)&
 ["กิจกรรม",t=>!isTrain(t)&&!isMeet(t)&&/กิจกรรม/.test(gLabel(t.track)+" "+(t.type||""))],
 ["อื่นๆ",()=>true]];
 const catOf=t=>(CATS.find(([,f])=>f(t))||CATS[CATS.length-1])[0];
+// สถานะของงานเฉพาะ "เดือนนั้น" — งานที่เกิดซ้ำต้องดูรายรอบ ไม่ใช่สถานะรวม
+function monthState(t,y,m){
+if(t.status===STATUS_CANCEL)return {c:sColor(STATUS_CANCEL),n:"ยกเลิก"};
+if(!rr(t))return {c:sColor(t.status),n:t.status};
+const days=occDays(t,y,m);
+if(!days.length)return {c:sColor(t.status),n:t.status};
+const today=new Date(); today.setHours(0,0,0,0);
+const ds=days.map(i=>new Date(y,m,i));
+const done=ds.filter(d=>occDone(t,d)).length;
+const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const late=open.filter(d=>d<today).length;
+if(!open.length)return {c:sColor(STATUS_DONE),n:done?"ปิดครบ "+done+" รอบ":"งดทุกรอบ"};
+if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")};
+if(done)return {c:sColor("กำลังดำเนินการ"),n:"ปิดแล้ว "+done+"/"+ds.length+" รอบ"};
+return {c:sColor("รอดำเนินการ"),n:"ยังไม่ถึงรอบ ("+ds.length+" รอบ)"};
+}
 function yearGrid(){
 const thisYear=new Date().getFullYear();
 const now=(R.year===thisYear)?new Date().getMonth()+1:0;
@@ -974,7 +985,7 @@ const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,
 const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
 MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
 return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
-const byTrack=(R.calGroup||"track")==="track";
+const byTrack=true;
 // แยกตามกลุ่มงาน: แสดงทุกกลุ่มที่ตั้งไว้ (รวมกลุ่มที่ยังไม่มีงาน) + กองงานที่ไม่มีกลุ่ม/กลุ่มถูกลบ
 const orphan=list.filter(t=>!t.track||!groups.some(g=>g.key===t.track));
 const buckets=byTrack
@@ -987,8 +998,9 @@ return `<div class="cgroup${g.length?"":" zero"}">${byTrack?`<span class="tagdot
 MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
 MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
-?`<span class="mark" title="${esc((byTrack?gLabel(t.track):catOf(t))+" · "+t.status)}">
-<i class="mdot" style="background:${itemColor(t)}"></i><i class="mbar" style="background:${sColor(t.status)}"></i></span>`:""}</div>`).join("");}).join("");
+?(()=>{const S=monthState(t,R.year,i);
+return `<span class="mark" title="${esc(gLabel(t.track)+" · "+S.n)}">
+<i class="mdot" style="background:${itemColor(t)}"></i><i class="mbar" style="background:${S.c}"></i></span>`;})():""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
@@ -1600,11 +1612,8 @@ ${moveBtns("groups",i,groups.length,g.hidden)}
 <button class="btn danger sm" data-delg="${esc(g.key)}">ลบ</button></div>`;}).join("")}</div>
 <div class="addg"><input id="newg" placeholder="ชื่อกลุ่มใหม่ เช่น งานฝึกอบรม">
 <button class="btn" id="addg">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มกลุ่ม</button></div>
-${(()=>{const ov=items.filter(t=>t.color&&t.track&&gColor(t.track)&&t.color!==gColor(t.track)).length;
-return ov?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${ov}</b> งานที่ตั้งสีเฉพาะตัวไว้ สีในปฏิทินจึงไม่ตรงกับสีกลุ่มงาน
-<button class="btn sm" id="fixcolor" style="margin-left:auto">ใช้สีตามกลุ่มงาน</button></div>`:"";})()}
 ${TRAIN_PRESET.every(x=>groups.some(g=>g.label===x.label))?"":`<div class="addg" style="margin-top:10px"><button class="btn ghost" id="preset">${svg(ICON.train,17)}เพิ่มชุดกลุ่มงานฝึกอบรม (${esc(TRAIN_PRESET.filter(x=>!groups.some(g=>g.label===x.label)).map(x=>x.label).join(", "))})</button></div>`}
-<div class="hint"><b>สีของกลุ่มงาน</b> คือสีที่ขึ้นในปฏิทินของทุกงานในกลุ่มนั้น (ถ้างานนั้นไม่ได้ตั้งสีเอง และป้ายกำกับไม่ได้กำหนดสีไว้) · ช่องประ = ใช้สีตามสถานะเหมือนเดิม<br>
+<div class="hint"><b>สีของกลุ่มงาน = สีเดียวของระบบ</b> ทุกงานในกลุ่มนี้ขึ้นสีนี้ในปฏิทินและทุกหน้า · ช่องประ = ใช้สีตามสถานะ<br>
 พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
 }
 function setCompanies(){
@@ -1718,7 +1727,7 @@ return `<div class="card"><h2>โหมดกลางวัน / กลาง�
 <span>${["อ่อนสุด","อ่อน","กลาง","เข้ม","เข้มสุด"][i]}</span></label>`).join("")}</div>
 <div class="addg"><button class="btn" id="useCustom">${svg(ICON.check,17)}ใช้สีชุดนี้</button>
 <button class="btn ghost" id="fromCur">ดึงค่าจากชุดที่ใช้อยู่</button></div></div>
-<div class="card" style="margin-top:16px"><h2>ป้ายกำกับ & สีในปฏิทิน <small>${tagDefs().length} ป้าย</small></h2>
+<div class="card" style="margin-top:16px"><h2>ป้ายกำกับ <small>${tagDefs().length} ป้าย · ใช้ค้นหาและจัดหมวดย่อย</small></h2>
 <div class="rows">${tagDefs().map((g,i)=>{const n=tagUsed(g.name);
 return `<div class="rw">
 <span class="tagdot" style="background:${tagColor(g.name)||"var(--wait)"}"></span>
@@ -1727,14 +1736,13 @@ ${nameInput("data-rentag",g.name,g.name)}
 <option value="">— ใช้ได้ทุกกลุ่มงาน —</option>
 ${groups.map(x=>`<option value="${esc(x.key)}"${g.track===x.key?" selected":""}>อยู่ใต้ ${esc(x.label)}</option>`).join("")}
 </select>
-<span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-tagcol="${esc(g.name)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
 <button class="gcbtn" data-see="tag:${esc(g.name)}" title="ดูงานที่ติดป้ายนี้"${n?"":" disabled"}>${n} งาน</button>
 <button class="btn danger sm" data-deltag="${esc(g.name)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีป้ายกำกับ</div>`}</div>
 <div class="addg"><input id="newtag" placeholder="ชื่อป้ายใหม่ เช่น ความปลอดภัย">
 <select id="newtagg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(x=>`<option value="${esc(x.key)}">อยู่ใต้ ${esc(x.label)}</option>`).join("")}</select>
 <button class="btn" id="addtag">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มป้าย</button></div>
-<div class="hint"><b>ผูกกับกลุ่มงานได้</b> — เลือกกลุ่มให้ป้าย แล้วตอนเพิ่มงานระบบจะโชว์เฉพาะป้ายของกลุ่มนั้น (บวกป้ายกลาง) · ถ้าป้ายไม่ได้ตั้งสีเอง จะใช้สีของกลุ่มงานให้อัตโนมัติ<br>
-ป้ายกำกับใช้ได้ทุกหน้า — สีที่เลือกตรงนี้คือสีที่ขึ้นในปฏิทินและจุดสีหน้ารายการ เปลี่ยนที่นี่ที่เดียว ทุกงานที่ติดป้ายนั้นเปลี่ยนตาม · “ตามสถานะ” (ช่องประ) = ใช้สีตามสถานะงานเหมือนเดิม · ลบป้ายไม่ลบงาน แต่ป้ายจะหายจากตัวเลือก</div></div>`;
+<div class="hint">ป้ายกำกับเป็น <b>คำค้น/หมวดย่อย</b> ของงาน เช่น “ความปลอดภัย” “ผู้บริหาร” — ไม่มีสีของตัวเอง สีในปฏิทินมาจากกลุ่มงานเสมอ<br>
+เลือกกลุ่มให้ป้ายได้ ตอนเพิ่มงานระบบจะโชว์เฉพาะป้ายของกลุ่มนั้น (บวกป้ายกลาง) · ลบป้ายไม่ลบงาน</div></div>`;
 }
 function setImport(){
 return `<div class="card"><h2>นำเข้างานจากไฟล์ CSV</h2>
@@ -2594,8 +2602,7 @@ el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
 paintTagOpts((t?.tag||"").trim());
-el("f-tag").onchange=()=>{const c=tagColor(el("f-tag").value);
-if(c)el("f-colors").querySelectorAll("[data-color]").forEach(b=>{if(b.dataset.color===c)b.click();});};
+
 el("f-colors").innerHTML=[["","ตามสถานะ"],...TAGCOLORS.map(c=>[c,c])].map(([c,lab])=>
 `<button type="button" class="sw1${(t?.color||"")===c?" on":""}" data-color="${c}" title="${c?c:"ใช้สีตามสถานะงาน"}"
 style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
@@ -2701,7 +2708,7 @@ vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
 skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), yp:el("f-yp").value, dsdEnd:el("f-dsdend").value||null, dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
 dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
-tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||tagColor(el("f-tag").value)||"",
+tag:el("f-tag").value.trim(), color:"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
 skip:(el("wrap-occ").hidden?(editing?.skip||[]):occSkipDraft.slice()),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
