@@ -1,4 +1,4 @@
-const APP_VERSION="10.9"; const APP_DATE="17 ก.ย. 2026";
+const APP_VERSION="11.0"; const APP_DATE="17 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1650,21 +1650,40 @@ ${moveBtns("companies",i,companies.length,c.hidden)}
 <div class="hint">ช่องขวาสุดใช้บอกว่าแถวนั้นเป็น <b>กลุ่มบริษัท</b> (เช่น LeKise Group) หรือเป็นบริษัทที่อยู่ในกลุ่มไหน — หน้าฝึกอบรมจะรวมตัวเลขของกลุ่มให้เอง และยังแยกรายบริษัทไว้สำหรับยื่นกรมพัฒนาฯ<br>
 เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
+let tyQ="", tyShut={};
 function setTypes(){
 const defs=typeDefs(), list=defs.map(x=>x.name);
 const none=items.filter(t=>!t.type).length;
-return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน</small></h2>
-<div class="rows">${defs.map((D,i)=>{const x=D.name, tr=D.track, n=typeUsed(x);
-return `<div class="rw">${nameInput("data-rent",x,x)}
-<select class="cosel" data-trt="${esc(x)}" title="อยู่ใต้กลุ่มงานไหน">
-<option value="">— ใช้ได้ทุกกลุ่มงาน —</option>
-${groups.map(g=>`<option value="${esc(g.key)}"${tr===g.key?" selected":""}>อยู่ใต้ ${esc(g.label)}</option>`).join("")}
+const row=(D,i,up,dn)=>{const x=D.name, tr=D.track, n=typeUsed(x);
+return `<div class="rw" data-tyname="${esc(x.toLowerCase())}">${nameInput("data-rent",x,x)}
+<select class="cosel" data-trt="${esc(x)}" title="ย้ายประเภทนี้ไปอยู่ใต้กลุ่มงานอื่น">
+<option value="">— ทุกกลุ่มงาน —</option>
+${groups.map(g=>`<option value="${esc(g.key)}"${tr===g.key?" selected":""}>${esc(g.label)}</option>`).join("")}
 </select>
 <button class="gcbtn" data-see="type:${esc(x)}" title="ดูงานที่ใช้ประเภทนี้"${n?"":" disabled"}>${n} งาน</button>
 <button class="iconbtn" data-movet="${esc(x)}" title="ย้ายงานทั้งหมดไปประเภทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
-<button class="iconbtn" data-mvt="${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
-<button class="iconbtn" data-mvt="${i}:1"${i===defs.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
-<button class="btn danger sm" data-delt="${esc(x)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีประเภท</div>`}</div>
+<button class="iconbtn" data-mvt="${i}:${up}"${up<0?" disabled":""} title="เลื่อนขึ้นในกลุ่มนี้">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvt="${i}:${dn}"${dn<0?" disabled":""} title="เลื่อนลงในกลุ่มนี้">${svg(ICON_DN,15)}</button>
+<button class="btn danger sm" data-delt="${esc(x)}">ลบ</button></div>`;};
+const pairs=defs.map((D,i)=>[D,i]);
+const orph=pairs.filter(([D])=>D.track&&!groups.some(g=>g.key===D.track));
+const buckets=[...groups.map(g=>[g.key,g.label,g.color||""]),["","ใช้ได้ทุกกลุ่มงาน",""],...(orph.length?[["__x__","กลุ่มงานที่ถูกลบไปแล้ว",""]]:[])];
+const blank=[];
+const secs=buckets.map(([k,lab,col])=>{
+const mine=k==="__x__"?orph:pairs.filter(([D])=>(D.track||"")===k);
+if(!mine.length){if(k)blank.push(lab);return "";}
+const idx=mine.map(([,i])=>i);
+const tasks=mine.reduce((a,[D])=>a+typeUsed(D.name),0);
+const body=mine.map(([D,i],p)=>row(D,i,p>0?idx[p-1]:-1,p<idx.length-1?idx[p+1]:-1)).join("");
+return `<details class="tysec"${tyShut[k]?"":" open"} data-tysec="${esc(k)}">
+<summary><span class="tydot" style="background:${col||"var(--line-2)"}"></span>${esc(lab)}
+<em>${mine.length} ประเภท${tasks?" · "+tasks+" งาน":""}</em></summary>
+<div class="rows">${body}</div></details>`;}).join("");
+return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน</small></h2>
+<div class="tybar"><input id="tyfind" value="${esc(tyQ)}" placeholder="พิมพ์ค้นหาประเภท…" autocomplete="off">
+<button class="gcbtn" id="tyexp">เปิดทุกกลุ่ม</button><button class="gcbtn" id="tycol">ย่อทุกกลุ่ม</button></div>
+${secs||`<div class="empty">ยังไม่มีประเภท</div>`}
+${blank.length?`<div class="hint">กลุ่มที่ยังไม่มีประเภทย่อย: ${blank.map(esc).join(" · ")} — เพิ่มได้จากช่องด้านล่าง</div>`:""}
 <div class="addg"><input id="newt" placeholder="ชื่อประเภทใหม่ เช่น ตรวจประเมิน">
 <select id="newtg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(g=>`<option value="${esc(g.key)}">อยู่ใต้ ${esc(g.label)}</option>`).join("")}</select>
 <button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
@@ -2193,10 +2212,21 @@ const nm=n.dataset.trt;
 typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:n.value}:x);
 render(); await saveMeta("types",typeList);});
 document.querySelectorAll("[data-mvt]").forEach(b=>b.onclick=async()=>{
-const [i,d]=b.dataset.mvt.split(":").map(Number);
-const arr=typeDefs(); const t=i+d; if(t<0||t>=arr.length)return;
+const [i,t]=b.dataset.mvt.split(":").map(Number);
+const arr=typeDefs(); if(t<0||t>=arr.length||i<0||i>=arr.length)return;
 const tmp=arr[i]; arr[i]=arr[t]; arr[t]=tmp;
 typeList=arr; render(); await saveMeta("types",typeList);});
+const tyf=el("tyfind");
+if(tyf){const run=()=>{const q=tyf.value.trim().toLowerCase();
+document.querySelectorAll("[data-tysec]").forEach(s=>{
+let hit=0; s.querySelectorAll("[data-tyname]").forEach(r=>{
+const ok=!q||r.dataset.tyname.includes(q); r.hidden=!ok; if(ok)hit++;});
+s.hidden=!!q&&!hit; if(q&&hit)s.open=true;});};
+tyf.oninput=()=>{tyQ=tyf.value; run();}; if(tyQ)run();}
+const tyx=el("tyexp"), tyc=el("tycol");
+if(tyx)tyx.onclick=()=>document.querySelectorAll("[data-tysec]").forEach(s=>{s.open=true;tyShut[s.dataset.tysec]=0;});
+if(tyc)tyc.onclick=()=>document.querySelectorAll("[data-tysec]").forEach(s=>{s.open=false;tyShut[s.dataset.tysec]=1;});
+document.querySelectorAll("[data-tysec]").forEach(s=>s.addEventListener("toggle",()=>{tyShut[s.dataset.tysec]=s.open?0:1;}));
 document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
 const [kind,i,d]=b.dataset.mv.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:kind==="courses"?courses:gls;
 const a=+i, t=a+(+d); if(t<0||t>=arr.length)return;

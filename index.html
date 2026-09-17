@@ -70,6 +70,19 @@ padding:6px 10px;text-align:center;border-bottom:1.5px solid var(--line);font-va
 .msum.now{color:var(--accent);background:var(--accent-soft)}
 .cgrid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px 22px;margin-top:4px}
 .cgrid2 .glrow{border-bottom:0;padding:8px 0}
+.tybar{display:flex;gap:9px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.tybar input{flex:1;min-width:170px;background:var(--paper);border:0;border-radius:999px;padding:10px 18px;font:inherit;color:inherit}
+.tysec{margin-top:12px;border-radius:14px;background:var(--paper);padding:3px 3px 5px}
+.tysec>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:9px;padding:9px 14px;font-family:var(--head);font-weight:500;font-size:14px;border-radius:12px}
+.tysec>summary::-webkit-details-marker{display:none}
+.tysec>summary:after{content:"▾";margin-left:auto;color:var(--ink-3);font-size:12px;transition:transform .15s}
+.tysec:not([open])>summary:after{transform:rotate(-90deg)}
+.tysec>summary:hover{background:var(--line-2)}
+.tysec>summary em{font-style:normal;font-size:12px;color:var(--ink-3);font-weight:400;font-family:var(--body)}
+.tysec .rows{margin:0 3px 3px;gap:7px}
+.tysec .rw{background:var(--card)}
+.tydot{width:11px;height:11px;border-radius:999px;flex:none;box-shadow:inset 0 0 0 1.5px rgba(0,0,0,.06)}
+.empty.sm{padding:10px 14px;font-size:12.5px}
 .foldbox{margin:2px 0 12px;border-radius:12px;background:var(--paper)}
 .foldbox>summary{cursor:pointer;padding:8px 14px;font-size:12.5px;color:var(--ink-2);font-weight:600;list-style:none;border-radius:12px}
 .foldbox>summary::-webkit-details-marker{display:none}
@@ -201,6 +214,11 @@ text-overflow:ellipsis;background-position:right 10px center}
 #settabs button{font-size:12px;padding:5px 10px}
 #settabs{padding:4px;gap:3px}
 .rows{gap:7px}
+.tysec{margin-top:8px;border-radius:12px}
+.tysec>summary{padding:7px 10px;font-size:13px;gap:7px}
+.tysec>summary em{font-size:11px}
+.tybar{gap:6px;margin-top:9px}
+.tybar input{padding:8px 14px;font-size:12.5px;min-width:130px}
 .rw{padding:7px 8px;gap:5px;border-radius:12px}
 .rw input,.rw select{padding:6px 10px;font-size:12.5px;border-radius:999px}
 .rw input.nm{flex:1 1 100%;min-width:0;font-size:13px}
@@ -212,6 +230,10 @@ text-overflow:ellipsis;background-position:right 10px center}
 .rw .btn.sm{padding:5px 11px;font-size:12px}
 .rw .cosel{flex:1 1 100%;order:2}
 .rw .gcbtn{order:3}
+.tysec .rw input.nm{order:0}
+.tysec .rw .gcbtn{order:1}
+.tysec .rw .iconbtn,.tysec .rw .btn.danger{order:2}
+.tysec .rw .cosel{order:3}
 /* รายการงานบนมือถือ: บรรทัดเดียว ไม่ตัดขึ้นบรรทัดใหม่ */
 .li{flex-wrap:nowrap!important;gap:9px;padding:8px 9px;row-gap:0!important}
 .li .tx{flex:1 1 auto!important;order:0!important;width:auto!important;min-width:0}
@@ -481,5 +503,5 @@ h1{font-size:17px}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=10.9"></script>
+<script src="app.js?v=11.0"></script>
 </body></html>
