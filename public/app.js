@@ -1,4 +1,4 @@
-const APP_VERSION="8.8"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="8.9"; const APP_DATE="16 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -268,9 +268,12 @@ return CRSPREFIX+"-"+String(n+1).padStart(3,"0");
 }
 const crsOf=code=>courses.find(c=>c.code===code)||null;
 const crsLabel=code=>{const c=crsOf(code);return c?c.code+" · "+c.name:(code||"");};
-const crsBatches=code=>items.filter(t=>isTrain(t)&&(t.course||"")===code);
+// หาโค้ดหลักสูตรของงานหนึ่ง: ยึดที่ผูกไว้ก่อน ถ้าไม่มีให้จับคู่จากชื่อ (ข้อมูลเก่าที่พิมพ์เอง)
+const crsByName=nm=>courses.find(c=>c.name.trim()===String(nm||"").trim());
+const crsCodeOf=t=>(t.course||"").trim()||((crsByName(t.title)||{}).code||"");
+const crsBatches=code=>items.filter(t=>isTrain(t)&&crsCodeOf(t)===code);
 // นับหลักสูตรไม่ซ้ำจากรายการอบรม (ยึดรหัสหลักสูตรก่อน ถ้าไม่มีใช้ชื่อ)
-const courseKey=t=>(t.course||"").trim()||(t.code||"").trim()||(t.title||"").trim();
+const courseKey=t=>crsCodeOf(t)||(t.title||"").trim()||(t.code||"").trim();
 const uniqCourses=arr=>new Set(arr.map(courseKey).filter(Boolean)).size;
 const TYPEBASE=["อบรม","ประชุม","โปรเจค","กิจกรรม","งานประจำ/ต่ออายุ","เอกสารราชการ","สุขภาพ","อื่นๆ"];
 const typeUsed=x=>items.filter(t=>(t.type||"")===x).length;
@@ -560,9 +563,9 @@ const LAWPCT=50;
 // คำขอ ยป. ของหลักสูตร แยกรายปี — ทุกปีต้องยื่นเปิดหลักสูตรใหม่ เลขจึงไม่ซ้ำกัน
 const crsYear=t=>{const d=t.date||t.dsdEnd; return d?new Date(d).getFullYear():(typeof R!=="undefined"?R.year:THISYEAR);};
 const crsFiling=(code,y)=>(((crsOf(code)||{}).filings)||{})[y]||{};
-const ypNoOf=t=>(t.dsdOpenNo||"").trim()||(crsFiling(t.course,crsYear(t)).openNo||"").trim();
-const ypDateOf=t=>t.dsdOpenDate||crsFiling(t.course,crsYear(t)).openDate||null;
-const ypKind=t=>t.yp||crsFiling(t.course,crsYear(t)).yp||((crsOf(t.course)||{}).yp||"");
+const ypNoOf=t=>(t.dsdOpenNo||"").trim()||(crsFiling(crsCodeOf(t),crsYear(t)).openNo||"").trim();
+const ypDateOf=t=>t.dsdOpenDate||crsFiling(crsCodeOf(t),crsYear(t)).openDate||null;
+const ypKind=t=>t.yp||crsFiling(crsCodeOf(t),crsYear(t)).yp||((crsOf(crsCodeOf(t))||{}).yp||"");
 function ypState(t){
 const today=new Date(); today.setHours(0,0,0,0);
 const lead=ypLead(ypKind(t));
@@ -1612,6 +1615,9 @@ ${moveBtns("courses",i,courses.length,c.hidden)}
 <button class="btn danger sm" data-delcrs="${esc(c.code)}">ลบ</button></div>`;}).join("");
 return `<div class="card"><h2>ทะเบียนหลักสูตรอบรม <small>${courses.length} หลักสูตร · ${items.filter(t=>isTrain(t)&&t.course).length} รุ่นที่ผูกไว้</small></h2>
 <div class="rows">${rows||`<div class="empty">ยังไม่มีหลักสูตรในทะเบียน — เพิ่มด้านล่าง ระบบจะรันรหัสให้เอง</div>`}</div>
+${(()=>{const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
+return un.length?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${un.length}</b> รายการอบรมที่ชื่อตรงกับทะเบียน แต่ยังไม่ได้ผูกรหัสไว้ในข้อมูล
+<button class="btn sm" id="crslink" style="margin-left:auto">ผูกรหัสให้อัตโนมัติ</button></div>`:"";})()}
 <div class="addg">
 <span class="crscode" id="crsnext">${esc(nextCourseCode())}</span>
 <input id="newcrs" placeholder="ชื่อหลักสูตร เช่น หลักการทำงานของ LeKise Group">
@@ -2009,6 +2015,15 @@ setFoot("กำลังย้าย "+ok+"/"+list.length+" …");}
 return {ok,fail,err,n:list.length};
 }
 async function saveTypes(){ await saveMeta("types",types()); }
+el("crslink")&&(el("crslink").onclick=async()=>{
+const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
+if(!un.length)return;
+if(!await ask(`ผูกรหัสหลักสูตรให้ <b>${un.length}</b> รายการที่ชื่อตรงกับทะเบียน ใช่ไหมคะ?<div style="font-size:13px;margin-top:8px">ระบบจะเติมเฉพาะช่องรหัสหลักสูตร ไม่แก้ข้อมูลอื่น</div>`,"ผูกรหัส"))return;
+let ok=0;
+for(const t of un){ const c=crsByName(t.title); if(!c)continue;
+try{ const {_id,...r}=t; await saveItem(Object.assign({},r,{course:c.code,code:t.code||c.code}),_id); ok++; }catch(e){}
+setFoot("กำลังผูก "+ok+"/"+un.length+" …"); }
+render(); tell("<b>ผูกรหัสแล้ว "+ok+" รายการ</b>");});
 if(el("addcrs")){
 el("addcrs").onclick=async()=>{
 const nm=el("newcrs").value.trim(); if(!nm){tell("ใส่ชื่อหลักสูตรก่อนนะคะ");return;}
@@ -2600,6 +2615,8 @@ const nb=(()=>{const m=String(data.batch||"").match(/(\d+)/); return m?String(da
 const next=Object.assign({},data,{batch:nb,date:null,dsdEnd:null,dsdCertDate:null,dsdCertNo:"",status:"รอดำเนินการ",actual:0,done:[]});
 setTimeout(()=>{open_(null); Object.entries({"f-title":next.title,"f-owner":next.owner||"","f-batch":nb,"f-pax":next.pax||"","f-hours":next.hours||"","f-vendor":next.vendor||"","f-tplace":next.place||""}).forEach(([k,v])=>{if(el(k))el(k).value=v;});
 if(el("f-course"))el("f-course").value=next.course||"";
+if(el("f-crscode"))el("f-crscode").value=next.course||"";
+if(el("f-code"))el("f-code").value=next.code||next.course||"";
 if(el("f-company"))el("f-company").value=next.company||"";
 if(el("f-track"))el("f-track").value=next.track||"";
 if(el("f-skill"))el("f-skill").value=next.skill||"";
@@ -2607,7 +2624,7 @@ if(el("f-mode"))el("f-mode").value=next.mode||"";
 if(el("f-yp"))el("f-yp").value=next.yp||"";
 if(el("f-train")){el("f-train").checked=true; el("wrap-train").hidden=false;}
 el("dlgh").textContent="เพิ่มรุ่นถัดไป · "+(next.title||"");
-paintCrsHint(); el("f-date").focus();},260);
+paintCrsHint(); syncCrsName(); el("f-date").focus();},260);
 }
 };
 el("del").onclick=async()=>{
