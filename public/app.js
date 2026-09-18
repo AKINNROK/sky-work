@@ -1,4 +1,4 @@
-const APP_VERSION="11.3"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="11.4"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -45,8 +45,9 @@ return {k:"ok",t:"อีก "+n+" วัน",c:"s-done"}; }
 if(miss)return {k:"noperson",t:"ยังไม่มีผู้รับผิดชอบ",c:"s-wait"};
 if(L.lifetime)return {k:"ok",t:"ไม่มีวันหมดอายุ",c:"s-done"};
 return {k:"noperson",t:"ยังไม่ระบุวันครบกำหนด",c:"s-wait"}; };
-const SKILLS=["Soft Skill","Hard Skill","Safety"];
-const MODES=["In-House","Public","OJT","Online","สัมมนา","อื่นๆ"];
+// หมวดทักษะ + รูปแบบการอบรม — ค่าตั้งต้น แก้/เพิ่ม/ลบได้ในตั้งค่า › หลักสูตรอบรม
+const SKILLS_BASE=["Soft Skill","Hard Skill","Safety"];
+const MODES_BASE=["In-House","Public","OJT","Online","สัมมนา","อื่นๆ"];
 const SKILLC={"Soft Skill":"#3d86d6","Hard Skill":"#7d5bd0","Safety":"#e0606d"};
 const MODEC={"In-House":"#2fa36b","Public":"#e0932b","OJT":"#2bb3c9","Online":"#4a5fc4","สัมมนา":"#d6549b","อื่นๆ":"#6b7785"};
 const SAFETYRE=/ความปลอดภัย|ดับเพลิง|อพยพ|จป\.?|คปอ|ปั้นจั่น|โฟล์คลิฟท์|forklift|สารเคมี|ไฟฟ้า|ที่สูง|ปฐมพยาบาล|first aid|อัคคีภัย|ก๊าซ|เชื่อม/i;
@@ -149,7 +150,7 @@ document.documentElement.style.colorScheme="light";
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
-let typeList=[], tagList=[], courses=[];
+let typeList=[], tagList=[], courses=[], skillList=[], modeList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
 try{const t=localStorage.getItem("hr-theme");if(t)theme=JSON.parse(t);}catch(e){}
 const THISYEAR=new Date().getFullYear();
@@ -296,6 +297,17 @@ const crsByName=nm=>courses.find(c=>c.name.trim()===String(nm||"").trim());
 const crsCodeOf=t=>(t.course||"").trim()||((crsByName(t.title)||{}).code||"");
 const crsBatches=code=>items.filter(t=>isTrain(t)&&crsCodeOf(t)===code);
 // ประเภท/รูปแบบ/ชั่วโมง: ยึดค่าที่กรอกในงานก่อน ถ้าเว้นไว้ให้ดึงจากทะเบียนหลักสูตร
+// ทะเบียนหมวดทักษะ / รูปแบบ — ของที่ใช้อยู่จริงในข้อมูลจะถูกเติมเข้ามาให้เองไม่ให้ตกหล่น
+const listOf=(saved,base,pick)=>{
+const b=(saved.length?saved:base).map(x=>typeof x==="string"?x:(x&&x.name)||"").filter(Boolean);
+const used=[...new Set([...courses.map(pick),...items.map(pick)].map(x=>String(x||"").trim()).filter(Boolean))];
+return [...b,...used.filter(x=>!b.includes(x))];};
+const skills=()=>listOf(skillList,SKILLS_BASE,x=>x&&x.skill);
+const modes=()=>listOf(modeList,MODES_BASE,x=>x&&x.mode);
+const skillColor=n=>SKILLC[n]||TAGCOLORS[(skills().indexOf(n)+3)%TAGCOLORS.length]||"var(--wait)";
+const modeColor=n=>MODEC[n]||TAGCOLORS[(modes().indexOf(n)+7)%TAGCOLORS.length]||"var(--wait)";
+const skillUsed=n=>courses.filter(c=>(c.skill||"")===n).length+items.filter(t=>(t.skill||"")===n).length;
+const modeUsed=n=>courses.filter(c=>(c.mode||"")===n).length+items.filter(t=>(t.mode||"")===n).length;
 const crsMeta=t=>crsOf(crsCodeOf(t))||crsByName((t||{}).title)||{};
 const skillOf=t=>((t&&t.skill||"").trim())||crsMeta(t).skill||"";
 const modeOf=t=>((t&&t.mode||"").trim())||crsMeta(t).mode||"";
@@ -490,6 +502,8 @@ sub("meta/gl",d=>{seedGL._done=true; if(Array.isArray(d.list))gls=d.list;});
 sub("meta/types",d=>{if(Array.isArray(d.list))typeList=d.list;});
 sub("meta/tags",d=>{if(Array.isArray(d.list))tagList=d.list;});
 sub("meta/courses",d=>{if(Array.isArray(d.list))courses=d.list;});
+sub("meta/skills",d=>{if(Array.isArray(d.list))skillList=d.list;});
+sub("meta/modes",d=>{if(Array.isArray(d.list))modeList=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
 DBShim.collection("items").onSnapshot(s=>{
@@ -1447,22 +1461,22 @@ p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.be
 <div class="v">${baht(pax)}</div><div class="d">รวม ${baht(Math.round(hrs))} คน-ชั่วโมง</div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
 <div class="v">${pax?baht(Math.round(cost/pax)):"—"}</div><div class="d">ค่าใช้จ่ายรวม ${baht(cost)} ฿</div></div>
-<div class="card span2"><h2>ประเภทการอบรม <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
+<div class="card span2"><h2>หมวดทักษะ <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
 ${(()=>{const n=k=>live.filter(t=>skillOf(t)===k).length, un=live.filter(t=>!skillOf(t)).length;
-const parts=[...SKILLS.filter(k=>n(k)).map(k=>({n:k,v:n(k),c:SKILLC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+const parts=[...skills().filter(k=>n(k)).map(k=>({n:k,v:n(k),c:skillColor(k)})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
 return donut(parts,live.length,"รุ่น")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"ประเภทการอบรม · "+p.n,live.filter(t=>skillOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"หมวดทักษะ · "+p.n,live.filter(t=>skillOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
 t2:`${modeOf(t)||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
 <div class="card span2"><h2>รูปแบบการอบรม <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
 ${(()=>{const n=k=>live.filter(t=>modeOf(t)===k).length, un=live.filter(t=>!modeOf(t)).length;
-const parts=[...MODES.filter(k=>n(k)).map(k=>({n:k,v:n(k),c:MODEC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+const parts=[...modes().filter(k=>n(k)).map(k=>({n:k,v:n(k),c:modeColor(k)})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
 return donut(parts,live.length,"รุ่น")+
 `<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,live.filter(t=>modeOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
-t2:`${skillOf(t)||"ยังไม่ระบุประเภท"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
+t2:`${skillOf(t)||"ยังไม่ระบุหมวดทักษะ"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
 <div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543} · ${byMonth.reduce((a,b)=>a+b,0)} รุ่นที่ลงวันแล้ว</small></h2>
@@ -1677,7 +1691,7 @@ ${moveBtns("companies",i,companies.length,c.hidden)}
 <div class="hint">ช่องขวาสุดใช้บอกว่าแถวนั้นเป็น <b>กลุ่มบริษัท</b> (เช่น LeKise Group) หรือเป็นบริษัทที่อยู่ในกลุ่มไหน — หน้าฝึกอบรมจะรวมตัวเลขของกลุ่มให้เอง และยังแยกรายบริษัทไว้สำหรับยื่นกรมพัฒนาฯ<br>
 เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
-let tyQ="", tyShut={};
+let tyQ="", tyShut={}, crsQ="", crsShut={}, bkMsg="";
 function setTypes(){
 const defs=typeDefs(), list=defs.map(x=>x.name);
 const none=items.filter(t=>!t.type).length;
@@ -1723,36 +1737,69 @@ ${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไ�
 พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
 }
 function setCourses(){
-const rows=courses.map((c,i)=>{const bs=crsBatches(c.code), pax=bs.reduce((a,t)=>a+(+t.pax||0),0);
-return `<div class="rw${c.hidden?" off":""}">
+const row=(c,i,up,dn)=>{const bs=crsBatches(c.code), pax=bs.reduce((a,t)=>a+(+t.pax||0),0);
+return `<div class="rw${c.hidden?" off":""}" data-crsname="${esc((c.code+" "+c.name).toLowerCase())}">
 <button class="crscode" data-crsopen="${esc(c.code)}" title="ดูรายละเอียดหลักสูตร">${esc(c.code)}</button>
 ${nameInput("data-rencrs",c.code,c.name)}
-<select class="cosel" data-crsskill="${esc(c.code)}" title="ประเภทการอบรม">
-<option value="">— ประเภท —</option>${SKILLS.map(x=>`<option value="${esc(x)}"${c.skill===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
+<select class="cosel" data-crsskill="${esc(c.code)}" title="หมวดทักษะ (Soft / Hard / Safety …)">
+<option value="">— หมวดทักษะ —</option>${skills().map(x=>`<option value="${esc(x)}"${c.skill===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
 <select class="cosel" data-crsmode="${esc(c.code)}" title="รูปแบบการอบรม">
-<option value="">— รูปแบบ —</option>${MODES.map(x=>`<option value="${esc(x)}"${c.mode===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
+<option value="">— รูปแบบ —</option>${modes().map(x=>`<option value="${esc(x)}"${c.mode===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
 <input type="number" class="glb" data-crshr="${esc(c.code)}" value="${c.hours||""}" placeholder="ชม." title="ชั่วโมงต่อคน" min="0" step="0.5">
 <select class="cosel${c.law===true?" lawsel":""}" data-crslaw="${esc(c.code)}" title="หลักสูตรนี้บังคับตามกฎหมายไหม — ถ้าเลือกไว้ จะชนะค่าที่ตั้งในประเภทงาน">
 <option value=""${c.law===undefined||c.law===null?" selected":""}>— ตามประเภทงาน —</option>
 <option value="1"${c.law===true?" selected":""}>⚖︎ บังคับตามกฎหมาย</option>
 <option value="0"${c.law===false?" selected":""}>ไม่บังคับ</option></select>
 <button class="gcbtn" data-see="crs:${esc(c.code)}" title="ดูรุ่นทั้งหมดของหลักสูตรนี้"${bs.length?"":" disabled"}>${bs.length} รุ่น${pax?" · "+pax+" คน":""}</button>
-${moveBtns("courses",i,courses.length,c.hidden)}
-<button class="btn danger sm" data-delcrs="${esc(c.code)}">ลบ</button></div>`;}).join("");
+<button class="iconbtn" data-mvc="${i}:${up}"${up<0?" disabled":""} title="เลื่อนขึ้นในหมวดนี้">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvc="${i}:${dn}"${dn<0?" disabled":""} title="เลื่อนลงในหมวดนี้">${svg(ICON_DN,15)}</button>
+<button class="iconbtn${c.hidden?"":" on"}" data-hide="courses:${i}" title="${c.hidden?"กดเพื่อแสดง":"กดเพื่อซ่อน"}">${svg(c.hidden?ICON_EYEOFF:ICON_EYE,15)}</button>
+<button class="btn danger sm" data-delcrs="${esc(c.code)}">ลบ</button></div>`;};
+const pairs=courses.map((c,i)=>[c,i]);
+const blank=[];
+const secs=[...skills().map(k=>[k,k,skillColor(k)]),["","ยังไม่ระบุหมวดทักษะ",""]].map(([k,lab,col])=>{
+const mine=pairs.filter(([c])=>(c.skill||"")===k);
+if(!mine.length){if(k)blank.push(lab);return "";}
+const idx=mine.map(([,i])=>i);
+const bs=mine.reduce((a,[c])=>a+crsBatches(c.code).length,0);
+const law=mine.filter(([c])=>c.law===true).length;
+return `<details class="tysec"${crsShut[k]?"":" open"} data-crssec="${esc(k)}">
+<summary><span class="tydot" style="background:${col||"var(--line-2)"}"></span>${esc(lab)}
+<em>${mine.length} หลักสูตร${bs?" · "+bs+" รุ่น":""}${law?" · ⚖︎ "+law:""}</em></summary>
+<div class="rows">${mine.map(([c,i],p)=>row(c,i,p>0?idx[p-1]:-1,p<idx.length-1?idx[p+1]:-1)).join("")}</div></details>`;}).join("");
 const nLaw=courses.filter(c=>c.law===true).length;
+const miniList=(kind,label,arr,usedFn,colFn,ph)=>`<div class="card" style="margin-top:16px">
+<h2>${esc(label)} <small>${arr.length} รายการ</small></h2>
+<div class="rows">${arr.map((x,i)=>{const n=usedFn(x);
+return `<div class="rw"><span class="tydot" style="background:${colFn(x)}"></span>
+${nameInput("data-ren"+kind,x,x)}
+<span class="gc">${n?"ใช้อยู่ "+n+" รายการ":"ยังไม่มีใครใช้"}</span>
+<button class="iconbtn" data-mvl="${kind}:${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvl="${kind}:${i}:1"${i===arr.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button class="btn danger sm" data-del${kind}="${esc(x)}">ลบ</button></div>`;}).join("")}</div>
+<div class="addg"><input id="new${kind}" placeholder="${esc(ph)}">
+<button class="btn" id="add${kind}">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่ม</button></div></div>`;
 return `<div class="card"><h2>ทะเบียนหลักสูตรอบรม <small>${courses.length} หลักสูตร · ${items.filter(t=>isTrain(t)&&t.course).length} รุ่นที่ผูกไว้${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
-<div class="rows">${rows||`<div class="empty">ยังไม่มีหลักสูตรในทะเบียน — เพิ่มด้านล่าง ระบบจะรันรหัสให้เอง</div>`}</div>
+<div class="tybar"><input id="crsfind" value="${esc(crsQ)}" placeholder="พิมพ์ค้นหารหัสหรือชื่อหลักสูตร…" autocomplete="off">
+<button class="gcbtn" id="crsexp">เปิดทุกหมวด</button><button class="gcbtn" id="crscol">ย่อทุกหมวด</button></div>
+${secs||`<div class="empty">ยังไม่มีหลักสูตรในทะเบียน — เพิ่มด้านล่าง ระบบจะรันรหัสให้เอง</div>`}
+${blank.length?`<div class="hint">หมวดที่ยังไม่มีหลักสูตร: ${blank.map(esc).join(" · ")}</div>`:""}
 ${(()=>{const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
 return un.length?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${un.length}</b> รายการอบรมที่ชื่อตรงกับทะเบียน แต่ยังไม่ได้ผูกรหัสไว้ในข้อมูล
 <button class="btn sm" id="crslink" style="margin-left:auto">ผูกรหัสให้อัตโนมัติ</button></div>`:"";})()}
 <div class="addg">
 <span class="crscode" id="crsnext">${esc(nextCourseCode())}</span>
 <input id="newcrs" placeholder="ชื่อหลักสูตร เช่น หลักการทำงานของ LeKise Group">
+<select id="newcrssk"><option value="">— หมวดทักษะ —</option>${skills().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select>
 <button class="btn" id="addcrs">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหลักสูตร</button></div>
 <div class="hint"><b>รหัสหลักสูตรรันอัตโนมัติ</b> (${CRSPREFIX}-001, -002, …) แก้ชื่อได้ แต่รหัสล็อกไว้เพื่อไม่ให้หลักสูตรเดียวกันมีหลายรหัส<br>
 เวลาเพิ่มงานอบรม ให้เลือกหลักสูตรจากทะเบียนนี้ แล้วใส่แค่ <b>รุ่นที่</b> · หนึ่งหลักสูตรมีกี่รุ่นก็ได้ ระบบนับ “หลักสูตร” แบบไม่ซ้ำ และนับ “รุ่น” แยกให้<br>
-ประเภท/รูปแบบ/ชั่วโมง ที่ตั้งไว้ตรงนี้จะเติมให้อัตโนมัติตอนเลือกหลักสูตร · ลบได้เฉพาะหลักสูตรที่ยังไม่มีรุ่นผูกอยู่<br>
-ช่อง <b>⚖︎ บังคับตามกฎหมาย</b> คือตัวจริงที่แม่นที่สุด เพราะกฎหมายบังคับเป็นราย “หลักสูตร” ไม่ใช่รายกอง — <b>ค่าที่ตั้งตรงนี้ชนะค่าในตั้งค่า › ประเภทงานเสมอ</b> · ปล่อยเป็น “ตามประเภทงาน” ไว้ ระบบจะไปใช้ธงของประเภทงานแทน (ตาข่ายกันพลาดสำหรับรุ่นที่ยังไม่ผูกรหัสหลักสูตร)</div></div>`;
+หมวดทักษะ/รูปแบบ/ชั่วโมง ที่ตั้งไว้ตรงนี้จะเติมให้อัตโนมัติตอนเลือกหลักสูตร · ลบได้เฉพาะหลักสูตรที่ยังไม่มีรุ่นผูกอยู่<br>
+ช่อง <b>⚖︎ บังคับตามกฎหมาย</b> คือตัวจริงที่แม่นที่สุด เพราะกฎหมายบังคับเป็นราย “หลักสูตร” ไม่ใช่รายกอง — <b>ค่าที่ตั้งตรงนี้ชนะค่าในตั้งค่า › ประเภทงานเสมอ</b> · ปล่อยเป็น “ตามประเภทงาน” ไว้ ระบบจะไปใช้ธงของประเภทงานแทน (ตาข่ายกันพลาดสำหรับรุ่นที่ยังไม่ผูกรหัสหลักสูตร)</div></div>
+${miniList("sk","หมวดทักษะ",skills(),skillUsed,skillColor,"เช่น Leadership, ISO, ภาษา")}
+${miniList("md","รูปแบบการอบรม",modes(),modeUsed,modeColor,"เช่น Zoom, E-Learning, ดูงานนอกสถานที่")}
+<div class="hint"><b>หมวดทักษะ</b> = จัดกลุ่มว่าหลักสูตรนั้นพัฒนาอะไร (Soft / Hard / Safety …) ใช้ทำโดนัทในหน้าฝึกอบรม — <b>คนละตัวกับ “ประเภทงาน”</b> ในตั้งค่าอีกแท็บ ซึ่งเป็นชนิดย่อยของงานทั้งระบบ (ประชุม/อบรม/โปรเจค) ไม่ได้ใช้เฉพาะหลักสูตร<br>
+<b>รูปแบบการอบรม</b> = จัดที่ไหนอย่างไร (In-House / Public / Online …) · ทั้งสองรายการนี้แก้ชื่อ เพิ่ม ลบ และจัดลำดับได้ตามใจ ระบบจะดึงไปใส่ในตัวเลือกทุกหน้าให้เอง · ชื่อที่มีข้อมูลใช้อยู่จะไม่หายแม้ลบออกจากทะเบียน</div>`;
 }
 function setGL(){
 const y=R.glYear||R.year;
@@ -1817,7 +1864,16 @@ ${groups.map(x=>`<option value="${esc(x.key)}"${g.track===x.key?" selected":""}>
 เลือกกลุ่มให้ป้ายได้ ตอนเพิ่มงานระบบจะโชว์เฉพาะป้ายของกลุ่มนั้น (บวกป้ายกลาง) · ลบป้ายไม่ลบงาน</div></div>`;
 }
 function setImport(){
-return `<div class="card"><h2>นำเข้างานจากไฟล์ CSV</h2>
+return `<div class="card"><h2>สำรองข้อมูล & กู้คืน <small>ลบไปแล้วกู้กลับได้ ถ้ามีไฟล์สำรอง</small></h2>
+<div class="hint" style="margin-top:2px">ระบบ<b>ลบจริง</b>เมื่อกดลบ (ไม่มีถังขยะ) — ไฟล์สำรองคือทางเดียวที่ดึงของที่ลบกลับมาได้ แนะนำกดสำรองสัปดาห์ละครั้ง หรือก่อนลบอะไรเป็นชุดใหญ่</div>
+<div class="addg">
+<button class="btn" id="bkdown">${svg(ICON.file,17)}สำรองข้อมูลทั้งหมด (.json)</button>
+<input type="file" id="bkfile" accept=".json,application/json" style="background:var(--paper);padding:9px 14px">
+<button class="btn ghost" id="bkgo">กู้คืนจากไฟล์</button></div>
+<div id="bkout">${bkMsg}</div>
+<div class="hint">ไฟล์สำรองมีครบทุกอย่าง: งาน · การเงิน · กฎหมาย · Index · บันทึก · บริษัท/กลุ่มงาน/ประเภทงาน/หมวด GL/ทะเบียนหลักสูตร/หมวดทักษะ/รูปแบบ · ตัวเลขกรมพัฒนาฯ · ธีมสี<br>
+<b>กู้คืน = เติมกลับเท่านั้น</b> รายการที่หายไปจะกลับมา รายการที่มีอยู่แล้วจะถูกเขียนทับด้วยค่าในไฟล์ · ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบทิ้ง</div></div>
+<div class="card" style="margin-top:16px"><h2>นำเข้างานจากไฟล์ CSV</h2>
 <div id="impstat">${impPill()}</div>
 <div class="hint" style="margin-top:2px">เปิดไฟล์ Excel แล้ว Save As → CSV UTF-8 หรือ Google Sheets → ดาวน์โหลด → CSV แล้วอัปโหลดที่นี่</div>
 <div class="addg"><input type="file" id="csvfile" accept=".csv,text/csv" style="background:var(--paper);padding:9px 14px"></div>
@@ -2193,8 +2249,53 @@ if(el("addcrs")){
 el("addcrs").onclick=async()=>{
 const nm=el("newcrs").value.trim(); if(!nm){tell("ใส่ชื่อหลักสูตรก่อนนะคะ");return;}
 if(courses.some(c=>c.name===nm)){tell("มีหลักสูตรชื่อนี้แล้วค่ะ — ถ้าเป็นรุ่นใหม่ ให้ไปเพิ่มงานอบรมแล้วเลือกหลักสูตรนี้แทน");return;}
-courses=[...courses,{code:nextCourseCode(),name:nm,skill:"",mode:"",hours:0}];
+courses=[...courses,{code:nextCourseCode(),name:nm,skill:(el("newcrssk")?el("newcrssk").value:"")||"",mode:"",hours:0}];
 el("newcrs").value=""; render(); await saveMeta("courses",courses);};}
+// ค้นหา / ย่อ-ขยาย หมวดในทะเบียนหลักสูตร
+const cf=el("crsfind");
+if(cf){const run=()=>{const q=cf.value.trim().toLowerCase();
+document.querySelectorAll("[data-crssec]").forEach(sec=>{let hit=0;
+sec.querySelectorAll("[data-crsname]").forEach(r=>{const ok=!q||r.dataset.crsname.includes(q); r.hidden=!ok; if(ok)hit++;});
+sec.hidden=!!q&&!hit; if(q&&hit)sec.open=true;});};
+cf.oninput=()=>{crsQ=cf.value; run();}; if(crsQ)run();}
+if(el("crsexp"))el("crsexp").onclick=()=>document.querySelectorAll("[data-crssec]").forEach(x=>{x.open=true;crsShut[x.dataset.crssec]=0;});
+if(el("crscol"))el("crscol").onclick=()=>document.querySelectorAll("[data-crssec]").forEach(x=>{x.open=false;crsShut[x.dataset.crssec]=1;});
+document.querySelectorAll("[data-crssec]").forEach(x=>x.addEventListener("toggle",()=>{crsShut[x.dataset.crssec]=x.open?0:1;}));
+document.querySelectorAll("[data-mvc]").forEach(b=>b.onclick=async()=>{
+const [i,t]=b.dataset.mvc.split(":").map(Number);
+if(t<0||t>=courses.length||i<0||i>=courses.length)return;
+const tmp=courses[i]; courses[i]=courses[t]; courses[t]=tmp;
+render(); await saveMeta("courses",courses);});
+// ทะเบียนหมวดทักษะ / รูปแบบการอบรม
+const saveL=async(kind,arr)=>{ if(kind==="sk"){skillList=arr; await saveMeta("skills",arr);} else {modeList=arr; await saveMeta("modes",arr);} };
+[["sk",skills,"skill"],["md",modes,"mode"]].forEach(([kind,getter,field])=>{
+const addBtn=el("add"+kind), inp=el("new"+kind);
+if(addBtn)addBtn.onclick=async()=>{const v=(inp.value||"").trim();
+if(!v){tell("พิมพ์ชื่อก่อนนะคะ");return;}
+if(getter().includes(v)){tell("มีรายการนี้อยู่แล้วค่ะ");return;}
+const arr=[...getter(),v]; inp.value=""; render(); await saveL(kind,arr);};
+document.querySelectorAll("[data-ren"+kind+"]").forEach(n=>n.onchange=async()=>{
+const from=n.dataset["ren"+kind], to=n.value.trim();
+if(!to||to===from){render();return;}
+if(getter().includes(to)){tell("มีรายการ “"+esc(to)+"” อยู่แล้วค่ะ");render();return;}
+const arr=getter().map(x=>x===from?to:x);
+await saveL(kind,arr);
+let ok=0; const targets=[...courses.filter(c=>(c[field]||"")===from),...items.filter(t=>(t[field]||"")===from)];
+for(const c of courses)if((c[field]||"")===from)c[field]=to;
+await saveMeta("courses",courses);
+for(const t of items.filter(t=>(t[field]||"")===from)){
+try{ await DB.collection("items").doc(t._id).set({[field]:to},{merge:true}); ok++; }catch(e){}}
+render(); setFoot("เปลี่ยนชื่อและอัปเดต "+(targets.length)+" รายการแล้ว");});
+document.querySelectorAll("[data-del"+kind+"]").forEach(b=>b.onclick=async()=>{
+const nm=b.dataset["del"+kind];
+const n=kind==="sk"?skillUsed(nm):modeUsed(nm);
+if(n&&!await ask("“"+esc(nm)+"” มี <b>"+n+"</b> รายการใช้อยู่ค่ะ ลบออกจากทะเบียนแล้วชื่อนี้จะยังติดอยู่กับข้อมูลเดิม (และจะโผล่ในทะเบียนอีกครั้งอัตโนมัติ) — ลบต่อไหมคะ?","ลบรายการ"))return;
+const arr=getter().filter(x=>x!==nm); render(); await saveL(kind,arr);});});
+document.querySelectorAll("[data-mvl]").forEach(b=>b.onclick=async()=>{
+const [kind,i,d]=b.dataset.mvl.split(":"); const arr=kind==="sk"?skills():modes();
+const a=+i,t=a+(+d); if(t<0||t>=arr.length)return;
+const tmp=arr[a]; arr[a]=arr[t]; arr[t]=tmp;
+render(); await saveL(kind,arr);});
 document.querySelectorAll("[data-crsopen]").forEach(b2=>b2.onclick=()=>openCrs(b2.dataset.crsopen));
 document.querySelectorAll("[data-rencrs]").forEach(n=>n.onchange=async()=>{
 const c=crsOf(n.dataset.rencrs), v=n.value.trim(); if(!c||!v){render();return;}
@@ -2369,7 +2470,7 @@ el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
-["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","ประเภทการอบรม","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รหัสหลักสูตร","รุ่นที่","แบบที่ยื่น","วันที่ฝึกเสร็จ","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
+["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","หมวดทักษะ","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รหัสหลักสูตร","รุ่นที่","แบบที่ยื่น","วันที่ฝึกเสร็จ","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
 t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.course||"",t.batch||"",t.yp||"",t.dsdEnd||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
 if(el("health")&&healthState!=="done")checkHealth();
@@ -2382,6 +2483,45 @@ const rd=await SB.from("rows").select("id",{count:"exact",head:true}).eq("uid",u
 await SB.from("rows").delete().eq("id",id).eq("uid",uid);
 out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} เขียน อ่าน และลบข้อมูลได้ปกติ · ตอนนี้มี ${rd.count!=null?rd.count-1:"?"} แถวบนเซิร์ฟเวอร์</div>`;
 });
+// ---- สำรอง / กู้คืน ----
+if(el("bkdown"))el("bkdown").onclick=()=>{
+const strip=a=>a.map(x=>{const o=Object.assign({},x); const id=o._id; delete o._id; return {id,data:o};});
+const pack={app:"sky-work",version:APP_VERSION,at:new Date().toISOString(),
+items:strip(items),ledger:strip(ledger),legal:strip(legal),index:strip(idx),note:strip(notes),
+meta:{groups,companies,gl:gls,types:typeDefs(),tags:tagDefs(),courses,skills:skills(),modes:modes(),
+hr:{manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd,subsidy:hrdata.subsidy},theme}};
+const a=document.createElement("a");
+a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,1)],{type:"application/json"}));
+a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
+setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},900);
+const n=pack.items.length+pack.ledger.length+pack.legal.length+pack.index.length+pack.note.length;
+bkMsg=`<div class="banner ok" style="margin-top:12px">${svg(ICON.file,17)} สำรองแล้ว <b>${n}</b> รายการ + การตั้งค่าทั้งหมด — เก็บไฟล์ไว้ใน Google Drive หรือที่ปลอดภัยนะคะ</div>`; render();};
+if(el("bkgo"))el("bkgo").onclick=async()=>{
+const f=el("bkfile").files&&el("bkfile").files[0];
+if(!f){tell("เลือกไฟล์สำรอง (.json) ก่อนนะคะ");return;}
+let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Work</div>"); return; }
+if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Work</b>");return;}
+const cnt=["items","ledger","legal","index","note"].reduce((a,k)=>a+((pack[k]||[]).length),0);
+if(!await ask("ไฟล์นี้สำรองไว้เมื่อ <b>"+esc(new Date(pack.at||Date.now()).toLocaleString("th-TH"))+"</b> มี <b>"+cnt+"</b> รายการ<br>กู้คืนแบบ<b>เติมกลับ</b> — ของที่ลบไปจะกลับมา ของที่มีอยู่จะถูกเขียนทับด้วยค่าในไฟล์ ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบ<br>ดำเนินการต่อไหมคะ?","กู้คืนข้อมูล"))return;
+let ok=0,fail=0;
+for(const [coll,key] of [["items","items"],["ledger","ledger"],["legal","legal"],["index","index"],["note","note"]]){
+for(const r of (pack[key]||[])){
+try{ await DB.collection(coll).doc(r.id).set(r.data); ok++; }catch(e){ fail++; }
+if(ok%25===0)setFoot("กำลังกู้คืน "+ok+"/"+cnt+" …");}}
+const M=pack.meta||{};
+try{
+if(Array.isArray(M.groups)&&M.groups.length){groups=M.groups; await saveMeta("groups",groups);}
+if(Array.isArray(M.companies)){companies=M.companies; await saveMeta("companies",companies);}
+if(Array.isArray(M.gl)){gls=M.gl; await saveMeta("gl",gls);}
+if(Array.isArray(M.types)){typeList=M.types; await saveMeta("types",typeList);}
+if(Array.isArray(M.tags)){tagList=M.tags; await saveMeta("tags",tagList);}
+if(Array.isArray(M.courses)){courses=M.courses; await saveMeta("courses",courses);}
+if(Array.isArray(M.skills)){skillList=M.skills; await saveMeta("skills",skillList);}
+if(Array.isArray(M.modes)){modeList=M.modes; await saveMeta("modes",modeList);}
+if(M.hr){hrdata=Object.assign(hrdata,M.hr); await saveHR();}
+}catch(e){fail++;}
+bkMsg=`<div class="banner ${fail?"bad":"ok"}" style="margin-top:12px">กู้คืนสำเร็จ <b>${ok}</b> รายการ${fail?" · พลาด "+fail:""} + การตั้งค่าทั้งหมด</div>`;
+render();};
 el("icsgo")&&(el("icsgo").onclick=downloadICS);
 const wipe=async(kind,label,arr)=>{
 const out=el("wipeout");
@@ -2507,8 +2647,8 @@ prepDays:+get(r,"เตรียมล่วงหน้า(วัน)")||+get(r
 tag:get(r,"ป้ายกำกับ"), color:/^#[0-9a-fA-F]{6}$/.test(get(r,"สี"))?get(r,"สี"):"",
 pax:+get(r,"ผู้เข้าอบรม")||0, hours:+get(r,"ชั่วโมง")||0,
 vendor:get(r,"วิทยากร/สถาบัน")||get(r,"วิทยากร"), dsd:DSD.includes(get(r,"กรมพัฒฯ"))?get(r,"กรมพัฒฯ"):"",
-skill:SKILLS.includes(get(r,"ประเภทการอบรม"))?get(r,"ประเภทการอบรม"):"",
-mode:MODES.includes(get(r,"รูปแบบการอบรม"))?get(r,"รูปแบบการอบรม"):"",
+skill:(get(r,"หมวดทักษะ")||get(r,"ประเภทการอบรม")||"").trim(),
+mode:(get(r,"รูปแบบการอบรม")||"").trim(),
 course:(()=>{const v=get(r,"รหัสหลักสูตร").trim(); if(v)return v;
 const nm=get(r,"ชื่องาน").trim(); const c2=courses.find(x=>x.name===nm); return c2?c2.code:"";})(),
 batch:get(r,"รุ่นที่"), yp:get(r,"แบบที่ยื่น"), dsdEnd:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ฝึกเสร็จ"))?get(r,"วันที่ฝึกเสร็จ"):null, dsdOpenDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นเปิดหลักสูตร"))?get(r,"วันที่ยื่นเปิดหลักสูตร"):null,
@@ -2682,8 +2822,8 @@ el("f-prepn").value=t?.prepNote||"";
 syncMeet();
 el("f-train").checked=formCtx?formCtx==="train":isTrain(t||{});
 el("f-tplace").value=t?.place||"";
-fill("f-skill",[["","— ยังไม่ระบุ —"],...SKILLS.map(v=>[v,v])],t?.skill||(t?"":guessSkill({title:el("f-title").value,type:el("f-type").value,track:el("f-track").value})));
-fill("f-mode",[["","— ยังไม่ระบุ —"],...MODES.map(v=>[v,v])],t?.mode||"");
+fill("f-skill",[["","— ยังไม่ระบุ —"],...skills().map(v=>[v,v])],t?.skill||(t?"":guessSkill({title:el("f-title").value,type:el("f-type").value,track:el("f-track").value})));
+fill("f-mode",[["","— ยังไม่ระบุ —"],...modes().map(v=>[v,v])],t?.mode||"");
 el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
 (()=>{const cur=t?.course||"";
 fill("f-course",[["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],...visible(courses).map(c=>[c.code,c.code+" · "+c.name]),["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"]],cur);
