@@ -1,4 +1,4 @@
-const APP_VERSION="11.4"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="11.5"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -204,7 +204,7 @@ for(let i=0;i<800;i++){ if(occursOn(t,d))return new Date(d); d.setDate(d.getDate
 return null;
 }
 let R={pq:"", calGroup:"track", year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
-const F={q:"",track:"",type:"",status:"",company:""};
+const F={q:"",track:"",type:"",status:"",company:"",grp:"time"};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const baht=n=>(+n||0).toLocaleString("th-TH",{maximumFractionDigits:0});
@@ -344,6 +344,9 @@ return[];
 const fmtDate=d=>{if(!d)return"";const x=new Date(d);return x.getDate()+" "+MTH[x.getMonth()];};
 const weekOf=d=>{const x=new Date(d),s=new Date(x.getFullYear(),0,1);return Math.ceil(((x-s)/864e5+s.getDay()+1)/7);};
 const nowWeek=weekOf(new Date());
+const weekDays=()=>{const t0=new Date();t0.setHours(0,0,0,0);const s0=new Date(t0);s0.setDate(t0.getDate()-t0.getDay());
+return [0,1,2,3,4,5,6].map(i=>{const d=new Date(s0);d.setDate(s0.getDate()+i);return d;});};
+const DAYTH=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
 function inScope(t){
 if(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year)return false;
 if(R.scope==="year")return true;
@@ -357,12 +360,13 @@ return true;
 }
 function yearList(){
 const ys=new Set([R.year]);
-for(let y=THISYEAR-3;y<=THISYEAR+5;y++)ys.add(y);
+// เลื่อนไปปีไหนก็ได้ — รายการจะขยายตามปีที่กำลังดูเสมอ (แบบ Google Calendar)
+for(let y=Math.min(THISYEAR-3,R.year-5);y<=Math.max(THISYEAR+5,R.year+5);y++)ys.add(y);
 items.forEach(t=>{if(t.date)ys.add(new Date(t.date).getFullYear());});
 ledger.forEach(x=>{if(x.date)ys.add(new Date(x.date).getFullYear());});
 return [...ys].filter(y=>y>2000&&y<2100).sort();
 }
-const yearSel=id=>`<select id="${id}" style="border:0;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;box-shadow:var(--sh-s)">${yearList().map(y=>`<option value="${y}"${y===R.year?" selected":""}>พ.ศ. ${y+543} · ${y}</option>`).join("")}</select>`;
+const yearSel=id=>`<span class="yrnav"><button class="iconbtn" data-yr="-1" title="ปีก่อนหน้า">‹</button><select id="${id}" style="border:0;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;box-shadow:var(--sh-s)">${yearList().map(y=>`<option value="${y}"${y===R.year?" selected":""}>พ.ศ. ${y+543} · ${y}</option>`).join("")}</select><button class="iconbtn" data-yr="1" title="ปีถัดไป">›</button>${R.year!==THISYEAR?`<button class="gcbtn" data-yr="0" title="กลับไปปีปัจจุบัน">วันนี้</button>`:""}</span>`;
 const scopeLabel=()=>R.scope==="year"?"ทั้งปี "+(R.year+543):R.scope==="month"?MTHFULL[R.month]:"สัปดาห์นี้";
 // ช่องค้นหาประจำหน้า
 const pqBox=(ph)=>`<input type="search" id="pq" placeholder="${esc(ph||"ค้นหาในหน้านี้")}" value="${esc(R.pq||"")}" style="flex:1;min-width:180px;background:var(--card);border:0;border-radius:999px;padding:9px 16px;box-shadow:var(--sh-s)">`;
@@ -910,24 +914,38 @@ const list=items.filter(inScope).filter(t=>
 .sort((a,b)=>(a.date||"9999")<(b.date||"9999")?-1:1);
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
 const mobile=matchMedia("(max-width:820px)").matches;
-return header("งานทั้งหมด",`${list.length} จาก ${items.length} รายการ · แตะเพื่อแก้ไข`)+
-`<div class="toolbar">${scopeBar("sc1")}</div>
-<div class="toolbar filters">
-<input type="search" id="q" placeholder="ค้นหางาน / ผู้รับผิดชอบ" value="${esc(F.q)}">
-<select id="fl-company">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],F.company)}</select>
-<select id="fl-track">${opt([["","ทุกกลุ่ม"],...visible(groups).map(g=>[g.key,g.label])],F.track)}</select>
-<select id="fl-type">${(()=>{
-const base=F.track?typesFor(F.track):types();
-const used=[...new Set(items.filter(t=>!F.track||t.track===F.track).map(t=>(t.type||"").trim()).filter(Boolean))];
-const list=[...new Set([...base,...used])];
-return opt([["",F.track?"ทุกประเภทในกลุ่มนี้":"ทุกประเภท"],...list.map(t=>[t,t])],list.includes(F.type)?F.type:"");})()}</select>
-<select id="fl-status">${opt([["","ทุกสถานะ"],...STATUS.map(s=>[s,s])],F.status)}</select>
-</div>`+
-(mobile
-? `<div class="card"><div class="list">${list.map(t=>liRow(t,true)).join("")||`<div class="empty">ไม่พบงานตามเงื่อนไขนี้</div>`}</div></div>`
-: `<div class="tblwrap"><table>
-<thead><tr><th>ประเภท</th><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
-<tbody>${list.map(t=>`<tr data-id="${t._id}">
+// ---- แบ่งกลุ่มการแสดงผล ----
+const timeBucket=t=>{
+if(R.scope==="week"){
+const d=rr(t)?weekDays().find(x=>occursOn(t,x)):(t.date?new Date(t.date):null);
+return d?{k:isoOf(d),lab:"วัน"+DAYTH[d.getDay()]+" "+d.getDate()+" "+MTH[d.getMonth()],c:d.toDateString()===new Date().toDateString()?"var(--accent)":""}
+:{k:"zz",lab:"ไม่ระบุวัน",c:""};}
+if(R.scope==="month"){
+const days=rr(t)?occDays(t,R.year,R.month):(t.date&&new Date(t.date).getMonth()===R.month&&new Date(t.date).getFullYear()===R.year?[new Date(t.date).getDate()]:[]);
+if(!days.length)return {k:"zz",lab:"ไม่ระบุวันในเดือนนี้",c:""};
+const w=Math.min(5,Math.ceil(days[0]/7));
+return {k:"w"+w,lab:"สัปดาห์ที่ "+w,sub:"วันที่ "+((w-1)*7+1)+"–"+(w===5?"สิ้นเดือน":w*7),c:""};}
+if(rr(t))return {k:"zr",lab:"งานประจำ · เกิดซ้ำ",sub:"ไม่ผูกกับเดือนใดเดือนหนึ่ง",c:""};
+const ms=monthsOf(t); if(!ms.length)return {k:"zz",lab:"ยังไม่ได้ลงวันที่",c:""};
+return {k:String(ms[0]).padStart(2,"0"),lab:MTHFULL[ms[0]-1],c:ms[0]-1===new Date().getMonth()&&R.year===THISYEAR?"var(--accent)":""};};
+const bucket=t=>{
+if(F.grp==="track"){const g=groups.find(x=>x.key===t.track);
+return {k:g?String(groups.indexOf(g)).padStart(3,"0"):"zzz",lab:g?g.label:"ยังไม่ระบุกลุ่มงาน",c:(g&&g.color)||""};}
+if(F.grp==="status"){const i=STATUS.indexOf(t.status);
+return {k:String(i<0?9:i),lab:t.status||"ไม่ระบุสถานะ",c:sColor(t.status)};}
+if(F.grp==="company"){const c=companies.find(x=>x.key===t.company);
+return {k:c?String(companies.indexOf(c)).padStart(3,"0"):"zzz",lab:c?c.label:"ยังไม่ระบุบริษัท",c:""};}
+if(F.grp==="type")return {k:(t.type||"zzz").trim()||"zzz",lab:(t.type||"").trim()||"ยังไม่ระบุประเภท",c:""};
+return timeBucket(t);};
+const secs=[];
+if(F.grp){const m=new Map();
+list.forEach(t=>{const b=bucket(t); if(!m.has(b.k))m.set(b.k,{...b,rows:[]}); m.get(b.k).rows.push(t);});
+secs.push(...[...m.values()].sort((a,b)=>String(a.k)<String(b.k)?-1:1));}
+const money=arr=>arr.reduce((a,t)=>a+budgetOf(t),0);
+const hd=g=>`${g.c?`<i style="background:${g.c}"></i>`:""}${esc(g.lab)}${g.sub?` <span style="color:var(--ink-3);font-weight:400;font-size:12px">${esc(g.sub)}</span>`:""}`;
+const meta=g=>`${g.rows.length} งาน${money(g.rows)?" · งบ "+baht(money(g.rows))+" ฿":""}`;
+const GRPS=[["time","ช่วงเวลา"],["track","กลุ่มงาน"],["type","ประเภทงาน"],["status","สถานะ"],["company","บริษัท"],["","ไม่แบ่ง"]];
+const row=t=>`<tr data-id="${t._id}">
 <td><span class="tag">${esc(t.type||"—")}</span></td>
 <td><div style="font-weight:600">${esc(t.title)}</div>
 ${(()=>{const cc=crsCodeOf(t); return cc?`<div class="t-note"><b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" · "+esc(t.batch):""}</div>`:"";})()}
@@ -938,8 +956,36 @@ ${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}</td>
 <td>${esc(t.owner||"—")}</td>
 <td class="num">${budgetOf(t)?baht(budgetOf(t)):"—"}</td>
 <td class="num"${(+t.actual||0)>budgetOf(t)&&budgetOf(t)?' style="color:var(--over);font-weight:600"':""}>${t.actual?baht(t.actual):"—"}</td>
-<td><span class="pill ${sCls(t.status)}">${esc(t.status)}</span></td></tr>`).join("")}</tbody></table>
-${list.length?"":`<div class="card"><div class="empty">ไม่พบงานตามเงื่อนไขนี้</div></div>`}</div>`);
+<td><span class="pill ${sCls(t.status)}">${esc(t.status)}</span></td></tr>`;
+const table=body=>`<div class="tblwrap"><table>
+<thead><tr><th>ประเภท</th><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
+<tbody>${body}</tbody></table>
+${list.length?"":`<div class="card"><div class="empty">ไม่พบงานตามเงื่อนไขนี้</div></div>`}</div>`;
+return header("งานทั้งหมด",`${list.length} จาก ${items.length} รายการ${F.grp&&secs.length?" · "+secs.length+" กลุ่ม":""} · แตะเพื่อแก้ไข`)+
+`<div class="toolbar">${scopeBar("sc1")}</div>
+<div class="toolbar filters">
+<input type="search" id="q" placeholder="ค้นหางาน / ผู้รับผิดชอบ" value="${esc(F.q)}">
+<select id="fl-company">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],F.company)}</select>
+<select id="fl-track">${opt([["","ทุกกลุ่ม"],...visible(groups).map(g=>[g.key,g.label])],F.track)}</select>
+<select id="fl-type">${(()=>{
+const base=F.track?typesFor(F.track):types();
+const used=[...new Set(items.filter(t=>!F.track||t.track===F.track).map(t=>(t.type||"").trim()).filter(Boolean))];
+const l2=[...new Set([...base,...used])];
+return opt([["",F.track?"ทุกประเภทในกลุ่มนี้":"ทุกประเภท"],...l2.map(t=>[t,t])],l2.includes(F.type)?F.type:"");})()}</select>
+<select id="fl-status">${opt([["","ทุกสถานะ"],...STATUS.map(s=>[s,s])],F.status)}</select>
+</div>
+<div class="toolbar" style="margin-top:-6px">
+<span style="font-size:13px;color:var(--ink-3)">แบ่งกลุ่มตาม</span>
+<div class="seg" id="grpseg">${GRPS.map(([v,l])=>`<button data-grp="${v}" aria-pressed="${F.grp===v}">${l}</button>`).join("")}</div>
+</div>`+
+(mobile
+? (F.grp&&secs.length
+ ? `<div class="card">${secs.map(g=>`<div class="grphead">${hd(g)}<b>${meta(g)}</b></div>
+<div class="list">${g.rows.map(t=>liRow(t,true)).join("")}</div>`).join("")}</div>`
+ : `<div class="card"><div class="list">${list.map(t=>liRow(t,true)).join("")||`<div class="empty">ไม่พบงานตามเงื่อนไขนี้</div>`}</div></div>`)
+: (F.grp&&secs.length
+ ? table(secs.map(g=>`<tr class="grph"><td colspan="9">${hd(g)}<span class="n">${meta(g)}</span></td></tr>`+g.rows.map(row).join("")).join(""))
+ : table(list.map(row).join(""))));
 }
 function tasksOnDay(y,m,d){
 const dt=new Date(y,m,d);
@@ -2109,6 +2155,8 @@ const sc=el("sc1");
 if(sc){sc.onclick=e=>{const b=e.target.closest("button[data-sc]");if(!b)return;R.scope=b.dataset.sc;render();};
 el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
 ["yrSel","yrSel2","yrSelB"].forEach(id=>{const n=el(id); if(n)n.onchange=e=>{R.year=+e.target.value;R.selDay=null;render();};});
+document.querySelectorAll("[data-yr]").forEach(b=>b.onclick=()=>{
+const d=+b.dataset.yr; R.year=d?Math.min(2199,Math.max(1900,R.year+d)):THISYEAR; R.selDay=null; render();});
 const bs=el("budsc");
 if(bs){bs.onclick=e=>{const b=e.target.closest("button[data-bs]");if(!b)return;R.budScope=b.dataset.bs;render();};
 el("budMonth")&&(el("budMonth").onchange=e=>{R.budMonth=+e.target.value;render();});}
@@ -2172,6 +2220,8 @@ el("fl-track")&&(el("fl-track").addEventListener("change",()=>{
 const v=el("fl-track").value;
 if(F.type&&v&&!typesFor(v).includes(F.type)&&!items.some(t=>t.track===v&&(t.type||"")===F.type))F.type="";
 }));
+el("grpseg")&&(el("grpseg").onclick=e=>{const b=e.target.closest("button[data-grp]"); if(!b)return;
+F.grp=b.dataset.grp; render();});
 bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","status");bind("fl-company","company");
 el("modeseg")&&(el("modeseg").onclick=async e=>{
 const b=e.target.closest("button[data-md]"); if(!b)return;
