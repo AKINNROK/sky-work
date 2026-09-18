@@ -1,4 +1,4 @@
-const APP_VERSION="11.6"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="11.7"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1450,21 +1450,31 @@ ${Object.keys(hrdata.dsd||{}).some(k=>dsdRec(k,R.year-1))?`<button class="btn gh
 <details class="foldbox"><summary>วิธีอ่านตารางนี้</summary><div class="hint"><b>พนักงานเฉลี่ย</b> คิดจากเดือนที่กรอกตัวเลขไว้เท่านั้น เดือนที่ยังไม่ถึงหรือเว้นว่างจะไม่ถูกนำมาหาร (ตรงกับวิธีของกรมฯ)<br>
 <b>C = A − B</b> คือจำนวนที่นับได้จริงหลังตัดคนที่ฝึกซ้ำออก · <b>คิดเป็น %</b> = C ÷ พนักงานเฉลี่ย<br>
 ตัวเลขในระบบเป็นของคุณเอง ใช้เทียบกับหน้าเว็บกรมฯ ได้ แต่ไม่ได้ดึงจากกรมฯ อัตโนมัติ</div></details></div>
-<div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
+<div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>เรียงตามรหัสหลักสูตร → บริษัท → รุ่น · ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
 <div class="tblwrap wide"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
 <th>แบบ</th><th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>ขั้นตอน / กำหนด</th><th>สถานะ</th></tr></thead><tbody>
 ${(()=>{const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||ypNoOf(t)||t.dsdCertNo);
-return dl.length?dl.map(t=>`<tr data-id="${t._id}">
-<td><div style="font-weight:600">${esc(t.course?crsOf(t.course)?.name||t.title:t.title)}</div>
-<div class="t-note">${t.course?`<b>${esc(t.course)}</b>`:(t.code?esc(t.code):"ยังไม่ผูกทะเบียน")}${(()=>{const n=t.course?crsBatches(t.course).length:0;return n>1?` · หลักสูตรนี้มี ${n} รุ่น`:"";})()}</div></td>
-<td>${esc(t.company?cLabel(t.company):"—")}</td><td>${esc(t.batch||"—")}</td>
+// เรียง: รหัสหลักสูตร → บริษัท → เลขรุ่น → วันที่ฝึกเสร็จ (รุ่นของหลักสูตรเดียวกันอยู่ติดกันเสมอ)
+const bn=t=>{const m=String(t.batch||"").match(/\d+/); return m?+m[0]:9999;};
+const ck=t=>crsCodeOf(t)||"zzz "+(t.title||"");
+dl.sort((a,b)=>ck(a).localeCompare(ck(b),"th")||String(cLabel(a.company||"")).localeCompare(String(cLabel(b.company||"")),"th")
+||bn(a)-bn(b)||String(a.dsdEnd||a.date||"9999").localeCompare(String(b.dsdEnd||b.date||"9999")));
+return dl.length?dl.map((t,i)=>{
+const first=i===0||ck(dl[i-1])!==ck(t);
+const nb=crsCodeOf(t)?crsBatches(crsCodeOf(t)).length:0;
+const seq=nb>1?dl.filter(x=>ck(x)===ck(t)).indexOf(t)+1:0;
+return `<tr data-id="${t._id}"${first&&i?' class="tysep"':""}>
+<td>${first?`<div style="font-weight:600">${esc(t.course?crsOf(t.course)?.name||t.title:t.title)}</div>
+<div class="t-note">${t.course?`<b>${esc(t.course)}</b>`:(t.code?esc(t.code):"ยังไม่ผูกทะเบียน")}${nb>1?` · หลักสูตรนี้มี ${nb} รุ่น`:""}</div>`
+:`<div class="t-note" style="padding-left:14px">↳ ${esc(crsCodeOf(t)||"")} · รุ่นถัดไป</div>`}</td>
+<td>${esc(t.company?cLabel(t.company):"—")}</td><td>${esc(t.batch||"—")}${seq?`<div class="t-note">ลำดับที่ ${seq}</div>`:""}</td>
 <td>${esc(ypKind(t)||"—")}${!t.yp&&ypKind(t)?`<div class="t-note">จากหลักสูตร</div>`:""}</td>
 <td class="num">${ypDateOf(t)?fmtDate(ypDateOf(t)):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(ypNoOf(t)||"—")}</td>
 <td class="num">${t.dsdCertDate?fmtDate(t.dsdCertDate):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(t.dsdCertNo||"—")}</td>
 <td class="num">${t.pax||"—"}</td>
 <td>${(()=>{const y=ypState(t);return `<span class="pill ${y.cls}">${esc(y.step)}</span>`
 +(y.due?`<div class="t-note">${y.msg?esc(y.msg):""}${y.due?" · ถึง "+fmtDate(y.due.toISOString().slice(0,10)):""}</div>`:"");})()}</td>
-<td><span class="pill ${dsdCls(t.dsd)}">${esc(t.dsd||"—")}</span></td></tr>`).join("")
+<td><span class="pill ${dsdCls(t.dsd)}">${esc(t.dsd||"—")}</span></td></tr>`;}).join("")
 :`<tr><td colspan="11"><div class="empty">ยังไม่มีหลักสูตรที่ต้องยื่น — เปิดหลักสูตรแล้วเลือกสถานะกรมพัฒฯ</div></td></tr>`;})()}
 </tbody></table></div></div>
 <div class="card span4"><h2>สถานะการยื่นรับรองหลักสูตร <small>แตะรายการเพื่อแก้ไข</small></h2>
