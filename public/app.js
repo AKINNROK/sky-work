@@ -1,4 +1,4 @@
-const APP_VERSION="11.5"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="11.6"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -937,15 +937,26 @@ if(F.grp==="company"){const c=companies.find(x=>x.key===t.company);
 return {k:c?String(companies.indexOf(c)).padStart(3,"0"):"zzz",lab:c?c.label:"ยังไม่ระบุบริษัท",c:""};}
 if(F.grp==="type")return {k:(t.type||"zzz").trim()||"zzz",lab:(t.type||"").trim()||"ยังไม่ระบุประเภท",c:""};
 return timeBucket(t);};
+// ในแต่ละกลุ่ม เรียงให้ประเภทเดียวกันอยู่ติดกัน (ยกเว้นแบ่งตามช่วงเวลา ที่ต้องเรียงตามวัน)
+const tyOrder=types();
+const tyRank=t=>{const i=tyOrder.indexOf((t.type||"").trim()); return i<0?999:i;};
+const dayKey=t=>t.date||"9999";
+const subSort=(a,b)=>{
+if(F.grp==="time"||F.grp==="type")return dayKey(a)<dayKey(b)?-1:dayKey(a)>dayKey(b)?1:0;
+const r=tyRank(a)-tyRank(b); if(r)return r;
+const n=(a.type||"").localeCompare(b.type||"","th"); if(n)return n;
+return dayKey(a)<dayKey(b)?-1:1;};
 const secs=[];
 if(F.grp){const m=new Map();
 list.forEach(t=>{const b=bucket(t); if(!m.has(b.k))m.set(b.k,{...b,rows:[]}); m.get(b.k).rows.push(t);});
-secs.push(...[...m.values()].sort((a,b)=>String(a.k)<String(b.k)?-1:1));}
+secs.push(...[...m.values()].sort((a,b)=>String(a.k)<String(b.k)?-1:1));
+secs.forEach(g=>{g.rows.sort(subSort);
+g.kinds=[...new Set(g.rows.map(t=>(t.type||"").trim()||"—"))];});}
 const money=arr=>arr.reduce((a,t)=>a+budgetOf(t),0);
 const hd=g=>`${g.c?`<i style="background:${g.c}"></i>`:""}${esc(g.lab)}${g.sub?` <span style="color:var(--ink-3);font-weight:400;font-size:12px">${esc(g.sub)}</span>`:""}`;
-const meta=g=>`${g.rows.length} งาน${money(g.rows)?" · งบ "+baht(money(g.rows))+" ฿":""}`;
+const meta=g=>`${(g.kinds&&g.kinds.length>1&&F.grp!=="type")?g.kinds.length+" ประเภท · ":""}${g.rows.length} งาน${money(g.rows)?" · งบ "+baht(money(g.rows))+" ฿":""}`;
 const GRPS=[["time","ช่วงเวลา"],["track","กลุ่มงาน"],["type","ประเภทงาน"],["status","สถานะ"],["company","บริษัท"],["","ไม่แบ่ง"]];
-const row=t=>`<tr data-id="${t._id}">
+const row=(t,sep)=>`<tr data-id="${t._id}"${sep?' class="tysep"':""}>
 <td><span class="tag">${esc(t.type||"—")}</span></td>
 <td><div style="font-weight:600">${esc(t.title)}</div>
 ${(()=>{const cc=crsCodeOf(t); return cc?`<div class="t-note"><b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" · "+esc(t.batch):""}</div>`:"";})()}
@@ -984,7 +995,8 @@ return opt([["",F.track?"ทุกประเภทในกลุ่มนี�
 <div class="list">${g.rows.map(t=>liRow(t,true)).join("")}</div>`).join("")}</div>`
  : `<div class="card"><div class="list">${list.map(t=>liRow(t,true)).join("")||`<div class="empty">ไม่พบงานตามเงื่อนไขนี้</div>`}</div></div>`)
 : (F.grp&&secs.length
- ? table(secs.map(g=>`<tr class="grph"><td colspan="9">${hd(g)}<span class="n">${meta(g)}</span></td></tr>`+g.rows.map(row).join("")).join(""))
+ ? table(secs.map(g=>`<tr class="grph"><td colspan="9">${hd(g)}<span class="n">${meta(g)}</span></td></tr>`
++g.rows.map((t,i)=>row(t,i>0&&F.grp!=="type"&&F.grp!=="time"&&(t.type||"")!==(g.rows[i-1].type||""))).join("")).join(""))
  : table(list.map(row).join(""))));
 }
 function tasksOnDay(y,m,d){
@@ -1769,14 +1781,14 @@ return `<details class="tysec"${tyShut[k]?"":" open"} data-tysec="${esc(k)}">
 <div class="rows">${body}</div></details>`;}).join("");
 const nLaw=defs.filter(x=>x.law).length;
 return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
-<div class="tybar"><input id="tyfind" value="${esc(tyQ)}" placeholder="พิมพ์ค้นหาประเภท…" autocomplete="off">
-<button class="gcbtn" id="tyexp">เปิดทุกกลุ่ม</button><button class="gcbtn" id="tycol">ย่อทุกกลุ่ม</button></div>
-${secs||`<div class="empty">ยังไม่มีประเภท</div>`}
-${blank.length?`<div class="hint">กลุ่มที่ยังไม่มีประเภทย่อย: ${blank.map(esc).join(" · ")} — เพิ่มได้จากช่องด้านล่าง</div>`:""}
 <div class="addg"><input id="newt" placeholder="ชื่อประเภทใหม่ เช่น ตรวจประเมิน">
 <select id="newtg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(g=>`<option value="${esc(g.key)}">อยู่ใต้ ${esc(g.label)}</option>`).join("")}</select>
 <label class="lawchk" title="งานที่กฎหมายบังคับให้ต้องทำ เช่น ดับเพลิง · ที่อับอากาศ · อนุรักษ์พลังงาน"><input type="checkbox" id="newtlaw"> บังคับตามกฎหมาย</label>
 <button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
+<div class="tybar"><input id="tyfind" value="${esc(tyQ)}" placeholder="พิมพ์ค้นหาประเภท…" autocomplete="off">
+<button class="gcbtn" id="tyexp">เปิดทุกกลุ่ม</button><button class="gcbtn" id="tycol">ย่อทุกกลุ่ม</button></div>
+${secs||`<div class="empty">ยังไม่มีประเภท</div>`}
+${blank.length?`<div class="hint">กลุ่มที่ยังไม่มีประเภทย่อย: ${blank.map(esc).join(" · ")} — เพิ่มได้จากช่องด้านล่าง</div>`:""}
 ${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไม่ได้ระบุประเภท — เปิดงานแล้วเลือกประเภทได้เลย</div>`:""}
 <div class="hint"><b>กลุ่มงาน</b> คือกองใหญ่ · <b>ประเภทงาน</b> คือชนิดย่อยในกองนั้น — ช่องที่สองบอกว่าประเภทนี้อยู่ใต้กลุ่มไหน ตอนเพิ่มงานระบบจะโชว์เฉพาะประเภทของกลุ่มที่เลือก (บวกกับประเภทที่ตั้งเป็น “ใช้ได้ทุกกลุ่มงาน”)<br>
 ปุ่มโล่ <b>⚖︎</b> ท้ายแถว = ตั้งประเภทนั้นเป็น <b>บังคับตามกฎหมาย</b> — งานอบรมในประเภทนี้จะถูกเฝ้าวันครบกำหนด และขึ้นแถบเตือนสีแดงในหน้าฝึกอบรมเมื่อเลยกำหนดแล้วยังไม่ปิดงาน · ใช้เป็น <b>ตาข่ายกันพลาดระดับกอง</b> เพราะถ้าหลักสูตรนั้นตั้งค่าไว้เองใน <b>ทะเบียนหลักสูตรอบรม</b> ระบบจะยึดของหลักสูตรก่อนเสมอ (แม่นกว่า)<br>
@@ -1816,16 +1828,21 @@ return `<details class="tysec"${crsShut[k]?"":" open"} data-crssec="${esc(k)}">
 const nLaw=courses.filter(c=>c.law===true).length;
 const miniList=(kind,label,arr,usedFn,colFn,ph)=>`<div class="card" style="margin-top:16px">
 <h2>${esc(label)} <small>${arr.length} รายการ</small></h2>
+<div class="addg" style="margin-top:10px"><input id="new${kind}" placeholder="${esc(ph)}">
+<button class="btn" id="add${kind}">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่ม</button></div>
 <div class="rows">${arr.map((x,i)=>{const n=usedFn(x);
 return `<div class="rw"><span class="tydot" style="background:${colFn(x)}"></span>
 ${nameInput("data-ren"+kind,x,x)}
 <span class="gc">${n?"ใช้อยู่ "+n+" รายการ":"ยังไม่มีใครใช้"}</span>
 <button class="iconbtn" data-mvl="${kind}:${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
 <button class="iconbtn" data-mvl="${kind}:${i}:1"${i===arr.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
-<button class="btn danger sm" data-del${kind}="${esc(x)}">ลบ</button></div>`;}).join("")}</div>
-<div class="addg"><input id="new${kind}" placeholder="${esc(ph)}">
-<button class="btn" id="add${kind}">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่ม</button></div></div>`;
+<button class="btn danger sm" data-del${kind}="${esc(x)}">ลบ</button></div>`;}).join("")}</div></div>`;
 return `<div class="card"><h2>ทะเบียนหลักสูตรอบรม <small>${courses.length} หลักสูตร · ${items.filter(t=>isTrain(t)&&t.course).length} รุ่นที่ผูกไว้${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
+<div class="addg">
+<span class="crscode" id="crsnext">${esc(nextCourseCode())}</span>
+<input id="newcrs" placeholder="ชื่อหลักสูตร เช่น หลักการทำงานของ LeKise Group">
+<select id="newcrssk"><option value="">— หมวดทักษะ —</option>${skills().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select>
+<button class="btn" id="addcrs">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหลักสูตร</button></div>
 <div class="tybar"><input id="crsfind" value="${esc(crsQ)}" placeholder="พิมพ์ค้นหารหัสหรือชื่อหลักสูตร…" autocomplete="off">
 <button class="gcbtn" id="crsexp">เปิดทุกหมวด</button><button class="gcbtn" id="crscol">ย่อทุกหมวด</button></div>
 ${secs||`<div class="empty">ยังไม่มีหลักสูตรในทะเบียน — เพิ่มด้านล่าง ระบบจะรันรหัสให้เอง</div>`}
@@ -1833,11 +1850,6 @@ ${blank.length?`<div class="hint">หมวดที่ยังไม่มี�
 ${(()=>{const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
 return un.length?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${un.length}</b> รายการอบรมที่ชื่อตรงกับทะเบียน แต่ยังไม่ได้ผูกรหัสไว้ในข้อมูล
 <button class="btn sm" id="crslink" style="margin-left:auto">ผูกรหัสให้อัตโนมัติ</button></div>`:"";})()}
-<div class="addg">
-<span class="crscode" id="crsnext">${esc(nextCourseCode())}</span>
-<input id="newcrs" placeholder="ชื่อหลักสูตร เช่น หลักการทำงานของ LeKise Group">
-<select id="newcrssk"><option value="">— หมวดทักษะ —</option>${skills().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select>
-<button class="btn" id="addcrs">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหลักสูตร</button></div>
 <div class="hint"><b>รหัสหลักสูตรรันอัตโนมัติ</b> (${CRSPREFIX}-001, -002, …) แก้ชื่อได้ แต่รหัสล็อกไว้เพื่อไม่ให้หลักสูตรเดียวกันมีหลายรหัส<br>
 เวลาเพิ่มงานอบรม ให้เลือกหลักสูตรจากทะเบียนนี้ แล้วใส่แค่ <b>รุ่นที่</b> · หนึ่งหลักสูตรมีกี่รุ่นก็ได้ ระบบนับ “หลักสูตร” แบบไม่ซ้ำ และนับ “รุ่น” แยกให้<br>
 หมวดทักษะ/รูปแบบ/ชั่วโมง ที่ตั้งไว้ตรงนี้จะเติมให้อัตโนมัติตอนเลือกหลักสูตร · ลบได้เฉพาะหลักสูตรที่ยังไม่มีรุ่นผูกอยู่<br>
@@ -2822,7 +2834,7 @@ const list=typesFor(tr);
 if(cur&&!list.includes(cur))list.unshift(cur);
 fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x])],cur||"");
 }
-function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
+function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}${/^__hd__/.test(v)?" disabled":""}>${esc(l)}</option>`).join("");}
 function syncStatusLabel(){
 const lb=el("lbl-status"); if(!lb)return;
 const on=el("f-freq")&&el("f-freq").value!=="none";
@@ -2876,7 +2888,12 @@ fill("f-skill",[["","— ยังไม่ระบุ —"],...skills().map(v=
 fill("f-mode",[["","— ยังไม่ระบุ —"],...modes().map(v=>[v,v])],t?.mode||"");
 el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
 (()=>{const cur=t?.course||"";
-fill("f-course",[["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],...visible(courses).map(c=>[c.code,c.code+" · "+c.name]),["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"]],cur);
+fill("f-course",[["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"],["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],
+...(()=>{const vs=visible(courses), out=[];
+[...skills(),""].forEach(k=>{const g=vs.filter(c=>(c.skill||"")===k); if(!g.length)return;
+out.push(["__hd__"+(k||"none"),"———— "+(k||"ยังไม่ระบุหมวดทักษะ")+" ————"]);
+g.forEach(c=>out.push([c.code,c.code+" · "+c.name]));});
+return out;})()],cur);
 el("f-crscode").value=cur||""; paintCrsHint(); syncCrsName();})();
 fill("f-yp",YP,t?.yp||""); el("f-dsdend").value=t?.dsdEnd||"";
 el("f-dsdopenno").value=t?.dsdOpenNo||""; el("f-dsdcert").value=t?.dsdCertDate||"";
