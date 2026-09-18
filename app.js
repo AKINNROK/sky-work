@@ -1,4 +1,4 @@
-const APP_VERSION="11.7"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="11.8"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -296,6 +296,9 @@ const crsLabel=code=>{const c=crsOf(code);return c?c.code+" · "+c.name:(code||"
 const crsByName=nm=>courses.find(c=>c.name.trim()===String(nm||"").trim());
 const crsCodeOf=t=>(t.course||"").trim()||((crsByName(t.title)||{}).code||"");
 const crsBatches=code=>items.filter(t=>isTrain(t)&&crsCodeOf(t)===code);
+const batchNo=v=>{const m=String(v||"").match(/(\d+)/); return m?+m[1]:0;};
+const batchLabel=(sample,n)=>{const s0=String(sample||"").trim();
+return /\d/.test(s0)?s0.replace(/\d+/,String(n)):(s0?s0+" "+n:String(n));};
 // ประเภท/รูปแบบ/ชั่วโมง: ยึดค่าที่กรอกในงานก่อน ถ้าเว้นไว้ให้ดึงจากทะเบียนหลักสูตร
 // ทะเบียนหมวดทักษะ / รูปแบบ — ของที่ใช้อยู่จริงในข้อมูลจะถูกเติมเข้ามาให้เองไม่ให้ตกหล่น
 const listOf=(saved,base,pick)=>{
@@ -2896,7 +2899,9 @@ el("f-train").checked=formCtx?formCtx==="train":isTrain(t||{});
 el("f-tplace").value=t?.place||"";
 fill("f-skill",[["","— ยังไม่ระบุ —"],...skills().map(v=>[v,v])],t?.skill||(t?"":guessSkill({title:el("f-title").value,type:el("f-type").value,track:el("f-track").value})));
 fill("f-mode",[["","— ยังไม่ระบุ —"],...modes().map(v=>[v,v])],t?.mode||"");
-el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
+el("f-batch").value=t?.batch||"";
+el("f-batches").value=(t&&+t.batches>1)?t.batches:"";
+el("f-dsdopen").value=t?.dsdOpenDate||"";
 (()=>{const cur=t?.course||"";
 fill("f-course",[["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"],["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],
 ...(()=>{const vs=visible(courses), out=[];
@@ -2912,7 +2917,7 @@ el("f-pax").value=t?.pax||""; el("f-hours").value=t?.hours||"";
 el("f-vendor").value=t?.vendor||"";
 fill("f-dsd",[["","— ไม่ระบุ —"],...DSD.map(x=>[x,x])],t?.dsd||"");
 if(!t)el("f-train").checked=(formCtx==="train")||trainish();
-syncTrain();
+syncTrain(); if(typeof syncBatches==="function")syncBatches();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
@@ -3003,8 +3008,15 @@ el("f-track").addEventListener("change",()=>paintTagOpts(el("f-tag").value));
 el("f-track").addEventListener("change",autoTrain);
 el("f-type").addEventListener("change",autoTrain);
 el("f-freq").onchange=()=>{syncFreq();paintOccs(editing);syncStatusLabel();};
-let dupNext=false;
-el("dupBatch")&&(el("dupBatch").onclick=()=>{dupNext=true; el("save").click();});
+function syncBatches(){
+const w=el("wrap-bhint"), h=el("f-bhint"); if(!w||!h)return;
+const tot=+el("f-batches").value||0, cur=batchNo(el("f-batch").value)||1;
+const miss=[]; for(let i=1;i<=tot;i++)if(i!==cur)miss.push(batchLabel(el("f-batch").value||"รุ่น 1",i));
+if(tot>1&&miss.length){w.hidden=false;
+h.innerHTML=`บันทึกแล้วระบบจะสร้าง <b>${miss.length} รุ่น</b> ที่เหลือให้เลย (${esc(miss.slice(0,6).join(" · "))}${miss.length>6?" …":""})<br>
+รุ่นใหม่จะได้ชื่อหลักสูตร บริษัท กลุ่มงาน วิทยากร และ<b>เลขคำขอเปิดหลักสูตร (ยป.)</b> เหมือนรุ่นนี้ · <b>เว้นวันที่ จำนวนคน และงบไว้ว่าง</b> ให้ไปเติมทีละรุ่น · รุ่นที่มีอยู่แล้วจะไม่ถูกสร้างซ้ำ`;}
+else {w.hidden=true; h.innerHTML="";}}
+["f-batches","f-batch"].forEach(id=>{const n=el(id); if(n){n.oninput=syncBatches; n.onchange=syncBatches;}});
 el("cancel").onclick=()=>el("dlg").close();
 el("save").onclick=async()=>{
 if(!el("f-title").value.trim()){el("f-title").focus();return;}
@@ -3026,7 +3038,7 @@ place:(el("f-train").checked&&!el("f-meet").checked)?el("f-tplace").value.trim()
 attendees:el("f-att").value.trim(), prepDays:+el("f-prepd").value||0, prepNote:el("f-prepn").value.trim(),
 train:el("f-train").checked, pax:+el("f-pax").value||0, hours:+el("f-hours").value||0,
 vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
-skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), yp:el("f-yp").value, dsdEnd:el("f-dsdend").value||null, dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
+skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), batches:+el("f-batches").value||0, yp:el("f-yp").value, dsdEnd:el("f-dsdend").value||null, dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
 dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
 tag:el("f-tag").value.trim(), color:"",
@@ -3048,26 +3060,28 @@ data.course=code; if(!data.code)data.code=code;
 try{ await saveMeta("courses",courses); }catch(e){}
 setFoot("เพิ่มหลักสูตร "+code+" ในทะเบียนแล้ว"); }
 }
-const again=dupNext; dupNext=false;
 el("dlg").close();
 try{ await saveItem(data,editing?._id); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); return; }
-if(again){
-const nb=(()=>{const m=String(data.batch||"").match(/(\d+)/); return m?String(data.batch).replace(/\d+/,String(+m[1]+1)):"รุ่น 2";})();
-const next=Object.assign({},data,{batch:nb,date:null,dsdEnd:null,dsdCertDate:null,dsdCertNo:"",status:"รอดำเนินการ",actual:0,done:[]});
-setTimeout(()=>{open_(null); Object.entries({"f-title":next.title,"f-owner":next.owner||"","f-batch":nb,"f-pax":next.pax||"","f-hours":next.hours||"","f-vendor":next.vendor||"","f-tplace":next.place||""}).forEach(([k,v])=>{if(el(k))el(k).value=v;});
-if(el("f-course"))el("f-course").value=next.course||"";
-if(el("f-crscode"))el("f-crscode").value=next.course||"";
-if(el("f-code"))el("f-code").value=next.code||next.course||"";
-if(el("f-company"))el("f-company").value=next.company||"";
-if(el("f-track"))el("f-track").value=next.track||"";
-if(el("f-skill"))el("f-skill").value=next.skill||"";
-if(el("f-mode"))el("f-mode").value=next.mode||"";
-if(el("f-yp"))el("f-yp").value=next.yp||"";
-if(el("f-train")){el("f-train").checked=true; el("wrap-train").hidden=false;}
-el("dlgh").textContent="เพิ่มรุ่นถัดไป · "+(next.title||"");
-paintCrsHint(); syncCrsName(); el("f-date").focus();},260);
-}
+// สร้างรุ่นที่เหลือให้อัตโนมัติ — เว้นวันที่ จำนวนคน และงบไว้ว่าง
+const tot=+data.batches||0;
+if(data.train&&tot>1){
+const cur=batchNo(data.batch)||1, code=crsCodeOf(data), made=[], skip=[];
+for(let i=1;i<=Math.min(tot,60);i++){
+if(i===cur)continue;
+const lb=batchLabel(data.batch||"รุ่น 1",i);
+const dup=items.some(x=>isTrain(x)&&(code?crsCodeOf(x)===code:(x.title||"").trim()===(data.title||"").trim())
+&&(x.company||"")===(data.company||"")&&batchNo(x.batch)===i);
+if(dup){skip.push(lb);continue;}
+const cp=Object.assign({},data,{batch:lb,date:null,dsdEnd:null,dsdCertDate:null,dsdCertNo:"",
+status:"รอดำเนินการ",pax:0,hours:data.hours||0,b1:0,b2:0,actual:0,done:[],skip:[]});
+delete cp._id;
+try{ await saveItem(cp); made.push(lb); }catch(e){}
+setFoot("กำลังสร้างรุ่น "+made.length+"/"+(tot-1)+" …");}
+if(made.length)tell("<b>สร้างรุ่นให้แล้ว "+made.length+" รุ่น</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"
++esc(made.join(" · "))+(skip.length?"<br><span style=\"opacity:.7\">ข้ามรุ่นที่มีอยู่แล้ว: "+esc(skip.join(" · "))+"</span>":"")
++"<br>เหลือแค่เปิดแต่ละรุ่นแล้วเติม <b>วันที่ · จำนวนคน · งบ</b> ค่ะ</div>");
+else if(skip.length)setFoot("ทุกรุ่นมีอยู่แล้ว ไม่ได้สร้างเพิ่ม");}
 };
 el("del").onclick=async()=>{
 if(!editing)return;

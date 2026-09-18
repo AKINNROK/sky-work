@@ -334,7 +334,8 @@ h1{font-size:17px}
 <div class="f"><label for="f-skill">หมวดทักษะ</label><select id="f-skill"></select></div>
 <div class="f"><label for="f-mode">รูปแบบการอบรม</label><select id="f-mode"></select></div>
 <div class="f"><label for="f-batch">รุ่นที่</label><input id="f-batch" placeholder="เช่น รุ่น 1"></div>
-<div class="f" style="align-self:end"><button type="button" class="btn ghost sm" id="dupBatch">＋ บันทึกแล้วเพิ่มรุ่นถัดไป</button></div>
+<div class="f"><label for="f-batches">มีทั้งหมดกี่รุ่น</label><input id="f-batches" type="number" min="1" max="60" step="1" placeholder="เช่น 4"></div>
+<div class="f wide" id="wrap-bhint" hidden><div class="hint" id="f-bhint" style="margin-top:-4px"></div></div>
 <div class="f"><label for="f-yp">แบบที่ยื่น (ยป.)</label><select id="f-yp"></select></div>
 <div class="f"><label for="f-dsdend">วันที่ฝึกเสร็จสิ้น</label><input id="f-dsdend" type="date"></div>
 <div class="f"><label for="f-dsdopen">วันที่ยื่นขอเปิดหลักสูตร</label><input id="f-dsdopen" type="date"></div>
@@ -516,5 +517,5 @@ h1{font-size:17px}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=11.7"></script>
+<script src="app.js?v=11.8"></script>
 </body></html>
