@@ -1,4 +1,4 @@
-const APP_VERSION="11.0"; const APP_DATE="17 ก.ย. 2026";
+const APP_VERSION="11.2"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -235,8 +235,11 @@ const hhmm=v=>/^\d{1,2}:\d{2}$/.test(v||"")?(v.length===4?"0"+v:v):"";
 const tShow=v=>hhmm(v)?hhmm(v)+" น.":"";
 const prepDate=t=>{const d=dueDate(t); if(!d||!(+t.prepDays))return null;
 const p=new Date(d); p.setDate(p.getDate()-(+t.prepDays)); return p;};
-const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.test(gLabel(t.track))));
-const trainKind=t=>t.track==="train_law"||/กฎหมาย/.test(gLabel(t.track))?"กฎหมาย":t.track==="train_out"||/ภายนอก/.test(gLabel(t.track))?"ภายนอก":"ภายใน";
+const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.test(gLabel(t.track))||/อบรม|training/i.test(t.type||"")));
+// ป้ายกลุ่มย่อยของงานอบรม = ประเภทงานที่ตั้งไว้ในตั้งค่า (ถ้าไม่ได้ตั้ง ใช้ชื่อกลุ่มงาน)
+const trainKind=t=>(t.type||"").trim()||gLabel(t.track)||"ยังไม่ระบุประเภท";
+// "อบรมตามกฎหมาย" = กลุ่มงานหรือประเภทงานที่มีคำว่า กฎหมาย
+const isLawTrain=t=>{const d=typeDef(t.type); if(d)return !!d.law||/กฎหมาย/.test(d.name); return /กฎหมาย/.test((t.type||"")+" "+gLabel(t.track));};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
 // งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
@@ -286,6 +289,11 @@ const crsLabel=code=>{const c=crsOf(code);return c?c.code+" · "+c.name:(code||"
 const crsByName=nm=>courses.find(c=>c.name.trim()===String(nm||"").trim());
 const crsCodeOf=t=>(t.course||"").trim()||((crsByName(t.title)||{}).code||"");
 const crsBatches=code=>items.filter(t=>isTrain(t)&&crsCodeOf(t)===code);
+// ประเภท/รูปแบบ/ชั่วโมง: ยึดค่าที่กรอกในงานก่อน ถ้าเว้นไว้ให้ดึงจากทะเบียนหลักสูตร
+const crsMeta=t=>crsOf(crsCodeOf(t))||crsByName((t||{}).title)||{};
+const skillOf=t=>((t&&t.skill||"").trim())||crsMeta(t).skill||"";
+const modeOf=t=>((t&&t.mode||"").trim())||crsMeta(t).mode||"";
+const hoursOf=t=>+(t&&t.hours)||+crsMeta(t).hours||0;
 // นับหลักสูตรไม่ซ้ำจากรายการอบรม (ยึดรหัสหลักสูตรก่อน ถ้าไม่มีใช้ชื่อ)
 const crsChip=t=>{const c=crsCodeOf(t);
 return c?`<b style="font-family:var(--mono);color:var(--accent)">${esc(c)}</b>${t.batch?" "+esc(t.batch):""} · `:"";};
@@ -295,11 +303,14 @@ const TYPEBASE=["อบรม","ประชุม","โปรเจค","กิ
 const typeUsed=x=>items.filter(t=>(t.type||"")===x).length;
 const tName=x=>typeof x==="string"?x:(x&&x.name)||"";
 const tTrack=x=>(typeof x==="string"?"":(x&&x.track)||"");
-// รายการประเภทแบบเต็ม [{name,track}] — track ว่าง = ใช้ได้ทุกกลุ่มงาน
+const tLaw=x=>typeof x==="string"?false:!!(x&&x.law);
+// รายการประเภทแบบเต็ม [{name,track,law}] — track ว่าง = ใช้ได้ทุกกลุ่มงาน · law = บังคับตามกฎหมาย
 const typeDefs=()=>{
-const base=(typeList.length?typeList:TYPEBASE).map(x=>({name:tName(x),track:tTrack(x)})).filter(x=>x.name);
-const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.some(b=>b.name===x)).sort().map(name=>({name,track:""}));
+const base=(typeList.length?typeList:TYPEBASE).map(x=>({name:tName(x),track:tTrack(x),law:tLaw(x)})).filter(x=>x.name);
+const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.some(b=>b.name===x)).sort().map(name=>({name,track:"",law:false}));
 return [...base,...extra];};
+const typeDef=nm=>typeDefs().find(x=>x.name===String(nm||"").trim())||null;
+const lawTypes=()=>typeDefs().filter(x=>x.law).map(x=>x.name);
 const types=()=>typeDefs().map(x=>x.name);
 // ประเภทที่ใช้ได้กับกลุ่มงานนั้น: ของกลุ่มนั้น + ที่ไม่ผูกกลุ่ม
 const typesFor=tr=>typeDefs().filter(x=>!x.track||x.track===tr).map(x=>x.name);
@@ -830,9 +841,9 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 <div class="modgrid">
 ${(()=>{
 const ms=items.filter(t=>isMeet(t)&&inScope(t)), pr=prepDue(7);
-const tr=items.filter(t=>isTrain(t)&&inScope(t));
+const tr=items.filter(t=>isTrain(t)&&inScope(t)&&t.status!==STATUS_CANCEL);
 const pax=tr.reduce((n,t)=>n+(+t.pax||0),0);
-const dsdWait=items.filter(t=>isTrain(t)&&t.dsd==="รอยื่น").length;
+const dsdWait=items.filter(t=>isTrain(t)&&t.dsd==="รอยื่น"&&t.status!==STATUS_CANCEL).length;
 const lgLate=legal.filter(L=>legalState(L).k==="late").length;
 const lgSoon=legal.filter(L=>legalState(L).k==="soon").length;
 const lgNo=legal.filter(L=>legalState(L).k==="noperson").length;
@@ -843,7 +854,7 @@ const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go
 return [
 card(ICON.all,"งานทั้งหมด",A.length,`ค้าง ${A.length-done} · เสร็จ ${done}${cancelled?" · ยกเลิก "+cancelled:""}`,jump("all")),
 card(ICON.meet,"การประชุม",ms.length,pr.length?`ต้องเตรียมข้อมูล ${pr.length} รายการ`:"ไม่มีที่ต้องเตรียม",jump("meet"),pr.length),
-card(ICON.train,"ฝึกอบรม",tr.length+" หลักสูตร",`ผู้เข้าอบรม ${baht(pax)} คน${dsdWait?" · รอยื่นกรมพัฒฯ "+dsdWait:""}`,jump("train"),dsdWait),
+card(ICON.train,"ฝึกอบรม",uniqCourses(tr)+" หลักสูตร",`${tr.length} รุ่น · ผู้เข้าอบรม ${baht(pax)} คน${dsdWait?" · รอยื่นกรมพัฒฯ "+dsdWait:""}`,jump("train"),dsdWait),
 card(ICON.legal,"กฎหมาย",legal.length,lgLate?`เกินกำหนด ${lgLate} · ใกล้ครบ ${lgSoon}`:(lgNo?`ยังไม่มีผู้รับผิดชอบ ${lgNo}`:"เรียบร้อยทั้งหมด"),jump("legal"),lgLate),
 card(ICON.budget,"งบประมาณ",baht(bud-act)+" ฿",`ใช้ไป ${baht(act)} จาก ${baht(bud)}`,jump("budget"),act>bud&&bud>0),
 card(ICON.cal,"ปฏิทิน",byMonth.reduce((a,b)=>a+b,0),`งานที่มีกำหนดในปี ${R.year+543}`,jump("cal")),
@@ -1388,26 +1399,31 @@ ${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน 
 </div>`;
 }
 function train(){
-const ty=items.filter(t=>isTrain(t)&&inScope(t)&&pqHit(t.title,t.batch,t.vendor,t.course,t.code,t.company&&cLabel(t.company),t.skill,t.mode));
+const hit=t=>pqHit(t.title,t.batch,t.vendor,t.course,t.code,t.company&&cLabel(t.company),skillOf(t),modeOf(t),t.type,crsCodeOf(t));
+const ty=items.filter(t=>isTrain(t)&&inScope(t)&&hit(t));
+// รุ่นที่ยกเลิกไม่ถูกนับเป็นผลงาน/ค่าใช้จ่าย แต่ยังโชว์ในรายการ
+const live=ty.filter(t=>t.status!==STATUS_CANCEL);
 const sum=(a,k)=>a.reduce((x,t)=>x+(+t[k]||0),0);
-const pax=sum(ty,"pax"), hrs=ty.reduce((x,t)=>x+(+t.hours||0)*(+t.pax||1),0);
-const nCourse=uniqCourses(ty);
-const cost=ty.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
-const done=ty.filter(t=>t.status==="เสร็จสิ้น").length;
-const kinds=["กฎหมาย","ภายใน","ภายนอก"];
-const byKind=k=>ty.filter(t=>trainKind(t)===k);
-const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
+const pax=sum(live,"pax"), hrs=live.reduce((x,t)=>x+hoursOf(t)*(+t.pax||1),0);
+const nCourse=uniqCourses(live);
+const cost=live.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
+const done=live.filter(t=>t.status===STATUS_DONE).length;
+const cancel=ty.length-live.length;
+const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t)&&t.status!==STATUS_CANCEL);
 const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
-const lawLate=byKind("กฎหมาย").filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
-const byMonth=MTH.map((_,i)=>items.filter(t=>isTrain(t)&&monthsOf(t).includes(i+1)).length);
+const lawLate=live.filter(t=>isLawTrain(t)).filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
+// กราฟรายเดือน: ทั้งปีที่เลือก ตามตัวกรองค้นหา ไม่รวมรุ่นที่ยกเลิก
+const yearTy=items.filter(t=>isTrain(t)&&t.status!==STATUS_CANCEL&&hit(t)&&!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year));
+const byMonth=MTH.map((_,i)=>yearTy.filter(t=>monthsOf(t).includes(i+1)).length);
+const noDate=yearTy.filter(t=>!monthsOf(t).length);
 const card=t=>{const d=dueDate(t);
 return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${crsChip(t)}${t.skill?esc(t.skill)+" · ":""}${t.mode?esc(t.mode)+" · ":""}${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${t.hours?" · "+t.hours+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${crsChip(t)}${skillOf(t)?esc(skillOf(t))+" · ":""}${modeOf(t)?esc(modeOf(t))+" · ":""}${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${hoursOf(t)?" · "+hoursOf(t)+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
 ${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">กรมพัฒฯ ${esc(t.dsd)}</span>`:""}
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
-const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>${uniqCourses(arr)} หลักสูตร · ${arr.length} รุ่น</small></h2>
+const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)}${arr.some(isLawTrain)?` <span class="tag" style="background:var(--over-soft);color:var(--over)">ตามกฎหมาย</span>`:""} <small>${uniqCourses(arr)} หลักสูตร · ${arr.length} รุ่น</small></h2>
 <div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
 return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
 `<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาหลักสูตร / รุ่น / วิทยากร / รหัส")}</div>`+
@@ -1418,35 +1434,39 @@ p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.be
 `<div class="dash">
 <div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
 <div class="big">${nCourse}</div>
-<div class="meta"><span>${ty.length} รุ่น</span><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${ty.length-done}</span></div>
-<div class="prog"><i style="width:${ty.length?Math.round(done/ty.length*100):0}%"></i></div></div>
+<div class="meta"><span>${live.length} รุ่น</span><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${live.length-done}</span>${cancel?`<span>ยกเลิก ${cancel}</span>`:""}</div>
+<div class="prog"><i style="width:${live.length?Math.round(done/live.length*100):0}%"></i></div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> ผู้เข้าอบรม</div>
 <div class="v">${baht(pax)}</div><div class="d">รวม ${baht(Math.round(hrs))} คน-ชั่วโมง</div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
 <div class="v">${pax?baht(Math.round(cost/pax)):"—"}</div><div class="d">ค่าใช้จ่ายรวม ${baht(cost)} ฿</div></div>
-<div class="card span2"><h2>ประเภทการอบรม <small>Soft / Hard / Safety</small></h2>
+<div class="card span2"><h2>ประเภทการอบรม <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
-${(()=>{const n=k=>ty.filter(t=>(t.skill||"")===k).length, un=ty.filter(t=>!t.skill).length;
-const parts=[...SKILLS.map(k=>({n:k,v:n(k),c:SKILLC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
-return donut(parts,ty.length,"รุ่น")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"ประเภทการอบรม · "+p.n,ty.filter(t=>(t.skill||"")===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
-t2:`${t.mode||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+${(()=>{const n=k=>live.filter(t=>skillOf(t)===k).length, un=live.filter(t=>!skillOf(t)).length;
+const parts=[...SKILLS.filter(k=>n(k)).map(k=>({n:k,v:n(k),c:SKILLC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+return donut(parts,live.length,"รุ่น")+
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"ประเภทการอบรม · "+p.n,live.filter(t=>skillOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${modeOf(t)||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
-<div class="card span2"><h2>รูปแบบการอบรม <small>In-House · Public · OJT · Online · สัมมนา</small></h2>
+<div class="card span2"><h2>รูปแบบการอบรม <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
-${(()=>{const n=k=>ty.filter(t=>(t.mode||"")===k).length, un=ty.filter(t=>!t.mode).length;
+${(()=>{const n=k=>live.filter(t=>modeOf(t)===k).length, un=live.filter(t=>!modeOf(t)).length;
 const parts=[...MODES.filter(k=>n(k)).map(k=>({n:k,v:n(k),c:MODEC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
-return donut(parts,ty.length,"รุ่น")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,ty.filter(t=>(t.mode||"")===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
-t2:`${t.skill||"ยังไม่ระบุประเภท"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
+return donut(parts,live.length,"รุ่น")+
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,live.filter(t=>modeOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${skillOf(t)||"ยังไม่ระบุประเภท"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
-<div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
-${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}</div>
-${board("อบรมตามกฎหมาย",byKind("กฎหมาย"),"ยังไม่มีหลักสูตรตามกฎหมายในช่วงนี้")}
-${board("อบรมภายใน",byKind("ภายใน"))}
-${board("อบรมภายนอก",byKind("ภายนอก"))}
+<div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543} · ${byMonth.reduce((a,b)=>a+b,0)} รุ่นที่ลงวันแล้ว</small></h2>
+${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}
+${noDate.length?`<div class="hint" style="cursor:pointer" ${regList("trNoDate","รุ่นอบรมที่ยังไม่ได้ลงวันที่",noDate.map(t=>({id:t._id,
+t1:t.title,t2:`${crsCodeOf(t)?crsCodeOf(t)+" · ":""}${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+d:"—",p:t.status,pc:sCls(t.status)})))}>อีก <b>${noDate.length}</b> รุ่นยังไม่ได้ลงวันที่ จึงไม่ขึ้นในกราฟนี้ — กดเพื่อดูและเติมวันที่</div>`:""}</div>
+${(()=>{const order=types(); const keys=[...new Set(ty.map(t=>trainKind(t)))]
+.sort((a,b)=>{const A=order.indexOf(a),B=order.indexOf(b);return (A<0?99:A)-(B<0?99:B);});
+if(!keys.length)return `<div class="card span2"><h2>รายการอบรม</h2><div class="empty">ยังไม่มีหลักสูตรในช่วงนี้</div></div>`;
+return keys.map(k=>board(k,ty.filter(t=>trainKind(t)===k))).join("");})()}
 </div>`;
 }
 function legalView(){
@@ -1661,6 +1681,7 @@ return `<div class="rw" data-tyname="${esc(x.toLowerCase())}">${nameInput("data-
 ${groups.map(g=>`<option value="${esc(g.key)}"${tr===g.key?" selected":""}>${esc(g.label)}</option>`).join("")}
 </select>
 <button class="gcbtn" data-see="type:${esc(x)}" title="ดูงานที่ใช้ประเภทนี้"${n?"":" disabled"}>${n} งาน</button>
+<button class="iconbtn${D.law?" law":""}" data-tlaw="${esc(x)}" aria-pressed="${!!D.law}" title="${D.law?"บังคับตามกฎหมาย — ระบบจะเตือนเมื่อเลยกำหนด (กดเพื่อปิด)":"กดเพื่อตั้งเป็น “บังคับตามกฎหมาย”"}">${svg(ICON.legal,15)}</button>
 <button class="iconbtn" data-movet="${esc(x)}" title="ย้ายงานทั้งหมดไปประเภทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
 <button class="iconbtn" data-mvt="${i}:${up}"${up<0?" disabled":""} title="เลื่อนขึ้นในกลุ่มนี้">${svg(ICON_UP,15)}</button>
 <button class="iconbtn" data-mvt="${i}:${dn}"${dn<0?" disabled":""} title="เลื่อนลงในกลุ่มนี้">${svg(ICON_DN,15)}</button>
@@ -1679,16 +1700,19 @@ return `<details class="tysec"${tyShut[k]?"":" open"} data-tysec="${esc(k)}">
 <summary><span class="tydot" style="background:${col||"var(--line-2)"}"></span>${esc(lab)}
 <em>${mine.length} ประเภท${tasks?" · "+tasks+" งาน":""}</em></summary>
 <div class="rows">${body}</div></details>`;}).join("");
-return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน</small></h2>
+const nLaw=defs.filter(x=>x.law).length;
+return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
 <div class="tybar"><input id="tyfind" value="${esc(tyQ)}" placeholder="พิมพ์ค้นหาประเภท…" autocomplete="off">
 <button class="gcbtn" id="tyexp">เปิดทุกกลุ่ม</button><button class="gcbtn" id="tycol">ย่อทุกกลุ่ม</button></div>
 ${secs||`<div class="empty">ยังไม่มีประเภท</div>`}
 ${blank.length?`<div class="hint">กลุ่มที่ยังไม่มีประเภทย่อย: ${blank.map(esc).join(" · ")} — เพิ่มได้จากช่องด้านล่าง</div>`:""}
 <div class="addg"><input id="newt" placeholder="ชื่อประเภทใหม่ เช่น ตรวจประเมิน">
 <select id="newtg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(g=>`<option value="${esc(g.key)}">อยู่ใต้ ${esc(g.label)}</option>`).join("")}</select>
+<label class="lawchk" title="งานที่กฎหมายบังคับให้ต้องทำ เช่น ดับเพลิง · ที่อับอากาศ · อนุรักษ์พลังงาน"><input type="checkbox" id="newtlaw"> บังคับตามกฎหมาย</label>
 <button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
 ${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไม่ได้ระบุประเภท — เปิดงานแล้วเลือกประเภทได้เลย</div>`:""}
 <div class="hint"><b>กลุ่มงาน</b> คือกองใหญ่ · <b>ประเภทงาน</b> คือชนิดย่อยในกองนั้น — ช่องที่สองบอกว่าประเภทนี้อยู่ใต้กลุ่มไหน ตอนเพิ่มงานระบบจะโชว์เฉพาะประเภทของกลุ่มที่เลือก (บวกกับประเภทที่ตั้งเป็น “ใช้ได้ทุกกลุ่มงาน”)<br>
+ปุ่มโล่ <b>⚖︎</b> ท้ายแถว = ตั้งประเภทนั้นเป็น <b>บังคับตามกฎหมาย</b> — งานอบรมในประเภทนี้จะถูกเฝ้าวันครบกำหนด และขึ้นแถบเตือนสีแดงในหน้าฝึกอบรมเมื่อเลยกำหนดแล้วยังไม่ปิดงาน (ตั้งที่นี่ที่เดียว ไม่ต้องพึ่งชื่อ)<br>
 พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
 }
 function setCourses(){
@@ -2177,7 +2201,7 @@ if(el("addt")){
 el("addt").onclick=async()=>{
 const v=el("newt").value.trim(); if(!v){tell("ใส่ชื่อประเภทก่อนนะคะ");return;}
 if(types().includes(v)){tell("มีประเภทนี้แล้วค่ะ");return;}
-typeList=[...typeDefs(),{name:v,track:el("newtg").value||""}]; el("newt").value=""; render(); await saveMeta("types",typeList);};
+typeList=[...typeDefs(),{name:v,track:el("newtg").value||"",law:el("newtlaw")&&el("newtlaw").checked}]; el("newt").value=""; render(); await saveMeta("types",typeList);};
 }
 document.querySelectorAll("[data-rent]").forEach(n=>n.onchange=async()=>{
 const from=n.dataset.rent, to=n.value.trim();
@@ -2186,7 +2210,7 @@ if(!types().includes(from)||renameLock){render();return;}   // เปลี่�
 renameLock=true; setTimeout(()=>renameLock=false,800);
 if(types().includes(to)){tell("มีประเภท “"+esc(to)+"” อยู่แล้วค่ะ ถ้าต้องการรวมเข้าด้วยกันให้ใช้ปุ่มย้ายงานแทน");render();return;}
 const used=typeUsed(from);
-typeList=typeDefs().map(x=>x.name===from?{name:to,track:x.track}:x);
+typeList=typeDefs().map(x=>x.name===from?{name:to,track:x.track,law:x.law}:x);
 await saveMeta("types",typeList);
 if(used){const r=await retagType(from,to);
 render();
@@ -2209,8 +2233,13 @@ if(!await ask("ลบประเภท “"+esc(x)+"” ใช่ไหมค�
 typeList=typeDefs().filter(y=>y.name!==x); render(); await saveMeta("types",typeList);});
 document.querySelectorAll("[data-trt]").forEach(n=>n.onchange=async()=>{
 const nm=n.dataset.trt;
-typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:n.value}:x);
+typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:n.value,law:x.law}:x);
 render(); await saveMeta("types",typeList);});
+document.querySelectorAll("[data-tlaw]").forEach(b=>b.onclick=async()=>{
+const nm=b.dataset.tlaw;
+typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:x.track,law:!x.law}:x);
+render(); await saveMeta("types",typeList);
+setFoot(typeDef(nm)&&typeDef(nm).law?"ตั้ง “"+nm+"” เป็นงานบังคับตามกฎหมายแล้ว":"ยกเลิกสถานะบังคับตามกฎหมายของ “"+nm+"” แล้ว");});
 document.querySelectorAll("[data-mvt]").forEach(b=>b.onclick=async()=>{
 const [i,t]=b.dataset.mvt.split(":").map(Number);
 const arr=typeDefs(); if(t<0||t>=arr.length||i<0||i>=arr.length)return;
