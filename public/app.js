@@ -1,4 +1,4 @@
-const APP_VERSION="11.2"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="11.3"; const APP_DATE="18 ก.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -239,7 +239,13 @@ const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.tes
 // ป้ายกลุ่มย่อยของงานอบรม = ประเภทงานที่ตั้งไว้ในตั้งค่า (ถ้าไม่ได้ตั้ง ใช้ชื่อกลุ่มงาน)
 const trainKind=t=>(t.type||"").trim()||gLabel(t.track)||"ยังไม่ระบุประเภท";
 // "อบรมตามกฎหมาย" = กลุ่มงานหรือประเภทงานที่มีคำว่า กฎหมาย
-const isLawTrain=t=>{const d=typeDef(t.type); if(d)return !!d.law||/กฎหมาย/.test(d.name); return /กฎหมาย/.test((t.type||"")+" "+gLabel(t.track));};
+// บังคับตามกฎหมาย: หลักสูตรชนะประเภทงาน · ประเภทงานเป็นตาข่ายกันพลาดของรุ่นที่ยังไม่ผูกรหัส
+const isLawTrain=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
+if(c&&(c.law===true||c.law===false))return c.law;
+const d=typeDef(t.type); if(d)return !!d.law||/กฎหมาย/.test(d.name);
+return /กฎหมาย/.test((t.type||"")+" "+gLabel(t.track));};
+const lawSrc=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
+return (c&&(c.law===true||c.law===false))?"หลักสูตร":"ประเภทงาน";};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
 // งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
@@ -1421,6 +1427,7 @@ return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
 <div class="t2">${crsChip(t)}${skillOf(t)?esc(skillOf(t))+" · ":""}${modeOf(t)?esc(modeOf(t))+" · ":""}${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${hoursOf(t)?" · "+hoursOf(t)+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+${isLawTrain(t)?`<span class="tag" style="background:var(--over-soft);color:var(--over)" title="บังคับตามกฎหมาย (ตั้งจาก${lawSrc(t)})">⚖︎ กฎหมาย</span>`:""}
 ${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">กรมพัฒฯ ${esc(t.dsd)}</span>`:""}
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
 const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)}${arr.some(isLawTrain)?` <span class="tag" style="background:var(--over-soft);color:var(--over)">ตามกฎหมาย</span>`:""} <small>${uniqCourses(arr)} หลักสูตร · ${arr.length} รุ่น</small></h2>
@@ -1712,7 +1719,7 @@ ${blank.length?`<div class="hint">กลุ่มที่ยังไม่ม�
 <button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
 ${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไม่ได้ระบุประเภท — เปิดงานแล้วเลือกประเภทได้เลย</div>`:""}
 <div class="hint"><b>กลุ่มงาน</b> คือกองใหญ่ · <b>ประเภทงาน</b> คือชนิดย่อยในกองนั้น — ช่องที่สองบอกว่าประเภทนี้อยู่ใต้กลุ่มไหน ตอนเพิ่มงานระบบจะโชว์เฉพาะประเภทของกลุ่มที่เลือก (บวกกับประเภทที่ตั้งเป็น “ใช้ได้ทุกกลุ่มงาน”)<br>
-ปุ่มโล่ <b>⚖︎</b> ท้ายแถว = ตั้งประเภทนั้นเป็น <b>บังคับตามกฎหมาย</b> — งานอบรมในประเภทนี้จะถูกเฝ้าวันครบกำหนด และขึ้นแถบเตือนสีแดงในหน้าฝึกอบรมเมื่อเลยกำหนดแล้วยังไม่ปิดงาน (ตั้งที่นี่ที่เดียว ไม่ต้องพึ่งชื่อ)<br>
+ปุ่มโล่ <b>⚖︎</b> ท้ายแถว = ตั้งประเภทนั้นเป็น <b>บังคับตามกฎหมาย</b> — งานอบรมในประเภทนี้จะถูกเฝ้าวันครบกำหนด และขึ้นแถบเตือนสีแดงในหน้าฝึกอบรมเมื่อเลยกำหนดแล้วยังไม่ปิดงาน · ใช้เป็น <b>ตาข่ายกันพลาดระดับกอง</b> เพราะถ้าหลักสูตรนั้นตั้งค่าไว้เองใน <b>ทะเบียนหลักสูตรอบรม</b> ระบบจะยึดของหลักสูตรก่อนเสมอ (แม่นกว่า)<br>
 พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
 }
 function setCourses(){
@@ -1725,10 +1732,15 @@ ${nameInput("data-rencrs",c.code,c.name)}
 <select class="cosel" data-crsmode="${esc(c.code)}" title="รูปแบบการอบรม">
 <option value="">— รูปแบบ —</option>${MODES.map(x=>`<option value="${esc(x)}"${c.mode===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
 <input type="number" class="glb" data-crshr="${esc(c.code)}" value="${c.hours||""}" placeholder="ชม." title="ชั่วโมงต่อคน" min="0" step="0.5">
+<select class="cosel${c.law===true?" lawsel":""}" data-crslaw="${esc(c.code)}" title="หลักสูตรนี้บังคับตามกฎหมายไหม — ถ้าเลือกไว้ จะชนะค่าที่ตั้งในประเภทงาน">
+<option value=""${c.law===undefined||c.law===null?" selected":""}>— ตามประเภทงาน —</option>
+<option value="1"${c.law===true?" selected":""}>⚖︎ บังคับตามกฎหมาย</option>
+<option value="0"${c.law===false?" selected":""}>ไม่บังคับ</option></select>
 <button class="gcbtn" data-see="crs:${esc(c.code)}" title="ดูรุ่นทั้งหมดของหลักสูตรนี้"${bs.length?"":" disabled"}>${bs.length} รุ่น${pax?" · "+pax+" คน":""}</button>
 ${moveBtns("courses",i,courses.length,c.hidden)}
 <button class="btn danger sm" data-delcrs="${esc(c.code)}">ลบ</button></div>`;}).join("");
-return `<div class="card"><h2>ทะเบียนหลักสูตรอบรม <small>${courses.length} หลักสูตร · ${items.filter(t=>isTrain(t)&&t.course).length} รุ่นที่ผูกไว้</small></h2>
+const nLaw=courses.filter(c=>c.law===true).length;
+return `<div class="card"><h2>ทะเบียนหลักสูตรอบรม <small>${courses.length} หลักสูตร · ${items.filter(t=>isTrain(t)&&t.course).length} รุ่นที่ผูกไว้${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
 <div class="rows">${rows||`<div class="empty">ยังไม่มีหลักสูตรในทะเบียน — เพิ่มด้านล่าง ระบบจะรันรหัสให้เอง</div>`}</div>
 ${(()=>{const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
 return un.length?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${un.length}</b> รายการอบรมที่ชื่อตรงกับทะเบียน แต่ยังไม่ได้ผูกรหัสไว้ในข้อมูล
@@ -1739,7 +1751,8 @@ return un.length?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17
 <button class="btn" id="addcrs">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหลักสูตร</button></div>
 <div class="hint"><b>รหัสหลักสูตรรันอัตโนมัติ</b> (${CRSPREFIX}-001, -002, …) แก้ชื่อได้ แต่รหัสล็อกไว้เพื่อไม่ให้หลักสูตรเดียวกันมีหลายรหัส<br>
 เวลาเพิ่มงานอบรม ให้เลือกหลักสูตรจากทะเบียนนี้ แล้วใส่แค่ <b>รุ่นที่</b> · หนึ่งหลักสูตรมีกี่รุ่นก็ได้ ระบบนับ “หลักสูตร” แบบไม่ซ้ำ และนับ “รุ่น” แยกให้<br>
-ประเภท/รูปแบบ/ชั่วโมง ที่ตั้งไว้ตรงนี้จะเติมให้อัตโนมัติตอนเลือกหลักสูตร · ลบได้เฉพาะหลักสูตรที่ยังไม่มีรุ่นผูกอยู่</div></div>`;
+ประเภท/รูปแบบ/ชั่วโมง ที่ตั้งไว้ตรงนี้จะเติมให้อัตโนมัติตอนเลือกหลักสูตร · ลบได้เฉพาะหลักสูตรที่ยังไม่มีรุ่นผูกอยู่<br>
+ช่อง <b>⚖︎ บังคับตามกฎหมาย</b> คือตัวจริงที่แม่นที่สุด เพราะกฎหมายบังคับเป็นราย “หลักสูตร” ไม่ใช่รายกอง — <b>ค่าที่ตั้งตรงนี้ชนะค่าในตั้งค่า › ประเภทงานเสมอ</b> · ปล่อยเป็น “ตามประเภทงาน” ไว้ ระบบจะไปใช้ธงของประเภทงานแทน (ตาข่ายกันพลาดสำหรับรุ่นที่ยังไม่ผูกรหัสหลักสูตร)</div></div>`;
 }
 function setGL(){
 const y=R.glYear||R.year;
@@ -2192,6 +2205,11 @@ document.querySelectorAll("[data-crsmode]").forEach(n=>n.onchange=async()=>{
 const c=crsOf(n.dataset.crsmode); if(!c)return; c.mode=n.value; await saveMeta("courses",courses);});
 document.querySelectorAll("[data-crshr]").forEach(n=>n.onchange=async()=>{
 const c=crsOf(n.dataset.crshr); if(!c)return; c.hours=+n.value||0; await saveMeta("courses",courses);});
+document.querySelectorAll("[data-crslaw]").forEach(n=>n.onchange=async()=>{
+const c=crsOf(n.dataset.crslaw); if(!c)return;
+if(n.value==="")delete c.law; else c.law=n.value==="1";
+render(); await saveMeta("courses",courses);
+setFoot(c.law===true?"“"+c.name+"” ตั้งเป็นบังคับตามกฎหมายแล้ว":c.law===false?"“"+c.name+"” ตั้งเป็นไม่บังคับแล้ว":"“"+c.name+"” กลับไปใช้ค่าตามประเภทงาน");});
 document.querySelectorAll("[data-delcrs]").forEach(b=>b.onclick=async()=>{
 const code=b.dataset.delcrs, n=crsBatches(code).length;
 if(n){tell("หลักสูตรนี้มี <b>"+n+"</b> รุ่นผูกอยู่ค่ะ ลบหรือย้ายรุ่นก่อนนะคะ");return;}
@@ -2908,6 +2926,7 @@ el("crsdlgh").textContent=c.code+" · "+c.name;
 el("crs-kpi").innerHTML=`<div><span>จำนวนรุ่น</span><b>${bs.length}</b></div>
 <div><span>ผู้เข้าอบรมสะสม</span><b>${baht(pax)} คน</b></div>
 <div><span>ชั่วโมง/คน</span><b>${c.hours||"—"}</b></div>
+<div><span>บังคับตามกฎหมาย</span><b>${c.law===true?"ใช่ (ตั้งที่หลักสูตร)":c.law===false?"ไม่ (ตั้งที่หลักสูตร)":"ตามประเภทงาน"}</b></div>
 <div><span>งบ/ใช้จริงรวม</span><b>${baht(cost)} ฿</b></div>
 <div><span>ปีที่จัด</span><b>${yrs.length?yrs.map(y=>y+543).join(", "):"—"}</b></div>
 <div><span>รับรองแล้ว</span><b>${bs.filter(t=>t.dsdCertNo||t.dsd==="อนุมัติแล้ว").length}/${bs.length} รุ่น</b></div>`;
