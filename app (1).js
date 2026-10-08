@@ -1,4 +1,4 @@
-const APP_VERSION="13.1"; const APP_DATE="8 ต.ค. 2026";
+const APP_VERSION="14.0"; const APP_DATE="8 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -63,6 +63,7 @@ home:'<path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/>',
 all:'<path d="M4 7h16M4 12h16M4 17h10"/>',
 cal:'<rect x="3.5" y="5" width="17" height="15" rx="4.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
 exec:'<path d="M5 20V10M12 20V4M19 20v-7"/>',
+ai:'<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
 budget:'<path d="M12 4v16"/><path d="M16 8c0-2-2-3-4-3s-4 1-4 3 2 2.6 4 3 4 1 4 3-2 3-4 3-4-1-4-3"/>',
 train:'<path d="M12 4 2.5 9 12 14l9.5-5L12 4z"/><path d="M6.5 11.2V16c0 1.5 2.6 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4.8"/><path d="M21.5 9v5"/>',
 idx:'<path d="M4 5.5A2 2 0 0 1 6 3.5h12v17H6a2 2 0 0 1-2-2z"/><path d="M8 8h7M8 12h7"/>',
@@ -81,9 +82,9 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
-const TABS=["home","all","cal","budget","exec","meet","train","dsd","legal","idx","note","set"];
-const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",exec:"ผู้บริหาร",set:"ตั้งค่า"};
+const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["ai","ผู้ช่วย AI"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
+const TABS=["home","all","cal","budget","exec","ai","meet","train","dsd","legal","idx","note","set"];
+const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",exec:"ผู้บริหาร",ai:"AI",set:"ตั้งค่า"};
 const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["trash","ถังขยะ"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -829,7 +830,7 @@ LISTBOX={};
 if(LOADING){ el("view").innerHTML=`<div class="head"><div><h1>กำลังโหลดข้อมูล…</h1><div class="sub">กำลังดึงข้อมูลล่าสุดจากระบบ · ${syncChip()}</div></div></div>
 <div class="dash"><div class="card hero span2 sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div>
 <div class="card span4 sk" style="height:220px"></div></div>`; paintSync(); return; }
-el("view").innerHTML={home,all,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,exec:execView,pipeline,set:setView}[view]();
+el("view").innerHTML={home,all,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,exec:execView,ai:aiView,pipeline,set:setView}[view]();
 paintSync(); wire();
 }
 function header(title,sub,btn=true){
@@ -1460,6 +1461,172 @@ const D=execData(R.year), nm=k=>k?glLabel(k):"ยังไม่ระบุห�
 exportCSV("budget-by-GL",["หมวด GL","งบตั้งไว้","ใช้จริง","คงเหลือ","% ใช้","สถานะ"],
 [...D.gl.map(x=>[nm(x.k),x.s.plan,x.s.act,x.s.left,x.s.plan?Math.round(x.s.pct):"",x.s.lvl==="over"?"เกินงบ":x.s.lvl==="warn"?"ใกล้เต็ม":x.s.lvl==="nob"?"ไม่ได้ตั้งงบ":x.s.pace?"เร็วกว่าแผน":"ปกติ"]),
 ["รวม",D.B,D.Ac,D.B-D.Ac,D.B?Math.round(D.Ac/D.B*100):"",""]]);
+}
+// ---------- ผู้ช่วย AI: สรุป · จัดแผน · เตือนงาน · เสนอการแก้ (ต้องกดยืนยันเสมอ) ----------
+const AI_SYSTEM=[
+"คุณคือผู้ช่วย HR ประจำตัวของวิม (HR, LeKise Group) ในแอป Sky Work",
+"สไตล์: ตอบภาษาไทย กระชับแบบผู้บริหาร พูดตรง วิเคราะห์ได้ และเสนอสิ่งที่ควรทำต่อเป็นข้อๆ",
+"กติกา:",
+"- ใช้เฉพาะข้อมูลในส่วน [ข้อมูลในระบบ] ห้ามเดาหรือแต่งตัวเลข ถ้าไม่มีข้อมูลให้บอกตรงๆ ว่าไม่มี",
+"- เกณฑ์/เงินอุดหนุนของกรมพัฒนาฝีมือแรงงานเปลี่ยนได้ทุกปี ห้ามยืนยันว่าจะได้เงินคืนแน่นอน ให้แนะนำตรวจกับเจ้าหน้าที่กรมฯ",
+"- ห้ามเสนอลบข้อมูล",
+"- ถ้าต้องการให้แอปแก้ข้อมูล ให้ใส่บล็อกต่อไปนี้ท้ายคำตอบเท่านั้น (และอธิบายเหตุผลในเนื้อความด้วย):",
+"```actions",
+"[{\"type\":\"set_status\",\"id\":\"<id จากข้อมูล>\",\"status\":\"เสร็จสิ้น\",\"why\":\"เหตุผลสั้นๆ\"}]",
+"```",
+"ชนิดที่ใช้ได้: set_status(id,status) · move_date(id,date เป็น YYYY-MM-DD) · set_owner(id,owner) · add_task(title,date,track?,company?,owner?,note?) · add_note(title,body)",
+"id ต้องคัดลอกจากข้อมูลเท่านั้น status ต้องเป็นหนึ่งใน: "+STATUS.join(" / "),
+"- เสนอการแก้เฉพาะเมื่อผู้ใช้ขอ หรือชัดเจนว่ามีประโยชน์ ผู้ใช้จะเป็นคนกดยืนยันเอง"].join("\n");
+const AI_CHIPS=["สรุปภาพรวมสัปดาห์นี้","งานไหนเสี่ยงเลยกำหนด ควรทำอะไรก่อน","สรุปงบ GL ตอนนี้ หมวดไหนต้องจับตา","จัดแผนงานสัปดาห์หน้าให้หน่อย","มีอะไรต้องเตือนหรือเตรียมก่อนประชุมบ้าง","สรุปงานอบรมและเกณฑ์กรมพัฒนาฯ"];
+let AI={msgs:[],busy:false,live:null,model:"",draft:"",pending:null,flash:""};
+try{ AI.msgs=JSON.parse(localStorage.getItem("sw-ai")||"[]").slice(-30); }catch(e){}
+const aiSave=()=>{ try{localStorage.setItem("sw-ai",JSON.stringify(AI.msgs.slice(-30)));}catch(e){} };
+async function aiPing(){
+try{ const r=await fetch("/api/ai",{cache:"no-store"}); if(!r.ok)throw 0; const j=await r.json(); AI.live=!!j.ready; AI.model=j.model||""; }
+catch(e){ AI.live=false; }
+if(view==="ai")render(); }
+function aiContext(){
+const y=THISYEAR, D=execData(y), now=new Date();
+const lawTag=t=>isLawItem(t)?" [กฎหมาย]":"";
+const row=t=>{const d=dueDate(t); return [t._id,(t.title||"")+lawTag(t),(t.type||gLabel(t.track)),t.company?cLabel(t.company):"-",t.owner||"-",d?isoOf(d):"-",t.status,budgetOf(t)||"-",t.actual||"-"].join(" | ");};
+const live=items.filter(t=>!isSysRow(t));
+const open=live.filter(t=>isOpenStatus(t.status));
+const soon=open.filter(t=>{const d=dueDate(t);return d&&daysTo(d)>=0&&daysTo(d)<=14;}).sort((a,b)=>dueDate(a)-dueDate(b));
+const seen=new Set([...D.late,...soon].map(t=>t._id));
+const going=open.filter(t=>!seen.has(t._id)&&(t.status==="กำลังดำเนินการ"||t.status==="อยู่ระหว่างดำเนินการ"));
+const meets=open.filter(t=>isMeet(t)&&(()=>{const d=dueDate(t);return d&&daysTo(d)>=0&&daysTo(d)<=30;})()).sort((a,b)=>dueDate(a)-dueDate(b));
+const nm=k=>k?glLabel(k):"ยังไม่ระบุหมวด GL";
+const L=[];
+L.push(`วันนี้: ${isoOf(now)} (วัน${DOWFULL[now.getDay()]}) · ปี ${y+543}`);
+L.push(`งานในปีนี้ที่ยังเปิดอยู่ ${open.length} งาน · เลยกำหนด ${D.late.length} · ครบใน 14 วัน ${soon.length}`);
+L.push("\n== งานเลยกำหนด (id | ชื่อ | ประเภท | บริษัท | ผู้รับผิดชอบ | กำหนด | สถานะ | งบ | ใช้จริง) ==");
+D.late.slice(0,40).forEach(t=>L.push(row(t))); if(!D.late.length)L.push("(ไม่มี)");
+L.push("\n== งานครบกำหนดใน 14 วัน ==");
+soon.slice(0,40).forEach(t=>L.push(row(t))); if(!soon.length)L.push("(ไม่มี)");
+L.push("\n== งานที่กำลังทำ (ที่ยังไม่อยู่ข้างบน) ==");
+going.slice(0,25).forEach(t=>L.push(row(t))); if(!going.length)L.push("(ไม่มี)");
+L.push("\n== ประชุมใน 30 วัน ==");
+meets.slice(0,15).forEach(t=>L.push(row(t)+(t.prepNote?" | เตรียม: "+t.prepNote:""))); if(!meets.length)L.push("(ไม่มี)");
+L.push(`\n== งบตามหมวด GL ปี ${y+543} (หมวด | งบตั้งไว้ | ใช้จริง | คงเหลือ | %ใช้ | สถานะ) ==`);
+D.gl.slice(0,30).forEach(x=>L.push([nm(x.k),x.s.plan,x.s.act,x.s.left,x.s.plan?Math.round(x.s.pct)+"%":"-",x.s.lvl==="over"?"เกินงบ":x.s.lvl==="warn"?"ใกล้เต็ม":x.s.pace?"เร็วกว่าแผน":x.s.lvl==="nob"?"ไม่ได้ตั้งงบ":"ปกติ"].join(" | ")));
+if(!D.gl.length)L.push("(ยังไม่มีงบ)");
+L.push(`รวมงบ ${D.B} · ใช้จริง ${D.Ac}`);
+L.push(`\n== อบรมปี ${y+543} ==\nรุ่นทั้งหมด ${D.trainN.n} · จัดแล้ว ${D.trainN.done} · ผู้เข้าอบรมแล้ว ${D.trainN.pax} คน · ค่าใช้จ่ายรวม ${D.trainN.cost}`);
+L.push("เกณฑ์ฝึกอบรมตามกฎหมาย รายบริษัท (บริษัท | พนักงานเฉลี่ย | นับได้ C | % | ต้องเพิ่ม) — ตัวเลขที่กรอกเอง ไม่ใช่ข้อมูลทางการ:");
+D.dsd.forEach(x=>L.push([cLabel(x.c.key),x.k.avg,x.k.C,x.k.pct+"%",x.k.need].join(" | "))); if(!D.dsd.length)L.push("(ไม่มีข้อมูล)");
+L.push("\n== ใบรับรอง/คำสั่งแต่งตั้ง ที่เกินกำหนดหรือใกล้ครบ 90 วัน ==");
+[...D.lgLate,...D.lgSoon].slice(0,15).forEach(x=>L.push(`${x.L.title} | ${(x.L.comps||[]).map(cLabel).join(",")||"-"} | ${x.L.person||"ยังไม่มีผู้รับผิดชอบ"} | ${x.st.t}`));
+if(!D.lgLate.length&&!D.lgSoon.length)L.push("(ไม่มี)");
+L.push("\n== กลุ่มงานที่ใช้ได้กับ add_task (key = ชื่อ) ==\n"+groups.map(g=>g.key+" = "+g.label).join(" · "));
+L.push("บริษัท (key = ชื่อ): "+realCos().map(c=>c.key+" = "+c.label).join(" · "));
+return L.join("\n").slice(0,30000);
+}
+function aiParse(txt){
+let actions=[]; let clean=String(txt||"");
+const m=clean.match(/```actions\s*([\s\S]*?)```/i);
+if(m){ try{ const a=JSON.parse(m[1].trim()); if(Array.isArray(a))actions=a.filter(x=>x&&typeof x==="object").slice(0,12).map(x=>({...x,state:"pending"})); }catch(e){} clean=clean.replace(m[0],"").trim(); }
+return {text:clean,actions};
+}
+const AI_TYPES=["set_status","move_date","set_owner","add_task","add_note"];
+function aiCheck(a){
+const t=a.id?items.find(x=>x._id===a.id):null;
+if(!AI_TYPES.includes(a.type))return "ชนิดการแก้ที่แอปไม่รองรับ";
+if(["set_status","move_date","set_owner"].includes(a.type)&&!t)return "ไม่พบงานนี้ในระบบ (id ไม่ตรง)";
+if(a.type==="set_status"&&!STATUS.includes(a.status))return "สถานะไม่ถูกต้อง";
+if(a.type==="move_date"){ if(!/^\d{4}-\d{2}-\d{2}$/.test(a.date||"")||isNaN(new Date(a.date)))return "วันที่ไม่ถูกต้อง"; if(rr(t))return "เป็นงานเกิดซ้ำ — เลื่อนวันที่ทั้งชุดไม่ได้ ให้แก้เองในงานนั้น"; }
+if(a.type==="set_owner"&&!String(a.owner||"").trim())return "ไม่มีชื่อผู้รับผิดชอบ";
+if((a.type==="add_task"||a.type==="add_note")&&!String(a.title||"").trim())return "ไม่มีชื่อ";
+if(a.type==="add_task"&&a.date&&!/^\d{4}-\d{2}-\d{2}$/.test(a.date))return "วันที่ไม่ถูกต้อง";
+return "";
+}
+function aiDescribe(a){
+const t=a.id?items.find(x=>x._id===a.id):null, q=v=>"“"+esc(v||"")+"”";
+switch(a.type){
+case "set_status":return `เปลี่ยนสถานะ ${q(t&&t.title)}: ${esc(t?t.status:"?")} → <b>${esc(a.status)}</b>`;
+case "move_date":return `เลื่อนวัน ${q(t&&t.title)}: ${t&&t.date?fmtDate(t.date):"—"} → <b>${a.date?fmtDate(a.date):"?"}</b>`;
+case "set_owner":return `มอบหมาย ${q(t&&t.title)} ให้ <b>${esc(a.owner)}</b>`;
+case "add_task":return `เพิ่มงานใหม่ ${q(a.title)}${a.date?" · กำหนด <b>"+fmtDate(a.date)+"</b>":""}${a.owner?" · "+esc(a.owner):""}`;
+case "add_note":return `เพิ่มบันทึก ${q(a.title)}`;}
+return "การแก้ที่ไม่รู้จัก";
+}
+async function aiRun(a){
+const bad=aiCheck(a); if(bad)throw new Error(bad);
+if(a.type==="set_status")await DB.collection("items").doc(a.id).set({status:a.status},{merge:true});
+else if(a.type==="move_date")await DB.collection("items").doc(a.id).set({date:a.date},{merge:true});
+else if(a.type==="set_owner")await DB.collection("items").doc(a.id).set({owner:String(a.owner).trim()},{merge:true});
+else if(a.type==="add_task"){
+const track=groups.some(g=>g.key===a.track)?a.track:(groups.find(g=>g.key==="ops")||groups[0]).key;
+const company=companies.some(c=>c.key===a.company)?a.company:"";
+await saveItem({title:String(a.title).trim(),kind:"task",track,type:"",status:"รอดำเนินการ",date:a.date||null,company,owner:String(a.owner||"").trim(),note:String(a.note||"").trim()+(a.note?"\n":"")+"(เพิ่มโดยผู้ช่วย AI)"});}
+else if(a.type==="add_note")await DB.collection("note").add({title:String(a.title).trim(),kind:"โน้ต",date:null,tag:"AI",body:String(a.body||""),color:"",pin:false});
+}
+const aiMd=t=>esc(t).replace(/\*\*([^*\n]+)\*\*/g,"<b>$1</b>");
+function aiView(){
+if(AI.live===null){AI.live=false; aiPing();}
+const live=AI.live, msgs=AI.msgs;
+const msgHTML=msgs.map((m,i)=>m.role==="user"?`<div class="aib u">${esc(m.text)}</div>`
+:m.role==="sys"?`<div class="aisys">${esc(m.text)}</div>`
+:`<div class="aib a">${aiMd(m.text)}${(m.actions||[]).map((a,j)=>{const bad=a.state==="pending"?aiCheck(a):"";
+return `<div class="aiact ${a.state}"><div class="aid">${aiDescribe(a)}${a.why?`<div class="aiwhy">${esc(a.why)}</div>`:""}${bad?`<div class="aiwhy" style="color:var(--over)">ทำไม่ได้: ${esc(bad)}</div>`:""}${a.state==="error"?`<div class="aiwhy" style="color:var(--over)">ไม่สำเร็จ: ${esc(a.err||"")}</div>`:""}</div>
+${a.state==="pending"?`<button class="btn sm" data-aiok="${i}:${j}"${bad?" disabled":""}>ทำตามนี้</button><button class="btn sm ghost" data-aiskip="${i}:${j}">ข้าม</button>`:`<span class="pill ${a.state==="done"?"s-done":"s-wait"}">${a.state==="done"?"ทำแล้ว":a.state==="skipped"?"ข้ามแล้ว":"ไม่สำเร็จ"}</span>`}</div>`;}).join("")}</div>`).join("");
+const first=!msgs.length?`<div class="aisys">สวัสดีค่ะวิม 👋 ถามได้เลย เช่น “สรุปงานสัปดาห์นี้” “งบหมวดไหนต้องระวัง” หรือ “จัดแผนงานสัปดาห์หน้า” — ถ้าผมเสนอให้แก้งาน จะขึ้นเป็นการ์ดให้กดยืนยันเองทุกครั้ง</div>`:"";
+return `<div class="head"><div><h1>ผู้ช่วย AI</h1><div class="sub">สรุป · จัดแผน · เตือนงาน · เสนอการแก้ให้กดยืนยัน · ${syncChip()}</div></div>
+<div class="noprint"><button class="btn ghost" id="aiClear">ล้างแชท</button></div></div>
+<div class="card aiwrap">
+<div class="aistatus">${live?`<span class="bchip">พร้อมใช้งานในแอป</span> <span>โมเดล ${esc(AI.model)}</span>`:`<span class="bchip warn">โหมดคัดลอก–วาง</span> <span>ยังไม่ได้เชื่อม API · ใช้แชท Claude ปกติของคุณได้เลย</span> <button class="gcbtn" id="aiPing">ตรวจการเชื่อมต่อใหม่</button>`}</div>
+<div class="aimsgs" id="aimsgs">${first}${msgHTML}${AI.busy?`<div class="aisys">กำลังคิด…</div>`:""}</div>
+<div class="aichips">${AI_CHIPS.map((c,i)=>`<button class="gcbtn" data-aichip="${i}">${esc(c)}</button>`).join("")}</div>
+<div class="aiin"><textarea id="aiq" rows="2" placeholder="${live?"พิมพ์คำถามหรือสั่งงาน…":"พิมพ์คำถาม แล้วกดส่ง — ระบบจะคัดลอกข้อมูล+คำถามให้ไปวางในแชท Claude"}">${esc(AI.draft)}</textarea>
+<button class="btn" id="aisend"${AI.busy?" disabled":""}>${live?"ส่ง":"คัดลอกคำถาม"}</button></div>
+${!live&&AI.pending?`<div class="aipaste"><b>ขั้นต่อไป:</b> ${AI.flash?esc(AI.flash):"คัดลอกแล้ว"} → ไปวางที่แชท Claude → ก๊อปคำตอบกลับมาวางตรงนี้
+<textarea id="aiPaste" rows="4" placeholder="วางคำตอบของ Claude ที่นี่"></textarea>
+<div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" id="aiPasteGo">แสดงคำตอบในแชท</button><button class="btn sm ghost" id="aiCopyAgain">คัดลอกอีกครั้ง</button></div></div>`:""}
+</div>
+<div class="card" style="margin-top:16px"><h2>ความเป็นส่วนตัวและการตั้งค่า</h2>
+<details class="foldbox"><summary>ข้อมูลอะไรถูกส่งออกไปบ้าง</summary><div class="hint">ส่งเฉพาะสรุปที่แอปรวบรวม: รายการงานที่ยังไม่เสร็จ (ชื่อ ผู้รับผิดชอบ กำหนด งบ) งบตามหมวด GL สรุปอบรม/เกณฑ์กรมพัฒนาฯ แบบตัวเลขรวม และสถานะใบรับรอง — <b>ไม่มีรายชื่อหรือข้อมูลรายบุคคลของพนักงาน</b> (ระบบไม่ได้เก็บอยู่แล้ว) โหมดฝัง AI จะส่งไปยัง Anthropic ผ่านเซิร์ฟเวอร์ของคุณเอง ส่วนโหมดคัดลอก–วาง คุณเป็นคนวางเองในแชท Claude</div></details>
+<details class="foldbox"><summary>วิธีเปิดโหมดฝัง AI (ตอบในแอปเลย)</summary><div class="hint">
+1) สมัคร/ล็อกอิน <b>console.anthropic.com</b> → API keys → สร้าง key (เสียค่าใช้จ่ายตามการใช้งาน แยกจากแพ็กเกจแชท) · ตั้งวงเงินรายเดือนไว้กันพลาดได้<br>
+2) Vercel → โปรเจคของคุณ → Settings → Environment Variables → เพิ่ม 3 ตัว: <b>ANTHROPIC_API_KEY</b> (key ข้อ 1) · <b>SUPABASE_URL</b> (Project URL) · <b>SUPABASE_ANON_KEY</b> (anon public key)<br>
+3) กด Redeploy แล้วกลับมาหน้านี้ กด “ตรวจการเชื่อมต่อใหม่”<br>
+<b>อย่าวาง API key ในแชท ในไฟล์ app.js หรือในหน้าแอป</b> — ใส่ที่ Vercel ที่เดียว · ตัวแปรเสริม: ALLOWED_EMAILS (จำกัดอีเมลที่ใช้ได้) · AI_MODEL (ชื่อรุ่นโมเดล)</div></details></div>`;
+}
+async function aiSend(q){
+q=(q||"").trim(); if(!q||AI.busy)return;
+AI.draft=""; AI.msgs.push({role:"user",text:q}); aiSave();
+if(!AI.live){ AI.pending=q; AI.flash=await aiCopyPrompt()?"คัดลอกข้อมูล+คำถามให้แล้ว":"คัดลอกอัตโนมัติไม่สำเร็จ กด “คัดลอกอีกครั้ง”"; render(); return; }
+AI.busy=true; render();
+try{
+let token=""; try{ const {data:{session}}=await SB.auth.getSession(); token=session?session.access_token:""; }catch(e){}
+const turns=[]; AI.msgs.filter(m=>m.role==="user"||m.role==="assistant").slice(-12).forEach(m=>{const c=m.text||""; if(turns.length&&turns[turns.length-1].role===m.role)turns[turns.length-1].content+="\n"+c; else turns.push({role:m.role,content:c});});
+const r=await fetch("/api/ai",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({system:AI_SYSTEM,context:aiContext(),messages:turns})});
+const j=await r.json().catch(()=>({}));
+if(!r.ok)throw new Error(j.message||("ผิดพลาด "+r.status));
+const p=aiParse(j.text); AI.msgs.push({role:"assistant",text:p.text||"(ไม่มีข้อความตอบกลับ)",actions:p.actions});
+}catch(e){ AI.msgs.push({role:"sys",text:"ติดต่อ AI ไม่สำเร็จ: "+(e.message||e)}); }
+AI.busy=false; aiSave(); render();
+}
+function aiPromptText(){
+const hist=AI.msgs.filter(m=>m.role==="user"||m.role==="assistant").slice(-9,-1).map(m=>(m.role==="user"?"วิม: ":"ผู้ช่วย: ")+m.text).join("\n");
+const last=[...AI.msgs].reverse().find(m=>m.role==="user");
+return AI_SYSTEM+"\n\n[ข้อมูลในระบบ]\n"+aiContext()+(hist?"\n\n[บทสนทนาก่อนหน้า]\n"+hist:"")+"\n\n[คำถามล่าสุดของวิม]\n"+(last?last.text:"");
+}
+async function aiCopyPrompt(){
+const t=aiPromptText();
+try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+try{ const ta=document.createElement("textarea"); ta.value=t; ta.style.cssText="position:fixed;opacity:0"; document.body.appendChild(ta); ta.select(); const ok=document.execCommand("copy"); ta.remove(); return ok; }catch(e){ return false; }
+}
+function aiWire(){
+const q=el("aiq"); if(q){ q.oninput=()=>{AI.draft=q.value;}; q.onkeydown=e=>{ if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); aiSend(q.value); } }; }
+el("aisend")&&(el("aisend").onclick=()=>aiSend(q?q.value:""));
+document.querySelectorAll("[data-aichip]").forEach(b=>b.onclick=()=>aiSend(AI_CHIPS[+b.dataset.aichip]));
+el("aiClear")&&(el("aiClear").onclick=()=>{AI.msgs=[];AI.pending=null;aiSave();render();});
+el("aiPing")&&(el("aiPing").onclick=()=>aiPing());
+el("aiCopyAgain")&&(el("aiCopyAgain").onclick=async()=>{AI.flash=(await aiCopyPrompt())?"คัดลอกให้อีกครั้งแล้ว":"คัดลอกไม่สำเร็จ ลองใหม่"; render();});
+el("aiPasteGo")&&(el("aiPasteGo").onclick=()=>{ const v=(el("aiPaste").value||"").trim(); if(!v)return; const p=aiParse(v); AI.msgs.push({role:"assistant",text:p.text||"(ไม่มีข้อความ)",actions:p.actions}); AI.pending=null; aiSave(); render(); });
+document.querySelectorAll("[data-aiskip]").forEach(b=>b.onclick=()=>{const [i,j]=b.dataset.aiskip.split(":").map(Number); AI.msgs[i].actions[j].state="skipped"; aiSave(); render();});
+document.querySelectorAll("[data-aiok]").forEach(b=>b.onclick=async()=>{const [i,j]=b.dataset.aiok.split(":").map(Number); const a=AI.msgs[i].actions[j];
+try{ await aiRun(a); a.state="done"; }catch(e){ a.state="error"; a.err=e.message||String(e); } aiSave(); render();});
+const box=el("aimsgs"); if(box)box.scrollTop=box.scrollHeight;
 }
 function pipeline(){
 const g=k=>items.filter(t=>t.track===k&&inScope(t));
@@ -2541,6 +2708,7 @@ if(F.type&&v&&!typesFor(v).includes(F.type)&&!items.some(t=>t.track===v&&(t.type
 el("grpseg")&&(el("grpseg").onclick=e=>{const b=e.target.closest("button[data-grp]"); if(!b)return;
 F.grp=b.dataset.grp; render();});
 bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","status");bind("fl-company","company");
+if(view==="ai")aiWire();
 el("hlseg")&&(el("hlseg").onclick=e=>{const b=e.target.closest("button[data-hl]"); if(!b)return; setHL(b.dataset.hl); render();});
 el("zoomseg")&&(el("zoomseg").onclick=e=>{const b=e.target.closest("button[data-zm]"); if(!b)return; setZoom(b.dataset.zm); render();});
 el("modeseg")&&(el("modeseg").onclick=async e=>{

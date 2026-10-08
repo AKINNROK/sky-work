@@ -389,6 +389,23 @@ html[data-hl="p"][data-night="0"] .banner{background:var(--pa-y);color:#7d5a0f}
 html[data-hl="p"][data-night="0"] .banner.bad{background:var(--pa-p);color:#b13a49}
 html[data-hl="p"][data-night="0"] .banner.ok{background:var(--pa-m);color:#2f7a58}
 html[data-hl="p"][data-night="0"] .mod .modh,html[data-hl="p"][data-night="0"] .mod div:not(.modh):not(.modv),html[data-hl="p"][data-night="0"] .stat .k,html[data-hl="p"][data-night="0"] .stat .d{color:var(--ink-2)}
+html[data-hl="p"][data-night="0"] body{background:#fff}
+html[data-hl="p"][data-night="0"] .card{border-color:#EDEAE2}
+html[data-hl="p"][data-night="0"] .toolbar select,html[data-hl="p"][data-night="0"] .toolbar input,html[data-hl="p"][data-night="0"] .yrnav .iconbtn,html[data-hl="p"][data-night="0"] .syncchip{border:1px solid #EDEAE2;box-shadow:none}
+.aiwrap{display:flex;flex-direction:column;gap:10px}
+.aistatus{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
+.aimsgs{display:flex;flex-direction:column;gap:10px;overflow-y:auto;height:min(54vh,520px);padding:4px 2px}
+.aib{max-width:88%;padding:10px 14px;border-radius:18px;white-space:pre-wrap;line-height:1.65;font-size:14.5px;word-break:break-word}
+.aib.u{align-self:flex-end;background:var(--accent-soft);color:var(--ink);border-bottom-right-radius:6px}
+.aib.a{align-self:flex-start;background:var(--paper);color:var(--ink);border-bottom-left-radius:6px}
+.aisys{align-self:center;font-size:12.5px;color:var(--ink-3);text-align:center;max-width:92%;line-height:1.6}
+.aiact{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:9px 11px;border-radius:14px;background:var(--card);border:1px dashed var(--line);white-space:normal}
+.aiact .aid{flex:1 1 220px;font-size:13.5px}.aiwhy{font-size:12px;color:var(--ink-3);margin-top:2px}
+.aiact.done{opacity:.7;border-style:solid}.aiact.skipped{opacity:.5}
+.aichips{display:flex;gap:6px;flex-wrap:wrap}
+.aiin{display:flex;gap:8px;align-items:flex-end}.aiin textarea{flex:1;border:1px solid var(--line);border-radius:18px;padding:10px 14px;font:inherit;resize:none;background:var(--card);color:var(--ink)}
+.aipaste{border:1px dashed var(--line);border-radius:16px;padding:12px;font-size:13.5px}.aipaste textarea{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:14px;padding:10px;font:inherit;background:var(--card);color:var(--ink);box-sizing:border-box}
+html[data-hl="p"][data-night="0"] .aib.u{background:var(--pa-s)}html[data-hl="p"][data-night="0"] .aib.a{background:#F5F3EE}
 </style>
 </head><body>
 <div class="shell">
@@ -673,5 +690,5 @@ html[data-hl="p"][data-night="0"] .mod .modh,html[data-hl="p"][data-night="0"] .
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=13.1"></script>
+<script src="app.js?v=14.0"></script>
 </body></html>
