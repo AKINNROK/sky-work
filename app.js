@@ -1,4 +1,4 @@
-const APP_VERSION="12.4"; const APP_DATE="8 ต.ค. 2026";
+const APP_VERSION="12.6"; const APP_DATE="8 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -62,6 +62,7 @@ const ICON={
 home:'<path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/>',
 all:'<path d="M4 7h16M4 12h16M4 17h10"/>',
 cal:'<rect x="3.5" y="5" width="17" height="15" rx="4.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
+exec:'<path d="M5 20V10M12 20V4M19 20v-7"/>',
 budget:'<path d="M12 4v16"/><path d="M16 8c0-2-2-3-4-3s-4 1-4 3 2 2.6 4 3 4 1 4 3-2 3-4 3-4-1-4-3"/>',
 train:'<path d="M12 4 2.5 9 12 14l9.5-5L12 4z"/><path d="M6.5 11.2V16c0 1.5 2.6 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4.8"/><path d="M21.5 9v5"/>',
 idx:'<path d="M4 5.5A2 2 0 0 1 6 3.5h12v17H6a2 2 0 0 1-2-2z"/><path d="M8 8h7M8 12h7"/>',
@@ -80,9 +81,9 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
-const TABS=["home","all","cal","budget","meet","train","dsd","legal","idx","note","set"];
-const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
+const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
+const TABS=["home","all","cal","budget","exec","meet","train","dsd","legal","idx","note","set"];
+const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",exec:"ผู้บริหาร",set:"ตั้งค่า"};
 const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["trash","ถังขยะ"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -121,6 +122,7 @@ const p=PALETTES.find(x=>x.key===theme.preset)||PALETTES[0];
 const c=(theme.preset==="custom"&&theme.custom&&theme.custom.length===5)?theme.custom:p.ramp;
 const [c1,c2,c3,c4,c5]=c, s=document.documentElement.style, set=(k,v)=>s.setProperty(k,v);
 const night=isNight();
+if(night)set("--cta","linear-gradient(135deg,color-mix(in srgb,var(--sky) 55%,#0a1c33),color-mix(in srgb,var(--accent) 38%,#0a1c33))"); else s.removeProperty("--cta");
 if(night){
 const base=mix(c5,"#070d16",.55);
 set("--paper",base);
@@ -809,7 +811,7 @@ view=v; renderNav(); render(); window.scrollTo({top:0,behavior:"smooth"});
 const jump=(v,payload)=>`data-go="${esc(JSON.stringify({v,...payload||{}}))}"`;
 function render(){
 LISTBOX={};
-el("view").innerHTML={home,all,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,pipeline,set:setView}[view]();
+el("view").innerHTML={home,all,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,exec:execView,pipeline,set:setView}[view]();
 paintSync(); wire();
 }
 function header(title,sub,btn=true){
@@ -1283,7 +1285,7 @@ const monthsExp=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind!=="income"&&new D
 const planM=MTH.map((_,i)=>Object.values(flow).reduce((s,r)=>s+r.eff[i],0));
 const actM=MTH.map((_,i)=>Object.values(flow).reduce((s,r)=>s+r.act[i],0));
 const rawPct=B?Math.round(A/B*100):0, pct=Math.min(100,rawPct);
-const heroTag=!B?"":rawPct>=100?`<span class="bchip over hero">เกินงบแล้ว</span>`:rawPct>=BUD_WARN?`<span class="bchip warn hero">ใกล้เต็ม</span>`:"";
+const heroTag=!B?"":rawPct>=100?`<span class="bchip over onhero">เกินงบแล้ว</span>`:rawPct>=BUD_WARN?`<span class="bchip warn onhero">ใกล้เต็ม</span>`:"";
 const recent=tx.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,10);
 return `<div class="head"><div><h1>งบประมาณ & บัญชี</h1><div class="sub">ตั้งงบรายปีต่อหมวด GL แล้วแท็กค่าใช้จ่ายเข้าหมวดได้เลย · ${syncChip()}</div></div>
 <button class="btn addbtn" id="addTx">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>บันทึกเงิน</span></button></div>
@@ -1354,6 +1356,92 @@ ${noGL?`<div class="hint">มี <b>${noGL}</b> งานที่ใส่ง�
 <b style="color:${x.kind==="income"?"var(--ok)":"inherit"};font-variant-numeric:tabular-nums">${x.kind==="income"?"+":"−"}${baht(x.amount)}</b></div>`).join("")
 ||`<div class="empty">ยังไม่มีรายการในช่วงนี้<br><span style="font-size:12.5px">กด “บันทึกเงิน” เพื่อเพิ่มรายรับหรือรายจ่าย</span></div>`}</div></div>
 </div>`;
+}
+// ---------- รายงานผู้บริหาร: สรุปหน้าเดียว พิมพ์/เซฟ PDF ได้ ดึงจากข้อมูลจริงทุกหมวด ----------
+function execData(y){
+const inYr=t=>!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==y);
+const A=items.filter(t=>!isSysRow(t)&&inYr(t)&&t.track!=="idea"&&t.status!==STATUS_CANCEL);
+const done=A.filter(t=>t.status===STATUS_DONE).length;
+const flow=budFlow(y), cut=budCut(y,"year",0);
+const gl=Object.values(flow).map(r=>({k:r.k,s:budStat(r,cut,null)})).filter(x=>x.s.plan||x.s.act)
+.sort((a,b)=>(b.s.plan-a.s.plan)||(b.s.act-a.s.act));
+const B=gl.reduce((n,x)=>n+x.s.plan,0), Ac=gl.reduce((n,x)=>n+x.s.act,0);
+const ytdB=gl.reduce((n,x)=>n+x.s.ytdP,0), ytdA=gl.reduce((n,x)=>n+x.s.ytdA,0);
+const tr=items.filter(t=>isTrain(t)&&inYr(t)&&t.status!==STATUS_CANCEL&&(()=>{const d=dueDate(t)||(t.date?new Date(t.date):null);return d&&d.getFullYear()===y;})());
+const trDone=tr.filter(t=>t.status===STATUS_DONE);
+const train={n:tr.length,done:trDone.length,pax:trDone.reduce((n,t)=>n+(+t.pax||0),0),hrs:trDone.reduce((n,t)=>n+(+hoursOf(t)||0)*(+t.pax||0),0),
+cost:tr.reduce((n,t)=>n+((+t.actual||0)||budgetOf(t)),0)};
+const dsd=dsdList(y).map(c=>({c,k:dsdCalc(dsdRec(c.key,y))})).filter(x=>x.k.avg);
+const late=items.filter(t=>!isSysRow(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})()).sort((a,b)=>dueDate(a)-dueDate(b));
+const lawLate=late.filter(isLawItem);
+const lg=legal.map(L=>({L,st:legalState(L)}));
+const alerts=budAlerts(y);
+return {y,A,done,flow,cut,gl,B,Ac,ytdB,ytdA,trainN:train,dsd,late,lawLate,lgLate:lg.filter(x=>x.st.k==="late"),lgSoon:lg.filter(x=>x.st.k==="soon"),alerts};
+}
+function execHeadlines(D){
+const L=[], nm=k=>k?glLabel(k):"ยังไม่ระบุหมวด GL";
+const pct=D.A.length?Math.round(D.done/D.A.length*100):0;
+L.push({c:"ok",t:`<b>งาน:</b> ปี ${D.y+543} เสร็จแล้ว ${D.done} จาก ${D.A.length} งาน (${pct}%)${D.late.length?` · <b>เลยกำหนด ${D.late.length} งาน</b>`:" · ไม่มีงานเลยกำหนด"}`});
+if(D.B){const p=Math.round(D.Ac/D.B*100);
+L.push({c:p>=100?"bad":p>=BUD_WARN?"warn":"ok",t:`<b>งบ:</b> ใช้ ${baht(D.Ac)} จากงบ ${baht(D.B)} ฿ (${p}%) · คงเหลือ ${D.B-D.Ac>=0?baht(D.B-D.Ac):"เกิน "+baht(D.Ac-D.B)} ฿`+(D.cut>=0&&D.ytdB?` · สะสมถึงเดือนนี้ใช้ ${Math.round(D.ytdA/D.ytdB*100)}% ของแผนสะสม`:"")});}
+else L.push({c:"warn",t:"<b>งบ:</b> ยังไม่มีงบตั้งไว้ในปีนี้ — ตั้งงบที่หน้าตั้งค่า → หมวด GL หรือใส่งบในงาน"});
+const a=D.alerts;
+if(a.over.length)L.push({c:"bad",t:`<b>เกินงบ:</b> ${a.over.map(o=>esc(nm(o.k))+" ("+Math.round(o.s.pct)+"%)").join(", ")}`});
+if(a.near.length)L.push({c:"warn",t:`<b>ใกล้เต็ม (≥${BUD_WARN}%):</b> ${a.near.map(o=>esc(nm(o.k))+" ("+Math.round(o.s.pct)+"%)").join(", ")}`});
+if(a.pace.length)L.push({c:"warn",t:`<b>ใช้เร็วกว่าแผนสะสม:</b> ${a.pace.map(o=>esc(nm(o.k))).join(", ")}`});
+if(D.trainN.n)L.push({c:"ok",t:`<b>อบรม:</b> ${D.trainN.n} รุ่น (จัดแล้ว ${D.trainN.done}) · ผู้เข้าอบรมแล้ว ${baht(D.trainN.pax)} คน · ค่าใช้จ่ายรวม ${baht(D.trainN.cost)} ฿`});
+const sh=D.dsd.filter(x=>x.k.need>0);
+if(sh.length)L.push({c:"warn",t:`<b>เกณฑ์ฝึกอบรมตามกฎหมาย (กรมพัฒนาฯ):</b> ${sh.length} บริษัทยังต้องฝึกเพิ่ม รวม ${sh.reduce((n,x)=>n+x.k.need,0)} คน — เป็นตัวเลขจากข้อมูลที่กรอกในระบบ ควรตรวจกับเว็บกรมฯ ก่อนตัดสินใจ`});
+if(D.lawLate.length)L.push({c:"bad",t:`<b>งานบังคับตามกฎหมายเลยกำหนด:</b> ${D.lawLate.length} งาน — ${esc(D.lawLate.slice(0,3).map(t=>t.title).join(" · "))}${D.lawLate.length>3?" …":""}`});
+if(D.lgLate.length||D.lgSoon.length)L.push({c:D.lgLate.length?"bad":"warn",t:`<b>ใบรับรอง/คำสั่งแต่งตั้ง:</b> เกินกำหนด ${D.lgLate.length} · ใกล้ครบใน 90 วัน ${D.lgSoon.length}`});
+return L;
+}
+function execView(){
+const y=R.year, D=execData(y), H=execHeadlines(D);
+const pct=D.A.length?Math.round(D.done/D.A.length*100):0, bp=D.B?Math.round(D.Ac/D.B*100):0;
+const nm=k=>k?glLabel(k):"ยังไม่ระบุหมวด GL";
+const chip=s=>s.lvl==="over"?`<span class="bchip over">เกินงบ</span>`:s.lvl==="warn"?`<span class="bchip warn">ใกล้เต็ม</span>`:s.lvl==="nob"?`<span class="bchip nob">ไม่ได้ตั้งงบ</span>`:s.pace?`<span class="bchip warn">เร็วกว่าแผน</span>`:`<span class="bchip">ปกติ</span>`;
+const today=new Date();
+return `<div class="head"><div><h1>รายงานผู้บริหาร</h1><div class="sub">สรุปหน้าเดียวจากข้อมูลจริงในระบบ · ${syncChip()}</div></div>
+<div class="noprint" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="execCsv">${svg(ICON.file,17)}<span>ตารางงบ .csv</span></button>
+<button class="btn addbtn" id="execPrint">${svg(ICON.file,17)}<span>พิมพ์ / เซฟ PDF</span></button></div></div>
+<div class="toolbar noprint">${yearSel("yrSelB")}</div>
+<div class="printhead">LeKise Group · HR — รายงานผู้บริหาร ปี ${y+543} · ข้อมูล ณ ${today.getDate()} ${MTHFULL[today.getMonth()]} ${today.getFullYear()+543}</div>
+<div class="dash">
+<div class="card hero span2"><div class="lab">ความคืบหน้างานปี ${y+543}</div><div class="big">${pct}%</div>
+<div class="meta"><span>เสร็จ ${D.done} งาน</span><span>เหลือ ${D.A.length-D.done} งาน</span><span>เลยกำหนด ${D.late.length}</span></div>
+<div class="prog"><i style="width:${pct}%"></i></div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบใช้ไป</div>
+<div class="v"${bp>=100?' style="color:var(--over)"':""}>${D.B?bp+"%":"—"}</div><div class="d">${baht(D.Ac)} จาก ${baht(D.B)} ฿</div></div>
+<div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> อบรมปีนี้</div>
+<div class="v">${D.trainN.n}</div><div class="d">จัดแล้ว ${D.trainN.done} รุ่น · ${baht(D.trainN.pax)} คน</div></div>
+<div class="card span4"><h2>ประเด็นสำคัญ <small>สรุปให้อัตโนมัติจากข้อมูล ณ วันนี้</small></h2>
+<div class="exlist">${H.map(h=>`<div class="exrow ${h.c}"><i></i><span>${h.t}</span></div>`).join("")}</div></div>
+<div class="card span4"><h2>งบประมาณตามหมวด GL <small>ปี ${y+543} · แผน / ใช้จริง / คงเหลือ</small></h2>
+${D.gl.length?`<div class="tblwrap wide"><table><thead><tr><th>หมวด GL</th><th class="num">งบตั้งไว้</th><th class="num">ใช้จริง</th><th class="num">คงเหลือ</th><th class="num">% ใช้</th><th>สถานะ</th></tr></thead><tbody>
+${D.gl.map(x=>`<tr><td>${esc(nm(x.k))}</td><td class="num">${baht(x.s.plan)}</td><td class="num">${baht(x.s.act)}</td>
+<td class="num"${x.s.left<0?' style="color:var(--over);font-weight:600"':""}>${x.s.left<0?"−"+baht(-x.s.left):baht(x.s.left)}</td>
+<td class="num">${x.s.plan?Math.round(x.s.pct)+"%":"—"}</td><td>${chip(x.s)}</td></tr>`).join("")}
+<tr style="font-weight:700;border-top:2px solid var(--line)"><td>รวม</td><td class="num">${baht(D.B)}</td><td class="num">${baht(D.Ac)}</td><td class="num">${D.B-D.Ac<0?"−"+baht(D.Ac-D.B):baht(D.B-D.Ac)}</td><td class="num">${D.B?bp+"%":"—"}</td><td></td></tr>
+</tbody></table></div>`:`<div class="empty">ยังไม่มีงบในปีนี้</div>`}</div>
+<div class="card span2"><h2>เกณฑ์ฝึกอบรมตามกฎหมาย <small>รายบริษัท · ปี ${y+543}</small></h2>
+${D.dsd.length?`<div class="tblwrap"><table><thead><tr><th>บริษัท</th><th class="num">พนักงานเฉลี่ย</th><th class="num">นับได้ (C)</th><th class="num">% </th><th class="num">ต้องเพิ่ม</th></tr></thead><tbody>
+${D.dsd.map(x=>`<tr><td>${esc(cLabel(x.c.key))}</td><td class="num">${x.k.avg}</td><td class="num">${x.k.C}</td><td class="num">${x.k.pct}%</td>
+<td class="num"${x.k.need>0?' style="color:var(--over);font-weight:600"':""}>${x.k.need}</td></tr>`).join("")}</tbody></table></div>
+<div class="hint">เป็นตัวเลขที่กรอกในระบบ — เกณฑ์/สิทธิประโยชน์แต่ละปีอาจเปลี่ยน ตรวจกับกรมฯ ก่อนยื่นจริง</div>`:`<div class="empty">ยังไม่มีข้อมูลพนักงานเฉลี่ยของปีนี้</div>`}</div>
+<div class="card span2"><h2>งานที่เลยกำหนด <small>${D.late.length} งาน · เก่าสุดก่อน</small></h2>
+<div class="list">${D.late.slice(0,8).map(t=>{const d=dueDate(t);return `<div class="li" data-id="${t._id}">
+<div class="ic" style="background:var(--over-soft);color:var(--over)">${d.getDate()}<br>${MTH[d.getMonth()]}</div>
+<div class="tx"><div class="t1">${esc(t.title)}</div><div class="t2">${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}</div></div>
+<span class="pill s-over">เลย ${-daysTo(d)} วัน</span></div>`;}).join("")||`<div class="empty">ไม่มีงานเลยกำหนด 🎉</div>`}</div>
+${D.late.length>8?`<div class="hint">แสดง 8 จาก ${D.late.length} งาน — ดูทั้งหมดที่หน้างานทั้งหมด</div>`:""}</div>
+</div>`;
+}
+function execCsv(){
+const D=execData(R.year), nm=k=>k?glLabel(k):"ยังไม่ระบุหมวด GL";
+exportCSV("budget-by-GL",["หมวด GL","งบตั้งไว้","ใช้จริง","คงเหลือ","% ใช้","สถานะ"],
+[...D.gl.map(x=>[nm(x.k),x.s.plan,x.s.act,x.s.left,x.s.plan?Math.round(x.s.pct):"",x.s.lvl==="over"?"เกินงบ":x.s.lvl==="warn"?"ใกล้เต็ม":x.s.lvl==="nob"?"ไม่ได้ตั้งงบ":x.s.pace?"เร็วกว่าแผน":"ปกติ"]),
+["รวม",D.B,D.Ac,D.B-D.Ac,D.B?Math.round(D.Ac/D.B*100):"",""]]);
 }
 function pipeline(){
 const g=k=>items.filter(t=>t.track===k&&inScope(t));
@@ -2794,6 +2882,8 @@ if(M.hr){hrdata=Object.assign(hrdata,M.hr); await saveHR();}
 bkMsg=`<div class="banner ${fail?"bad":"ok"}" style="margin-top:12px">กู้คืนสำเร็จ <b>${ok}</b> รายการ${fail?" · พลาด "+fail:""} + การตั้งค่าทั้งหมด</div>`;
 render();};
 el("icsgo")&&(el("icsgo").onclick=downloadICS);
+el("execPrint")&&(el("execPrint").onclick=()=>window.print());
+el("execCsv")&&(el("execCsv").onclick=execCsv);
 const wipe=async(kind,label,arr)=>{
 const out=el("wipeout");
 if(!arr.length){ tell("ยังไม่มี"+label+"ให้ลบค่ะ"); return; }
