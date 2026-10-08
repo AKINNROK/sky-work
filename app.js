@@ -1,4 +1,4 @@
-const APP_VERSION="11.8"; const APP_DATE="18 ก.ย. 2026";
+const APP_VERSION="12.0"; const APP_DATE="7 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -83,7 +83,7 @@ laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19
 const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
 const TABS=["home","all","cal","budget","meet","train","dsd","legal","idx","note","set"];
 const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
-const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
+const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["trash","ถังขยะ"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
 {key:"above",   name:"เหนือหมู่เมฆ", note:"ฟ้าสดใส", ramp:["#F2F8FF","#D7E7F7","#7FC1EE","#4A93D4","#2A5E96"]},
@@ -245,6 +245,7 @@ const isLawTrain=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
 if(c&&(c.law===true||c.law===false))return c.law;
 const d=typeDef(t.type); if(d)return !!d.law||/กฎหมาย/.test(d.name);
 return /กฎหมาย/.test((t.type||"")+" "+gLabel(t.track));};
+const isLawItem=t=>isLawTrain(t);
 const lawSrc=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
 return (c&&(c.law===true||c.law===false))?"หลักสูตร":"ประเภทงาน";};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -424,6 +425,8 @@ let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{},dsd:{},subsidy:{pct:70,rate:200}};
 let legal=[], idx=[], notes=[];
+const TRASH={items:[],ledger:[],legal:[],index:[],note:[]};
+const TRASH_DAYS=30;
 const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),meta:new Map()};
 const listeners={items:[],ledger:[],legal:[],index:[],note:[],meta:new Map()};
 const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}});
@@ -513,18 +516,17 @@ sub("meta/skills",d=>{if(Array.isArray(d.list))skillList=d.list;});
 sub("meta/modes",d=>{if(Array.isArray(d.list))modeList=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
+const splitTrash=(docs,key)=>{const all=docs.map(d=>Object.assign({},d.data(),{_id:d.id}));
+TRASH[key]=all.filter(t=>t._trash).sort((a,b)=>String(b._trash).localeCompare(String(a._trash)));
+return all.filter(t=>!t._trash);};
 DBShim.collection("items").onSnapshot(s=>{
-items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
-maybeSeedGL();
+items=splitTrash(s.docs,"items").filter(t=>!isSysRow(t));
+maybeSeedGL(); autoPurgeTrash();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
-DBShim.collection("index").onSnapshot(s=>{
-idx=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
-DBShim.collection("note").onSnapshot(s=>{
-notes=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
-DBShim.collection("legal").onSnapshot(s=>{
-legal=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
-DBShim.collection("ledger").onSnapshot(s=>{
-ledger=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
+DBShim.collection("index").onSnapshot(s=>{ idx=splitTrash(s.docs,"index"); render();});
+DBShim.collection("note").onSnapshot(s=>{ notes=splitTrash(s.docs,"note"); render();});
+DBShim.collection("legal").onSnapshot(s=>{ legal=splitTrash(s.docs,"legal"); render();});
+DBShim.collection("ledger").onSnapshot(s=>{ ledger=splitTrash(s.docs,"ledger"); render();});
 setFoot("กำลังโหลด…");
 await loadAll(); liveSync();
 setFoot(items.length+" งาน · ซิงก์แล้ว");
@@ -612,6 +614,50 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div sty
 const dsdRec=(c,y)=>((hrdata.dsd||{})[c]||{})[y]||null;
 const dsdList=y=>visible(companies).filter(c=>!isGroupCo(c)&&dsdRec(c.key,y));
 const LAWPCT=50;
+// ---------- เตือนประจำปีของกรมพัฒนาฯ ----------
+// ผลงานปี Y ต้องยื่นขอรับรอง/ขอเงินอุดหนุนภายใน 31 ส.ค. ปี Y+1 · รอบเตรียม สท.2 เริ่ม 17 พ.ย.
+function dsdYearClock(){
+const today=new Date(); today.setHours(0,0,0,0);
+const y0=today.getFullYear();
+const augThis=new Date(y0,7,31);
+const perfYear=(today<=augThis)?y0-1:y0;      // ปีผลงานที่ยังยื่นได้อยู่
+const due=new Date(perfYear+1,7,31);          // 31 ส.ค.
+const left=Math.round((due-today)/86400000);
+const prep=new Date(perfYear,10,17);          // 17 พ.ย. = เริ่มรอบเตรียม
+return {today,perfYear,due,left,prep,inPrep:today>=prep};
+}
+const st2Done=r=>(r&&(r.st2==="ได้รับการรับรองแล้ว"));
+const st2Sent=r=>(r&&(r.st2==="ยื่นแล้ว รอผลพิจารณา"||r.st2==="ได้รับการรับรองแล้ว"));
+function dsdAnnualBanner(){
+const C=dsdYearClock();
+const cos=visible(companies).filter(c=>!isGroupCo(c));
+if(!cos.length)return "";
+const pendingOf=y=>cos.filter(c=>{const r=dsdRec(c.key,y); return r&&!st2Sent(r);});
+const rowOf=(c,y,p,pc)=>({t1:cLabel(c.key),t2:"ผลงานปี "+(y+543)+" · สท.2: "+((dsdRec(c.key,y)||{}).st2||"ยังไม่เริ่ม"),
+d:"สท.2",c:"var(--over-soft)",ic:"var(--over)",p,pc});
+let out="";
+// 1) ปีที่เลยเส้นตาย 31 ส.ค. ไปแล้วแต่ยังไม่ได้ยื่น
+const allYears=[...new Set(Object.values(hrdata.dsd||{}).flatMap(o=>Object.keys(o||{}).map(Number)))]
+.filter(y=>y&&y<C.perfYear).sort();
+const lateRows=[];
+allYears.forEach(y=>pendingOf(y).forEach(c=>{
+const dd=Math.round((C.today-new Date(y+1,7,31))/86400000);
+lateRows.push(rowOf(c,y,"เลย "+dd+" วัน","s-over"));}));
+if(lateRows.length)
+out+=`<div class="banner bad" ${regList("st2Late","สท.2 ที่เลยเส้นตาย 31 ส.ค. แล้ว",lateRows)}>${svg(ICON.bell,19)}
+<b>มี ${lateRows.length} รายการที่เลยเส้นตาย 31 ส.ค. แล้วแต่ยังไม่ได้ยื่น สท.2</b> — ปีผลงาน ${allYears.map(y=>y+543).join(", ")} · ยื่นช้ามีสิทธิ์ถูกประเมินเงินสมทบเต็มจำนวน ตรวจด่วน</div>`;
+// 2) ปีผลงานที่กำลังจะถึงเส้นตาย
+const p=pendingOf(C.perfYear);
+if(p.length&&C.left<=120)
+out+=`<div class="banner ${C.left<=30?"bad":""}" ${regList("st2Soon","ต้องยื่น สท.2 ของผลงานปี "+(C.perfYear+543),p.map(c=>rowOf(c,C.perfYear,C.left+" วัน",C.left<=30?"s-over":"s-run")))}>${svg(ICON.clock,19)}
+เหลือ <b>${C.left} วัน</b> ถึง <b>31 ส.ค. ${C.perfYear+544}</b> — เส้นตายยื่นขอรับรอง/ขอเงินอุดหนุนของผลงานปี ${C.perfYear+543} · ยังค้าง ${p.length} บริษัท</div>`;
+// 3) รอบเตรียมประจำปี เริ่ม 17 พ.ย.
+const y0=C.today.getFullYear();
+if(C.today>=new Date(y0,10,17)&&pendingOf(y0).length)
+out+=`<div class="banner">${svg(ICON.file,19)} ถึงรอบ <b>เตรียม สท.2 ของผลงานปี ${y0+543}</b> แล้ว (เริ่ม 17 พ.ย.) — รวบรวมรายชื่อผู้ผ่านการฝึก · ขอข้อมูล สปส. · กรอกในระบบออนไลน์ · ยื่นให้ทันก่อน 31 ส.ค. ${y0+544}</div>`;
+return out;
+}
+
 // ขั้นตอนตามกรมพัฒนาฯ: ยื่น ยป. ก่อนฝึก → ฝึก → ยื่นรับรองรุ่น/รง.1
 // เลขคำขอ ยป. — ถ้ารุ่นไม่ได้ใส่เอง ใช้ของหลักสูตร
 // คำขอ ยป. ของหลักสูตร แยกรายปี — ทุกปีต้องยื่นเปิดหลักสูตรใหม่ เลขจึงไม่ซ้ำกัน
@@ -686,6 +732,32 @@ const trainedPax=(c,y)=>trainRows(c,y).reduce((n,t)=>n+(+t.pax||0),0);
 // เฉพาะรุ่นที่ยื่นกรมฯ และได้รับอนุมัติ — ตัวนี้คือตัวที่นับเข้าเกณฑ์ได้จริง
 const trainedPaxDsd=(c,y)=>trainRows(c,y).filter(t=>t.dsd==="อนุมัติแล้ว"||t.dsdCertNo).reduce((n,t)=>n+(+t.pax||0),0);
 const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); } };
+// ---------- ถังขยะ: ลบแล้วกู้คืนได้ 30 วัน ----------
+const TRKIND={items:"งาน",ledger:"รายการเงิน",legal:"กฎหมาย/ใบรับรอง",index:"Index Online",note:"บันทึก"};
+const trashAll=()=>Object.entries(TRASH).flatMap(([k,a])=>a.map(t=>({coll:k,t})));
+const trashDays=t=>Math.floor((Date.now()-new Date(t._trash||Date.now()))/86400000);
+const trashLeft=t=>Math.max(0,TRASH_DAYS-trashDays(t));
+const trashTitle=(k,t)=>k==="ledger"?((t.note||t.title||"รายการเงิน")+(t.amount?" · "+baht(t.amount)+" ฿":"")):(t.title||"(ไม่มีชื่อ)");
+async function softDel(coll,row){
+if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล");
+const d=Object.assign({},row); delete d._id;
+d._trash=new Date().toISOString();
+await DB.collection(coll).doc(row._id).set(d);
+setFoot("ย้ายไปถังขยะแล้ว · กู้คืนได้ใน "+TRASH_DAYS+" วัน (ตั้งค่า › ถังขยะ)");
+}
+async function trashRestore(coll,row){
+const d=Object.assign({},row); delete d._id; delete d._trash;
+await DB.collection(coll).doc(row._id).set(d);
+setFoot("กู้คืนแล้ว");
+}
+async function trashPurge(coll,id){ await DB.collection(coll).doc(id).delete(); }
+let purgeRan=false;
+async function autoPurgeTrash(){
+if(purgeRan||!DB)return; purgeRan=true;
+const old=trashAll().filter(({t})=>trashDays(t)>=TRASH_DAYS);
+for(const {coll,t} of old){ try{ await trashPurge(coll,t._id); }catch(e){} }
+if(old.length)setFoot("ล้างถังขยะที่เกิน "+TRASH_DAYS+" วันแล้ว "+old.length+" รายการ");
+}
 async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); if(data&&"_id" in data)delete data._id; return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
 async function hardRefresh(){
 setFoot("กำลังรีเฟรช…");
@@ -837,6 +909,12 @@ const pct=A.length?Math.round(done/A.length*100):0;
 const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
 return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
+(()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
+return lw.length?`<div class="banner bad" ${regList("hLaw","งานบังคับตามกฎหมายที่เลยกำหนดแล้ว",lw.map(t=>{const d=dueDate(t);return {id:t._id,
+t1:t.title,t2:`${(t.type||"").trim()||gLabel(t.track)}${t.company?" · "+cLabel(t.company):""} · ตั้งธงจาก${lawSrc(t)}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
+p:"เลย "+(-daysTo(d))+" วัน",pc:"s-over"};}))}>${svg(ICON.legal,19)} ⚖︎ งาน<b>บังคับตามกฎหมาย</b> ${lw.length} รายการเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"";})()+
+dsdAnnualBanner()+
 (()=>{const w=dueSoon();
 const lg=legal.filter(L=>{const k=legalState(L).k;return k==="late"||k==="soon";});
 const pr=prepDue(3);
@@ -1330,6 +1408,7 @@ const now=new Date(), yearEndLeft=Math.round((new Date(R.year,11,31)-new Date(no
 const anyShort=dsdList(R.year).some(c=>{const k=dsdCalc(dsdRec(c.key,R.year));return k.avg&&k.need>0;});
 return header("กรมพัฒนาฝีมือแรงงาน","เกณฑ์ 50% ต่อปี และทะเบียนการยื่นรับรองหลักสูตร")+
 `<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาหลักสูตร / เลขคำขอ / บริษัท")}</div>`+
+dsdAnnualBanner()+
 (late.length?`<div class="banner bad" ${regList("ypLate","เลยกำหนดยื่นตามขั้นตอนกรมพัฒนาฯ",mkRows(late))}>${svg(ICON.bell,19)} เลยกำหนดยื่นแล้ว <b>${late.length}</b> หลักสูตร — ยื่นย้อนหลังไม่ได้ ตรวจด่วน</div>`:"")+
 (soon.length?`<div class="banner" ${regList("ypSoon","ใกล้ถึงกำหนดยื่น (ภายใน 14 วัน)",mkRows(soon))}>${svg(ICON.clock,19)} ใกล้ถึงกำหนดยื่น <b>${soon.length}</b> หลักสูตร ภายใน 14 วัน</div>`:"")+
 ((now.getMonth()>=10&&yearEndLeft>=0&&anyShort&&now.getFullYear()===R.year)
@@ -1688,7 +1767,7 @@ ${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</d
 </div>`;
 }
 function setView(){
-const body={groups:setGroups,companies:setCompanies,types:setTypes,courses:setCourses,gl:setGL,theme:setTheme_,remind:setRemind,import:setImport,connect:setConnect}[settab]();
+const body={groups:setGroups,companies:setCompanies,types:setTypes,courses:setCourses,gl:setGL,theme:setTheme_,remind:setRemind,import:setImport,trash:setTrash,connect:setConnect}[settab]();
 return header("ตั้งค่า","ทุกอย่างที่ปรับได้อยู่ในนี้ · เปลี่ยนแล้วมีผลทุกหน้าและทุกเครื่อง",false)+
 `<div class="toolbar"><div class="seg" id="settabs">
 ${SETTABS.map(([k,l])=>`<button data-st="${k}" aria-pressed="${k===settab}">${l}</button>`).join("")}
@@ -1933,6 +2012,25 @@ ${groups.map(x=>`<option value="${esc(x.key)}"${g.track===x.key?" selected":""}>
 <button class="btn" id="addtag">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มป้าย</button></div>
 <div class="hint">ป้ายกำกับเป็น <b>คำค้น/หมวดย่อย</b> ของงาน เช่น “ความปลอดภัย” “ผู้บริหาร” — ไม่มีสีของตัวเอง สีในปฏิทินมาจากกลุ่มงานเสมอ<br>
 เลือกกลุ่มให้ป้ายได้ ตอนเพิ่มงานระบบจะโชว์เฉพาะป้ายของกลุ่มนั้น (บวกป้ายกลาง) · ลบป้ายไม่ลบงาน</div></div>`;
+}
+function setTrash(){
+const all=trashAll();
+const groupsT=Object.keys(TRASH).filter(k=>TRASH[k].length);
+const row=({coll,t})=>{const left=trashLeft(t), d=trashDays(t);
+return `<div class="rw">
+<span class="tag">${esc(TRKIND[coll]||coll)}</span>
+<div class="gn">${esc(trashTitle(coll,t))}
+<div class="t-note">ลบเมื่อ ${esc(new Date(t._trash).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}))} · ${d===0?"วันนี้":d+" วันก่อน"}</div></div>
+<span class="gc" style="${left<=7?"color:var(--over);font-weight:600":""}">เหลือ ${left} วัน</span>
+<button class="btn sm" data-restore="${esc(coll)}:${esc(t._id)}">กู้คืน</button>
+<button class="btn danger sm" data-purge="${esc(coll)}:${esc(t._id)}">ลบถาวร</button></div>`;};
+return `<div class="card"><h2>ถังขยะ <small>${all.length} รายการ · ลบอัตโนมัติเมื่อครบ ${TRASH_DAYS} วัน</small></h2>
+<div class="hint" style="margin-top:2px">ทุกอย่างที่กดลบในระบบจะมาพักที่นี่ก่อน <b>${TRASH_DAYS} วัน</b> แล้วค่อยหายถาวร — กู้คืนได้ทุกเมื่อ ของที่กู้กลับจะไปอยู่ที่เดิมพร้อมข้อมูลครบเหมือนเดิม</div>
+${all.length?`<div class="tybar" style="margin-top:12px"><span style="font-size:13px;color:var(--ink-3)">${groupsT.map(k=>TRKIND[k]+" "+TRASH[k].length).join(" · ")}</span>
+<button class="btn danger sm" id="trashEmpty" style="margin-left:auto">ล้างถังขยะทั้งหมด</button></div>
+<div class="rows">${all.map(row).join("")}</div>`
+:`<div class="empty">ถังขยะว่าง — ยังไม่มีอะไรถูกลบ 🎉</div>`}
+<div class="hint">ถ้าอยากได้สำเนาเก็บไว้นานกว่านี้ ใช้ <b>สำรองข้อมูลทั้งหมด (.json)</b> ที่แท็บนำเข้า CSV — ไฟล์สำรองไม่มีวันหมดอายุ</div></div>`;
 }
 function setImport(){
 return `<div class="card"><h2>สำรองข้อมูล & กู้คืน <small>ลบไปแล้วกู้กลับได้ ถ้ามีไฟล์สำรอง</small></h2>
@@ -2237,6 +2335,20 @@ for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},
 render();});
 document.querySelectorAll("[data-day]").forEach(n=>n.onclick=()=>{
 const d=+n.dataset.day; R.selDay=R.selDay===d?null:d; render();});
+document.querySelectorAll("[data-restore]").forEach(b=>b.onclick=async()=>{
+const [coll,id]=b.dataset.restore.split(":");
+const t=(TRASH[coll]||[]).find(x=>x._id===id); if(!t)return;
+await trashRestore(coll,t); render();});
+document.querySelectorAll("[data-purge]").forEach(b=>b.onclick=async()=>{
+const [coll,id]=b.dataset.purge.split(":");
+const t=(TRASH[coll]||[]).find(x=>x._id===id); if(!t)return;
+if(!await ask("ลบ “"+esc(trashTitle(coll,t))+"” <b>ถาวร</b> ใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--over)\">กู้กลับไม่ได้อีกแล้ว</div>","ลบถาวร"))return;
+await trashPurge(coll,id); render();});
+if(el("trashEmpty"))el("trashEmpty").onclick=async()=>{
+const all=trashAll();
+if(!await ask("ล้างถังขยะทั้งหมด <b>"+all.length+"</b> รายการ ใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--over)\">กู้กลับไม่ได้อีกแล้ว</div>","ล้างถังขยะ"))return;
+let n=0; for(const {coll,t} of all){ try{ await trashPurge(coll,t._id); n++; setFoot("กำลังล้าง "+n+"/"+all.length+" …"); }catch(e){} }
+render(); setFoot("ล้างถังขยะแล้ว "+n+" รายการ");};
 el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";R.pq="";render();});
 const bind=(id,key)=>{const n=el(id);if(!n)return;n.oninput=n.onchange=()=>{
 F[key]=n.value;const p=n.selectionStart,srch=n.type==="search";render();
@@ -3086,8 +3198,8 @@ else if(skip.length)setFoot("ทุกรุ่นมีอยู่แล้ว
 el("del").onclick=async()=>{
 if(!editing)return;
 const t=editing; el("dlg").close();
-if(!await ask("ลบงาน “"+esc(t.title)+"” ออกจากระบบใช่ไหมคะ?","ลบงาน"))return;
-await DB.collection("items").doc(t._id).delete();
+if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
+await softDel("items",t);
 };
 let editingIdx=null, editingNote=null;
 function openIdx(x){
@@ -3113,7 +3225,7 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("idel").onclick=async()=>{ if(!editingIdx)return; const x=editingIdx; el("idlg").close();
 if(!await ask("ลบ “"+esc(x.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
-await DB.collection("index").doc(x._id).delete();};
+await softDel("index",x);};
 function openNote(n){
 editingNote=n;
 el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
@@ -3143,7 +3255,7 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("ndel").onclick=async()=>{ if(!editingNote)return; const n=editingNote; el("ndlg").close();
 if(!await ask("ลบบันทึกนี้ใช่ไหมคะ?","ลบบันทึก"))return;
-await DB.collection("note").doc(n._id).delete();};
+await softDel("note",n);};
 let editingDsd=null;
 let editingCrs=null, crsFilingYear=THISYEAR;
 function openCrs(code){
@@ -3360,7 +3472,7 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div sty
 el("ldel").onclick=async()=>{
 if(!editingLegal)return; const L=editingLegal; el("ldlg").close();
 if(!await ask("ลบรายการ “"+esc(L.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
-await DB.collection("legal").doc(L._id).delete();
+await softDel("legal",L);
 };
 function openTx(x){
 editingTx=x;
@@ -3390,7 +3502,7 @@ el("tdel").onclick=async()=>{
 if(!editingTx)return;
 const x=editingTx; el("tdlg").close();
 if(!await ask("ลบรายการเงินนี้ใช่ไหมคะ?","ลบรายการ"))return;
-await DB.collection("ledger").doc(x._id).delete();
+await softDel("ledger",x);
 };
 let gateMode="setup";
 function gate(mode){

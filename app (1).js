@@ -1,19 +1,25 @@
-const APP_VERSION="8.0"; const APP_DATE="16 ก.ย. 2026";
+const APP_VERSION="12.0"; const APP_DATE="7 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
 const STATUS=["รอดำเนินการ","อยู่ระหว่างดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
 const STATUS_DONE="เสร็จสิ้น", STATUS_CANCEL="ยกเลิก";
 const isOpenStatus=x=>x!==STATUS_DONE&&x!==STATUS_CANCEL;
-const TAGCOLORS=["#e0606d","#e8743b","#e0932b","#d9c02e","#8fbf3f","#2fa36b","#1a9f86","#2bb3c9",
-"#3d86d6","#4a5fc4","#7d5bd0","#b155c4","#d6549b","#8a6a55","#6b7785","#a9a29a"];
+const TAGCOLORS=[
+"#9e1f52","#d92662","#e08a86","#d40000","#f2542d","#ef7d1a","#f28c00","#f5b921",
+"#dcc63a","#c3d33f","#8fbf3f","#1a7a3c","#35c491",
+"#12a08a","#159ee8","#3d86d6","#7f8fd0","#3b49b5","#b3a9ea","#9d6fc4","#9412c4",
+"#8a6a55","#5b5b5b","#b3a99a","#6b7785","#d6549b"];
 const tagDefs=()=>{
-const base=(tagList||[]).map(x=>typeof x==="string"?{name:x,color:""}:{name:x.name,color:x.color||""}).filter(x=>x.name);
+const base=(tagList||[]).map(x=>typeof x==="string"?{name:x,color:"",track:""}:{name:x.name,color:x.color||"",track:x.track||""}).filter(x=>x.name);
 const extra=[...new Set(items.map(t=>(t.tag||"").trim()).filter(Boolean))].filter(n=>!base.some(b=>b.name===n)).sort()
 .map(name=>({name,color:(items.find(x=>(x.tag||"").trim()===name&&x.color)||{}).color||""}));
 return [...base,...extra];};
 const tagsOf=()=>tagDefs().map(x=>x.name);
-const tagColor=name=>{const d=tagDefs().find(x=>x.name===name);return d?d.color:"";};
+const tagColor=name=>{const d=tagDefs().find(x=>x.name===name);
+const g=d&&groups.find(x=>x.key===d.track); return (g&&g.color)||"";};
+const tagTrack=name=>{const d=tagDefs().find(x=>x.name===name);return d?d.track:"";};
+const tagsFor=tr=>tagDefs().filter(x=>!x.track||x.track===tr).map(x=>x.name);
 const tagUsed=name=>items.filter(t=>(t.tag||"").trim()===name).length;
 const DEFAULT_GROUPS=[
 {key:"train_law",label:"อบรมตามกฎหมาย"},{key:"train_in",label:"อบรมภายใน"},
@@ -39,8 +45,9 @@ return {k:"ok",t:"อีก "+n+" วัน",c:"s-done"}; }
 if(miss)return {k:"noperson",t:"ยังไม่มีผู้รับผิดชอบ",c:"s-wait"};
 if(L.lifetime)return {k:"ok",t:"ไม่มีวันหมดอายุ",c:"s-done"};
 return {k:"noperson",t:"ยังไม่ระบุวันครบกำหนด",c:"s-wait"}; };
-const SKILLS=["Soft Skill","Hard Skill","Safety"];
-const MODES=["In-House","Public","OJT","Online","สัมมนา","อื่นๆ"];
+// หมวดทักษะ + รูปแบบการอบรม — ค่าตั้งต้น แก้/เพิ่ม/ลบได้ในตั้งค่า › หลักสูตรอบรม
+const SKILLS_BASE=["Soft Skill","Hard Skill","Safety"];
+const MODES_BASE=["In-House","Public","OJT","Online","สัมมนา","อื่นๆ"];
 const SKILLC={"Soft Skill":"#3d86d6","Hard Skill":"#7d5bd0","Safety":"#e0606d"};
 const MODEC={"In-House":"#2fa36b","Public":"#e0932b","OJT":"#2bb3c9","Online":"#4a5fc4","สัมมนา":"#d6549b","อื่นๆ":"#6b7785"};
 const SAFETYRE=/ความปลอดภัย|ดับเพลิง|อพยพ|จป\.?|คปอ|ปั้นจั่น|โฟล์คลิฟท์|forklift|สารเคมี|ไฟฟ้า|ที่สูง|ปฐมพยาบาล|first aid|อัคคีภัย|ก๊าซ|เชื่อม/i;
@@ -76,7 +83,7 @@ laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19
 const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["set","ตั้งค่า"]];
 const TABS=["home","all","cal","budget","meet","train","dsd","legal","idx","note","set"];
 const TABLABEL={home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",budget:"งบ",set:"ตั้งค่า"};
-const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["connect","การเชื่อมต่อ"]];
+const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["trash","ถังขยะ"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
 {key:"above",   name:"เหนือหมู่เมฆ", note:"ฟ้าสดใส", ramp:["#F2F8FF","#D7E7F7","#7FC1EE","#4A93D4","#2A5E96"]},
@@ -143,7 +150,7 @@ document.documentElement.style.colorScheme="light";
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
-let typeList=[], tagList=[];
+let typeList=[], tagList=[], courses=[], skillList=[], modeList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
 try{const t=localStorage.getItem("hr-theme");if(t)theme=JSON.parse(t);}catch(e){}
 const THISYEAR=new Date().getFullYear();
@@ -155,6 +162,7 @@ function nthOfMonth(d){ return Math.floor((d.getDate()-1)/7)+1; }
 function isLastWeek(d){ return d.getDate()+7>new Date(d.getFullYear(),d.getMonth()+1,0).getDate(); }
 function occursOn(t,d){
 const R2=rr(t);
+if(R2&&occSkip(t,d))return false;
 if(R2){
 const start=t.date?new Date(t.date):null;
 if(start&&d<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
@@ -195,8 +203,8 @@ if(!rr(t))return t.date?new Date(t.date):null;
 for(let i=0;i<800;i++){ if(occursOn(t,d))return new Date(d); d.setDate(d.getDate()+1); }
 return null;
 }
-let R={year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
-const F={q:"",track:"",type:"",status:"",company:""};
+let R={pq:"", calGroup:"track", year:THISYEAR, scope:"year", month:new Date().getMonth(), selDay:null, calMode:"month", budScope:"year", budMonth:new Date().getMonth()};
+const F={q:"",track:"",type:"",status:"",company:"",grp:"time"};
 const el=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const baht=n=>(+n||0).toLocaleString("th-TH",{maximumFractionDigits:0});
@@ -228,10 +236,22 @@ const hhmm=v=>/^\d{1,2}:\d{2}$/.test(v||"")?(v.length===4?"0"+v:v):"";
 const tShow=v=>hhmm(v)?hhmm(v)+" น.":"";
 const prepDate=t=>{const d=dueDate(t); if(!d||!(+t.prepDays))return null;
 const p=new Date(d); p.setDate(p.getDate()-(+t.prepDays)); return p;};
-const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.test(gLabel(t.track))));
-const trainKind=t=>t.track==="train_law"||/กฎหมาย/.test(gLabel(t.track))?"กฎหมาย":t.track==="train_out"||/ภายนอก/.test(gLabel(t.track))?"ภายนอก":"ภายใน";
+const isTrain=t=>!!(t&&(t.train||/^train_/.test(t.track||"")||/อบรม/.test(gLabel(t.track))||/อบรม|training/i.test(t.type||"")));
+// ป้ายกลุ่มย่อยของงานอบรม = ประเภทงานที่ตั้งไว้ในตั้งค่า (ถ้าไม่ได้ตั้ง ใช้ชื่อกลุ่มงาน)
+const trainKind=t=>(t.type||"").trim()||gLabel(t.track)||"ยังไม่ระบุประเภท";
+// "อบรมตามกฎหมาย" = กลุ่มงานหรือประเภทงานที่มีคำว่า กฎหมาย
+// บังคับตามกฎหมาย: หลักสูตรชนะประเภทงาน · ประเภทงานเป็นตาข่ายกันพลาดของรุ่นที่ยังไม่ผูกรหัส
+const isLawTrain=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
+if(c&&(c.law===true||c.law===false))return c.law;
+const d=typeDef(t.type); if(d)return !!d.law||/กฎหมาย/.test(d.name);
+return /กฎหมาย/.test((t.type||"")+" "+gLabel(t.track));};
+const isLawItem=t=>isLawTrain(t);
+const lawSrc=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
+return (c&&(c.law===true||c.law===false))?"หลักสูตร":"ประเภทงาน";};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
+// งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
+const occSkip=(t,d)=>(((t&&t.skip)||[]).includes(isoOf(d)));
 function occList(t,from,months){
 const out=[]; const s0=new Date(from);
 for(let k=0;k<months;k++){const m=new Date(s0.getFullYear(),s0.getMonth()+k,1);
@@ -242,11 +262,12 @@ function nextOpenOcc(t){
 const today=new Date(); today.setHours(0,0,0,0);
 const st=t.date?new Date(t.date):today;
 const from=new Date(Math.min(st.getTime(),today.getTime()));
-const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d));
+const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d));
 const past=list.filter(d=>d<today);
 return past.length?past[0]:(list.find(d=>d>=today)||null);
 }
 function occState(t){
+if(t.status===STATUS_CANCEL)return {label:STATUS_CANCEL,cls:"s-cancel",recur:false,d:null};
 if(!rr(t))return {label:t.status,cls:sCls(t.status),recur:false,d:t.date?new Date(t.date):null};
 const d=nextOpenOcc(t);
 if(!d)return {label:"ปิดครบทุกรอบแล้ว",cls:"s-done",recur:true,d:null};
@@ -257,17 +278,61 @@ return {label:"อีก "+n+" วัน",cls:"s-wait",recur:true,d};
 }
 const dueDate=t=>{const R2=rr(t); if(R2)return nextOpenOcc(t); return t.date?new Date(t.date):null;};
 const daysTo=d=>{const a=new Date();a.setHours(0,0,0,0);return Math.round((d-a)/864e5);};
-const itemColor=t=>t&&t.color?t.color:sColor(t?t.status:"");
+const gColor=k=>{const g=groups.find(x=>x.key===k);return (g&&g.color)||"";};
+// ลำดับสี: สีที่ตั้งในงาน → สีของป้ายกำกับ → สีของกลุ่มงาน → สีตามสถานะ
+// กฎเดียว: สีของงาน = สีกลุ่มงาน (ถ้ากลุ่มยังไม่ตั้งสี ใช้สีตามสถานะ)
+const itemColor=t=>{ if(!t)return sColor("");
+return gColor(t.track)||sColor(t.status); };
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+// ทะเบียนหลักสูตร — รหัสรันอัตโนมัติ กันคีย์มือผิด
+const CRSPREFIX="TRN";
+function nextCourseCode(){
+let n=0;
+courses.forEach(c=>{const m=String(c.code||"").match(/(\d+)\s*$/); if(m)n=Math.max(n,+m[1]);});
+return CRSPREFIX+"-"+String(n+1).padStart(3,"0");
+}
+const crsOf=code=>courses.find(c=>c.code===code)||null;
+const crsLabel=code=>{const c=crsOf(code);return c?c.code+" · "+c.name:(code||"");};
+// หาโค้ดหลักสูตรของงานหนึ่ง: ยึดที่ผูกไว้ก่อน ถ้าไม่มีให้จับคู่จากชื่อ (ข้อมูลเก่าที่พิมพ์เอง)
+const crsByName=nm=>courses.find(c=>c.name.trim()===String(nm||"").trim());
+const crsCodeOf=t=>(t.course||"").trim()||((crsByName(t.title)||{}).code||"");
+const crsBatches=code=>items.filter(t=>isTrain(t)&&crsCodeOf(t)===code);
+const batchNo=v=>{const m=String(v||"").match(/(\d+)/); return m?+m[1]:0;};
+const batchLabel=(sample,n)=>{const s0=String(sample||"").trim();
+return /\d/.test(s0)?s0.replace(/\d+/,String(n)):(s0?s0+" "+n:String(n));};
+// ประเภท/รูปแบบ/ชั่วโมง: ยึดค่าที่กรอกในงานก่อน ถ้าเว้นไว้ให้ดึงจากทะเบียนหลักสูตร
+// ทะเบียนหมวดทักษะ / รูปแบบ — ของที่ใช้อยู่จริงในข้อมูลจะถูกเติมเข้ามาให้เองไม่ให้ตกหล่น
+const listOf=(saved,base,pick)=>{
+const b=(saved.length?saved:base).map(x=>typeof x==="string"?x:(x&&x.name)||"").filter(Boolean);
+const used=[...new Set([...courses.map(pick),...items.map(pick)].map(x=>String(x||"").trim()).filter(Boolean))];
+return [...b,...used.filter(x=>!b.includes(x))];};
+const skills=()=>listOf(skillList,SKILLS_BASE,x=>x&&x.skill);
+const modes=()=>listOf(modeList,MODES_BASE,x=>x&&x.mode);
+const skillColor=n=>SKILLC[n]||TAGCOLORS[(skills().indexOf(n)+3)%TAGCOLORS.length]||"var(--wait)";
+const modeColor=n=>MODEC[n]||TAGCOLORS[(modes().indexOf(n)+7)%TAGCOLORS.length]||"var(--wait)";
+const skillUsed=n=>courses.filter(c=>(c.skill||"")===n).length+items.filter(t=>(t.skill||"")===n).length;
+const modeUsed=n=>courses.filter(c=>(c.mode||"")===n).length+items.filter(t=>(t.mode||"")===n).length;
+const crsMeta=t=>crsOf(crsCodeOf(t))||crsByName((t||{}).title)||{};
+const skillOf=t=>((t&&t.skill||"").trim())||crsMeta(t).skill||"";
+const modeOf=t=>((t&&t.mode||"").trim())||crsMeta(t).mode||"";
+const hoursOf=t=>+(t&&t.hours)||+crsMeta(t).hours||0;
+// นับหลักสูตรไม่ซ้ำจากรายการอบรม (ยึดรหัสหลักสูตรก่อน ถ้าไม่มีใช้ชื่อ)
+const crsChip=t=>{const c=crsCodeOf(t);
+return c?`<b style="font-family:var(--mono);color:var(--accent)">${esc(c)}</b>${t.batch?" "+esc(t.batch):""} · `:"";};
+const courseKey=t=>crsCodeOf(t)||(t.title||"").trim()||(t.code||"").trim();
+const uniqCourses=arr=>new Set(arr.map(courseKey).filter(Boolean)).size;
 const TYPEBASE=["อบรม","ประชุม","โปรเจค","กิจกรรม","งานประจำ/ต่ออายุ","เอกสารราชการ","สุขภาพ","อื่นๆ"];
 const typeUsed=x=>items.filter(t=>(t.type||"")===x).length;
 const tName=x=>typeof x==="string"?x:(x&&x.name)||"";
 const tTrack=x=>(typeof x==="string"?"":(x&&x.track)||"");
-// รายการประเภทแบบเต็ม [{name,track}] — track ว่าง = ใช้ได้ทุกกลุ่มงาน
+const tLaw=x=>typeof x==="string"?false:!!(x&&x.law);
+// รายการประเภทแบบเต็ม [{name,track,law}] — track ว่าง = ใช้ได้ทุกกลุ่มงาน · law = บังคับตามกฎหมาย
 const typeDefs=()=>{
-const base=(typeList.length?typeList:TYPEBASE).map(x=>({name:tName(x),track:tTrack(x)})).filter(x=>x.name);
-const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.some(b=>b.name===x)).sort().map(name=>({name,track:""}));
+const base=(typeList.length?typeList:TYPEBASE).map(x=>({name:tName(x),track:tTrack(x),law:tLaw(x)})).filter(x=>x.name);
+const extra=[...new Set(items.map(t=>t.type).filter(Boolean))].filter(x=>!base.some(b=>b.name===x)).sort().map(name=>({name,track:"",law:false}));
 return [...base,...extra];};
+const typeDef=nm=>typeDefs().find(x=>x.name===String(nm||"").trim())||null;
+const lawTypes=()=>typeDefs().filter(x=>x.law).map(x=>x.name);
 const types=()=>typeDefs().map(x=>x.name);
 // ประเภทที่ใช้ได้กับกลุ่มงานนั้น: ของกลุ่มนั้น + ที่ไม่ผูกกลุ่ม
 const typesFor=tr=>typeDefs().filter(x=>!x.track||x.track===tr).map(x=>x.name);
@@ -283,6 +348,9 @@ return[];
 const fmtDate=d=>{if(!d)return"";const x=new Date(d);return x.getDate()+" "+MTH[x.getMonth()];};
 const weekOf=d=>{const x=new Date(d),s=new Date(x.getFullYear(),0,1);return Math.ceil(((x-s)/864e5+s.getDay()+1)/7);};
 const nowWeek=weekOf(new Date());
+const weekDays=()=>{const t0=new Date();t0.setHours(0,0,0,0);const s0=new Date(t0);s0.setDate(t0.getDate()-t0.getDay());
+return [0,1,2,3,4,5,6].map(i=>{const d=new Date(s0);d.setDate(s0.getDate()+i);return d;});};
+const DAYTH=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
 function inScope(t){
 if(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year)return false;
 if(R.scope==="year")return true;
@@ -296,13 +364,18 @@ return true;
 }
 function yearList(){
 const ys=new Set([R.year]);
-for(let y=THISYEAR-3;y<=THISYEAR+5;y++)ys.add(y);
+// เลื่อนไปปีไหนก็ได้ — รายการจะขยายตามปีที่กำลังดูเสมอ (แบบ Google Calendar)
+for(let y=Math.min(THISYEAR-3,R.year-5);y<=Math.max(THISYEAR+5,R.year+5);y++)ys.add(y);
 items.forEach(t=>{if(t.date)ys.add(new Date(t.date).getFullYear());});
 ledger.forEach(x=>{if(x.date)ys.add(new Date(x.date).getFullYear());});
 return [...ys].filter(y=>y>2000&&y<2100).sort();
 }
-const yearSel=id=>`<select id="${id}" style="border:0;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;box-shadow:var(--sh-s)">${yearList().map(y=>`<option value="${y}"${y===R.year?" selected":""}>พ.ศ. ${y+543} · ${y}</option>`).join("")}</select>`;
+const yearSel=id=>`<span class="yrnav"><button class="iconbtn" data-yr="-1" title="ปีก่อนหน้า">‹</button><select id="${id}" style="border:0;background:var(--card);border-radius:999px;padding:8px 14px;font-weight:600;box-shadow:var(--sh-s)">${yearList().map(y=>`<option value="${y}"${y===R.year?" selected":""}>พ.ศ. ${y+543} · ${y}</option>`).join("")}</select><button class="iconbtn" data-yr="1" title="ปีถัดไป">›</button>${R.year!==THISYEAR?`<button class="gcbtn" data-yr="0" title="กลับไปปีปัจจุบัน">วันนี้</button>`:""}</span>`;
 const scopeLabel=()=>R.scope==="year"?"ทั้งปี "+(R.year+543):R.scope==="month"?MTHFULL[R.month]:"สัปดาห์นี้";
+// ช่องค้นหาประจำหน้า
+const pqBox=(ph)=>`<input type="search" id="pq" placeholder="${esc(ph||"ค้นหาในหน้านี้")}" value="${esc(R.pq||"")}" style="flex:1;min-width:180px;background:var(--card);border:0;border-radius:999px;padding:9px 16px;box-shadow:var(--sh-s)">`;
+const pqHit=(...parts)=>{const q=(R.pq||"").trim().toLowerCase(); if(!q)return true;
+return parts.filter(Boolean).join(" ").toLowerCase().includes(q);};
 function scopeBar(id){
 return `${yearSel("yrSel")} <div class="seg" id="${id}">
 <button data-sc="year" aria-pressed="${R.scope==="year"}">รายปี</button>
@@ -352,6 +425,8 @@ let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{},dsd:{},subsidy:{pct:70,rate:200}};
 let legal=[], idx=[], notes=[];
+const TRASH={items:[],ledger:[],legal:[],index:[],note:[]};
+const TRASH_DAYS=30;
 const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),meta:new Map()};
 const listeners={items:[],ledger:[],legal:[],index:[],note:[],meta:new Map()};
 const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}});
@@ -436,20 +511,22 @@ sub("meta/companies",d=>{if(Array.isArray(d.list))companies=d.list;});
 sub("meta/gl",d=>{seedGL._done=true; if(Array.isArray(d.list))gls=d.list;});
 sub("meta/types",d=>{if(Array.isArray(d.list))typeList=d.list;});
 sub("meta/tags",d=>{if(Array.isArray(d.list))tagList=d.list;});
+sub("meta/courses",d=>{if(Array.isArray(d.list))courses=d.list;});
+sub("meta/skills",d=>{if(Array.isArray(d.list))skillList=d.list;});
+sub("meta/modes",d=>{if(Array.isArray(d.list))modeList=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
+const splitTrash=(docs,key)=>{const all=docs.map(d=>Object.assign({},d.data(),{_id:d.id}));
+TRASH[key]=all.filter(t=>t._trash).sort((a,b)=>String(b._trash).localeCompare(String(a._trash)));
+return all.filter(t=>!t._trash);};
 DBShim.collection("items").onSnapshot(s=>{
-items=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})).filter(t=>!isSysRow(t));
-maybeSeedGL();
+items=splitTrash(s.docs,"items").filter(t=>!isSysRow(t));
+maybeSeedGL(); autoPurgeTrash();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
-DBShim.collection("index").onSnapshot(s=>{
-idx=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
-DBShim.collection("note").onSnapshot(s=>{
-notes=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
-DBShim.collection("legal").onSnapshot(s=>{
-legal=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
-DBShim.collection("ledger").onSnapshot(s=>{
-ledger=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
+DBShim.collection("index").onSnapshot(s=>{ idx=splitTrash(s.docs,"index"); render();});
+DBShim.collection("note").onSnapshot(s=>{ notes=splitTrash(s.docs,"note"); render();});
+DBShim.collection("legal").onSnapshot(s=>{ legal=splitTrash(s.docs,"legal"); render();});
+DBShim.collection("ledger").onSnapshot(s=>{ ledger=splitTrash(s.docs,"ledger"); render();});
 setFoot("กำลังโหลด…");
 await loadAll(); liveSync();
 setFoot(items.length+" งาน · ซิงก์แล้ว");
@@ -537,6 +614,87 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div sty
 const dsdRec=(c,y)=>((hrdata.dsd||{})[c]||{})[y]||null;
 const dsdList=y=>visible(companies).filter(c=>!isGroupCo(c)&&dsdRec(c.key,y));
 const LAWPCT=50;
+// ---------- เตือนประจำปีของกรมพัฒนาฯ ----------
+// ผลงานปี Y ต้องยื่นขอรับรอง/ขอเงินอุดหนุนภายใน 31 ส.ค. ปี Y+1 · รอบเตรียม สท.2 เริ่ม 17 พ.ย.
+function dsdYearClock(){
+const today=new Date(); today.setHours(0,0,0,0);
+const y0=today.getFullYear();
+const augThis=new Date(y0,7,31);
+const perfYear=(today<=augThis)?y0-1:y0;      // ปีผลงานที่ยังยื่นได้อยู่
+const due=new Date(perfYear+1,7,31);          // 31 ส.ค.
+const left=Math.round((due-today)/86400000);
+const prep=new Date(perfYear,10,17);          // 17 พ.ย. = เริ่มรอบเตรียม
+return {today,perfYear,due,left,prep,inPrep:today>=prep};
+}
+const st2Done=r=>(r&&(r.st2==="ได้รับการรับรองแล้ว"));
+const st2Sent=r=>(r&&(r.st2==="ยื่นแล้ว รอผลพิจารณา"||r.st2==="ได้รับการรับรองแล้ว"));
+function dsdAnnualBanner(){
+const C=dsdYearClock();
+const cos=visible(companies).filter(c=>!isGroupCo(c));
+if(!cos.length)return "";
+const pendingOf=y=>cos.filter(c=>{const r=dsdRec(c.key,y); return r&&!st2Sent(r);});
+const rowOf=(c,y,p,pc)=>({t1:cLabel(c.key),t2:"ผลงานปี "+(y+543)+" · สท.2: "+((dsdRec(c.key,y)||{}).st2||"ยังไม่เริ่ม"),
+d:"สท.2",c:"var(--over-soft)",ic:"var(--over)",p,pc});
+let out="";
+// 1) ปีที่เลยเส้นตาย 31 ส.ค. ไปแล้วแต่ยังไม่ได้ยื่น
+const allYears=[...new Set(Object.values(hrdata.dsd||{}).flatMap(o=>Object.keys(o||{}).map(Number)))]
+.filter(y=>y&&y<C.perfYear).sort();
+const lateRows=[];
+allYears.forEach(y=>pendingOf(y).forEach(c=>{
+const dd=Math.round((C.today-new Date(y+1,7,31))/86400000);
+lateRows.push(rowOf(c,y,"เลย "+dd+" วัน","s-over"));}));
+if(lateRows.length)
+out+=`<div class="banner bad" ${regList("st2Late","สท.2 ที่เลยเส้นตาย 31 ส.ค. แล้ว",lateRows)}>${svg(ICON.bell,19)}
+<b>มี ${lateRows.length} รายการที่เลยเส้นตาย 31 ส.ค. แล้วแต่ยังไม่ได้ยื่น สท.2</b> — ปีผลงาน ${allYears.map(y=>y+543).join(", ")} · ยื่นช้ามีสิทธิ์ถูกประเมินเงินสมทบเต็มจำนวน ตรวจด่วน</div>`;
+// 2) ปีผลงานที่กำลังจะถึงเส้นตาย
+const p=pendingOf(C.perfYear);
+if(p.length&&C.left<=120)
+out+=`<div class="banner ${C.left<=30?"bad":""}" ${regList("st2Soon","ต้องยื่น สท.2 ของผลงานปี "+(C.perfYear+543),p.map(c=>rowOf(c,C.perfYear,C.left+" วัน",C.left<=30?"s-over":"s-run")))}>${svg(ICON.clock,19)}
+เหลือ <b>${C.left} วัน</b> ถึง <b>31 ส.ค. ${C.perfYear+544}</b> — เส้นตายยื่นขอรับรอง/ขอเงินอุดหนุนของผลงานปี ${C.perfYear+543} · ยังค้าง ${p.length} บริษัท</div>`;
+// 3) รอบเตรียมประจำปี เริ่ม 17 พ.ย.
+const y0=C.today.getFullYear();
+if(C.today>=new Date(y0,10,17)&&pendingOf(y0).length)
+out+=`<div class="banner">${svg(ICON.file,19)} ถึงรอบ <b>เตรียม สท.2 ของผลงานปี ${y0+543}</b> แล้ว (เริ่ม 17 พ.ย.) — รวบรวมรายชื่อผู้ผ่านการฝึก · ขอข้อมูล สปส. · กรอกในระบบออนไลน์ · ยื่นให้ทันก่อน 31 ส.ค. ${y0+544}</div>`;
+return out;
+}
+
+// ขั้นตอนตามกรมพัฒนาฯ: ยื่น ยป. ก่อนฝึก → ฝึก → ยื่นรับรองรุ่น/รง.1
+// เลขคำขอ ยป. — ถ้ารุ่นไม่ได้ใส่เอง ใช้ของหลักสูตร
+// คำขอ ยป. ของหลักสูตร แยกรายปี — ทุกปีต้องยื่นเปิดหลักสูตรใหม่ เลขจึงไม่ซ้ำกัน
+const crsYear=t=>{const d=t.date||t.dsdEnd; return d?new Date(d).getFullYear():(typeof R!=="undefined"?R.year:THISYEAR);};
+const crsFiling=(code,y)=>(((crsOf(code)||{}).filings)||{})[y]||{};
+const ypNoOf=t=>(t.dsdOpenNo||"").trim()||(crsFiling(crsCodeOf(t),crsYear(t)).openNo||"").trim();
+const ypDateOf=t=>t.dsdOpenDate||crsFiling(crsCodeOf(t),crsYear(t)).openDate||null;
+const ypKind=t=>t.yp||crsFiling(crsCodeOf(t),crsYear(t)).yp||((crsOf(crsCodeOf(t))||{}).yp||"");
+function ypState(t){
+const today=new Date(); today.setHours(0,0,0,0);
+const lead=ypLead(ypKind(t));
+const start=t.date?new Date(t.date):null;
+const end=t.dsdEnd?new Date(t.dsdEnd):start;
+// 1) ยังไม่ยื่นเปิดหลักสูตร
+if(!ypNoOf(t)&&!ypDateOf(t)){
+if(!start)return {step:"ยังไม่กำหนดวันฝึก",cls:"s-wait",n:null};
+const due=dAdd(t.date,-lead), n=dDiff(due,today);
+return {step:(ypKind(t)||"ยป.")+" · ต้องยื่นก่อนฝึก "+lead+" วัน",cls:n<0?"s-over":n<=7?"s-run":"s-wait",n,due,
+msg:n<0?"เลยกำหนดยื่นก่อนฝึกแล้ว "+(-n)+" วัน":"ต้องยื่น ยป. ภายใน "+n+" วัน"};}
+// 2) ยื่นเปิดแล้ว แต่ยังไม่ได้เลขคำขอรับรองรุ่น
+if(!t.dsdCertNo){
+let due=null,note="";
+if(t.dsdCertDate){ due=dAdd(t.dsdCertDate,30); note="นับ 30 วันจากวันที่ยื่นรับรองรุ่น"; }
+else if(end){ const d60=dAdd(end.toISOString().slice(0,10),60);
+const cap=new Date(end.getFullYear()+1,0,15); due=d60<cap?d60:cap; note="รง.1 ภายใน 60 วันหลังฝึกเสร็จ แต่ไม่เกิน 15 ม.ค."; }
+if(!due)return {step:"รอฝึก / รอยื่นรับรองรุ่น",cls:"s-wait",n:null};
+const n=dDiff(due,today);
+return {step:"ต้องยื่นรับรองรุ่น / รง.1",cls:n<0?"s-over":n<=14?"s-run":"s-mid",n,due,note,
+msg:n<0?"เลยกำหนดยื่นรับรองรุ่นแล้ว "+(-n)+" วัน — ยื่นย้อนหลังไม่ได้":"เหลือ "+n+" วันต้องยื่นรับรองรุ่น"};}
+return {step:"ยื่นครบขั้นตอนแล้ว",cls:"s-done",n:null};
+}
+const st2Cls=x=>x==="ได้รับการรับรองแล้ว"?"s-done":x==="ไม่ผ่าน / ต้องแก้ไข"?"s-cancel":x==="ยื่นแล้ว รอผลพิจารณา"?"s-mid":(!x||x==="ยังไม่เริ่ม")?"s-wait":"s-run";
+const YP=[["","— ไม่ระบุ —"],["ยป.1","ยป.1 · หลักสูตรใหม่ ยื่นครั้งแรก (ก่อนฝึก 30 วัน)"],["ยป.2","ยป.2 · e-learning ของบริษัท (ก่อนฝึก 30 วัน)"],["ยป.3","ยป.3 · ส่งลูกจ้างไปฝึกภายนอก (ก่อนฝึก 15 วัน)"],["ยป.4","ยป.4 · หลักสูตรเดิม/ของกรมฯ (ก่อนฝึก 30 วัน)"]];
+const ypLead=y=>y==="ยป.3"?15:30;
+const dAdd=(iso,n)=>{const d=new Date(iso); d.setDate(d.getDate()+n); return d;};
+const dDiff=(a,b)=>Math.round((a-b)/86400000);
+const ST2=["ยังไม่เริ่ม","รวบรวมรายชื่อผู้ผ่านการฝึก","ขอข้อมูล สปส. จากประกันสังคม","กรอก/อัปโหลดในระบบออนไลน์","ยื่นแล้ว รอผลพิจารณา","ได้รับการรับรองแล้ว","ไม่ผ่าน / ต้องแก้ไข"];
 const subPct=()=>+((hrdata.subsidy||{}).pct)||70;
 const subRate=()=>+((hrdata.subsidy||{}).rate)||200;
 const STD_RATE=1000, STD_CAP=100000, FUND_PCT=10;
@@ -544,7 +702,7 @@ function subsidyOf(k,r){
 const base=k.avg*subPct()/100;
 const excess=Math.max(0,Math.floor(k.C-base));
 const amount=excess*subRate();
-const stdN=+((r||{}).stdPass)||0;
+const stdN=0;
 const stdAmt=Math.min(stdN*STD_RATE,STD_CAP);
 const fundPaid=+((r||{}).fundPaid)||0;
 const fundAmt=Math.round(fundPaid*FUND_PCT/100);
@@ -568,9 +726,38 @@ const needGoal=Math.max(0,goalTarget-C);
 const o={avg,target,goal,goalTarget,A,B,C,pct,need,needGoal,months:vals.length};
 return Object.assign(o,{sub:subsidyOf(o,r)});
 }
-const trainedPax=(c,y)=>items.filter(t=>isTrain(t)&&(t.company||"")===c&&t.status==="เสร็จสิ้น"
-&&(()=>{const d=dueDate(t);return d?d.getFullYear()===y:false;})()).reduce((n,t)=>n+(+t.pax||0),0);
+const trainRows=(c,y)=>items.filter(t=>isTrain(t)&&(t.company||"")===c&&t.status==="เสร็จสิ้น"
+&&(()=>{const d=dueDate(t);return d?d.getFullYear()===y:false;})());
+const trainedPax=(c,y)=>trainRows(c,y).reduce((n,t)=>n+(+t.pax||0),0);
+// เฉพาะรุ่นที่ยื่นกรมฯ และได้รับอนุมัติ — ตัวนี้คือตัวที่นับเข้าเกณฑ์ได้จริง
+const trainedPaxDsd=(c,y)=>trainRows(c,y).filter(t=>t.dsd==="อนุมัติแล้ว"||t.dsdCertNo).reduce((n,t)=>n+(+t.pax||0),0);
 const saveMeta=async(k,list)=>{ if(!DB)return; try{ await DB.doc("meta/"+k).set({list}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); } };
+// ---------- ถังขยะ: ลบแล้วกู้คืนได้ 30 วัน ----------
+const TRKIND={items:"งาน",ledger:"รายการเงิน",legal:"กฎหมาย/ใบรับรอง",index:"Index Online",note:"บันทึก"};
+const trashAll=()=>Object.entries(TRASH).flatMap(([k,a])=>a.map(t=>({coll:k,t})));
+const trashDays=t=>Math.floor((Date.now()-new Date(t._trash||Date.now()))/86400000);
+const trashLeft=t=>Math.max(0,TRASH_DAYS-trashDays(t));
+const trashTitle=(k,t)=>k==="ledger"?((t.note||t.title||"รายการเงิน")+(t.amount?" · "+baht(t.amount)+" ฿":"")):(t.title||"(ไม่มีชื่อ)");
+async function softDel(coll,row){
+if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล");
+const d=Object.assign({},row); delete d._id;
+d._trash=new Date().toISOString();
+await DB.collection(coll).doc(row._id).set(d);
+setFoot("ย้ายไปถังขยะแล้ว · กู้คืนได้ใน "+TRASH_DAYS+" วัน (ตั้งค่า › ถังขยะ)");
+}
+async function trashRestore(coll,row){
+const d=Object.assign({},row); delete d._id; delete d._trash;
+await DB.collection(coll).doc(row._id).set(d);
+setFoot("กู้คืนแล้ว");
+}
+async function trashPurge(coll,id){ await DB.collection(coll).doc(id).delete(); }
+let purgeRan=false;
+async function autoPurgeTrash(){
+if(purgeRan||!DB)return; purgeRan=true;
+const old=trashAll().filter(({t})=>trashDays(t)>=TRASH_DAYS);
+for(const {coll,t} of old){ try{ await trashPurge(coll,t._id); }catch(e){} }
+if(old.length)setFoot("ล้างถังขยะที่เกิน "+TRASH_DAYS+" วันแล้ว "+old.length+" รายการ");
+}
 async function saveItem(data,id){ if(!DB)throw new Error("ยังไม่ได้เชื่อมต่อฐานข้อมูล"); if(data&&"_id" in data)delete data._id; return id?await DB.collection("items").doc(id).set(data):await DB.collection("items").add(data); }
 async function hardRefresh(){
 setFoot("กำลังรีเฟรช…");
@@ -583,7 +770,7 @@ const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VE
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
 el("tabbar").innerHTML=TABS.map(k=>{const l=TABLABEL[k]||VIEWS.find(v=>v[0]===k)[1];
 return `<button data-v="${k}" aria-current="${k===view}" title="${esc(VIEWS.find(v=>v[0]===k)[1])}">${svg(ICON[k],19)}<span>${l}</span></button>`;}).join("");
-const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;renderNav();render();window.scrollTo(0,0);};
+const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;R.pq="";renderNav();render();window.scrollTo(0,0);};
 el("nav").onclick=go; el("tabbar").onclick=go;
 ["brandBtn","brandBtnM"].forEach(id=>{const n=el(id); if(!n||n._wired)return; n._wired=1;
 n.onclick=hardRefresh;
@@ -630,7 +817,7 @@ return `<div class="li" data-id="${t._id}">
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
 ${(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
 (S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบวันที่ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>`:"");})()}</div>`;
@@ -722,6 +909,12 @@ const pct=A.length?Math.round(done/A.length*100):0;
 const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
 return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+
+(()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
+return lw.length?`<div class="banner bad" ${regList("hLaw","งานบังคับตามกฎหมายที่เลยกำหนดแล้ว",lw.map(t=>{const d=dueDate(t);return {id:t._id,
+t1:t.title,t2:`${(t.type||"").trim()||gLabel(t.track)}${t.company?" · "+cLabel(t.company):""} · ตั้งธงจาก${lawSrc(t)}`,
+d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
+p:"เลย "+(-daysTo(d))+" วัน",pc:"s-over"};}))}>${svg(ICON.legal,19)} ⚖︎ งาน<b>บังคับตามกฎหมาย</b> ${lw.length} รายการเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"";})()+
+dsdAnnualBanner()+
 (()=>{const w=dueSoon();
 const lg=legal.filter(L=>{const k=legalState(L).k;return k==="late"||k==="soon";});
 const pr=prepDue(3);
@@ -753,9 +946,9 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 <div class="modgrid">
 ${(()=>{
 const ms=items.filter(t=>isMeet(t)&&inScope(t)), pr=prepDue(7);
-const tr=items.filter(t=>isTrain(t)&&inScope(t));
+const tr=items.filter(t=>isTrain(t)&&inScope(t)&&t.status!==STATUS_CANCEL);
 const pax=tr.reduce((n,t)=>n+(+t.pax||0),0);
-const dsdWait=items.filter(t=>isTrain(t)&&t.dsd==="รอยื่น").length;
+const dsdWait=items.filter(t=>isTrain(t)&&t.dsd==="รอยื่น"&&t.status!==STATUS_CANCEL).length;
 const lgLate=legal.filter(L=>legalState(L).k==="late").length;
 const lgSoon=legal.filter(L=>legalState(L).k==="soon").length;
 const lgNo=legal.filter(L=>legalState(L).k==="noperson").length;
@@ -766,7 +959,7 @@ const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go
 return [
 card(ICON.all,"งานทั้งหมด",A.length,`ค้าง ${A.length-done} · เสร็จ ${done}${cancelled?" · ยกเลิก "+cancelled:""}`,jump("all")),
 card(ICON.meet,"การประชุม",ms.length,pr.length?`ต้องเตรียมข้อมูล ${pr.length} รายการ`:"ไม่มีที่ต้องเตรียม",jump("meet"),pr.length),
-card(ICON.train,"ฝึกอบรม",tr.length+" หลักสูตร",`ผู้เข้าอบรม ${baht(pax)} คน${dsdWait?" · รอยื่นกรมพัฒฯ "+dsdWait:""}`,jump("train"),dsdWait),
+card(ICON.train,"ฝึกอบรม",uniqCourses(tr)+" หลักสูตร",`${tr.length} รุ่น · ผู้เข้าอบรม ${baht(pax)} คน${dsdWait?" · รอยื่นกรมพัฒฯ "+dsdWait:""}`,jump("train"),dsdWait),
 card(ICON.legal,"กฎหมาย",legal.length,lgLate?`เกินกำหนด ${lgLate} · ใกล้ครบ ${lgSoon}`:(lgNo?`ยังไม่มีผู้รับผิดชอบ ${lgNo}`:"เรียบร้อยทั้งหมด"),jump("legal"),lgLate),
 card(ICON.budget,"งบประมาณ",baht(bud-act)+" ฿",`ใช้ไป ${baht(act)} จาก ${baht(bud)}`,jump("budget"),act>bud&&bud>0),
 card(ICON.cal,"ปฏิทิน",byMonth.reduce((a,b)=>a+b,0),`งานที่มีกำหนดในปี ${R.year+543}`,jump("cal")),
@@ -802,30 +995,90 @@ const list=items.filter(inScope).filter(t=>
 .sort((a,b)=>(a.date||"9999")<(b.date||"9999")?-1:1);
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
 const mobile=matchMedia("(max-width:820px)").matches;
-return header("งานทั้งหมด",`${list.length} จาก ${items.length} รายการ · แตะเพื่อแก้ไข`)+
-`<div class="toolbar">${scopeBar("sc1")}</div>
-<div class="toolbar">
-<input type="search" id="q" placeholder="ค้นหางาน / ผู้รับผิดชอบ" value="${esc(F.q)}">
-<select id="fl-company">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],F.company)}</select>
-<select id="fl-track">${opt([["","ทุกกลุ่ม"],...visible(groups).map(g=>[g.key,g.label])],F.track)}</select>
-<select id="fl-type">${opt([["","ทุกประเภท"],...types().map(t=>[t,t])],F.type)}</select>
-<select id="fl-status">${opt([["","ทุกสถานะ"],...STATUS.map(s=>[s,s])],F.status)}</select>
-</div>`+
-(mobile
-? `<div class="card"><div class="list">${list.map(t=>liRow(t,true)).join("")||`<div class="empty">ไม่พบงานตามเงื่อนไขนี้</div>`}</div></div>`
-: `<div class="tblwrap"><table>
-<thead><tr><th>ประเภท</th><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
-<tbody>${list.map(t=>`<tr data-id="${t._id}">
+// ---- แบ่งกลุ่มการแสดงผล ----
+const timeBucket=t=>{
+if(R.scope==="week"){
+const d=rr(t)?weekDays().find(x=>occursOn(t,x)):(t.date?new Date(t.date):null);
+return d?{k:isoOf(d),lab:"วัน"+DAYTH[d.getDay()]+" "+d.getDate()+" "+MTH[d.getMonth()],c:d.toDateString()===new Date().toDateString()?"var(--accent)":""}
+:{k:"zz",lab:"ไม่ระบุวัน",c:""};}
+if(R.scope==="month"){
+const days=rr(t)?occDays(t,R.year,R.month):(t.date&&new Date(t.date).getMonth()===R.month&&new Date(t.date).getFullYear()===R.year?[new Date(t.date).getDate()]:[]);
+if(!days.length)return {k:"zz",lab:"ไม่ระบุวันในเดือนนี้",c:""};
+const w=Math.min(5,Math.ceil(days[0]/7));
+return {k:"w"+w,lab:"สัปดาห์ที่ "+w,sub:"วันที่ "+((w-1)*7+1)+"–"+(w===5?"สิ้นเดือน":w*7),c:""};}
+if(rr(t))return {k:"zr",lab:"งานประจำ · เกิดซ้ำ",sub:"ไม่ผูกกับเดือนใดเดือนหนึ่ง",c:""};
+const ms=monthsOf(t); if(!ms.length)return {k:"zz",lab:"ยังไม่ได้ลงวันที่",c:""};
+return {k:String(ms[0]).padStart(2,"0"),lab:MTHFULL[ms[0]-1],c:ms[0]-1===new Date().getMonth()&&R.year===THISYEAR?"var(--accent)":""};};
+const bucket=t=>{
+if(F.grp==="track"){const g=groups.find(x=>x.key===t.track);
+return {k:g?String(groups.indexOf(g)).padStart(3,"0"):"zzz",lab:g?g.label:"ยังไม่ระบุกลุ่มงาน",c:(g&&g.color)||""};}
+if(F.grp==="status"){const i=STATUS.indexOf(t.status);
+return {k:String(i<0?9:i),lab:t.status||"ไม่ระบุสถานะ",c:sColor(t.status)};}
+if(F.grp==="company"){const c=companies.find(x=>x.key===t.company);
+return {k:c?String(companies.indexOf(c)).padStart(3,"0"):"zzz",lab:c?c.label:"ยังไม่ระบุบริษัท",c:""};}
+if(F.grp==="type")return {k:(t.type||"zzz").trim()||"zzz",lab:(t.type||"").trim()||"ยังไม่ระบุประเภท",c:""};
+return timeBucket(t);};
+// ในแต่ละกลุ่ม เรียงให้ประเภทเดียวกันอยู่ติดกัน (ยกเว้นแบ่งตามช่วงเวลา ที่ต้องเรียงตามวัน)
+const tyOrder=types();
+const tyRank=t=>{const i=tyOrder.indexOf((t.type||"").trim()); return i<0?999:i;};
+const dayKey=t=>t.date||"9999";
+const subSort=(a,b)=>{
+if(F.grp==="time"||F.grp==="type")return dayKey(a)<dayKey(b)?-1:dayKey(a)>dayKey(b)?1:0;
+const r=tyRank(a)-tyRank(b); if(r)return r;
+const n=(a.type||"").localeCompare(b.type||"","th"); if(n)return n;
+return dayKey(a)<dayKey(b)?-1:1;};
+const secs=[];
+if(F.grp){const m=new Map();
+list.forEach(t=>{const b=bucket(t); if(!m.has(b.k))m.set(b.k,{...b,rows:[]}); m.get(b.k).rows.push(t);});
+secs.push(...[...m.values()].sort((a,b)=>String(a.k)<String(b.k)?-1:1));
+secs.forEach(g=>{g.rows.sort(subSort);
+g.kinds=[...new Set(g.rows.map(t=>(t.type||"").trim()||"—"))];});}
+const money=arr=>arr.reduce((a,t)=>a+budgetOf(t),0);
+const hd=g=>`${g.c?`<i style="background:${g.c}"></i>`:""}${esc(g.lab)}${g.sub?` <span style="color:var(--ink-3);font-weight:400;font-size:12px">${esc(g.sub)}</span>`:""}`;
+const meta=g=>`${(g.kinds&&g.kinds.length>1&&F.grp!=="type")?g.kinds.length+" ประเภท · ":""}${g.rows.length} งาน${money(g.rows)?" · งบ "+baht(money(g.rows))+" ฿":""}`;
+const GRPS=[["time","ช่วงเวลา"],["track","กลุ่มงาน"],["type","ประเภทงาน"],["status","สถานะ"],["company","บริษัท"],["","ไม่แบ่ง"]];
+const row=(t,sep)=>`<tr data-id="${t._id}"${sep?' class="tysep"':""}>
 <td><span class="tag">${esc(t.type||"—")}</span></td>
-<td><div style="font-weight:600">${esc(t.title)}</div>${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}</td>
+<td><div style="font-weight:600">${esc(t.title)}</div>
+${(()=>{const cc=crsCodeOf(t); return cc?`<div class="t-note"><b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" · "+esc(t.batch):""}</div>`:"";})()}
+${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}</td>
 <td>${esc(t.company?cLabel(t.company):"—")}</td>
 <td><span class="tag sky">${esc(gLabel(t.track))}</span></td>
 <td class="num">${rr(t)?esc(rruleText(t)):(t.date?fmtDate(t.date):esc(t.recurring||"—"))}</td>
 <td>${esc(t.owner||"—")}</td>
 <td class="num">${budgetOf(t)?baht(budgetOf(t)):"—"}</td>
 <td class="num"${(+t.actual||0)>budgetOf(t)&&budgetOf(t)?' style="color:var(--over);font-weight:600"':""}>${t.actual?baht(t.actual):"—"}</td>
-<td><span class="pill ${sCls(t.status)}">${esc(t.status)}</span></td></tr>`).join("")}</tbody></table>
-${list.length?"":`<div class="card"><div class="empty">ไม่พบงานตามเงื่อนไขนี้</div></div>`}</div>`);
+<td><span class="pill ${sCls(t.status)}">${esc(t.status)}</span></td></tr>`;
+const table=body=>`<div class="tblwrap"><table>
+<thead><tr><th>ประเภท</th><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
+<tbody>${body}</tbody></table>
+${list.length?"":`<div class="card"><div class="empty">ไม่พบงานตามเงื่อนไขนี้</div></div>`}</div>`;
+return header("งานทั้งหมด",`${list.length} จาก ${items.length} รายการ${F.grp&&secs.length?" · "+secs.length+" กลุ่ม":""} · แตะเพื่อแก้ไข`)+
+`<div class="toolbar">${scopeBar("sc1")}</div>
+<div class="toolbar filters">
+<input type="search" id="q" placeholder="ค้นหางาน / ผู้รับผิดชอบ" value="${esc(F.q)}">
+<select id="fl-company">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],F.company)}</select>
+<select id="fl-track">${opt([["","ทุกกลุ่ม"],...visible(groups).map(g=>[g.key,g.label])],F.track)}</select>
+<select id="fl-type">${(()=>{
+const base=F.track?typesFor(F.track):types();
+const used=[...new Set(items.filter(t=>!F.track||t.track===F.track).map(t=>(t.type||"").trim()).filter(Boolean))];
+const l2=[...new Set([...base,...used])];
+return opt([["",F.track?"ทุกประเภทในกลุ่มนี้":"ทุกประเภท"],...l2.map(t=>[t,t])],l2.includes(F.type)?F.type:"");})()}</select>
+<select id="fl-status">${opt([["","ทุกสถานะ"],...STATUS.map(s=>[s,s])],F.status)}</select>
+</div>
+<div class="toolbar" style="margin-top:-6px">
+<span style="font-size:13px;color:var(--ink-3)">แบ่งกลุ่มตาม</span>
+<div class="seg" id="grpseg">${GRPS.map(([v,l])=>`<button data-grp="${v}" aria-pressed="${F.grp===v}">${l}</button>`).join("")}</div>
+</div>`+
+(mobile
+? (F.grp&&secs.length
+ ? `<div class="card">${secs.map(g=>`<div class="grphead">${hd(g)}<b>${meta(g)}</b></div>
+<div class="list">${g.rows.map(t=>liRow(t,true)).join("")}</div>`).join("")}</div>`
+ : `<div class="card"><div class="list">${list.map(t=>liRow(t,true)).join("")||`<div class="empty">ไม่พบงานตามเงื่อนไขนี้</div>`}</div></div>`)
+: (F.grp&&secs.length
+ ? table(secs.map(g=>`<tr class="grph"><td colspan="9">${hd(g)}<span class="n">${meta(g)}</span></td></tr>`
++g.rows.map((t,i)=>row(t,i>0&&F.grp!=="type"&&F.grp!=="time"&&(t.type||"")!==(g.rows[i-1].type||""))).join("")).join(""))
+ : table(list.map(row).join(""))));
 }
 function tasksOnDay(y,m,d){
 const dt=new Date(y,m,d);
@@ -865,7 +1118,8 @@ ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <div class="legend" style="margin-top:14px">
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
-<span><i style="background:var(--wait)"></i>รอดำเนินการ</span></div></div>
+<span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
+<span><i style="background:var(--over)"></i>ค้างรอบที่ผ่านมา</span></div></div>
 <div class="card">
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานประจำเดือนนี้"}</h2>
 <div class="list">${
@@ -878,34 +1132,71 @@ ${R.selDay?`<div class="addg" style="margin-top:12px">
 </div></div>`
 : yearGrid());
 }
-const CATS=[["อบรม",t=>isTrain(t)],["ประชุม",t=>!isTrain(t)&&isMeet(t)],
-["โปรเจค",t=>!isTrain(t)&&!isMeet(t)&&/โปรเจค|project/i.test(gLabel(t.track)+" "+(t.type||""))],
-["กิจกรรม",t=>!isTrain(t)&&!isMeet(t)&&/กิจกรรม/.test(gLabel(t.track)+" "+(t.type||""))],
-["อื่นๆ",()=>true]];
-const catOf=t=>(CATS.find(([,f])=>f(t))||CATS[CATS.length-1])[0];
+// สถานะของงานเฉพาะ "เดือนนั้น" — งานที่เกิดซ้ำต้องดูรายรอบ ไม่ใช่สถานะรวม
+function monthState(t,y,m){
+if(t.status===STATUS_CANCEL)return {c:sColor(STATUS_CANCEL),n:"ยกเลิก"};
+if(!rr(t))return {c:sColor(t.status),n:t.status};
+const days=occDays(t,y,m);
+if(!days.length)return {c:sColor(t.status),n:t.status};
+const today=new Date(); today.setHours(0,0,0,0);
+const ds=days.map(i=>new Date(y,m,i));
+const done=ds.filter(d=>occDone(t,d)).length;
+const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const late=open.filter(d=>d<today).length;
+if(!open.length)return {c:sColor(STATUS_DONE),n:done?"ปิดครบ "+done+" รอบ":"งดทุกรอบ"};
+if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")};
+if(done)return {c:sColor("กำลังดำเนินการ"),n:"ปิดแล้ว "+done+"/"+ds.length+" รอบ"};
+return {c:sColor("รอดำเนินการ"),n:"ยังไม่ถึงรอบ ("+ds.length+" รอบ)"};
+}
 function yearGrid(){
 const thisYear=new Date().getFullYear();
 const now=(R.year===thisYear)?new Date().getMonth()+1:0;
 const list=items.filter(t=>monthsOf(t).length&&!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year))
 .sort((a,b)=>monthsOf(a)[0]-monthsOf(b)[0]);
 const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,i)=>`<div class="mh${i+1===now?" now":""}">${x}</div>`).join("")}`;
-const rows=CATS.map(([name])=>{
-const g=list.filter(t=>catOf(t)===name);
-if(!g.length)return "";
-return `<div class="cgroup">${esc(name)} <span>${g.length}</span></div>`+
+// แถวสรุปจำนวนงานรายเดือน (ทุกหมวดรวมกัน) ใต้หัวตาราง
+const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
+MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
+return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
+// แยกตามกลุ่มงาน: แสดงทุกกลุ่มที่ตั้งไว้ (รวมกลุ่มที่ยังไม่มีงาน) + กองงานที่ไม่มีกลุ่ม/กลุ่มถูกลบ
+const orphan=list.filter(t=>!t.track||!groups.some(g=>g.key===t.track));
+const buckets=[...groups.map(x=>[x.label,x.key,x.hidden]),...(orphan.length?[["ยังไม่ระบุกลุ่มงาน","__none__",false]]:[])];
+const rows=buckets.map(([name,key,hid])=>{
+const g=(key==="__none__")?orphan:list.filter(t=>t.track===key);
+
+return `<div class="cgroup${g.length?"":" zero"}"><span class="tagdot" style="background:${gColor(key)||"var(--wait)"};width:10px;height:10px;display:inline-block;margin-right:6px"></span>${esc(name)}${hid?' <small style="color:var(--ink-3)">· ซ่อนอยู่</small>':""} <span>${g.length?g.length:"ยังไม่มีงาน"}</span></div>`+
 MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
-MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)?`<span class="dot" style="background:${itemColor(t)}" title="${esc(t.tag||t.status)}"></span>`:""}</div>`).join("");}).join("");
+MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
+?(()=>{const S=monthState(t,R.year,i);
+return `<span class="mark" title="${esc(gLabel(t.track)+" · "+S.n)}">
+<i class="mdot" style="background:${S.c}"></i><i class="mbar" style="background:${itemColor(t)}"></i></span>`;})():""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
+<span style="color:var(--ink-3)">จุดกลม = สถานะ · ขีด = กลุ่มงาน:</span>
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
-<span style="margin-left:auto;color:var(--ink-3)">แยกตามหมวด · ${list.length} งานในปี ${R.year+543}</span></div>
+<span style="margin-left:auto;color:var(--ink-3)">แยกตามกลุ่มงาน · ${groups.length} กลุ่ม · ${list.length} งานในปี ${R.year+543}</span></div>
+${(()=>{const gs=groups.filter(g=>g.color);
+return gs.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">
+<span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
 ${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
 return tg.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">${tg.map(n=>`<span><i style="background:${tagColor(n)||"var(--ink-3)"}"></i>${esc(n)}</span>`).join("")}</div>`:"";})()}
-<div class="cal"><div class="calgrid">${head}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>`}</div></div></div>`;
+<div class="cal"><div class="calgrid">${head}${totRow}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>
+`}</div></div></div>
+${(()=>{const all=items.filter(t=>!isSysRow(t));
+const noDate=all.filter(t=>!monthsOf(t).length).length;
+const other=all.filter(t=>monthsOf(t).length&&t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year).length;
+const cancel=list.filter(t=>t.status===STATUS_CANCEL).length;
+return `<div class="hint" style="display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center">
+<b>ทั้งหมด ${all.length} งาน</b>
+<span>· แสดงในปี ${R.year+543} <b>${list.length}</b></span>
+${other?`<span>· อยู่ปีอื่น <b>${other}</b> <button class="lklink" data-goyear="1" style="border:0;background:none;padding:0;font:inherit;cursor:pointer">เปลี่ยนปีด้านบนเพื่อดู</button></span>`:""}
+${noDate?`<span>· <b>${noDate}</b> งานยังไม่ได้ใส่วันที่/รอบซ้ำ จึงไม่ขึ้นปฏิทิน <button class="lklink" id="goNoDate" style="border:0;background:none;padding:0;font:inherit;cursor:pointer">ดูรายการ</button></span>`:""}
+${cancel?`<span>· รวมงานที่ยกเลิก <b>${cancel}</b></span>`:""}
+</div>`;})()}`;
 }
 function ledgerIn(scope,month){
 return ledger.filter(x=>{
@@ -1022,10 +1313,11 @@ return header("โปรเจค & กลุ่มงาน","ทุกกล�
 function meet(){
 const ms=items.filter(t=>isMeet(t));
 const scoped=ms.filter(inScope);
-const withNext=ms.map(t=>({t,d:dueDate(t),p:prepDate(t)})).filter(x=>x.d);
+// รายการที่ยกเลิกแล้วไม่ต้องเข้าคิวเตือน/ตารางล่วงหน้า
+const withNext=ms.filter(t=>t.status!==STATUS_CANCEL).map(t=>({t,d:dueDate(t),p:prepDate(t)})).filter(x=>x.d);
 const today=new Date(); today.setHours(0,0,0,0);
 const upcoming=withNext.filter(x=>daysTo(x.d)>=0&&daysTo(x.d)<=14).sort((a,b)=>a.d-b.d);
-const prep=withNext.filter(x=>x.p&&x.t.status!=="เสร็จสิ้น"&&daysTo(x.d)>=0).sort((a,b)=>a.p-b.p);
+const prep=withNext.filter(x=>x.p&&isOpenStatus(x.t.status)&&daysTo(x.d)>=0).sort((a,b)=>a.p-b.p);
 const prepNow=prep.filter(x=>daysTo(x.p)<=0), prepSoon=prep.filter(x=>daysTo(x.p)>0&&daysTo(x.p)<=7);
 const routine=ms.filter(t=>rr(t)).sort((a,b)=>(nextOcc(a)||0)-(nextOcc(b)||0));
 const oneoff=ms.filter(t=>!rr(t)&&t.date).sort((a,b)=>a.date<b.date?-1:1);
@@ -1034,10 +1326,11 @@ return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
 <div class="t2">${tShow(t.time)?`<b style="color:var(--accent)">${tShow(t.time)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${n!=null?(n===0?"วันนี้":n===1?"พรุ่งนี้":n<0?"ผ่านไปแล้ว":"อีก "+n+" วัน"):""}${t.place?" · "+esc(t.place):""}${t.attendees?" · "+esc(t.attendees):""}</div></div>
-${p?`<span class="tag${daysTo(p)<=0?"":" sky"}" ${daysTo(p)<=0?'style="background:var(--over-soft);color:var(--over);font-weight:600"':""}>เตรียม ${daysTo(p)<=0?"แล้ว!":"อีก "+daysTo(p)+" ว."}</span>`:""}
+${p&&isOpenStatus(t.status)?`<span class="tag${daysTo(p)<=0?"":" sky"}" ${daysTo(p)<=0?'style="background:var(--over-soft);color:var(--over);font-weight:600"':""}>เตรียม ${daysTo(p)<=0?"แล้ว!":"อีก "+daysTo(p)+" ว."}</span>`:""}
 ${(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
-(S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบนี้">${svg(ICON.check,15)}</button>`:"");})()}</div>`;};
+(S.recur&&S.d?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>
+<button class="okbtn skipnow" data-skipnow="${t._id}|${isoOf(S.d)}" title="งดรอบ ${S.d.getDate()} ${MTH[S.d.getMonth()]} (ไม่จัดรอบนี้)">งด</button>`:"");})()}</div>`;};
 const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 <div class="ic" style="background:${daysTo(x.p)<=0?"var(--over-soft)":"var(--run-soft)"};color:${daysTo(x.p)<=0?"var(--over)":"var(--run)"}">${x.p.getDate()}<br>${MTH[x.p.getMonth()]}</div>
 <div class="tx"><div class="t1">${esc(x.t.title)}</div>
@@ -1045,7 +1338,7 @@ const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 <span class="pill ${daysTo(x.p)<=0?"s-wait":sCls(x.t.status)}">${daysTo(x.p)<0?"เลยวันเตรียม "+(-daysTo(x.p))+" วัน":daysTo(x.p)===0?"เตรียมวันนี้":"อีก "+daysTo(x.p)+" วัน"}</span></div>`;
 const byDow=DOWFULL.map((_,i)=>routine.filter(t=>(t.rrule.weekdays||[]).includes(i)).length);
 return header("การประชุม","ประชุมประจำ ประชุมเฉพาะกิจ และงานที่ต้องเตรียมข้อมูลก่อนประชุม")+
-`<div class="toolbar">${scopeBar("sc1")}</div>`+
+`<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาการประชุม / ผู้เข้าร่วม / สถานที่")}</div>`+
 (prepNow.length?`<div class="banner bad" ${regList("prepNow","ถึงกำหนดเตรียมข้อมูลแล้ว",prepNow.map(x=>({id:x.t._id,
 t1:x.t.title,t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${tShow(x.t.time)?" "+tShow(x.t.time):""}${x.t.prepNote?" · "+x.t.prepNote:""}`,
 d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--over-soft)",ic:"var(--over)",
@@ -1092,7 +1385,7 @@ return t;
 const fmtStamp=iso=>{if(!iso)return "";const d=new Date(iso);
 return `${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500} เวลา ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;};
 function dsdView(){
-const ty=items.filter(t=>isTrain(t)&&inScope(t));
+const ty=items.filter(t=>isTrain(t)&&inScope(t)&&pqHit(t.title,t.batch,t.course,t.code,ypNoOf(t),t.dsdCertNo,t.company&&cLabel(t.company)));
 const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
 const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
 const need=dsdList(R.year).map(c=>dsdCalc(dsdRec(c.key,R.year)).need).reduce((a,b)=>a+b,0);
@@ -1100,21 +1393,36 @@ const card=t=>{const d=dueDate(t);
 return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${t.company?esc(cLabel(t.company))+" · ":""}${esc(t.batch||"ยังไม่ระบุรุ่น")}${t.pax?" · "+t.pax+" คน":""}</div></div>
+<div class="t2">${crsChip(t)}${t.company?esc(cLabel(t.company))+" · ":""}${esc(t.batch||"ยังไม่ระบุรุ่น")}${t.pax?" · "+t.pax+" คน":""}</div></div>
 ${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">${esc(t.dsd)}</span>`:""}
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
+const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||ypNoOf(t)||t.dsdCertNo);
+const dlOpen=dl.filter(t=>t.status!==STATUS_CANCEL);
+const late=dlOpen.map(t=>({t,y:ypState(t)})).filter(x=>x.y.n!=null&&x.y.n<0);
+const soon=dlOpen.map(t=>({t,y:ypState(t)})).filter(x=>x.y.n!=null&&x.y.n>=0&&x.y.n<=14);
+const mkRows=arr=>arr.map(({t,y})=>({id:t._id,t1:t.title,
+t2:`${crsCodeOf(t)?crsCodeOf(t)+" · ":""}${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไม่ระบุรุ่น"} · ${y.step}${y.note?" · "+y.note:""}`,
+d:y.due?`${y.due.getDate()}<br>${MTH[y.due.getMonth()]}`:"—",p:y.msg||"",pc:y.cls,
+c:y.cls==="s-over"?"var(--over-soft)":"var(--run-soft)",ic:y.cls==="s-over"?"var(--over)":"var(--run)"}));
+const now=new Date(), yearEndLeft=Math.round((new Date(R.year,11,31)-new Date(now.getFullYear(),now.getMonth(),now.getDate()))/86400000);
+const anyShort=dsdList(R.year).some(c=>{const k=dsdCalc(dsdRec(c.key,R.year));return k.avg&&k.need>0;});
 return header("กรมพัฒนาฝีมือแรงงาน","เกณฑ์ 50% ต่อปี และทะเบียนการยื่นรับรองหลักสูตร")+
-`<div class="toolbar">${scopeBar("sc1")}</div>`+
+`<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาหลักสูตร / เลขคำขอ / บริษัท")}</div>`+
+dsdAnnualBanner()+
+(late.length?`<div class="banner bad" ${regList("ypLate","เลยกำหนดยื่นตามขั้นตอนกรมพัฒนาฯ",mkRows(late))}>${svg(ICON.bell,19)} เลยกำหนดยื่นแล้ว <b>${late.length}</b> หลักสูตร — ยื่นย้อนหลังไม่ได้ ตรวจด่วน</div>`:"")+
+(soon.length?`<div class="banner" ${regList("ypSoon","ใกล้ถึงกำหนดยื่น (ภายใน 14 วัน)",mkRows(soon))}>${svg(ICON.clock,19)} ใกล้ถึงกำหนดยื่น <b>${soon.length}</b> หลักสูตร ภายใน 14 วัน</div>`:"")+
+((now.getMonth()>=10&&yearEndLeft>=0&&anyShort&&now.getFullYear()===R.year)
+?`<div class="banner bad">${svg(ICON.bell,19)} เหลือ <b>${yearEndLeft}</b> วันถึง 31 ธ.ค. ${R.year+543} — ยังไม่ครบเกณฑ์ 50% และเลยสิ้นปีจะยื่นรับรองของปีนี้ไม่ได้อีก</div>`:"")+
 (waiting.length?`<div class="banner" ${regList("dsdWait","หลักสูตรที่รอยื่นกรมพัฒนาฯ",waiting.map(t=>{const d=dueDate(t);return {id:t._id,
-t1:t.title,t2:`${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไม่ระบุรุ่น"}${t.pax?" · "+t.pax+" คน":""}`,
+t1:t.title,t2:`${crsCodeOf(t)?crsCodeOf(t)+" · ":""}${t.company?cLabel(t.company)+" · ":""}${t.batch||"ยังไม่ระบุรุ่น"}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"รอยื่น",pc:"s-run"};}))}>${svg(ICON.bell,19)} รอยื่นกรมพัฒฯ <b>${waiting.length}</b> หลักสูตร</div>`:"")+
 (need?`<div class="banner bad">${svg(ICON.bell,19)} ยังไม่ถึงเกณฑ์ 50% — ต้องฝึกอีกรวม <b>${baht(need)}</b> คน</div>`:"")+
 `<div class="dash">
 ${(()=>{const T=dsdTotals(R.year);
 const pass=T.pct>=50;
-return `<div class="card hero span4" style="padding-bottom:22px">
+return `<div class="card hero span2" style="padding-bottom:20px">
 <div class="lab">สรุปเกณฑ์กรมพัฒนาฝีมือแรงงาน · ปี ${R.year+543} · ${T.n} สถานประกอบกิจการ</div>
-<div style="display:flex;flex-wrap:wrap;gap:26px;align-items:flex-end;margin-top:6px;position:relative;z-index:1">
+<div style="display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-top:4px;position:relative;z-index:1">
 <div><div class="big" style="margin:0">${T.mp?T.pct+"%":"—"}</div>
 <div style="font-size:13px;opacity:.9">ของลูกจ้างทั้งหมด · เกณฑ์กฎหมาย ${LAWPCT}%${T.goalPct>LAWPCT?` · เป้าที่ตั้งเอง ${T.goalPct}%`:""}</div></div>
 <div class="kpis">
@@ -1127,7 +1435,7 @@ ${T.goalTarget>T.target?`<div><span>ขาดถึงเป้าเรา</spa
 <div><span>ผ่านเกณฑ์</span><b>${T.done}/${T.n} แห่ง</b></div>
 <div><span>เงินอุดหนุนคาดว่าได้</span><b style="color:${T.subTotal?"#8ef0c8":"inherit"}">${T.subTotal?baht(T.subTotal)+" ฿":"—"}</b></div>
 </div></div>
-<div class="prog goalbar" style="height:14px">
+<div class="prog goalbar" style="height:12px;margin-top:10px">
 <i style="width:${Math.min(100,T.pct)}%;background:${T.pct>=T.goalPct?"#8ef0c8":pass?"#bfe9ff":"#ffd08a"}"></i>
 <u style="left:${LAWPCT}%"></u>${T.goalPct>LAWPCT?`<u class="g2" style="left:${Math.min(100,T.goalPct)}%"></u>`:""}</div>
 <div style="display:flex;font-size:11.5px;opacity:.9;margin-top:6px;position:relative;height:16px">
@@ -1135,9 +1443,10 @@ ${T.goalTarget>T.target?`<div><span>ขาดถึงเป้าเรา</spa
 <span style="position:absolute;left:${LAWPCT}%;transform:translateX(-50%)">กฎหมาย ${LAWPCT}%</span>
 ${T.goalPct>LAWPCT?`<span style="position:absolute;left:${Math.min(96,T.goalPct)}%;transform:translateX(-50%);color:#ffe7a8;font-weight:600">เป้าเรา ${T.goalPct}%</span>`:""}
 <span style="position:absolute;right:0">100%</span></div>
-<div style="font-size:12px;opacity:.85;margin-top:10px">
+<div style="font-size:11.5px;opacity:.8;margin-top:7px">
 ${T.updated?`ข้อมูลอัปเดตล่าสุด ${fmtStamp(T.updated)}`:"ยังไม่เคยบันทึกข้อมูล — กด “แก้ไข” ในตารางด้านล่าง"}</div></div>
-<div class="card span2"><h2>ความคืบหน้ารายบริษัท <small>เทียบเป้า 50%</small></h2>
+<div class="card span2" style="align-self:stretch"><h2>ความคืบหน้ารายบริษัท <small>เทียบเป้า 50%</small></h2>
+<div class="cgrid2">
 ${T.rows.length?T.rows.map(({c,k})=>{const p=k.avg?Math.min(100,Math.round(k.pct)):0;
 const st=k.avg?(k.pct>=k.goal?"var(--ok)":k.pct>=LAWPCT?"var(--accent)":"var(--over)"):"var(--ink-3)";
 return `<div class="glrow"><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT?` <small style="color:var(--ink-3);font-weight:400">· เป้า ${k.goal}%</small>`:""}</span>
@@ -1145,14 +1454,14 @@ return `<div class="glrow"><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT
 <div class="bar goalbar"><i class="${k.avg&&k.pct<LAWPCT?"hot":""}" style="width:${p}%;${k.avg&&k.pct>=k.goal?"background:var(--ok)":""}"></i>
 <u style="left:${LAWPCT}%"></u>${k.goal>LAWPCT?`<u class="g2" style="left:${Math.min(100,k.goal)}%"></u>`:""}</div>
 <div class="t-note" style="margin-top:4px">ทำได้ ${baht(k.C)} · เกณฑ์ ${baht(k.target)} คน${k.need?` (ขาด ${baht(k.need)})`:" ✓"}${k.goal>LAWPCT?` · เป้าเรา ${baht(k.goalTarget)} คน${k.needGoal?` (ขาด ${baht(k.needGoal)})`:" ✓"}`:""}</div></div>`;}).join("")
-:`<div class="empty">ยังไม่มีสถานประกอบกิจการ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง</div>`}</div>
+:`<div class="empty">ยังไม่มีสถานประกอบกิจการ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง</div>`}</div></div>
 <div class="card span4"><h2>เงินอุดหนุนกองทุนพัฒนาฝีมือแรงงาน <small>ผลงานปี ${R.year+543} → ยื่นภายใน 31 ส.ค. ${R.year+544}</small></h2>
 ${(()=>{const T=dsdTotals(R.year);
 const rows=T.rows.filter(x=>x.k.avg||x.k.sub.stdN||x.k.sub.fundPaid);
-return `<div class="hint" style="margin:2px 0 12px">
+return `<details class="foldbox"><summary>วิธีคิดเงินอุดหนุน 3 ช่องทาง</summary><div class="hint" style="margin:8px 0 2px">
 <b>ช่องทางที่ 1 — ฝึกอบรมเกิน ${subPct()}%</b> &nbsp;(ส่วนที่เกิน) × ${baht(subRate())} ฿ ต่อคน · นับ<b>คนไม่ซ้ำ</b> เริ่มนับตั้งแต่คนที่เกิน ${subPct()}% เป็นต้นไป<br>
 <b>ช่องทางที่ 2 — ทดสอบมาตรฐานฝีมือแรงงานแห่งชาติ</b> &nbsp;จำนวนคนที่ผ่านทดสอบ × ${baht(STD_RATE)} ฿ (ต้องจ่ายค่าจ้างตามมาตรฐานฝีมือไม่น้อยกว่า 180 วันก่อนยื่น · <b>ไม่เกินปีละ ${baht(STD_CAP)} ฿</b>)<br>
-<b>ช่องทางที่ 3 — คืนเงินสมทบ ${FUND_PCT}%</b> &nbsp;เงินสมทบที่นำส่งกองทุน × ${FUND_PCT}% (กรณีปีที่ผ่านมาส่งเงินสมทบ แล้วปีถัดมาพัฒนาครบตามสัดส่วน)</div>
+<b>ช่องทางที่ 3 — คืนเงินสมทบ ${FUND_PCT}%</b> &nbsp;เงินสมทบที่นำส่งกองทุน × ${FUND_PCT}% (กรณีปีที่ผ่านมาส่งเงินสมทบ แล้วปีถัดมาพัฒนาครบตามสัดส่วน)</div></details>
 <div class="tblwrap wide"><table><thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th>
 <th style="text-align:right">ฐาน ${subPct()}%</th><th style="text-align:right">ผ่านรับรอง (C)</th>
 <th style="text-align:right">ส่วนที่เกิน</th><th style="text-align:right">1) อบรมเกิน ${subPct()}%</th>
@@ -1186,7 +1495,7 @@ ${rows.length?`<tr data-nolink="1" style="background:var(--line-2)">
 <b>กำหนดยื่น</b> ภายใน <b>31 สิงหาคม</b> ของทุกปี โดยใช้ผลงานของ<b>ปีที่ผ่านมา</b> · ต้องยื่นประเมินเงินสมทบกองทุนฯ ประจำปีด้วย<br>
 ตัวเลขนี้เป็นการประมาณการจากข้อมูลที่คุณกรอก ใช้เตรียมเอกสารและตั้งเป้า ไม่ใช่ยอดที่กรมฯ อนุมัติ ควรตรวจสอบกับเจ้าหน้าที่ก่อนยื่นจริง</div>`;})()}
 </div>
-<div class="card span2"><h2>สถานะการยื่นหลักสูตร <small>${ty.length} หลักสูตรในปีนี้</small></h2>
+<div class="card span2"><h2>สถานะการยื่นหลักสูตร <small>${uniqCourses(ty)} หลักสูตร · ${ty.length} รุ่นในปีนี้</small></h2>
 <div class="donutwrap">
 ${(()=>{const parts=[{n:"อนุมัติแล้ว",v:okd.length,c:"var(--ok)"},{n:"ยื่นแล้ว",v:sent.length,c:"var(--run)"},
 {n:"รอยื่น",v:waiting.length,c:"var(--wait)"},{n:"ไม่ผ่าน",v:bad.length,c:"var(--over)"}].filter(p=>p.v);
@@ -1199,7 +1508,7 @@ ${tot?`<div style="border-top:1px solid var(--line-2);padding-top:8px;margin-top
 <div class="tblwrap wide"><table>
 <thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th><th style="text-align:right">เกณฑ์ 50%</th><th style="text-align:right">เป้าที่ตั้งเอง</th>
 <th style="text-align:right">A ส่งฝึกแล้ว</th><th style="text-align:right">B ฝึกซ้ำ (ครั้ง)</th><th style="text-align:right">C = A−B</th>
-<th style="text-align:right">คิดเป็น %</th><th style="text-align:right">ต้องฝึกอีก</th><th>สถานะ</th><th></th></tr></thead>
+<th style="text-align:right">คิดเป็น %</th><th style="text-align:right">ต้องฝึกอีก</th><th>สถานะ</th><th>สท.2</th><th></th></tr></thead>
 <tbody>${(()=>{const L=dsdList(R.year);
 return L.length?L.map(c=>{const r=dsdRec(c.key,R.year), k=dsdCalc(r), auto=trainedPax(c.key,R.year);
 const pass=k.pct>=50;
@@ -1213,26 +1522,42 @@ return `<tr data-nolink="1">
 <td class="num" style="font-weight:600;color:${k.avg?(pass?"var(--ok)":"var(--over)"):"inherit"}">${k.avg?k.pct+"%":"—"}</td>
 <td class="num"${k.need?' style="color:var(--over);font-weight:600"':""}>${k.avg?(k.need?baht(k.need)+" คน":(k.needGoal?baht(k.needGoal)+" คน (ถึงเป้า)":"ครบแล้ว")):"—"}</td>
 <td><span class="pill ${k.avg?(pass?"s-done":"s-run"):"s-wait"}">${k.avg?(pass?"ผ่านเกณฑ์":"ยังไม่ถึง 50%"):"ยังไม่มีข้อมูล"}</span></td>
+<td><span class="pill ${st2Cls(r.st2)}">${esc(r.st2||ST2[0])}</span>${r.st2date?`<div class="t-note">${fmtDate(r.st2date)}</div>`:""}${r.st2no?`<div class="t-note" style="font-family:var(--mono);font-size:11.5px">${esc(r.st2no)}</div>`:""}</td>
 <td><button class="btn ghost sm" data-dsd="${esc(c.key)}">แก้ไข</button></td></tr>`;}).join("")
-:`<tr><td colspan="11"><div class="empty">ยังไม่มีสถานประกอบกิจการในปีนี้ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง<br>
+:`<tr><td colspan="12"><div class="empty">ยังไม่มีสถานประกอบกิจการในปีนี้ — กด “เพิ่มสถานประกอบกิจการ” ด้านล่าง<br>
 <span style="font-size:12.5px">ใส่เฉพาะนิติบุคคลที่ยื่นกรมพัฒนาฯ เท่านั้น (กลุ่มบริษัทอย่าง LKG ไม่ต้องใส่)</span></div></td></tr>`;})()}
 </tbody></table></div>
 <div class="addg"><button class="btn ghost" id="dsdAdd">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มสถานประกอบกิจการ</button>
 ${Object.keys(hrdata.dsd||{}).some(k=>dsdRec(k,R.year-1))?`<button class="btn ghost" id="dsdCopy">คัดลอกโครงจากปี ${R.year+542}</button>`:""}</div>
-<div class="hint"><b>พนักงานเฉลี่ย</b> คิดจากเดือนที่กรอกตัวเลขไว้เท่านั้น เดือนที่ยังไม่ถึงหรือเว้นว่างจะไม่ถูกนำมาหาร (ตรงกับวิธีของกรมฯ)<br>
+<details class="foldbox"><summary>วิธีอ่านตารางนี้</summary><div class="hint"><b>พนักงานเฉลี่ย</b> คิดจากเดือนที่กรอกตัวเลขไว้เท่านั้น เดือนที่ยังไม่ถึงหรือเว้นว่างจะไม่ถูกนำมาหาร (ตรงกับวิธีของกรมฯ)<br>
 <b>C = A − B</b> คือจำนวนที่นับได้จริงหลังตัดคนที่ฝึกซ้ำออก · <b>คิดเป็น %</b> = C ÷ พนักงานเฉลี่ย<br>
-ตัวเลขในระบบเป็นของคุณเอง ใช้เทียบกับหน้าเว็บกรมฯ ได้ แต่ไม่ได้ดึงจากกรมฯ อัตโนมัติ</div></div>
-<div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
+ตัวเลขในระบบเป็นของคุณเอง ใช้เทียบกับหน้าเว็บกรมฯ ได้ แต่ไม่ได้ดึงจากกรมฯ อัตโนมัติ</div></details></div>
+<div class="card span4"><h2>ทะเบียนการยื่นหลักสูตร <small>เรียงตามรหัสหลักสูตร → บริษัท → รุ่น · ยื่นเปิดหลักสูตร → ยื่นรับรองรุ่น</small></h2>
 <div class="tblwrap wide"><table><thead><tr><th>หลักสูตร</th><th>บริษัท</th><th>รุ่น</th>
-<th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>สถานะ</th></tr></thead><tbody>
-${(()=>{const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||t.dsdOpenNo||t.dsdCertNo);
-return dl.length?dl.map(t=>`<tr data-id="${t._id}">
-<td><div style="font-weight:600">${esc(t.title)}</div>${t.code?`<div class="t-note">${esc(t.code)}</div>`:""}</td>
-<td>${esc(t.company?cLabel(t.company):"—")}</td><td>${esc(t.batch||"—")}</td>
-<td class="num">${t.dsdOpenDate?fmtDate(t.dsdOpenDate):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(t.dsdOpenNo||"—")}</td>
+<th>แบบ</th><th>ยื่นเปิดหลักสูตร</th><th>เลขคำขอเปิด</th><th>ยื่นรับรองรุ่น</th><th>เลขคำขอรับรอง</th><th style="text-align:right">คน</th><th>ขั้นตอน / กำหนด</th><th>สถานะ</th></tr></thead><tbody>
+${(()=>{const dl=ty.filter(t=>t.dsd&&t.dsd!=="ไม่ต้องยื่น"||ypNoOf(t)||t.dsdCertNo);
+// เรียง: รหัสหลักสูตร → บริษัท → เลขรุ่น → วันที่ฝึกเสร็จ (รุ่นของหลักสูตรเดียวกันอยู่ติดกันเสมอ)
+const bn=t=>{const m=String(t.batch||"").match(/\d+/); return m?+m[0]:9999;};
+const ck=t=>crsCodeOf(t)||"zzz "+(t.title||"");
+dl.sort((a,b)=>ck(a).localeCompare(ck(b),"th")||String(cLabel(a.company||"")).localeCompare(String(cLabel(b.company||"")),"th")
+||bn(a)-bn(b)||String(a.dsdEnd||a.date||"9999").localeCompare(String(b.dsdEnd||b.date||"9999")));
+return dl.length?dl.map((t,i)=>{
+const first=i===0||ck(dl[i-1])!==ck(t);
+const nb=crsCodeOf(t)?crsBatches(crsCodeOf(t)).length:0;
+const seq=nb>1?dl.filter(x=>ck(x)===ck(t)).indexOf(t)+1:0;
+return `<tr data-id="${t._id}"${first&&i?' class="tysep"':""}>
+<td>${first?`<div style="font-weight:600">${esc(t.course?crsOf(t.course)?.name||t.title:t.title)}</div>
+<div class="t-note">${t.course?`<b>${esc(t.course)}</b>`:(t.code?esc(t.code):"ยังไม่ผูกทะเบียน")}${nb>1?` · หลักสูตรนี้มี ${nb} รุ่น`:""}</div>`
+:`<div class="t-note" style="padding-left:14px">↳ ${esc(crsCodeOf(t)||"")} · รุ่นถัดไป</div>`}</td>
+<td>${esc(t.company?cLabel(t.company):"—")}</td><td>${esc(t.batch||"—")}${seq?`<div class="t-note">ลำดับที่ ${seq}</div>`:""}</td>
+<td>${esc(ypKind(t)||"—")}${!t.yp&&ypKind(t)?`<div class="t-note">จากหลักสูตร</div>`:""}</td>
+<td class="num">${ypDateOf(t)?fmtDate(ypDateOf(t)):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(ypNoOf(t)||"—")}</td>
 <td class="num">${t.dsdCertDate?fmtDate(t.dsdCertDate):"—"}</td><td style="font-family:var(--mono);font-size:12.5px">${esc(t.dsdCertNo||"—")}</td>
-<td class="num">${t.pax||"—"}</td><td><span class="pill ${dsdCls(t.dsd)}">${esc(t.dsd||"—")}</span></td></tr>`).join("")
-:`<tr><td colspan="9"><div class="empty">ยังไม่มีหลักสูตรที่ต้องยื่น — เปิดหลักสูตรแล้วเลือกสถานะกรมพัฒฯ</div></td></tr>`;})()}
+<td class="num">${t.pax||"—"}</td>
+<td>${(()=>{const y=ypState(t);return `<span class="pill ${y.cls}">${esc(y.step)}</span>`
++(y.due?`<div class="t-note">${y.msg?esc(y.msg):""}${y.due?" · ถึง "+fmtDate(y.due.toISOString().slice(0,10)):""}</div>`:"");})()}</td>
+<td><span class="pill ${dsdCls(t.dsd)}">${esc(t.dsd||"—")}</span></td></tr>`;}).join("")
+:`<tr><td colspan="11"><div class="empty">ยังไม่มีหลักสูตรที่ต้องยื่น — เปิดหลักสูตรแล้วเลือกสถานะกรมพัฒฯ</div></td></tr>`;})()}
 </tbody></table></div></div>
 <div class="card span4"><h2>สถานะการยื่นรับรองหลักสูตร <small>แตะรายการเพื่อแก้ไข</small></h2>
 <div class="legend" style="margin:10px 0 2px">
@@ -1244,69 +1569,80 @@ ${bad.length?`<span><i style="background:var(--over)"></i>ไม่ผ่าน 
 </div>`;
 }
 function train(){
-const ty=items.filter(t=>isTrain(t)&&inScope(t));
+const hit=t=>pqHit(t.title,t.batch,t.vendor,t.course,t.code,t.company&&cLabel(t.company),skillOf(t),modeOf(t),t.type,crsCodeOf(t));
+const ty=items.filter(t=>isTrain(t)&&inScope(t)&&hit(t));
+// รุ่นที่ยกเลิกไม่ถูกนับเป็นผลงาน/ค่าใช้จ่าย แต่ยังโชว์ในรายการ
+const live=ty.filter(t=>t.status!==STATUS_CANCEL);
 const sum=(a,k)=>a.reduce((x,t)=>x+(+t[k]||0),0);
-const pax=sum(ty,"pax"), hrs=ty.reduce((x,t)=>x+(+t.hours||0)*(+t.pax||1),0);
-const cost=ty.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
-const done=ty.filter(t=>t.status==="เสร็จสิ้น").length;
-const kinds=["กฎหมาย","ภายใน","ภายนอก"];
-const byKind=k=>ty.filter(t=>trainKind(t)===k);
-const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t));
+const pax=sum(live,"pax"), hrs=live.reduce((x,t)=>x+hoursOf(t)*(+t.pax||1),0);
+const nCourse=uniqCourses(live);
+const cost=live.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
+const done=live.filter(t=>t.status===STATUS_DONE).length;
+const cancel=ty.length-live.length;
+const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t)&&t.status!==STATUS_CANCEL);
 const waiting=byDsdStatus("รอยื่น"), sent=byDsdStatus("ยื่นแล้ว"), okd=byDsdStatus("อนุมัติแล้ว"), bad=byDsdStatus("ไม่ผ่าน");
-const lawLate=byKind("กฎหมาย").filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
-const byMonth=MTH.map((_,i)=>items.filter(t=>isTrain(t)&&monthsOf(t).includes(i+1)).length);
+const lawLate=live.filter(t=>isLawTrain(t)).filter(t=>{const d=dueDate(t);return isOpenStatus(t.status)&&d&&daysTo(d)<0;});
+// กราฟรายเดือน: ทั้งปีที่เลือก ตามตัวกรองค้นหา ไม่รวมรุ่นที่ยกเลิก
+const yearTy=items.filter(t=>isTrain(t)&&t.status!==STATUS_CANCEL&&hit(t)&&!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year));
+const byMonth=MTH.map((_,i)=>yearTy.filter(t=>monthsOf(t).includes(i+1)).length);
+const noDate=yearTy.filter(t=>!monthsOf(t).length);
 const card=t=>{const d=dueDate(t);
 return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${t.skill?esc(t.skill)+" · ":""}${t.mode?esc(t.mode)+" · ":""}${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${t.hours?" · "+t.hours+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${crsChip(t)}${skillOf(t)?esc(skillOf(t))+" · ":""}${modeOf(t)?esc(modeOf(t))+" · ":""}${esc(trainKind(t))}${t.vendor?" · "+esc(t.vendor):""}${t.pax?" · "+t.pax+" คน":""}${hoursOf(t)?" · "+hoursOf(t)+" ชม.":""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+${isLawTrain(t)?`<span class="tag" style="background:var(--over-soft);color:var(--over)" title="บังคับตามกฎหมาย (ตั้งจาก${lawSrc(t)})">⚖︎ กฎหมาย</span>`:""}
 ${t.dsd&&t.dsd!=="ไม่ต้องยื่น"?`<span class="tag sky">กรมพัฒฯ ${esc(t.dsd)}</span>`:""}
 <span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;};
-const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)} <small>${arr.length} หลักสูตร</small></h2>
+const board=(title,arr,note)=>`<div class="card span2"><h2>${esc(title)}${arr.some(isLawTrain)?` <span class="tag" style="background:var(--over-soft);color:var(--over)">ตามกฎหมาย</span>`:""} <small>${uniqCourses(arr)} หลักสูตร · ${arr.length} รุ่น</small></h2>
 <div class="list">${arr.map(card).join("")||`<div class="empty">${esc(note||"ยังไม่มีรายการ")}</div>`}</div></div>`;
 return header("ฝึกอบรม","หลักสูตรทั้งหมด ผู้เข้าอบรม ชั่วโมง และสถานะการยื่นกรมพัฒนาฝีมือแรงงาน")+
-`<div class="toolbar">${scopeBar("sc1")}</div>`+
+`<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาหลักสูตร / รุ่น / วิทยากร / รหัส")}</div>`+
 (lawLate.length?`<div class="banner bad" ${regList("lawLate","อบรมตามกฎหมายที่เลยกำหนด",lawLate.map(t=>{const d=dueDate(t);return {id:t._id,
-t1:t.title,t2:`${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+t1:t.title,t2:`${crsCodeOf(t)?crsCodeOf(t)+(t.batch?" "+t.batch:"")+" · ":""}${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
 p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
 `<div class="dash">
 <div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
-<div class="big">${ty.length}</div>
-<div class="meta"><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${ty.length-done}</span></div>
-<div class="prog"><i style="width:${ty.length?Math.round(done/ty.length*100):0}%"></i></div></div>
+<div class="big">${nCourse}</div>
+<div class="meta"><span>${live.length} รุ่น</span><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${live.length-done}</span>${cancel?`<span>ยกเลิก ${cancel}</span>`:""}</div>
+<div class="prog"><i style="width:${live.length?Math.round(done/live.length*100):0}%"></i></div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> ผู้เข้าอบรม</div>
 <div class="v">${baht(pax)}</div><div class="d">รวม ${baht(Math.round(hrs))} คน-ชั่วโมง</div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
 <div class="v">${pax?baht(Math.round(cost/pax)):"—"}</div><div class="d">ค่าใช้จ่ายรวม ${baht(cost)} ฿</div></div>
-<div class="card span2"><h2>ประเภทการอบรม <small>Soft / Hard / Safety</small></h2>
+<div class="card span2"><h2>หมวดทักษะ <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
-${(()=>{const n=k=>ty.filter(t=>(t.skill||"")===k).length, un=ty.filter(t=>!t.skill).length;
-const parts=[...SKILLS.map(k=>({n:k,v:n(k),c:SKILLC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
-return donut(parts,ty.length,"หลักสูตร")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"ประเภทการอบรม · "+p.n,ty.filter(t=>(t.skill||"")===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
-t2:`${t.mode||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+${(()=>{const n=k=>live.filter(t=>skillOf(t)===k).length, un=live.filter(t=>!skillOf(t)).length;
+const parts=[...skills().filter(k=>n(k)).map(k=>({n:k,v:n(k),c:skillColor(k)})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+return donut(parts,live.length,"รุ่น")+
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"หมวดทักษะ · "+p.n,live.filter(t=>skillOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${modeOf(t)||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
-<div class="card span2"><h2>รูปแบบการอบรม <small>In-House · Public · OJT · Online · สัมมนา</small></h2>
+<div class="card span2"><h2>รูปแบบการอบรม <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
-${(()=>{const n=k=>ty.filter(t=>(t.mode||"")===k).length, un=ty.filter(t=>!t.mode).length;
-const parts=[...MODES.filter(k=>n(k)).map(k=>({n:k,v:n(k),c:MODEC[k]})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
-return donut(parts,ty.length,"หลักสูตร")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,ty.filter(t=>(t.mode||"")===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
-t2:`${t.skill||"ยังไม่ระบุประเภท"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
+${(()=>{const n=k=>live.filter(t=>modeOf(t)===k).length, un=live.filter(t=>!modeOf(t)).length;
+const parts=[...modes().filter(k=>n(k)).map(k=>({n:k,v:n(k),c:modeColor(k)})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+return donut(parts,live.length,"รุ่น")+
+`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,live.filter(t=>modeOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+t2:`${skillOf(t)||"ยังไม่ระบุหมวดทักษะ"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
-<div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
-${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}</div>
-${board("อบรมตามกฎหมาย",byKind("กฎหมาย"),"ยังไม่มีหลักสูตรตามกฎหมายในช่วงนี้")}
-${board("อบรมภายใน",byKind("ภายใน"))}
-${board("อบรมภายนอก",byKind("ภายนอก"))}
+<div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543} · ${byMonth.reduce((a,b)=>a+b,0)} รุ่นที่ลงวันแล้ว</small></h2>
+${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}
+${noDate.length?`<div class="hint" style="cursor:pointer" ${regList("trNoDate","รุ่นอบรมที่ยังไม่ได้ลงวันที่",noDate.map(t=>({id:t._id,
+t1:t.title,t2:`${crsCodeOf(t)?crsCodeOf(t)+" · ":""}${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
+d:"—",p:t.status,pc:sCls(t.status)})))}>อีก <b>${noDate.length}</b> รุ่นยังไม่ได้ลงวันที่ จึงไม่ขึ้นในกราฟนี้ — กดเพื่อดูและเติมวันที่</div>`:""}</div>
+${(()=>{const order=types(); const keys=[...new Set(ty.map(t=>trainKind(t)))]
+.sort((a,b)=>{const A=order.indexOf(a),B=order.indexOf(b);return (A<0?99:A)-(B<0?99:B);});
+if(!keys.length)return `<div class="card span2"><h2>รายการอบรม</h2><div class="empty">ยังไม่มีหลักสูตรในช่วงนี้</div></div>`;
+return keys.map(k=>board(k,ty.filter(t=>trainKind(t)===k))).join("");})()}
 </div>`;
 }
 function legalView(){
 const fc=R.legalComp||"", fk=R.legalCat||"";
-const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk))
+const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk)&&pqHit(L.title,L.owner,L.no,L.cat,L.note))
 .sort((a,b)=>{const A=legalDue(a),B=legalDue(b);
 if(A&&B)return A-B; if(A)return -1; if(B)return 1; return (a.title||"")<(b.title||"")?-1:1;});
 const st=L=>legalState(L);
@@ -1341,9 +1677,13 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ยังไม่มีผู้รับผิดชอบ</div>
 <div class="v">${noP.length}</div><div class="d">จาก ${legal.length} รายการ</div></div>
 <div class="card span4">
-<div class="toolbar" style="margin-bottom:6px">
+<div class="toolbar">${pqBox("ค้นหารายการกฎหมาย / ผู้รับผิดชอบ")}
 <select id="lg-comp">${opt([["","ทุกบริษัท"],...visible(companies).map(c=>[c.key,c.label])],fc)}</select>
-<select id="lg-cat">${opt([["","ทุกหมวด"],...LEGALCAT.map(x=>[x,x])],fk)}</select>
+<select id="lg-cat">${(()=>{
+const inCo=legal.filter(L=>!fc||(L.comps||[]).includes(fc));
+const used=[...new Set(inCo.map(L=>L.cat).filter(Boolean))];
+const list=fc?LEGALCAT.filter(x=>used.includes(x)):LEGALCAT;
+return opt([["",fc?"ทุกหมวดของบริษัทนี้":"ทุกหมวด"],...list.map(x=>[x,x])],list.includes(fk)?fk:"");})()}</select>
 <span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
 <div class="tblwrap"><table>
 <thead><tr><th>รายการ</th><th>บริษัทที่ต้องมี</th><th>ผู้รับผิดชอบ</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>สถานะ</th></tr></thead>
@@ -1427,7 +1767,7 @@ ${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</d
 </div>`;
 }
 function setView(){
-const body={groups:setGroups,companies:setCompanies,types:setTypes,gl:setGL,theme:setTheme_,remind:setRemind,import:setImport,connect:setConnect}[settab]();
+const body={groups:setGroups,companies:setCompanies,types:setTypes,courses:setCourses,gl:setGL,theme:setTheme_,remind:setRemind,import:setImport,trash:setTrash,connect:setConnect}[settab]();
 return header("ตั้งค่า","ทุกอย่างที่ปรับได้อยู่ในนี้ · เปลี่ยนแล้วมีผลทุกหน้าและทุกเครื่อง",false)+
 `<div class="toolbar"><div class="seg" id="settabs">
 ${SETTABS.map(([k,l])=>`<button data-st="${k}" aria-pressed="${k===settab}">${l}</button>`).join("")}
@@ -1469,7 +1809,10 @@ ${can?"":`<div class="banner bad" style="margin-top:12px">เครื่อง�
 function setGroups(){
 return `<div class="card"><h2>กลุ่มงาน <small>${groups.length} กลุ่ม</small></h2>
 <div class="rows">${groups.map((g,i)=>{const n=items.filter(t=>t.track===g.key).length;
-return `<div class="rw${g.hidden?" off":""}">${nameInput("data-ren",g.key,g.label)}
+return `<div class="rw${g.hidden?" off":""}">
+<span class="tagdot" style="background:${g.color||"var(--wait)"}"></span>
+${nameInput("data-ren",g.key,g.label)}
+<span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-gcol="${esc(g.key)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
 <button class="gcbtn" data-see="track:${esc(g.key)}" title="ดูงานในกลุ่มนี้">${n} งาน</button>
 <button class="iconbtn" data-move="track:${esc(g.key)}" title="ย้ายงานทั้งหมดไปกลุ่มอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
 ${moveBtns("groups",i,groups.length,g.hidden)}
@@ -1477,7 +1820,8 @@ ${moveBtns("groups",i,groups.length,g.hidden)}
 <div class="addg"><input id="newg" placeholder="ชื่อกลุ่มใหม่ เช่น งานฝึกอบรม">
 <button class="btn" id="addg">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มกลุ่ม</button></div>
 ${TRAIN_PRESET.every(x=>groups.some(g=>g.label===x.label))?"":`<div class="addg" style="margin-top:10px"><button class="btn ghost" id="preset">${svg(ICON.train,17)}เพิ่มชุดกลุ่มงานฝึกอบรม (${esc(TRAIN_PRESET.filter(x=>!groups.some(g=>g.label===x.label)).map(x=>x.label).join(", "))})</button></div>`}
-<div class="hint">พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
+<div class="hint"><b>สีของกลุ่มงาน = สีเดียวของระบบ</b> ทุกงานในกลุ่มนี้ขึ้นสีนี้ในปฏิทินและทุกหน้า · ช่องประ = ใช้สีตามสถานะ<br>
+พิมพ์ทับเพื่อแก้ชื่อ · ปุ่มลูกศรเลื่อนลำดับ (อันที่ใช้บ่อยไว้บนสุด) · ปุ่มรูปตาซ่อนกลุ่มที่ไม่ได้ใช้ออกจากตัวเลือกทุกหน้า โดยไม่ลบข้อมูล · ลบได้เฉพาะกลุ่มที่ไม่มีงานเหลือ</div></div>`;
 }
 function setCompanies(){
 return `<div class="card"><h2>บริษัทในเครือ <small>${companies.length} บริษัท</small></h2>
@@ -1497,27 +1841,115 @@ ${moveBtns("companies",i,companies.length,c.hidden)}
 <div class="hint">ช่องขวาสุดใช้บอกว่าแถวนั้นเป็น <b>กลุ่มบริษัท</b> (เช่น LeKise Group) หรือเป็นบริษัทที่อยู่ในกลุ่มไหน — หน้าฝึกอบรมจะรวมตัวเลขของกลุ่มให้เอง และยังแยกรายบริษัทไว้สำหรับยื่นกรมพัฒนาฯ<br>
 เรียงลำดับและซ่อนได้เหมือนกลุ่มงาน · ที่ซ่อนไว้จะไม่ขึ้นในตัวเลือกตอนเพิ่มงานและบันทึกเงิน</div></div>`;
 }
+let tyQ="", tyShut={}, crsQ="", crsShut={}, bkMsg="";
 function setTypes(){
 const defs=typeDefs(), list=defs.map(x=>x.name);
 const none=items.filter(t=>!t.type).length;
-return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน</small></h2>
-<div class="rows">${defs.map((D,i)=>{const x=D.name, tr=D.track, n=typeUsed(x);
-return `<div class="rw">${nameInput("data-rent",x,x)}
-<select class="cosel" data-trt="${esc(x)}" title="อยู่ใต้กลุ่มงานไหน">
-<option value="">— ใช้ได้ทุกกลุ่มงาน —</option>
-${groups.map(g=>`<option value="${esc(g.key)}"${tr===g.key?" selected":""}>อยู่ใต้ ${esc(g.label)}</option>`).join("")}
+const row=(D,i,up,dn)=>{const x=D.name, tr=D.track, n=typeUsed(x);
+return `<div class="rw" data-tyname="${esc(x.toLowerCase())}">${nameInput("data-rent",x,x)}
+<select class="cosel" data-trt="${esc(x)}" title="ย้ายประเภทนี้ไปอยู่ใต้กลุ่มงานอื่น">
+<option value="">— ทุกกลุ่มงาน —</option>
+${groups.map(g=>`<option value="${esc(g.key)}"${tr===g.key?" selected":""}>${esc(g.label)}</option>`).join("")}
 </select>
 <button class="gcbtn" data-see="type:${esc(x)}" title="ดูงานที่ใช้ประเภทนี้"${n?"":" disabled"}>${n} งาน</button>
+<button class="iconbtn${D.law?" law":""}" data-tlaw="${esc(x)}" aria-pressed="${!!D.law}" title="${D.law?"บังคับตามกฎหมาย — ระบบจะเตือนเมื่อเลยกำหนด (กดเพื่อปิด)":"กดเพื่อตั้งเป็น “บังคับตามกฎหมาย”"}">${svg(ICON.legal,15)}</button>
 <button class="iconbtn" data-movet="${esc(x)}" title="ย้ายงานทั้งหมดไปประเภทอื่น"${n?"":" disabled"}>${svg(ICON_MOVE,15)}</button>
-<button class="iconbtn" data-mvt="${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
-<button class="iconbtn" data-mvt="${i}:1"${i===defs.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
-<button class="btn danger sm" data-delt="${esc(x)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีประเภท</div>`}</div>
+<button class="iconbtn" data-mvt="${i}:${up}"${up<0?" disabled":""} title="เลื่อนขึ้นในกลุ่มนี้">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvt="${i}:${dn}"${dn<0?" disabled":""} title="เลื่อนลงในกลุ่มนี้">${svg(ICON_DN,15)}</button>
+<button class="btn danger sm" data-delt="${esc(x)}">ลบ</button></div>`;};
+const pairs=defs.map((D,i)=>[D,i]);
+const orph=pairs.filter(([D])=>D.track&&!groups.some(g=>g.key===D.track));
+const buckets=[...groups.map(g=>[g.key,g.label,g.color||""]),["","ใช้ได้ทุกกลุ่มงาน",""],...(orph.length?[["__x__","กลุ่มงานที่ถูกลบไปแล้ว",""]]:[])];
+const blank=[];
+const secs=buckets.map(([k,lab,col])=>{
+const mine=k==="__x__"?orph:pairs.filter(([D])=>(D.track||"")===k);
+if(!mine.length){if(k)blank.push(lab);return "";}
+const idx=mine.map(([,i])=>i);
+const tasks=mine.reduce((a,[D])=>a+typeUsed(D.name),0);
+const body=mine.map(([D,i],p)=>row(D,i,p>0?idx[p-1]:-1,p<idx.length-1?idx[p+1]:-1)).join("");
+return `<details class="tysec"${tyShut[k]?"":" open"} data-tysec="${esc(k)}">
+<summary><span class="tydot" style="background:${col||"var(--line-2)"}"></span>${esc(lab)}
+<em>${mine.length} ประเภท${tasks?" · "+tasks+" งาน":""}</em></summary>
+<div class="rows">${body}</div></details>`;}).join("");
+const nLaw=defs.filter(x=>x.law).length;
+return `<div class="card"><h2>ประเภทงาน <small>${list.length} ประเภท · ใช้อยู่ ${items.filter(t=>t.type).length} งาน${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
 <div class="addg"><input id="newt" placeholder="ชื่อประเภทใหม่ เช่น ตรวจประเมิน">
 <select id="newtg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(g=>`<option value="${esc(g.key)}">อยู่ใต้ ${esc(g.label)}</option>`).join("")}</select>
+<label class="lawchk" title="งานที่กฎหมายบังคับให้ต้องทำ เช่น ดับเพลิง · ที่อับอากาศ · อนุรักษ์พลังงาน"><input type="checkbox" id="newtlaw"> บังคับตามกฎหมาย</label>
 <button class="btn" id="addt">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มประเภท</button></div>
+<div class="tybar"><input id="tyfind" value="${esc(tyQ)}" placeholder="พิมพ์ค้นหาประเภท…" autocomplete="off">
+<button class="gcbtn" id="tyexp">เปิดทุกกลุ่ม</button><button class="gcbtn" id="tycol">ย่อทุกกลุ่ม</button></div>
+${secs||`<div class="empty">ยังไม่มีประเภท</div>`}
+${blank.length?`<div class="hint">กลุ่มที่ยังไม่มีประเภทย่อย: ${blank.map(esc).join(" · ")} — เพิ่มได้จากช่องด้านล่าง</div>`:""}
 ${none?`<div class="hint">มี <b>${none}</b> งานที่ยังไม่ได้ระบุประเภท — เปิดงานแล้วเลือกประเภทได้เลย</div>`:""}
 <div class="hint"><b>กลุ่มงาน</b> คือกองใหญ่ · <b>ประเภทงาน</b> คือชนิดย่อยในกองนั้น — ช่องที่สองบอกว่าประเภทนี้อยู่ใต้กลุ่มไหน ตอนเพิ่มงานระบบจะโชว์เฉพาะประเภทของกลุ่มที่เลือก (บวกกับประเภทที่ตั้งเป็น “ใช้ได้ทุกกลุ่มงาน”)<br>
+ปุ่มโล่ <b>⚖︎</b> ท้ายแถว = ตั้งประเภทนั้นเป็น <b>บังคับตามกฎหมาย</b> — งานอบรมในประเภทนี้จะถูกเฝ้าวันครบกำหนด และขึ้นแถบเตือนสีแดงในหน้าฝึกอบรมเมื่อเลยกำหนดแล้วยังไม่ปิดงาน · ใช้เป็น <b>ตาข่ายกันพลาดระดับกอง</b> เพราะถ้าหลักสูตรนั้นตั้งค่าไว้เองใน <b>ทะเบียนหลักสูตรอบรม</b> ระบบจะยึดของหลักสูตรก่อนเสมอ (แม่นกว่า)<br>
 พิมพ์ทับเพื่อแก้ชื่อ — งานทุกงานที่ใช้ประเภทนั้นจะเปลี่ยนตามให้อัตโนมัติ · กดจำนวนงานเพื่อดูว่างานไหนใช้อยู่ · ปุ่มลูกศรจัดลำดับในตัวเลือกตอนเพิ่มงาน · ลบได้เฉพาะประเภทที่ไม่มีงานเหลือ (ใช้ปุ่มย้ายก่อน)</div></div>`;
+}
+function setCourses(){
+const row=(c,i,up,dn)=>{const bs=crsBatches(c.code), pax=bs.reduce((a,t)=>a+(+t.pax||0),0);
+return `<div class="rw${c.hidden?" off":""}" data-crsname="${esc((c.code+" "+c.name).toLowerCase())}">
+<button class="crscode" data-crsopen="${esc(c.code)}" title="ดูรายละเอียดหลักสูตร">${esc(c.code)}</button>
+${nameInput("data-rencrs",c.code,c.name)}
+<select class="cosel" data-crsskill="${esc(c.code)}" title="หมวดทักษะ (Soft / Hard / Safety …)">
+<option value="">— หมวดทักษะ —</option>${skills().map(x=>`<option value="${esc(x)}"${c.skill===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
+<select class="cosel" data-crsmode="${esc(c.code)}" title="รูปแบบการอบรม">
+<option value="">— รูปแบบ —</option>${modes().map(x=>`<option value="${esc(x)}"${c.mode===x?" selected":""}>${esc(x)}</option>`).join("")}</select>
+<input type="number" class="glb" data-crshr="${esc(c.code)}" value="${c.hours||""}" placeholder="ชม." title="ชั่วโมงต่อคน" min="0" step="0.5">
+<select class="cosel${c.law===true?" lawsel":""}" data-crslaw="${esc(c.code)}" title="หลักสูตรนี้บังคับตามกฎหมายไหม — ถ้าเลือกไว้ จะชนะค่าที่ตั้งในประเภทงาน">
+<option value=""${c.law===undefined||c.law===null?" selected":""}>— ตามประเภทงาน —</option>
+<option value="1"${c.law===true?" selected":""}>⚖︎ บังคับตามกฎหมาย</option>
+<option value="0"${c.law===false?" selected":""}>ไม่บังคับ</option></select>
+<button class="gcbtn" data-see="crs:${esc(c.code)}" title="ดูรุ่นทั้งหมดของหลักสูตรนี้"${bs.length?"":" disabled"}>${bs.length} รุ่น${pax?" · "+pax+" คน":""}</button>
+<button class="iconbtn" data-mvc="${i}:${up}"${up<0?" disabled":""} title="เลื่อนขึ้นในหมวดนี้">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvc="${i}:${dn}"${dn<0?" disabled":""} title="เลื่อนลงในหมวดนี้">${svg(ICON_DN,15)}</button>
+<button class="iconbtn${c.hidden?"":" on"}" data-hide="courses:${i}" title="${c.hidden?"กดเพื่อแสดง":"กดเพื่อซ่อน"}">${svg(c.hidden?ICON_EYEOFF:ICON_EYE,15)}</button>
+<button class="btn danger sm" data-delcrs="${esc(c.code)}">ลบ</button></div>`;};
+const pairs=courses.map((c,i)=>[c,i]);
+const blank=[];
+const secs=[...skills().map(k=>[k,k,skillColor(k)]),["","ยังไม่ระบุหมวดทักษะ",""]].map(([k,lab,col])=>{
+const mine=pairs.filter(([c])=>(c.skill||"")===k);
+if(!mine.length){if(k)blank.push(lab);return "";}
+const idx=mine.map(([,i])=>i);
+const bs=mine.reduce((a,[c])=>a+crsBatches(c.code).length,0);
+const law=mine.filter(([c])=>c.law===true).length;
+return `<details class="tysec"${crsShut[k]?"":" open"} data-crssec="${esc(k)}">
+<summary><span class="tydot" style="background:${col||"var(--line-2)"}"></span>${esc(lab)}
+<em>${mine.length} หลักสูตร${bs?" · "+bs+" รุ่น":""}${law?" · ⚖︎ "+law:""}</em></summary>
+<div class="rows">${mine.map(([c,i],p)=>row(c,i,p>0?idx[p-1]:-1,p<idx.length-1?idx[p+1]:-1)).join("")}</div></details>`;}).join("");
+const nLaw=courses.filter(c=>c.law===true).length;
+const miniList=(kind,label,arr,usedFn,colFn,ph)=>`<div class="card" style="margin-top:16px">
+<h2>${esc(label)} <small>${arr.length} รายการ</small></h2>
+<div class="addg" style="margin-top:10px"><input id="new${kind}" placeholder="${esc(ph)}">
+<button class="btn" id="add${kind}">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่ม</button></div>
+<div class="rows">${arr.map((x,i)=>{const n=usedFn(x);
+return `<div class="rw"><span class="tydot" style="background:${colFn(x)}"></span>
+${nameInput("data-ren"+kind,x,x)}
+<span class="gc">${n?"ใช้อยู่ "+n+" รายการ":"ยังไม่มีใครใช้"}</span>
+<button class="iconbtn" data-mvl="${kind}:${i}:-1"${i===0?" disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
+<button class="iconbtn" data-mvl="${kind}:${i}:1"${i===arr.length-1?" disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button class="btn danger sm" data-del${kind}="${esc(x)}">ลบ</button></div>`;}).join("")}</div></div>`;
+return `<div class="card"><h2>ทะเบียนหลักสูตรอบรม <small>${courses.length} หลักสูตร · ${items.filter(t=>isTrain(t)&&t.course).length} รุ่นที่ผูกไว้${nLaw?" · บังคับตามกฎหมาย "+nLaw:""}</small></h2>
+<div class="addg">
+<span class="crscode" id="crsnext">${esc(nextCourseCode())}</span>
+<input id="newcrs" placeholder="ชื่อหลักสูตร เช่น หลักการทำงานของ LeKise Group">
+<select id="newcrssk"><option value="">— หมวดทักษะ —</option>${skills().map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join("")}</select>
+<button class="btn" id="addcrs">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มหลักสูตร</button></div>
+<div class="tybar"><input id="crsfind" value="${esc(crsQ)}" placeholder="พิมพ์ค้นหารหัสหรือชื่อหลักสูตร…" autocomplete="off">
+<button class="gcbtn" id="crsexp">เปิดทุกหมวด</button><button class="gcbtn" id="crscol">ย่อทุกหมวด</button></div>
+${secs||`<div class="empty">ยังไม่มีหลักสูตรในทะเบียน — เพิ่มด้านล่าง ระบบจะรันรหัสให้เอง</div>`}
+${blank.length?`<div class="hint">หมวดที่ยังไม่มีหลักสูตร: ${blank.map(esc).join(" · ")}</div>`:""}
+${(()=>{const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
+return un.length?`<div class="banner" style="margin-top:14px">${svg(ICON.bell,17)} มี <b>${un.length}</b> รายการอบรมที่ชื่อตรงกับทะเบียน แต่ยังไม่ได้ผูกรหัสไว้ในข้อมูล
+<button class="btn sm" id="crslink" style="margin-left:auto">ผูกรหัสให้อัตโนมัติ</button></div>`:"";})()}
+<div class="hint"><b>รหัสหลักสูตรรันอัตโนมัติ</b> (${CRSPREFIX}-001, -002, …) แก้ชื่อได้ แต่รหัสล็อกไว้เพื่อไม่ให้หลักสูตรเดียวกันมีหลายรหัส<br>
+เวลาเพิ่มงานอบรม ให้เลือกหลักสูตรจากทะเบียนนี้ แล้วใส่แค่ <b>รุ่นที่</b> · หนึ่งหลักสูตรมีกี่รุ่นก็ได้ ระบบนับ “หลักสูตร” แบบไม่ซ้ำ และนับ “รุ่น” แยกให้<br>
+หมวดทักษะ/รูปแบบ/ชั่วโมง ที่ตั้งไว้ตรงนี้จะเติมให้อัตโนมัติตอนเลือกหลักสูตร · ลบได้เฉพาะหลักสูตรที่ยังไม่มีรุ่นผูกอยู่<br>
+ช่อง <b>⚖︎ บังคับตามกฎหมาย</b> คือตัวจริงที่แม่นที่สุด เพราะกฎหมายบังคับเป็นราย “หลักสูตร” ไม่ใช่รายกอง — <b>ค่าที่ตั้งตรงนี้ชนะค่าในตั้งค่า › ประเภทงานเสมอ</b> · ปล่อยเป็น “ตามประเภทงาน” ไว้ ระบบจะไปใช้ธงของประเภทงานแทน (ตาข่ายกันพลาดสำหรับรุ่นที่ยังไม่ผูกรหัสหลักสูตร)</div></div>
+${miniList("sk","หมวดทักษะ",skills(),skillUsed,skillColor,"เช่น Leadership, ISO, ภาษา")}
+${miniList("md","รูปแบบการอบรม",modes(),modeUsed,modeColor,"เช่น Zoom, E-Learning, ดูงานนอกสถานที่")}
+<div class="hint"><b>หมวดทักษะ</b> = จัดกลุ่มว่าหลักสูตรนั้นพัฒนาอะไร (Soft / Hard / Safety …) ใช้ทำโดนัทในหน้าฝึกอบรม — <b>คนละตัวกับ “ประเภทงาน”</b> ในตั้งค่าอีกแท็บ ซึ่งเป็นชนิดย่อยของงานทั้งระบบ (ประชุม/อบรม/โปรเจค) ไม่ได้ใช้เฉพาะหลักสูตร<br>
+<b>รูปแบบการอบรม</b> = จัดที่ไหนอย่างไร (In-House / Public / Online …) · ทั้งสองรายการนี้แก้ชื่อ เพิ่ม ลบ และจัดลำดับได้ตามใจ ระบบจะดึงไปใส่ในตัวเลือกทุกหน้าให้เอง · ชื่อที่มีข้อมูลใช้อยู่จะไม่หายแม้ลบออกจากทะเบียน</div>`;
 }
 function setGL(){
 const y=R.glYear||R.year;
@@ -1564,20 +1996,53 @@ return `<div class="card"><h2>โหมดกลางวัน / กลาง�
 <span>${["อ่อนสุด","อ่อน","กลาง","เข้ม","เข้มสุด"][i]}</span></label>`).join("")}</div>
 <div class="addg"><button class="btn" id="useCustom">${svg(ICON.check,17)}ใช้สีชุดนี้</button>
 <button class="btn ghost" id="fromCur">ดึงค่าจากชุดที่ใช้อยู่</button></div></div>
-<div class="card" style="margin-top:16px"><h2>ป้ายกำกับ & สีในปฏิทิน <small>${tagDefs().length} ป้าย</small></h2>
+<div class="card" style="margin-top:16px"><h2>ป้ายกำกับ <small>${tagDefs().length} ป้าย · ใช้ค้นหาและจัดหมวดย่อย</small></h2>
 <div class="rows">${tagDefs().map((g,i)=>{const n=tagUsed(g.name);
 return `<div class="rw">
-<span class="tagdot" style="background:${g.color||"var(--wait)"}"></span>
+<span class="tagdot" style="background:${tagColor(g.name)||"var(--wait)"}"></span>
 ${nameInput("data-rentag",g.name,g.name)}
-<span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-tagcol="${esc(g.name)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
+<select class="cosel" data-tagtrack="${esc(g.name)}" title="ป้ายนี้ใช้กับกลุ่มงานไหน">
+<option value="">— ใช้ได้ทุกกลุ่มงาน —</option>
+${groups.map(x=>`<option value="${esc(x.key)}"${g.track===x.key?" selected":""}>อยู่ใต้ ${esc(x.label)}</option>`).join("")}
+</select>
 <button class="gcbtn" data-see="tag:${esc(g.name)}" title="ดูงานที่ติดป้ายนี้"${n?"":" disabled"}>${n} งาน</button>
 <button class="btn danger sm" data-deltag="${esc(g.name)}">ลบ</button></div>`;}).join("")||`<div class="empty">ยังไม่มีป้ายกำกับ</div>`}</div>
 <div class="addg"><input id="newtag" placeholder="ชื่อป้ายใหม่ เช่น ความปลอดภัย">
+<select id="newtagg"><option value="">— ใช้ได้ทุกกลุ่มงาน —</option>${groups.map(x=>`<option value="${esc(x.key)}">อยู่ใต้ ${esc(x.label)}</option>`).join("")}</select>
 <button class="btn" id="addtag">${svg('<path d="M12 5v14M5 12h14"/>',17)}เพิ่มป้าย</button></div>
-<div class="hint">ป้ายกำกับใช้ได้ทุกหน้า — สีที่เลือกตรงนี้คือสีที่ขึ้นในปฏิทินและจุดสีหน้ารายการ เปลี่ยนที่นี่ที่เดียว ทุกงานที่ติดป้ายนั้นเปลี่ยนตาม · “ตามสถานะ” (ช่องประ) = ใช้สีตามสถานะงานเหมือนเดิม · ลบป้ายไม่ลบงาน แต่ป้ายจะหายจากตัวเลือก</div></div>`;
+<div class="hint">ป้ายกำกับเป็น <b>คำค้น/หมวดย่อย</b> ของงาน เช่น “ความปลอดภัย” “ผู้บริหาร” — ไม่มีสีของตัวเอง สีในปฏิทินมาจากกลุ่มงานเสมอ<br>
+เลือกกลุ่มให้ป้ายได้ ตอนเพิ่มงานระบบจะโชว์เฉพาะป้ายของกลุ่มนั้น (บวกป้ายกลาง) · ลบป้ายไม่ลบงาน</div></div>`;
+}
+function setTrash(){
+const all=trashAll();
+const groupsT=Object.keys(TRASH).filter(k=>TRASH[k].length);
+const row=({coll,t})=>{const left=trashLeft(t), d=trashDays(t);
+return `<div class="rw">
+<span class="tag">${esc(TRKIND[coll]||coll)}</span>
+<div class="gn">${esc(trashTitle(coll,t))}
+<div class="t-note">ลบเมื่อ ${esc(new Date(t._trash).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"}))} · ${d===0?"วันนี้":d+" วันก่อน"}</div></div>
+<span class="gc" style="${left<=7?"color:var(--over);font-weight:600":""}">เหลือ ${left} วัน</span>
+<button class="btn sm" data-restore="${esc(coll)}:${esc(t._id)}">กู้คืน</button>
+<button class="btn danger sm" data-purge="${esc(coll)}:${esc(t._id)}">ลบถาวร</button></div>`;};
+return `<div class="card"><h2>ถังขยะ <small>${all.length} รายการ · ลบอัตโนมัติเมื่อครบ ${TRASH_DAYS} วัน</small></h2>
+<div class="hint" style="margin-top:2px">ทุกอย่างที่กดลบในระบบจะมาพักที่นี่ก่อน <b>${TRASH_DAYS} วัน</b> แล้วค่อยหายถาวร — กู้คืนได้ทุกเมื่อ ของที่กู้กลับจะไปอยู่ที่เดิมพร้อมข้อมูลครบเหมือนเดิม</div>
+${all.length?`<div class="tybar" style="margin-top:12px"><span style="font-size:13px;color:var(--ink-3)">${groupsT.map(k=>TRKIND[k]+" "+TRASH[k].length).join(" · ")}</span>
+<button class="btn danger sm" id="trashEmpty" style="margin-left:auto">ล้างถังขยะทั้งหมด</button></div>
+<div class="rows">${all.map(row).join("")}</div>`
+:`<div class="empty">ถังขยะว่าง — ยังไม่มีอะไรถูกลบ 🎉</div>`}
+<div class="hint">ถ้าอยากได้สำเนาเก็บไว้นานกว่านี้ ใช้ <b>สำรองข้อมูลทั้งหมด (.json)</b> ที่แท็บนำเข้า CSV — ไฟล์สำรองไม่มีวันหมดอายุ</div></div>`;
 }
 function setImport(){
-return `<div class="card"><h2>นำเข้างานจากไฟล์ CSV</h2>
+return `<div class="card"><h2>สำรองข้อมูล & กู้คืน <small>ลบไปแล้วกู้กลับได้ ถ้ามีไฟล์สำรอง</small></h2>
+<div class="hint" style="margin-top:2px">ระบบ<b>ลบจริง</b>เมื่อกดลบ (ไม่มีถังขยะ) — ไฟล์สำรองคือทางเดียวที่ดึงของที่ลบกลับมาได้ แนะนำกดสำรองสัปดาห์ละครั้ง หรือก่อนลบอะไรเป็นชุดใหญ่</div>
+<div class="addg">
+<button class="btn" id="bkdown">${svg(ICON.file,17)}สำรองข้อมูลทั้งหมด (.json)</button>
+<input type="file" id="bkfile" accept=".json,application/json" style="background:var(--paper);padding:9px 14px">
+<button class="btn ghost" id="bkgo">กู้คืนจากไฟล์</button></div>
+<div id="bkout">${bkMsg}</div>
+<div class="hint">ไฟล์สำรองมีครบทุกอย่าง: งาน · การเงิน · กฎหมาย · Index · บันทึก · บริษัท/กลุ่มงาน/ประเภทงาน/หมวด GL/ทะเบียนหลักสูตร/หมวดทักษะ/รูปแบบ · ตัวเลขกรมพัฒนาฯ · ธีมสี<br>
+<b>กู้คืน = เติมกลับเท่านั้น</b> รายการที่หายไปจะกลับมา รายการที่มีอยู่แล้วจะถูกเขียนทับด้วยค่าในไฟล์ · ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบทิ้ง</div></div>
+<div class="card" style="margin-top:16px"><h2>นำเข้างานจากไฟล์ CSV</h2>
 <div id="impstat">${impPill()}</div>
 <div class="hint" style="margin-top:2px">เปิดไฟล์ Excel แล้ว Save As → CSV UTF-8 หรือ Google Sheets → ดาวน์โหลด → CSV แล้วอัปโหลดที่นี่</div>
 <div class="addg"><input type="file" id="csvfile" accept=".csv,text/csv" style="background:var(--paper);padding:9px 14px"></div>
@@ -1761,6 +2226,16 @@ try{const d=JSON.parse(n.dataset.go);
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();openListBox(n.dataset.list);};});
 el("pclose")&&(el("pclose").onclick=()=>el("pdlg").close());
+document.querySelectorAll("[data-skipnow]").forEach(b=>b.onclick=async e=>{
+e.stopPropagation();
+const [id,iso]=b.dataset.skipnow.split("|");
+const t=items.find(x=>x._id===id); if(!t)return;
+const skip=[...(t.skip||[])];
+const i=skip.indexOf(iso); if(i>=0)skip.splice(i,1); else skip.push(iso);
+const {_id,...rest}=t;
+try{ await saveItem({...rest,skip},_id); setFoot(i>=0?"กลับมาจัดรอบนี้ตามเดิม":"งดรอบ "+iso+" แล้ว รอบอื่นไม่กระทบ"); }
+catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); }
+});
 document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async e=>{
 e.stopPropagation();
 const [id,iso]=b.dataset.done.split("|");
@@ -1784,11 +2259,16 @@ const x=notes.find(v=>v._id===n.dataset.nt); if(x)openNote(x);});
 el("ix-group")&&(el("ix-group").onchange=e=>{R.idxGroup=e.target.value;render();});
 el("ix-status")&&(el("ix-status").onchange=e=>{R.idxStatus=e.target.value;render();});
 el("nt-kind")&&(el("nt-kind").onchange=e=>{R.noteKind=e.target.value;render();});
+el("pq")&&(el("pq").oninput=e=>{const v=e.target.value,p2=e.target.selectionStart;R.pq=v;render();
+const m=el("pq"); if(m){m.focus();m.setSelectionRange(p2,p2);}});
 el("nt-q")&&(el("nt-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.noteQ=v;render();
 const m=el("nt-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
 document.querySelectorAll("[data-lg]").forEach(n=>n.onclick=()=>{
 const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegal(L);});
-el("lg-comp")&&(el("lg-comp").onchange=e=>{R.legalComp=e.target.value;render();});
+el("lg-comp")&&(el("lg-comp").onchange=e=>{R.legalComp=e.target.value;
+const inCo=legal.filter(L=>!R.legalComp||(L.comps||[]).includes(R.legalComp));
+if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
+render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
 const t=items.find(x=>x._id===n.dataset.id); if(t)open_(t);};});
@@ -1798,9 +2278,16 @@ const sc=el("sc1");
 if(sc){sc.onclick=e=>{const b=e.target.closest("button[data-sc]");if(!b)return;R.scope=b.dataset.sc;render();};
 el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
 ["yrSel","yrSel2","yrSelB"].forEach(id=>{const n=el(id); if(n)n.onchange=e=>{R.year=+e.target.value;R.selDay=null;render();};});
+document.querySelectorAll("[data-yr]").forEach(b=>b.onclick=()=>{
+const d=+b.dataset.yr; R.year=d?Math.min(2199,Math.max(1900,R.year+d)):THISYEAR; R.selDay=null; render();});
 const bs=el("budsc");
 if(bs){bs.onclick=e=>{const b=e.target.closest("button[data-bs]");if(!b)return;R.budScope=b.dataset.bs;render();};
 el("budMonth")&&(el("budMonth").onchange=e=>{R.budMonth=+e.target.value;render();});}
+el("goNoDate")&&(el("goNoDate").onclick=()=>{
+LISTBOX["noDate"]={title:"งานที่ยังไม่ได้ใส่วันที่หรือรอบซ้ำ",rows:items.filter(t=>!isSysRow(t)&&!monthsOf(t).length).map(t=>({
+id:t._id,t1:t.title,t2:`${gLabel(t.track)}${t.company?" · "+cLabel(t.company):""}${t.owner?" · "+t.owner:""}`,
+d:"—",p:t.status,pc:sCls(t.status)}))};
+openListBox("noDate");});
 el("calmode")&&(el("calmode").onclick=e=>{const b=e.target.closest("button[data-cm]");if(!b)return;R.calMode=b.dataset.cm;R.selDay=null;render();});
 el("calMonth")&&(el("calMonth").onchange=e=>{R.month=+e.target.value;R.selDay=null;render();});
 el("pm")&&(el("pm").onclick=()=>{R.month=(R.month+11)%12;R.selDay=null;render();});
@@ -1811,20 +2298,30 @@ if(el("addtag")){
 el("addtag").onclick=async()=>{const v=el("newtag").value.trim();
 if(!v){tell("ใส่ชื่อป้ายก่อนนะคะ");return;}
 if(tagsOf().includes(v)){tell("มีป้ายนี้แล้วค่ะ");return;}
-tagList=[...tagDefs(),{name:v,color:""}]; el("newtag").value=""; render(); await saveMeta("tags",tagList);};}
-document.querySelectorAll("[data-tagcol]").forEach(b=>b.onclick=async()=>{
-const [nm,c]=b.dataset.tagcol.split("|");
-tagList=tagDefs().map(x=>x.name===nm?{name:nm,color:c}:x);
-render(); await saveMeta("tags",tagList);
-const list=items.filter(t=>(t.tag||"").trim()===nm&&(t.color||"")!==c);
-for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{color:c}),_id);}catch(e){}}
-render();});
+tagList=[...tagDefs(),{name:v,color:"",track:(el("newtagg")?el("newtagg").value:"")}]; el("newtag").value=""; render(); await saveMeta("tags",tagList);};}
+el("fixcolor")&&(el("fixcolor").onclick=async()=>{
+const list=items.filter(t=>t.color&&t.track&&gColor(t.track)&&t.color!==gColor(t.track));
+if(!list.length)return;
+if(!await ask(`ล้างสีเฉพาะตัวของ <b>${list.length}</b> งาน ให้กลับไปใช้สีของกลุ่มงาน ใช่ไหมคะ?<div style="font-size:13px;margin-top:8px">ข้อมูลอื่นไม่เปลี่ยน · ถ้าอยากให้งานไหนสีต่างจากกลุ่ม ตั้งใหม่ทีหลังได้</div>`,"ใช้สีตามกลุ่ม"))return;
+let ok=0;
+for(const t of list){ try{ const {_id,...r}=t; await saveItem(Object.assign({},r,{color:""}),_id); ok++; }catch(e){}
+setFoot("กำลังปรับสี "+ok+"/"+list.length+" …"); }
+render(); tell("<b>ปรับแล้ว "+ok+" งาน</b> ตอนนี้สีในปฏิทินตรงกับกลุ่มงานทั้งหมด");});
+document.querySelectorAll("[data-gcol]").forEach(b=>b.onclick=async()=>{
+const [k,c]=b.dataset.gcol.split("|");
+const g=groups.find(x=>x.key===k); if(!g)return;
+g.color=c; render(); await saveMeta("groups",groups);});
+document.querySelectorAll("[data-tagtrack]").forEach(n=>n.onchange=async()=>{
+const nm=n.dataset.tagtrack;
+tagList=tagDefs().map(x=>x.name===nm?{name:x.name,color:x.color,track:n.value}:x);
+render(); await saveMeta("tags",tagList);});
+
 document.querySelectorAll("[data-rentag]").forEach(n=>n.onchange=async()=>{
 const from=n.dataset.rentag, to=n.value.trim();
 if(!to||to===from||!tagsOf().includes(from)||renameLock){render();return;}
 if(tagsOf().includes(to)){tell("มีป้าย “"+esc(to)+"” อยู่แล้วค่ะ");render();return;}
 renameLock=true; setTimeout(()=>renameLock=false,800);
-tagList=tagDefs().map(x=>x.name===from?{name:to,color:x.color}:x);
+tagList=tagDefs().map(x=>x.name===from?{name:to,color:x.color,track:x.track}:x);
 await saveMeta("tags",tagList);
 const list=items.filter(t=>(t.tag||"").trim()===from);
 for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},rest,{tag:to}),_id);}catch(e){}}
@@ -1838,10 +2335,30 @@ for(const t of list){try{const {_id,...rest}=t; await saveItem(Object.assign({},
 render();});
 document.querySelectorAll("[data-day]").forEach(n=>n.onclick=()=>{
 const d=+n.dataset.day; R.selDay=R.selDay===d?null:d; render();});
-el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";render();});
+document.querySelectorAll("[data-restore]").forEach(b=>b.onclick=async()=>{
+const [coll,id]=b.dataset.restore.split(":");
+const t=(TRASH[coll]||[]).find(x=>x._id===id); if(!t)return;
+await trashRestore(coll,t); render();});
+document.querySelectorAll("[data-purge]").forEach(b=>b.onclick=async()=>{
+const [coll,id]=b.dataset.purge.split(":");
+const t=(TRASH[coll]||[]).find(x=>x._id===id); if(!t)return;
+if(!await ask("ลบ “"+esc(trashTitle(coll,t))+"” <b>ถาวร</b> ใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--over)\">กู้กลับไม่ได้อีกแล้ว</div>","ลบถาวร"))return;
+await trashPurge(coll,id); render();});
+if(el("trashEmpty"))el("trashEmpty").onclick=async()=>{
+const all=trashAll();
+if(!await ask("ล้างถังขยะทั้งหมด <b>"+all.length+"</b> รายการ ใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--over)\">กู้กลับไม่ได้อีกแล้ว</div>","ล้างถังขยะ"))return;
+let n=0; for(const {coll,t} of all){ try{ await trashPurge(coll,t._id); n++; setFoot("กำลังล้าง "+n+"/"+all.length+" …"); }catch(e){} }
+render(); setFoot("ล้างถังขยะแล้ว "+n+" รายการ");};
+el("settabs")&&(el("settabs").onclick=e=>{const b=e.target.closest("button[data-st]");if(!b)return;settab=b.dataset.st;healthState="idle";R.pq="";render();});
 const bind=(id,key)=>{const n=el(id);if(!n)return;n.oninput=n.onchange=()=>{
 F[key]=n.value;const p=n.selectionStart,srch=n.type==="search";render();
 const m=el(id);if(m&&srch){m.focus();m.setSelectionRange(p,p);}};};
+el("fl-track")&&(el("fl-track").addEventListener("change",()=>{
+const v=el("fl-track").value;
+if(F.type&&v&&!typesFor(v).includes(F.type)&&!items.some(t=>t.track===v&&(t.type||"")===F.type))F.type="";
+}));
+el("grpseg")&&(el("grpseg").onclick=e=>{const b=e.target.closest("button[data-grp]"); if(!b)return;
+F.grp=b.dataset.grp; render();});
 bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","status");bind("fl-company","company");
 el("modeseg")&&(el("modeseg").onclick=async e=>{
 const b=e.target.closest("button[data-md]"); if(!b)return;
@@ -1874,7 +2391,7 @@ render(); await saveHR();});
 document.querySelectorAll("[data-see]").forEach(b=>b.onclick=()=>{
 const [k,v]=b.dataset.see.split(":");
 F.q="";F.track="";F.type="";F.status="";F.company="";
-if(k==="tag")F.q=v; else F[k]=v;
+if(k==="tag"||k==="crs")F.q=v; else F[k]=v;
 R.scope="year"; view="all"; renderNav(); render(); window.scrollTo(0,0);});
 document.querySelectorAll("[data-move]").forEach(b=>b.onclick=async()=>{
 const [k,v]=b.dataset.move.split(":");
@@ -1906,11 +2423,91 @@ setFoot("กำลังย้าย "+ok+"/"+list.length+" …");}
 return {ok,fail,err,n:list.length};
 }
 async function saveTypes(){ await saveMeta("types",types()); }
+el("crslink")&&(el("crslink").onclick=async()=>{
+const un=items.filter(t=>isTrain(t)&&!t.course&&crsByName(t.title));
+if(!un.length)return;
+if(!await ask(`ผูกรหัสหลักสูตรให้ <b>${un.length}</b> รายการที่ชื่อตรงกับทะเบียน ใช่ไหมคะ?<div style="font-size:13px;margin-top:8px">ระบบจะเติมเฉพาะช่องรหัสหลักสูตร ไม่แก้ข้อมูลอื่น</div>`,"ผูกรหัส"))return;
+let ok=0;
+for(const t of un){ const c=crsByName(t.title); if(!c)continue;
+try{ const {_id,...r}=t; await saveItem(Object.assign({},r,{course:c.code,code:t.code||c.code}),_id); ok++; }catch(e){}
+setFoot("กำลังผูก "+ok+"/"+un.length+" …"); }
+render(); tell("<b>ผูกรหัสแล้ว "+ok+" รายการ</b>");});
+if(el("addcrs")){
+el("addcrs").onclick=async()=>{
+const nm=el("newcrs").value.trim(); if(!nm){tell("ใส่ชื่อหลักสูตรก่อนนะคะ");return;}
+if(courses.some(c=>c.name===nm)){tell("มีหลักสูตรชื่อนี้แล้วค่ะ — ถ้าเป็นรุ่นใหม่ ให้ไปเพิ่มงานอบรมแล้วเลือกหลักสูตรนี้แทน");return;}
+courses=[...courses,{code:nextCourseCode(),name:nm,skill:(el("newcrssk")?el("newcrssk").value:"")||"",mode:"",hours:0}];
+el("newcrs").value=""; render(); await saveMeta("courses",courses);};}
+// ค้นหา / ย่อ-ขยาย หมวดในทะเบียนหลักสูตร
+const cf=el("crsfind");
+if(cf){const run=()=>{const q=cf.value.trim().toLowerCase();
+document.querySelectorAll("[data-crssec]").forEach(sec=>{let hit=0;
+sec.querySelectorAll("[data-crsname]").forEach(r=>{const ok=!q||r.dataset.crsname.includes(q); r.hidden=!ok; if(ok)hit++;});
+sec.hidden=!!q&&!hit; if(q&&hit)sec.open=true;});};
+cf.oninput=()=>{crsQ=cf.value; run();}; if(crsQ)run();}
+if(el("crsexp"))el("crsexp").onclick=()=>document.querySelectorAll("[data-crssec]").forEach(x=>{x.open=true;crsShut[x.dataset.crssec]=0;});
+if(el("crscol"))el("crscol").onclick=()=>document.querySelectorAll("[data-crssec]").forEach(x=>{x.open=false;crsShut[x.dataset.crssec]=1;});
+document.querySelectorAll("[data-crssec]").forEach(x=>x.addEventListener("toggle",()=>{crsShut[x.dataset.crssec]=x.open?0:1;}));
+document.querySelectorAll("[data-mvc]").forEach(b=>b.onclick=async()=>{
+const [i,t]=b.dataset.mvc.split(":").map(Number);
+if(t<0||t>=courses.length||i<0||i>=courses.length)return;
+const tmp=courses[i]; courses[i]=courses[t]; courses[t]=tmp;
+render(); await saveMeta("courses",courses);});
+// ทะเบียนหมวดทักษะ / รูปแบบการอบรม
+const saveL=async(kind,arr)=>{ if(kind==="sk"){skillList=arr; await saveMeta("skills",arr);} else {modeList=arr; await saveMeta("modes",arr);} };
+[["sk",skills,"skill"],["md",modes,"mode"]].forEach(([kind,getter,field])=>{
+const addBtn=el("add"+kind), inp=el("new"+kind);
+if(addBtn)addBtn.onclick=async()=>{const v=(inp.value||"").trim();
+if(!v){tell("พิมพ์ชื่อก่อนนะคะ");return;}
+if(getter().includes(v)){tell("มีรายการนี้อยู่แล้วค่ะ");return;}
+const arr=[...getter(),v]; inp.value=""; render(); await saveL(kind,arr);};
+document.querySelectorAll("[data-ren"+kind+"]").forEach(n=>n.onchange=async()=>{
+const from=n.dataset["ren"+kind], to=n.value.trim();
+if(!to||to===from){render();return;}
+if(getter().includes(to)){tell("มีรายการ “"+esc(to)+"” อยู่แล้วค่ะ");render();return;}
+const arr=getter().map(x=>x===from?to:x);
+await saveL(kind,arr);
+let ok=0; const targets=[...courses.filter(c=>(c[field]||"")===from),...items.filter(t=>(t[field]||"")===from)];
+for(const c of courses)if((c[field]||"")===from)c[field]=to;
+await saveMeta("courses",courses);
+for(const t of items.filter(t=>(t[field]||"")===from)){
+try{ await DB.collection("items").doc(t._id).set({[field]:to},{merge:true}); ok++; }catch(e){}}
+render(); setFoot("เปลี่ยนชื่อและอัปเดต "+(targets.length)+" รายการแล้ว");});
+document.querySelectorAll("[data-del"+kind+"]").forEach(b=>b.onclick=async()=>{
+const nm=b.dataset["del"+kind];
+const n=kind==="sk"?skillUsed(nm):modeUsed(nm);
+if(n&&!await ask("“"+esc(nm)+"” มี <b>"+n+"</b> รายการใช้อยู่ค่ะ ลบออกจากทะเบียนแล้วชื่อนี้จะยังติดอยู่กับข้อมูลเดิม (และจะโผล่ในทะเบียนอีกครั้งอัตโนมัติ) — ลบต่อไหมคะ?","ลบรายการ"))return;
+const arr=getter().filter(x=>x!==nm); render(); await saveL(kind,arr);});});
+document.querySelectorAll("[data-mvl]").forEach(b=>b.onclick=async()=>{
+const [kind,i,d]=b.dataset.mvl.split(":"); const arr=kind==="sk"?skills():modes();
+const a=+i,t=a+(+d); if(t<0||t>=arr.length)return;
+const tmp=arr[a]; arr[a]=arr[t]; arr[t]=tmp;
+render(); await saveL(kind,arr);});
+document.querySelectorAll("[data-crsopen]").forEach(b2=>b2.onclick=()=>openCrs(b2.dataset.crsopen));
+document.querySelectorAll("[data-rencrs]").forEach(n=>n.onchange=async()=>{
+const c=crsOf(n.dataset.rencrs), v=n.value.trim(); if(!c||!v){render();return;}
+c.name=v; render(); await saveMeta("courses",courses);});
+document.querySelectorAll("[data-crsskill]").forEach(n=>n.onchange=async()=>{
+const c=crsOf(n.dataset.crsskill); if(!c)return; c.skill=n.value; await saveMeta("courses",courses);});
+document.querySelectorAll("[data-crsmode]").forEach(n=>n.onchange=async()=>{
+const c=crsOf(n.dataset.crsmode); if(!c)return; c.mode=n.value; await saveMeta("courses",courses);});
+document.querySelectorAll("[data-crshr]").forEach(n=>n.onchange=async()=>{
+const c=crsOf(n.dataset.crshr); if(!c)return; c.hours=+n.value||0; await saveMeta("courses",courses);});
+document.querySelectorAll("[data-crslaw]").forEach(n=>n.onchange=async()=>{
+const c=crsOf(n.dataset.crslaw); if(!c)return;
+if(n.value==="")delete c.law; else c.law=n.value==="1";
+render(); await saveMeta("courses",courses);
+setFoot(c.law===true?"“"+c.name+"” ตั้งเป็นบังคับตามกฎหมายแล้ว":c.law===false?"“"+c.name+"” ตั้งเป็นไม่บังคับแล้ว":"“"+c.name+"” กลับไปใช้ค่าตามประเภทงาน");});
+document.querySelectorAll("[data-delcrs]").forEach(b=>b.onclick=async()=>{
+const code=b.dataset.delcrs, n=crsBatches(code).length;
+if(n){tell("หลักสูตรนี้มี <b>"+n+"</b> รุ่นผูกอยู่ค่ะ ลบหรือย้ายรุ่นก่อนนะคะ");return;}
+if(!await ask("ลบหลักสูตร “"+esc(crsLabel(code))+"” ใช่ไหมคะ?","ลบหลักสูตร"))return;
+courses=courses.filter(c=>c.code!==code); render(); await saveMeta("courses",courses);});
 if(el("addt")){
 el("addt").onclick=async()=>{
 const v=el("newt").value.trim(); if(!v){tell("ใส่ชื่อประเภทก่อนนะคะ");return;}
 if(types().includes(v)){tell("มีประเภทนี้แล้วค่ะ");return;}
-typeList=[...typeDefs(),{name:v,track:el("newtg").value||""}]; el("newt").value=""; render(); await saveMeta("types",typeList);};
+typeList=[...typeDefs(),{name:v,track:el("newtg").value||"",law:el("newtlaw")&&el("newtlaw").checked}]; el("newt").value=""; render(); await saveMeta("types",typeList);};
 }
 document.querySelectorAll("[data-rent]").forEach(n=>n.onchange=async()=>{
 const from=n.dataset.rent, to=n.value.trim();
@@ -1919,7 +2516,7 @@ if(!types().includes(from)||renameLock){render();return;}   // เปลี่�
 renameLock=true; setTimeout(()=>renameLock=false,800);
 if(types().includes(to)){tell("มีประเภท “"+esc(to)+"” อยู่แล้วค่ะ ถ้าต้องการรวมเข้าด้วยกันให้ใช้ปุ่มย้ายงานแทน");render();return;}
 const used=typeUsed(from);
-typeList=typeDefs().map(x=>x.name===from?{name:to,track:x.track}:x);
+typeList=typeDefs().map(x=>x.name===from?{name:to,track:x.track,law:x.law}:x);
 await saveMeta("types",typeList);
 if(used){const r=await retagType(from,to);
 render();
@@ -1942,20 +2539,36 @@ if(!await ask("ลบประเภท “"+esc(x)+"” ใช่ไหมค�
 typeList=typeDefs().filter(y=>y.name!==x); render(); await saveMeta("types",typeList);});
 document.querySelectorAll("[data-trt]").forEach(n=>n.onchange=async()=>{
 const nm=n.dataset.trt;
-typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:n.value}:x);
+typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:n.value,law:x.law}:x);
 render(); await saveMeta("types",typeList);});
+document.querySelectorAll("[data-tlaw]").forEach(b=>b.onclick=async()=>{
+const nm=b.dataset.tlaw;
+typeList=typeDefs().map(x=>x.name===nm?{name:x.name,track:x.track,law:!x.law}:x);
+render(); await saveMeta("types",typeList);
+setFoot(typeDef(nm)&&typeDef(nm).law?"ตั้ง “"+nm+"” เป็นงานบังคับตามกฎหมายแล้ว":"ยกเลิกสถานะบังคับตามกฎหมายของ “"+nm+"” แล้ว");});
 document.querySelectorAll("[data-mvt]").forEach(b=>b.onclick=async()=>{
-const [i,d]=b.dataset.mvt.split(":").map(Number);
-const arr=typeDefs(); const t=i+d; if(t<0||t>=arr.length)return;
+const [i,t]=b.dataset.mvt.split(":").map(Number);
+const arr=typeDefs(); if(t<0||t>=arr.length||i<0||i>=arr.length)return;
 const tmp=arr[i]; arr[i]=arr[t]; arr[t]=tmp;
 typeList=arr; render(); await saveMeta("types",typeList);});
+const tyf=el("tyfind");
+if(tyf){const run=()=>{const q=tyf.value.trim().toLowerCase();
+document.querySelectorAll("[data-tysec]").forEach(s=>{
+let hit=0; s.querySelectorAll("[data-tyname]").forEach(r=>{
+const ok=!q||r.dataset.tyname.includes(q); r.hidden=!ok; if(ok)hit++;});
+s.hidden=!!q&&!hit; if(q&&hit)s.open=true;});};
+tyf.oninput=()=>{tyQ=tyf.value; run();}; if(tyQ)run();}
+const tyx=el("tyexp"), tyc=el("tycol");
+if(tyx)tyx.onclick=()=>document.querySelectorAll("[data-tysec]").forEach(s=>{s.open=true;tyShut[s.dataset.tysec]=0;});
+if(tyc)tyc.onclick=()=>document.querySelectorAll("[data-tysec]").forEach(s=>{s.open=false;tyShut[s.dataset.tysec]=1;});
+document.querySelectorAll("[data-tysec]").forEach(s=>s.addEventListener("toggle",()=>{tyShut[s.dataset.tysec]=s.open?0:1;}));
 document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=async()=>{
-const [kind,i,d]=b.dataset.mv.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:gls;
+const [kind,i,d]=b.dataset.mv.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:kind==="courses"?courses:gls;
 const a=+i, t=a+(+d); if(t<0||t>=arr.length)return;
 const tmp=arr[a]; arr[a]=arr[t]; arr[t]=tmp;
 render(); await saveMeta(kind==="gl"?"gl":kind,arr);});
 document.querySelectorAll("[data-hide]").forEach(b=>b.onclick=async()=>{
-const [kind,i]=b.dataset.hide.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:gls;
+const [kind,i]=b.dataset.hide.split(":"); const arr=kind==="groups"?groups:kind==="companies"?companies:kind==="courses"?courses:gls;
 const o=arr[+i]; if(!o)return; o.hidden=!o.hidden;
 render(); await saveMeta(kind==="gl"?"gl":kind,arr);});
 document.querySelectorAll("[data-pal]").forEach(b=>b.onclick=()=>setTheme({preset:b.dataset.pal,custom:theme.custom}));
@@ -2044,9 +2657,9 @@ el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
 el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
-["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","ประเภทการอบรม","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รุ่นที่","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
+["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","หมวดทักษะ","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รหัสหลักสูตร","รุ่นที่","แบบที่ยื่น","วันที่ฝึกเสร็จ","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
-t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.batch||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
+t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.course||"",t.batch||"",t.yp||"",t.dsdEnd||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
 if(el("health")&&healthState!=="done")checkHealth();
 el("selftest")&&(el("selftest").onclick=async()=>{
 const out=el("csvout2"); out.innerHTML=`<div class="banner">กำลังทดสอบ…</div>`;
@@ -2057,6 +2670,45 @@ const rd=await SB.from("rows").select("id",{count:"exact",head:true}).eq("uid",u
 await SB.from("rows").delete().eq("id",id).eq("uid",uid);
 out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} เขียน อ่าน และลบข้อมูลได้ปกติ · ตอนนี้มี ${rd.count!=null?rd.count-1:"?"} แถวบนเซิร์ฟเวอร์</div>`;
 });
+// ---- สำรอง / กู้คืน ----
+if(el("bkdown"))el("bkdown").onclick=()=>{
+const strip=a=>a.map(x=>{const o=Object.assign({},x); const id=o._id; delete o._id; return {id,data:o};});
+const pack={app:"sky-work",version:APP_VERSION,at:new Date().toISOString(),
+items:strip(items),ledger:strip(ledger),legal:strip(legal),index:strip(idx),note:strip(notes),
+meta:{groups,companies,gl:gls,types:typeDefs(),tags:tagDefs(),courses,skills:skills(),modes:modes(),
+hr:{manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd,subsidy:hrdata.subsidy},theme}};
+const a=document.createElement("a");
+a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,1)],{type:"application/json"}));
+a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
+setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},900);
+const n=pack.items.length+pack.ledger.length+pack.legal.length+pack.index.length+pack.note.length;
+bkMsg=`<div class="banner ok" style="margin-top:12px">${svg(ICON.file,17)} สำรองแล้ว <b>${n}</b> รายการ + การตั้งค่าทั้งหมด — เก็บไฟล์ไว้ใน Google Drive หรือที่ปลอดภัยนะคะ</div>`; render();};
+if(el("bkgo"))el("bkgo").onclick=async()=>{
+const f=el("bkfile").files&&el("bkfile").files[0];
+if(!f){tell("เลือกไฟล์สำรอง (.json) ก่อนนะคะ");return;}
+let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Work</div>"); return; }
+if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Work</b>");return;}
+const cnt=["items","ledger","legal","index","note"].reduce((a,k)=>a+((pack[k]||[]).length),0);
+if(!await ask("ไฟล์นี้สำรองไว้เมื่อ <b>"+esc(new Date(pack.at||Date.now()).toLocaleString("th-TH"))+"</b> มี <b>"+cnt+"</b> รายการ<br>กู้คืนแบบ<b>เติมกลับ</b> — ของที่ลบไปจะกลับมา ของที่มีอยู่จะถูกเขียนทับด้วยค่าในไฟล์ ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบ<br>ดำเนินการต่อไหมคะ?","กู้คืนข้อมูล"))return;
+let ok=0,fail=0;
+for(const [coll,key] of [["items","items"],["ledger","ledger"],["legal","legal"],["index","index"],["note","note"]]){
+for(const r of (pack[key]||[])){
+try{ await DB.collection(coll).doc(r.id).set(r.data); ok++; }catch(e){ fail++; }
+if(ok%25===0)setFoot("กำลังกู้คืน "+ok+"/"+cnt+" …");}}
+const M=pack.meta||{};
+try{
+if(Array.isArray(M.groups)&&M.groups.length){groups=M.groups; await saveMeta("groups",groups);}
+if(Array.isArray(M.companies)){companies=M.companies; await saveMeta("companies",companies);}
+if(Array.isArray(M.gl)){gls=M.gl; await saveMeta("gl",gls);}
+if(Array.isArray(M.types)){typeList=M.types; await saveMeta("types",typeList);}
+if(Array.isArray(M.tags)){tagList=M.tags; await saveMeta("tags",tagList);}
+if(Array.isArray(M.courses)){courses=M.courses; await saveMeta("courses",courses);}
+if(Array.isArray(M.skills)){skillList=M.skills; await saveMeta("skills",skillList);}
+if(Array.isArray(M.modes)){modeList=M.modes; await saveMeta("modes",modeList);}
+if(M.hr){hrdata=Object.assign(hrdata,M.hr); await saveHR();}
+}catch(e){fail++;}
+bkMsg=`<div class="banner ${fail?"bad":"ok"}" style="margin-top:12px">กู้คืนสำเร็จ <b>${ok}</b> รายการ${fail?" · พลาด "+fail:""} + การตั้งค่าทั้งหมด</div>`;
+render();};
 el("icsgo")&&(el("icsgo").onclick=downloadICS);
 const wipe=async(kind,label,arr)=>{
 const out=el("wipeout");
@@ -2182,9 +2834,11 @@ prepDays:+get(r,"เตรียมล่วงหน้า(วัน)")||+get(r
 tag:get(r,"ป้ายกำกับ"), color:/^#[0-9a-fA-F]{6}$/.test(get(r,"สี"))?get(r,"สี"):"",
 pax:+get(r,"ผู้เข้าอบรม")||0, hours:+get(r,"ชั่วโมง")||0,
 vendor:get(r,"วิทยากร/สถาบัน")||get(r,"วิทยากร"), dsd:DSD.includes(get(r,"กรมพัฒฯ"))?get(r,"กรมพัฒฯ"):"",
-skill:SKILLS.includes(get(r,"ประเภทการอบรม"))?get(r,"ประเภทการอบรม"):"",
-mode:MODES.includes(get(r,"รูปแบบการอบรม"))?get(r,"รูปแบบการอบรม"):"",
-batch:get(r,"รุ่นที่"), dsdOpenDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นเปิดหลักสูตร"))?get(r,"วันที่ยื่นเปิดหลักสูตร"):null,
+skill:(get(r,"หมวดทักษะ")||get(r,"ประเภทการอบรม")||"").trim(),
+mode:(get(r,"รูปแบบการอบรม")||"").trim(),
+course:(()=>{const v=get(r,"รหัสหลักสูตร").trim(); if(v)return v;
+const nm=get(r,"ชื่องาน").trim(); const c2=courses.find(x=>x.name===nm); return c2?c2.code:"";})(),
+batch:get(r,"รุ่นที่"), yp:get(r,"แบบที่ยื่น"), dsdEnd:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ฝึกเสร็จ"))?get(r,"วันที่ฝึกเสร็จ"):null, dsdOpenDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นเปิดหลักสูตร"))?get(r,"วันที่ยื่นเปิดหลักสูตร"):null,
 dsdOpenNo:get(r,"เลขคำขอเปิด"), dsdCertDate:/^\d{4}-\d{2}-\d{2}$/.test(get(r,"วันที่ยื่นรับรองรุ่น"))?get(r,"วันที่ยื่นรับรองรุ่น"):null,
 dsdCertNo:get(r,"เลขคำขอรับรอง"),
 train:/อบรม/.test(g.label)||!!get(r,"ผู้เข้าอบรม"),
@@ -2276,13 +2930,36 @@ t.mode=t.mode||theme.mode||"auto"; theme=t; applyTheme._last=isNight(); applyThe
 try{localStorage.setItem("hr-theme",JSON.stringify(t));}catch(e){}
 if(DB) await DB.doc("meta/theme").set({preset:t.preset,custom:t.custom||null,mode:t.mode||"auto"});
 }
+function syncCrsName(){
+const v=el("f-course").value, linked=!!crsOf(v);
+const w=el("f-title").closest(".f");
+if(w)w.hidden=linked&&!el("wrap-course").hidden;
+const lb=el("lbl-title");
+if(lb)lb.textContent=(v==="__newcrs__")?"ชื่อหลักสูตรใหม่":(formCtx==="train"?"ชื่อหลักสูตร":"ชื่องาน");
+if(v==="__newcrs__"&&el("f-title"))setTimeout(()=>el("f-title").focus(),60);
+}
+function paintCrsHint(){
+const code=el("f-course").value, c=crsOf(code);
+if(code==="__newcrs__"){el("f-crshint").innerHTML="พิมพ์ชื่อหลักสูตรในช่องด้านล่าง — ระบบจะรันรหัสให้อัตโนมัติตอนกดบันทึก และเพิ่มเข้าทะเบียนให้เอง";return;}
+if(!c){el("f-crshint").innerHTML="เลือกหลักสูตรจากทะเบียนเพื่อให้ระบบนับ “หลักสูตร” ไม่ซ้ำ แล้วใส่แค่รุ่นที่ · จัดการทะเบียนที่ ตั้งค่า → หลักสูตรอบรม";return;}
+const bs=crsBatches(c.code).filter(x=>x._id!==(editing&&editing._id));
+el("f-crshint").innerHTML=`รหัส <b>${esc(c.code)}</b> · หลักสูตรนี้มีอยู่แล้ว <b>${bs.length}</b> รุ่น`
++(bs.length?" ("+bs.map(x=>esc(x.batch||"ไม่ระบุรุ่น")).slice(0,6).join(", ")+")":"")
++(c.hours?` · ชั่วโมงมาตรฐาน ${c.hours} ชม.`:"");
+}
+function paintTagOpts(cur){
+const tr=el("f-track")?el("f-track").value:"";
+const list=tagsFor(tr);
+if(cur&&!list.includes(cur))list.unshift(cur);
+fill("f-tag",[["","— ไม่มีป้าย —"],...list.map(x=>[x,x])],cur||"");
+}
 function paintTypeOpts(cur){
 const tr=el("f-track")?el("f-track").value:"";
 const list=typesFor(tr);
 if(cur&&!list.includes(cur))list.unshift(cur);
 fill("f-type",[["","— ไม่ระบุ —"],...list.map(x=>[x,x])],cur||"");
 }
-function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}>${esc(l)}</option>`).join("");}
+function fill(sel,arr,val){el(sel).innerHTML=arr.map(([v,l])=>`<option value="${esc(v)}"${v===val?" selected":""}${/^__hd__/.test(v)?" disabled":""}>${esc(l)}</option>`).join("");}
 function syncStatusLabel(){
 const lb=el("lbl-status"); if(!lb)return;
 const on=el("f-freq")&&el("f-freq").value!=="none";
@@ -2332,37 +3009,43 @@ el("f-prepn").value=t?.prepNote||"";
 syncMeet();
 el("f-train").checked=formCtx?formCtx==="train":isTrain(t||{});
 el("f-tplace").value=t?.place||"";
-fill("f-skill",[["","— ยังไม่ระบุ —"],...SKILLS.map(v=>[v,v])],t?.skill||(t?"":guessSkill({title:el("f-title").value,type:el("f-type").value,track:el("f-track").value})));
-fill("f-mode",[["","— ยังไม่ระบุ —"],...MODES.map(v=>[v,v])],t?.mode||"");
-el("f-batch").value=t?.batch||""; el("f-dsdopen").value=t?.dsdOpenDate||"";
+fill("f-skill",[["","— ยังไม่ระบุ —"],...skills().map(v=>[v,v])],t?.skill||(t?"":guessSkill({title:el("f-title").value,type:el("f-type").value,track:el("f-track").value})));
+fill("f-mode",[["","— ยังไม่ระบุ —"],...modes().map(v=>[v,v])],t?.mode||"");
+el("f-batch").value=t?.batch||"";
+el("f-batches").value=(t&&+t.batches>1)?t.batches:"";
+el("f-dsdopen").value=t?.dsdOpenDate||"";
+(()=>{const cur=t?.course||"";
+fill("f-course",[["__newcrs__","＋ หลักสูตรใหม่ (รันรหัสให้อัตโนมัติ)"],["","— ไม่ผูกทะเบียน (พิมพ์ชื่อเอง) —"],
+...(()=>{const vs=visible(courses), out=[];
+[...skills(),""].forEach(k=>{const g=vs.filter(c=>(c.skill||"")===k); if(!g.length)return;
+out.push(["__hd__"+(k||"none"),"———— "+(k||"ยังไม่ระบุหมวดทักษะ")+" ————"]);
+g.forEach(c=>out.push([c.code,c.code+" · "+c.name]));});
+return out;})()],cur);
+el("f-crscode").value=cur||""; paintCrsHint(); syncCrsName();})();
+fill("f-yp",YP,t?.yp||""); el("f-dsdend").value=t?.dsdEnd||"";
 el("f-dsdopenno").value=t?.dsdOpenNo||""; el("f-dsdcert").value=t?.dsdCertDate||"";
 el("f-dsdcertno").value=t?.dsdCertNo||"";
 el("f-pax").value=t?.pax||""; el("f-hours").value=t?.hours||"";
 el("f-vendor").value=t?.vendor||"";
 fill("f-dsd",[["","— ไม่ระบุ —"],...DSD.map(x=>[x,x])],t?.dsd||"");
-syncTrain();
+if(!t)el("f-train").checked=(formCtx==="train")||trainish();
+syncTrain(); if(typeof syncBatches==="function")syncBatches();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
 el("f-note").value=t?.note||"";
-(()=>{const cur=(t?.tag||"").trim(), list=tagsOf();
-if(cur&&!list.includes(cur))list.unshift(cur);
-fill("f-tag",[["","— ไม่มีป้าย —"],...list.map(x=>[x,x])],cur);})();
-el("f-tag").onchange=()=>{const c=tagColor(el("f-tag").value);
-if(c)el("f-colors").querySelectorAll("[data-color]").forEach(b=>{if(b.dataset.color===c)b.click();});};
-el("f-colors").innerHTML=[["","ตามสถานะ"],...TAGCOLORS.map(c=>[c,c])].map(([c,lab])=>
-`<button type="button" class="sw1${(t?.color||"")===c?" on":""}" data-color="${c}" title="${c?c:"ใช้สีตามสถานะงาน"}"
-style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
-el("f-colors").querySelectorAll("[data-color]").forEach(b=>b.onclick=()=>{
-el("f-colors").querySelectorAll("[data-color]").forEach(x=>x.classList.remove("on"));
-b.classList.add("on"); el("f-colors").dataset.val=b.dataset.color;});
-el("f-colors").dataset.val=t?.color||"";
+paintTagOpts((t?.tag||"").trim());
+
+
 const ms=t?.months||[];
+occSkipDraft=[...((t&&t.skip)||[])]; occShowAll=false;
 paintOccs(t); syncStatusLabel();
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
 el("dlg").showModal();
 }
+let occSkipDraft=[], occShowAll=false;
 function paintOccs(t){
 const wrap=el("wrap-occ");
+
 const R2=(t&&rr(t))||null;
 const f=el("f-freq")?el("f-freq").value:"none";
 if(!t||!R2||f==="none"){ wrap.hidden=true; el("f-occs").innerHTML=""; return; }
@@ -2370,23 +3053,82 @@ wrap.hidden=false;
 const today=new Date(); today.setHours(0,0,0,0);
 const st=t.date?new Date(t.date):today;
 const from=new Date(Math.min(st.getTime(),today.getTime()));
-const all=occList(t,new Date(from.getFullYear(),from.getMonth()-2,1),16);
+const yr=(typeof R!=="undefined"&&R.year)||today.getFullYear();
+let show;
+if(occShowAll){ show=occList(t,new Date(yr,0,1),12).filter(d=>d.getFullYear()===yr); }
+else{ const all=occList(t,new Date(from.getFullYear(),from.getMonth()-2,1),16);
 const past=all.filter(d=>d<=today).slice(-5), fut=all.filter(d=>d>today).slice(0,4);
-const show=[...past,...fut];
-el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d),dn=occDone(t,iso?new Date(iso):d);
-return `<label class="occ${d<=today?"":" fut"}"><input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}>
+show=[...past,...fut]; }
+el("occAll").textContent=occShowAll?"แสดงเฉพาะรอบใกล้ๆ":"ดูทุกรอบของปี "+(yr+543);
+el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d), sk=occSkipDraft.includes(iso);
+return `<label class="occ${d<=today?"":" fut"}${sk?" skip":""}">
+<input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}${sk?" disabled":""}>
 <span>${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500}</span>
-<i>${d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง"}</i></label>`;}).join("")
+<i>${sk?"งดรอบนี้":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
+<button type="button" class="skipbtn${sk?" on":""}" data-skip="${iso}" title="${sk?"กลับมาจัดตามปกติ":"งดรอบนี้ (ไม่จัด)"}">${sk?"↺ จัดตามเดิม":"งด"}</button></label>`;}).join("")
 ||`<div class="hint" style="margin:0">ยังไม่มีรอบให้แสดง</div>`;
+el("occAll").onclick=ev=>{ev.preventDefault();occShowAll=!occShowAll;paintOccs(t);};
+el("occPast").onclick=ev=>{ev.preventDefault();
+el("f-occs").querySelectorAll(".oc").forEach(i=>{const d=new Date(i.value);
+if(d<=today&&!occSkipDraft.includes(i.value))i.checked=true;});
+setFoot("ติ๊กรอบที่ผ่านมาแล้ว — อย่าลืมกดบันทึก");};
+el("occClear").onclick=ev=>{ev.preventDefault();
+el("f-occs").querySelectorAll(".oc").forEach(i=>i.checked=false);
+setFoot("ล้างเครื่องหมายแล้ว — อย่าลืมกดบันทึก");};
+el("f-occs").querySelectorAll("[data-skip]").forEach(b=>b.onclick=ev=>{
+ev.preventDefault(); ev.stopPropagation();
+const iso=b.dataset.skip, i=occSkipDraft.indexOf(iso);
+if(i>=0)occSkipDraft.splice(i,1); else occSkipDraft.push(iso);
+paintOccs(t);});
 }
 function syncMeet(){ el("wrap-meet").hidden=!el("f-meet").checked; }
 el("f-meet").onchange=syncMeet;
-function syncTrain(){ el("wrap-train").hidden=!el("f-train").checked; }
+// งานนี้ถือเป็นงานอบรมไหม — ดูจากกลุ่มงาน / ประเภท / ติ๊กเอง
+function trainish(){
+const g=groups.find(x=>x.key===el("f-track").value);
+return /อบรม|training/i.test((g&&g.label)||"")||/อบรม/.test(el("f-type").value||"");
+}
+function syncTrain(){
+const on=el("f-train").checked;
+el("wrap-train").hidden=!on;
+el("wrap-course").hidden=!on;
+if(!on&&el("f-course").value){ el("f-course").value=""; el("f-crscode").value=""; }
+syncCrsName();
+}
 el("f-train").onchange=syncTrain;
+// เปลี่ยนกลุ่ม/ประเภท → เปิดหรือปิดส่วนอบรมให้อัตโนมัติ ไม่ต้องนั่งติ๊กเอง
+function autoTrain(){
+const want=trainish();
+if(want!==el("f-train").checked){ el("f-train").checked=want; }
+syncTrain();
+}
 el("f-track").addEventListener("change",()=>paintTypeOpts(el("f-type").value));
-el("f-track").addEventListener("change",()=>{ const g=groups.find(x=>x.key===el("f-track").value);
-if(g&&/อบรม/.test(g.label)&&!el("f-train").checked){ el("f-train").checked=true; syncTrain(); } });
+el("f-crscode").oninput=()=>{
+const q=el("f-crscode").value.trim().toLowerCase(); if(!q)return;
+const hit=courses.find(c=>c.code.toLowerCase()===q)||courses.find(c=>c.code.toLowerCase().endsWith(q))
+||courses.find(c=>c.code.toLowerCase().includes(q)||c.name.toLowerCase().includes(q));
+if(hit){ el("f-course").value=hit.code; el("f-course").onchange(); }};
+el("f-course").onchange=()=>{
+const c=crsOf(el("f-course").value);
+syncCrsName();
+if(c){ el("f-crscode").value=c.code; el("f-title").value=c.name;
+if(c.skill)el("f-skill").value=c.skill; if(c.mode)el("f-mode").value=c.mode;
+if(c.hours&&!el("f-hours").value)el("f-hours").value=c.hours;
+if(!el("f-code").value.trim())el("f-code").value=c.code; }
+paintCrsHint();};
+el("f-track").addEventListener("change",()=>paintTagOpts(el("f-tag").value));
+el("f-track").addEventListener("change",autoTrain);
+el("f-type").addEventListener("change",autoTrain);
 el("f-freq").onchange=()=>{syncFreq();paintOccs(editing);syncStatusLabel();};
+function syncBatches(){
+const w=el("wrap-bhint"), h=el("f-bhint"); if(!w||!h)return;
+const tot=+el("f-batches").value||0, cur=batchNo(el("f-batch").value)||1;
+const miss=[]; for(let i=1;i<=tot;i++)if(i!==cur)miss.push(batchLabel(el("f-batch").value||"รุ่น 1",i));
+if(tot>1&&miss.length){w.hidden=false;
+h.innerHTML=`บันทึกแล้วระบบจะสร้าง <b>${miss.length} รุ่น</b> ที่เหลือให้เลย (${esc(miss.slice(0,6).join(" · "))}${miss.length>6?" …":""})<br>
+รุ่นใหม่จะได้ชื่อหลักสูตร บริษัท กลุ่มงาน วิทยากร และ<b>เลขคำขอเปิดหลักสูตร (ยป.)</b> เหมือนรุ่นนี้ · <b>เว้นวันที่ จำนวนคน และงบไว้ว่าง</b> ให้ไปเติมทีละรุ่น · รุ่นที่มีอยู่แล้วจะไม่ถูกสร้างซ้ำ`;}
+else {w.hidden=true; h.innerHTML="";}}
+["f-batches","f-batch"].forEach(id=>{const n=el(id); if(n){n.oninput=syncBatches; n.onchange=syncBatches;}});
 el("cancel").onclick=()=>el("dlg").close();
 el("save").onclick=async()=>{
 if(!el("f-title").value.trim()){el("f-title").focus();return;}
@@ -2402,31 +3144,62 @@ nth:[...el("f-nth").querySelectorAll("input:checked")].map(i=>+i.value),
 monthday:+el("f-md").value||null};})(),
 gl1:el("f-gl1").value, b1:+el("f-b1").value||0,
 gl2:el("f-gl2").value, b2:+el("f-b2").value||0,
-actual:+el("f-actual").value||0, code:el("f-code").value.trim(),
+actual:+el("f-actual").value||0, code:el("f-code").value.trim(), course:el("f-course").value,
 meet:el("f-meet").checked, time:hhmm(el("f-time").value),
 place:(el("f-train").checked&&!el("f-meet").checked)?el("f-tplace").value.trim():el("f-place").value.trim(),
 attendees:el("f-att").value.trim(), prepDays:+el("f-prepd").value||0, prepNote:el("f-prepn").value.trim(),
 train:el("f-train").checked, pax:+el("f-pax").value||0, hours:+el("f-hours").value||0,
 vendor:el("f-vendor").value.trim(), dsd:el("f-dsd").value,
-skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
+skill:el("f-skill").value, mode:el("f-mode").value, batch:el("f-batch").value.trim(), batches:+el("f-batches").value||0, yp:el("f-yp").value, dsdEnd:el("f-dsdend").value||null, dsdOpenDate:el("f-dsdopen").value||null, dsdOpenNo:el("f-dsdopenno").value.trim(),
 dsdCertDate:el("f-dsdcert").value||null, dsdCertNo:el("f-dsdcertno").value.trim(),
 note:el("f-note").value.trim(), group:editing?.group||"",
-tag:el("f-tag").value.trim(), color:el("f-colors").dataset.val||tagColor(el("f-tag").value)||"",
+tag:el("f-tag").value.trim(), color:"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
+skip:(el("wrap-occ").hidden?(editing?.skip||[]):occSkipDraft.slice()),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
 const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
 return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
+if(el("f-course").value==="__newcrs__"){
+const nm=(data.title||"").trim();
+if(!nm){el("f-title").focus();return;}
+const dup=courses.find(x=>x.name===nm);
+if(dup){ data.course=dup.code; setFoot("มีหลักสูตรนี้อยู่แล้ว — ใช้รหัส "+dup.code); }
+else{ const code=nextCourseCode();
+courses=[...courses,{code,name:nm,skill:data.skill||"",mode:data.mode||"",hours:data.hours||0}];
+data.course=code; if(!data.code)data.code=code;
+try{ await saveMeta("courses",courses); }catch(e){}
+setFoot("เพิ่มหลักสูตร "+code+" ในทะเบียนแล้ว"); }
+}
 el("dlg").close();
 try{ await saveItem(data,editing?._id); }
-catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); }
+catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?"<div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"+x.fix+"</div>":"")+"<div style=\"font-size:11.5px;margin-top:8px;opacity:.7\">"+esc(x.raw)+"</div>"); return; }
+// สร้างรุ่นที่เหลือให้อัตโนมัติ — เว้นวันที่ จำนวนคน และงบไว้ว่าง
+const tot=+data.batches||0;
+if(data.train&&tot>1){
+const cur=batchNo(data.batch)||1, code=crsCodeOf(data), made=[], skip=[];
+for(let i=1;i<=Math.min(tot,60);i++){
+if(i===cur)continue;
+const lb=batchLabel(data.batch||"รุ่น 1",i);
+const dup=items.some(x=>isTrain(x)&&(code?crsCodeOf(x)===code:(x.title||"").trim()===(data.title||"").trim())
+&&(x.company||"")===(data.company||"")&&batchNo(x.batch)===i);
+if(dup){skip.push(lb);continue;}
+const cp=Object.assign({},data,{batch:lb,date:null,dsdEnd:null,dsdCertDate:null,dsdCertNo:"",
+status:"รอดำเนินการ",pax:0,hours:data.hours||0,b1:0,b2:0,actual:0,done:[],skip:[]});
+delete cp._id;
+try{ await saveItem(cp); made.push(lb); }catch(e){}
+setFoot("กำลังสร้างรุ่น "+made.length+"/"+(tot-1)+" …");}
+if(made.length)tell("<b>สร้างรุ่นให้แล้ว "+made.length+" รุ่น</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">"
++esc(made.join(" · "))+(skip.length?"<br><span style=\"opacity:.7\">ข้ามรุ่นที่มีอยู่แล้ว: "+esc(skip.join(" · "))+"</span>":"")
++"<br>เหลือแค่เปิดแต่ละรุ่นแล้วเติม <b>วันที่ · จำนวนคน · งบ</b> ค่ะ</div>");
+else if(skip.length)setFoot("ทุกรุ่นมีอยู่แล้ว ไม่ได้สร้างเพิ่ม");}
 };
 el("del").onclick=async()=>{
 if(!editing)return;
 const t=editing; el("dlg").close();
-if(!await ask("ลบงาน “"+esc(t.title)+"” ออกจากระบบใช่ไหมคะ?","ลบงาน"))return;
-await DB.collection("items").doc(t._id).delete();
+if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
+await softDel("items",t);
 };
 let editingIdx=null, editingNote=null;
 function openIdx(x){
@@ -2452,7 +3225,7 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("idel").onclick=async()=>{ if(!editingIdx)return; const x=editingIdx; el("idlg").close();
 if(!await ask("ลบ “"+esc(x.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
-await DB.collection("index").doc(x._id).delete();};
+await softDel("index",x);};
 function openNote(n){
 editingNote=n;
 el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
@@ -2482,8 +3255,77 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("ndel").onclick=async()=>{ if(!editingNote)return; const n=editingNote; el("ndlg").close();
 if(!await ask("ลบบันทึกนี้ใช่ไหมคะ?","ลบบันทึก"))return;
-await DB.collection("note").doc(n._id).delete();};
+await softDel("note",n);};
 let editingDsd=null;
+let editingCrs=null, crsFilingYear=THISYEAR;
+function openCrs(code){
+const c=crsOf(code); if(!c)return;
+editingCrs=code;
+const bs=crsBatches(code).slice().sort((x,y)=>String(x.date||"9999").localeCompare(String(y.date||"9999")));
+const pax=bs.reduce((a,t)=>a+(+t.pax||0),0);
+const cost=bs.reduce((a,t)=>a+((+t.actual||0)||budgetOf(t)),0);
+const yrs=[...new Set(bs.map(t=>t.date?new Date(t.date).getFullYear():null).filter(Boolean))].sort();
+el("crsdlgh").textContent=c.code+" · "+c.name;
+el("crs-kpi").innerHTML=`<div><span>จำนวนรุ่น</span><b>${bs.length}</b></div>
+<div><span>ผู้เข้าอบรมสะสม</span><b>${baht(pax)} คน</b></div>
+<div><span>ชั่วโมง/คน</span><b>${c.hours||"—"}</b></div>
+<div><span>บังคับตามกฎหมาย</span><b>${c.law===true?"ใช่ (ตั้งที่หลักสูตร)":c.law===false?"ไม่ (ตั้งที่หลักสูตร)":"ตามประเภทงาน"}</b></div>
+<div><span>งบ/ใช้จริงรวม</span><b>${baht(cost)} ฿</b></div>
+<div><span>ปีที่จัด</span><b>${yrs.length?yrs.map(y=>y+543).join(", "):"—"}</b></div>
+<div><span>รับรองแล้ว</span><b>${bs.filter(t=>t.dsdCertNo||t.dsd==="อนุมัติแล้ว").length}/${bs.length} รุ่น</b></div>`;
+crsFilingYear=R.year;
+paintCrsFiling();
+el("crs-rows").innerHTML=bs.map(t=>{const y=ypState(t), d=t.date?new Date(t.date):null;
+return `<div class="li" data-crsitem="${t._id}">
+<div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
+<div class="tx"><div class="t1">${esc(crsCodeOf(t)||"")} ${esc(t.batch||"ไม่ระบุรุ่น")}${t.company?" · "+esc(cLabel(t.company)):""}</div>
+<div class="t2">${t.pax?t.pax+" คน · ":""}${ypNoOf(t)?"ยป. "+esc(ypNoOf(t))+" · ":""}${t.dsdCertNo?"รับรอง "+esc(t.dsdCertNo):esc(y.step)}</div></div>
+<span class="pill ${y.cls}">${esc(t.status)}</span></div>`;}).join("")||`<div class="empty">ยังไม่มีรุ่นของหลักสูตรนี้</div>`;
+el("crsdlg").showModal();
+}
+el("crscancel").onclick=()=>el("crsdlg").close();
+function paintCrsFiling(){
+const c=crsOf(editingCrs); if(!c)return;
+const f=crsFiling(editingCrs,crsFilingYear);
+fill("crs-fyear",yearList().map(y=>[y,"ปี "+(y+543)]),crsFilingYear);
+fill("crs-yp",YP,f.yp||c.yp||"");
+el("crs-openno").value=f.openNo||""; el("crs-opendate").value=f.openDate||"";
+const other=Object.keys(c.filings||{}).filter(y=>+y!==crsFilingYear&&(c.filings[y].openNo||c.filings[y].openDate));
+el("crs-fhint").innerHTML=other.length
+?"ปีอื่นที่เคยยื่นไว้: "+other.map(y=>`<b>${+y+543}</b> ${esc(c.filings[y].openNo||"—")}`).join(" · ")
+:"ยังไม่มีเลขคำขอของปีอื่นในระบบ";
+}
+el("crs-fyear")&&(el("crs-fyear").onchange=()=>{saveCrsFiling(); crsFilingYear=+el("crs-fyear").value; paintCrsFiling();});
+function saveCrsFiling(){
+const c=crsOf(editingCrs); if(!c)return;
+const no=el("crs-openno").value.trim(), dt=el("crs-opendate").value||"", yp=el("crs-yp").value;
+c.filings=c.filings||{};
+if(no||dt||yp)c.filings[crsFilingYear]={yp,openNo:no,openDate:dt};
+else delete c.filings[crsFilingYear];
+}
+el("crssave").onclick=async()=>{
+if(!crsOf(editingCrs))return;
+saveCrsFiling();
+el("crsdlg").close(); render(); await saveMeta("courses",courses);};
+el("crs-copy").onclick=async()=>{
+const code=editingCrs, bs=crsBatches(code); if(!bs.length){tell("ยังไม่มีรุ่นให้คัดลอกค่ะ");return;}
+const yNow=Math.max(...bs.map(t=>t.date?new Date(t.date).getFullYear():THISYEAR));
+const src=bs.filter(t=>t.date&&new Date(t.date).getFullYear()===yNow);
+if(!src.length){tell("รุ่นที่มีอยู่ยังไม่ได้ใส่วันที่ คัดลอกข้ามปีไม่ได้ค่ะ");return;}
+el("crsdlg").close();
+if(!await ask(`คัดลอก <b>${src.length}</b> รุ่นของปี ${yNow+543} ไปเป็นปี ${yNow+544} ใช่ไหมคะ?<div style="font-size:13px;margin-top:8px">เลื่อนวันที่ +1 ปี · สถานะกลับเป็นรอดำเนินการ · ไม่คัดลอกเลขคำขอและใช้จริง</div>`,"คัดลอก"))return;
+let ok=0;
+for(const t of src){
+const {_id,...r}=t;
+const nd=new Date(t.date); nd.setFullYear(nd.getFullYear()+1);
+try{ await saveItem(Object.assign({},r,{date:isoOf(nd),status:"รอดำเนินการ",actual:0,done:[],
+dsdOpenNo:"",dsdOpenDate:null,dsdCertNo:"",dsdCertDate:null,dsdEnd:null,dsd:"รอยื่น"})); ok++; }catch(e){}
+setFoot("กำลังคัดลอก "+ok+"/"+src.length+" …");}
+render(); tell("<b>คัดลอกแล้ว "+ok+" รุ่น</b> ไปปี "+(yNow+544)+"<div style=\"font-size:13px;margin-top:8px\">เปิดแต่ละรุ่นเพื่อแก้วันที่จริงได้เลยค่ะ</div>");};
+el("crs-rows")&&el("crsdlg").addEventListener("click",e=>{
+const n=e.target.closest("[data-crsitem]"); if(!n)return;
+const t=items.find(x=>x._id===n.dataset.crsitem); if(!t)return;
+el("crsdlg").close(); setTimeout(()=>open_(t),200);});
 let editingGl=null, glDraft=null, glDraftCo="";
 function openGlPlan(key){
 const g=gls.find(x=>x.key===key); if(!g)return;
@@ -2537,17 +3379,34 @@ el("d-id").value=r.id||"";
 el("d-months").innerHTML=MTH.map((m,i)=>`<label class="mcell"><span>${m}</span><input type="number" min="0" class="dm" value="${(r.months&&r.months[i]!=null&&r.months[i]!=="")?r.months[i]:""}" placeholder="—"></label>`).join("");
 el("d-goal").value=(+r.goal&&+r.goal>LAWPCT)?r.goal:"";
 el("d-sent").value=r.sent||""; el("d-rp").value=r.repeatPersons||""; el("d-rt").value=r.repeatTimes||"";
-el("d-ps").value=r.passSkill||""; el("d-pd").value=r.passStd||"";
-el("d-std").value=r.stdPass||""; el("d-fund").value=r.fundPaid||"";
+el("d-ps").value=r.passSkill||""; el("d-fund").value=r.fundPaid||"";
+fill("d-st2",ST2.map(x=>[x,x]),r.st2||ST2[0]);
+el("d-st2date").value=r.st2date||""; el("d-st2no").value=r.st2no||""; el("d-st2note").value=r.st2note||"";
 const auto=trainedPax(ck,y);
 el("d-hint").innerHTML=`ระบบนับผู้เข้าอบรมจากหลักสูตรที่ปิดงานแล้วในปีนี้ได้ <b>${auto}</b> คน — ใช้เทียบได้ แต่เลข A ให้ยึดตามหน้าเว็บกรมฯ`;
+syncPassSkill(true);
 el("ddel").style.display=dsdRec(ck,y)?"":"none";
 paintDsd();
 el("ddlg").showModal();
 }
+function syncPassSkill(fill0){
+if(!editingDsd)return;
+const A=+el("d-sent").value||0, rt=+el("d-rt").value||0;
+const autoP=Math.max(0,A-rt);
+if(fill0||!el("d-ps").value||el("d-ps").dataset.auto==="1"){ el("d-ps").value=autoP||""; el("d-ps").dataset.auto="1"; }
+const keyed=+el("d-ps").value||0;
+const reg=trainedPax(editingDsd.ck,editingDsd.y), regD=trainedPaxDsd(editingDsd.ck,editingDsd.y);
+const same=keyed===autoP;
+el("d-pshint").innerHTML=`C = A − ครั้งที่ซ้ำ = <b>${baht(autoP)}</b> คน (หัวคนไม่ซ้ำ)`
++(same?"":` · <span style="color:var(--over)">คุณคีย์ ${baht(keyed)} ต่างจากสูตร ${baht(Math.abs(keyed-autoP))} คน</span>`)
++`<br>ทะเบียนหลักสูตร: ปิดงานแล้วรวม <b>${baht(reg)}</b> คน · เฉพาะรุ่นที่กรมฯ รับรองแล้ว <b>${baht(regD)}</b> คน`
++(regD===keyed?' <span style="color:var(--ok)">· ตรงกับที่กรมฯ รับรอง ✓</span>'
+:` <span style="color:var(--over)">· ต่างจากที่กรมฯ รับรอง ${baht(Math.abs(regD-keyed))} คน — ตรวจทานอีกครั้ง</span>`);
+}
 function paintDsd(){
+syncPassSkill(false);
 const ms=[...el("d-months").querySelectorAll(".dm")].map(i=>+i.value||0);
-const k=dsdCalc({months:ms,sent:+el("d-sent").value||0,repeatTimes:+el("d-rt").value||0,goal:+el("d-goal").value||0,stdPass:+el("d-std").value||0,fundPaid:+el("d-fund").value||0});
+const k=dsdCalc({months:ms,sent:+el("d-sent").value||0,repeatTimes:+el("d-rt").value||0,goal:+el("d-goal").value||0,fundPaid:+el("d-fund").value||0});
 el("d-calc").innerHTML=`<div class="dcalc">
 <div><span>พนักงานเฉลี่ย</span><b>${k.avg?baht(k.avg):"—"}</b></div>
 <div><span>เกณฑ์ ${LAWPCT}%</span><b>${k.target?baht(k.target):"—"}</b></div>
@@ -2561,6 +3420,7 @@ ${k.goal>LAWPCT?`<div><span>ถึงเป้าเรา</span><b style="color
 <div><span>คืนเงินสมทบ 10%</span><b style="color:${k.sub.fundAmt?"var(--ok)":"var(--ink-3)"}">${k.sub.fundAmt?baht(k.sub.fundAmt)+" ฿":"—"}</b></div>
 <div><span>รวมคาดว่าได้คืน</span><b style="color:${k.sub.total?"var(--ok)":"var(--ink-3)"}">${k.sub.total?baht(k.sub.total)+" ฿":"—"}</b></div></div>`;
 }
+el("d-ps").addEventListener("input",()=>{el("d-ps").dataset.auto="0";});
 el("ddlg").addEventListener("input",e=>{ if(e.target.closest("#ddlg"))paintDsd(); });
 el("dcancel").onclick=()=>el("ddlg").close();
 el("dsave").onclick=async()=>{
@@ -2570,8 +3430,8 @@ const months=[...el("d-months").querySelectorAll(".dm")].map(i=>i.value===""?"":
 hrdata.dsd=hrdata.dsd||{}; hrdata.dsd[ck]=hrdata.dsd[ck]||{};
 hrdata.dsd[ck][y]={updatedAt:new Date().toISOString(),id:el("d-id").value.trim(),months,goal:+el("d-goal").value||0,
 sent:+el("d-sent").value||0,repeatPersons:+el("d-rp").value||0,repeatTimes:+el("d-rt").value||0,
-passSkill:+el("d-ps").value||0,passStd:+el("d-pd").value||0,
-stdPass:+el("d-std").value||0,fundPaid:+el("d-fund").value||0};
+passSkill:+el("d-ps").value||0,fundPaid:+el("d-fund").value||0,
+st2:el("d-st2").value,st2date:el("d-st2date").value,st2no:el("d-st2no").value.trim(),st2note:el("d-st2note").value.trim()};
 el("ddlg").close(); render(); await saveHR();
 };
 el("ddel").onclick=async()=>{
@@ -2612,7 +3472,7 @@ catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"+(x.fix?'<div sty
 el("ldel").onclick=async()=>{
 if(!editingLegal)return; const L=editingLegal; el("ldlg").close();
 if(!await ask("ลบรายการ “"+esc(L.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
-await DB.collection("legal").doc(L._id).delete();
+await softDel("legal",L);
 };
 function openTx(x){
 editingTx=x;
@@ -2642,7 +3502,7 @@ el("tdel").onclick=async()=>{
 if(!editingTx)return;
 const x=editingTx; el("tdlg").close();
 if(!await ask("ลบรายการเงินนี้ใช่ไหมคะ?","ลบรายการ"))return;
-await DB.collection("ledger").doc(x._id).delete();
+await softDel("ledger",x);
 };
 let gateMode="setup";
 function gate(mode){
