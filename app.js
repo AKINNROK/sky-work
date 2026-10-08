@@ -1,4 +1,4 @@
-const APP_VERSION="12.0"; const APP_DATE="7 ต.ค. 2026";
+const APP_VERSION="12.1"; const APP_DATE="8 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -3512,9 +3512,13 @@ if(mode==="setup"){
 el("gateh").textContent="เชื่อมต่อฐานข้อมูลครั้งแรก";
 b.innerHTML=`<div class="f"><label for="g-url">Project URL จาก Supabase</label>
 <input id="g-url" placeholder="https://xxxxx.supabase.co" value="${esc(cfg.url)}"></div>
-<div class="f" style="margin-top:12px"><label for="g-key">anon public key</label>
-<input id="g-key" placeholder="eyJhbGciOi..." value="${esc(cfg.key)}"></div>
-<div class="hint">หาได้ที่ Supabase › Project Settings › API · ใส่ครั้งเดียวต่อเครื่อง</div>`;
+<div class="f" style="margin-top:12px"><label for="g-key">anon public key (หรือ Publishable key)</label>
+<input id="g-key" placeholder="eyJhbGciOi... หรือ sb_publishable_..." value="${esc(cfg.key)}"></div>
+<div class="hint">หาได้ที่ <b>Supabase › Settings (รูปเฟือง) › API Keys</b><br>
+• <b>Project URL</b> อยู่แถวบนของหน้าเดียวกัน หรือกดปุ่ม <b>Connect</b> ด้านบนสุดของโปรเจกต์<br>
+• ใช้ได้ทั้ง <b>anon public</b> (ขึ้นต้น eyJ…) และ <b>Publishable</b> (ขึ้นต้น sb_publishable_…) — คีย์สองแบบนี้ปลอดภัยสำหรับใส่ในหน้าเว็บ<br>
+• <b style="color:var(--over)">ห้ามใช้ service_role หรือ secret key เด็ดขาด</b> — คีย์พวกนั้นข้ามการป้องกันทั้งหมด<br>
+ใส่ครั้งเดียวต่อเครื่อง เก็บไว้ในเครื่องนี้เท่านั้น</div>`;
 el("gatego").textContent="เชื่อมต่อ";
 }else if(mode==="login"){
 el("gateh").textContent="เข้าสู่ระบบ Sky Work";
