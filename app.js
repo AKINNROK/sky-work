@@ -1,4 +1,4 @@
-const APP_VERSION="12.6"; const APP_DATE="8 ต.ค. 2026";
+const APP_VERSION="13.1"; const APP_DATE="8 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -122,7 +122,7 @@ const p=PALETTES.find(x=>x.key===theme.preset)||PALETTES[0];
 const c=(theme.preset==="custom"&&theme.custom&&theme.custom.length===5)?theme.custom:p.ramp;
 const [c1,c2,c3,c4,c5]=c, s=document.documentElement.style, set=(k,v)=>s.setProperty(k,v);
 const night=isNight();
-if(night)set("--cta","linear-gradient(135deg,color-mix(in srgb,var(--sky) 55%,#0a1c33),color-mix(in srgb,var(--accent) 38%,#0a1c33))"); else s.removeProperty("--cta");
+document.documentElement.setAttribute("data-night",night?"1":"0");
 if(night){
 const base=mix(c5,"#070d16",.55);
 set("--paper",base);
@@ -155,8 +155,11 @@ set("--wait","#8fa3ba"); set("--wait-soft","#e9eff5");
 set("--over","#e0606d"); set("--over-soft","#fbe5e8");
 document.documentElement.style.colorScheme="light";
 }
+try{ const vars={}; for(let i=0;i<s.length;i++){const n=s[i]; if(n.startsWith("--")&&n!=="--zf")vars[n]=s.getPropertyValue(n);}
+localStorage.setItem("sw-vars",JSON.stringify({vars,cs:s.colorScheme,mode:theme.mode||"auto",night})); }catch(e){}
 }
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
+let LOADING=true;
 let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
 let typeList=[], tagList=[], courses=[], skillList=[], modeList=[];
@@ -508,7 +511,10 @@ render();
 }).subscribe();
 }
 async function boot(){
-applyTheme(); renderNav(); render();
+LOADING=true; applyTheme(); renderNav(); render();
+try{ await boot2(); } finally { if(LOADING){ LOADING=false; render(); } }
+}
+async function boot2(){
 if(!cfg.url||!cfg.key){ gate("setup"); return; }
 SB=supabase.createClient(cfg.url,cfg.key,{auth:{persistSession:true,autoRefreshToken:true}});
 const {data:{session}}=await SB.auth.getSession();
@@ -524,7 +530,7 @@ sub("meta/courses",d=>{if(Array.isArray(d.list))courses=d.list;});
 sub("meta/skills",d=>{if(Array.isArray(d.list))skillList=d.list;});
 sub("meta/modes",d=>{if(Array.isArray(d.list))modeList=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
-sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};applyTheme();}});
+sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};try{localStorage.setItem("hr-theme",JSON.stringify(theme));}catch(e){} applyTheme();}});
 const splitTrash=(docs,key)=>{const all=docs.map(d=>Object.assign({},d.data(),{_id:d.id}));
 TRASH[key]=all.filter(t=>t._trash).sort((a,b)=>String(b._trash).localeCompare(String(a._trash)));
 return all.filter(t=>!t._trash);};
@@ -537,7 +543,7 @@ DBShim.collection("note").onSnapshot(s=>{ notes=splitTrash(s.docs,"note"); rende
 DBShim.collection("legal").onSnapshot(s=>{ legal=splitTrash(s.docs,"legal"); render();});
 DBShim.collection("ledger").onSnapshot(s=>{ ledger=splitTrash(s.docs,"ledger"); render();});
 setFoot("กำลังโหลด…");
-await loadAll(); liveSync();
+await loadAll(); liveSync(); LOADING=false; render();
 setFoot(items.length+" งาน · ซิงก์แล้ว");
 const purged=await purgeSysRows();
 if(purged)setFoot(items.length+" งาน · ลบรายการทดสอบค้าง "+purged+" แถวแล้ว");
@@ -774,13 +780,22 @@ try{ if(window.caches){ const ks=await caches.keys(); await Promise.all(ks.filte
 try{ if(navigator.serviceWorker){ const rs=await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r=>r.update().catch(()=>{}))); } }catch(e){}
 const u=new URL(location.href); u.searchParams.set("r",Date.now()); location.replace(u.toString());
 }
+const ZOOMS=[["85","เล็ก"],["90","กลาง (แนะนำ)"],["100","ปกติ"]];
+const curZoom=()=>{try{return localStorage.getItem("sw-zoom")||"90";}catch(e){return "90";}};
+function setZoom(v){ try{localStorage.setItem("sw-zoom",v);}catch(e){} const z=(+v||90)/100, r=document.documentElement; r.style.zoom=z; r.style.setProperty("--zf",z); }
+const HLS=[["p","พาสเทล (ตามแบบอ้างอิง)","พื้นครีม การ์ดสีพาสเทลแยกตามหมวด ปุ่ม/เมนูที่เลือกเป็นสีดำมน ใช้ได้เฉพาะโหมดสว่าง"],["b","เรียบ มินิมอล","สีทึบเดียว ไม่มีไล่เฉด ไม่มีเงา"],["c","ขาว + ขอบบาง","การ์ดสีขาว ตัวเลขสีธีม ปุ่มพื้นอ่อน"],["a","แบบเดิม","ไล่เฉดเข้ม มีเงา"]];
+const curHL=()=>{try{return localStorage.getItem("sw-hl")||"p";}catch(e){return "p";}};
+function setHL(v){ try{localStorage.setItem("sw-hl",v);}catch(e){} document.documentElement.setAttribute("data-hl",v); }
+function setTb(hide){ document.documentElement.classList.toggle("tbh",!!hide); try{localStorage.setItem("sw-tbh",hide?"1":"0");}catch(e){} }
 function renderNav(){
 const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION;
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
 el("tabbar").innerHTML=TABS.map(k=>{const l=TABLABEL[k]||VIEWS.find(v=>v[0]===k)[1];
-return `<button data-v="${k}" aria-current="${k===view}" title="${esc(VIEWS.find(v=>v[0]===k)[1])}">${svg(ICON[k],19)}<span>${l}</span></button>`;}).join("");
-const go=e=>{const b=e.target.closest("button");if(!b)return;view=b.dataset.v;R.pq="";renderNav();render();window.scrollTo(0,0);};
+return `<button data-v="${k}" aria-current="${k===view}" title="${esc(VIEWS.find(v=>v[0]===k)[1])}">${svg(ICON[k],19)}<span>${l}</span></button>`;}).join("")
++`<button class="tbhide" id="tbtoggle" title="ซ่อนแถบเมนู" aria-label="ซ่อนแถบเมนู">${svg('<path d="M15 6l-6 6 6 6"/>',16)}</button>`;
+const go=e=>{const b=e.target.closest("button");if(!b)return; if(b.id==="tbtoggle"){setTb(true);return;} if(!b.dataset.v)return; view=b.dataset.v;R.pq="";renderNav();render();window.scrollTo(0,0);};
 el("nav").onclick=go; el("tabbar").onclick=go;
+if(el("tbshow"))el("tbshow").onclick=()=>setTb(false);
 ["brandBtn","brandBtnM"].forEach(id=>{const n=el(id); if(!n||n._wired)return; n._wired=1;
 n.onclick=hardRefresh;
 n.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();hardRefresh();}};});
@@ -811,6 +826,9 @@ view=v; renderNav(); render(); window.scrollTo({top:0,behavior:"smooth"});
 const jump=(v,payload)=>`data-go="${esc(JSON.stringify({v,...payload||{}}))}"`;
 function render(){
 LISTBOX={};
+if(LOADING){ el("view").innerHTML=`<div class="head"><div><h1>กำลังโหลดข้อมูล…</h1><div class="sub">กำลังดึงข้อมูลล่าสุดจากระบบ · ${syncChip()}</div></div></div>
+<div class="dash"><div class="card hero span2 sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div>
+<div class="card span4 sk" style="height:220px"></div></div>`; paintSync(); return; }
 el("view").innerHTML={home,all,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,exec:execView,pipeline,set:setView}[view]();
 paintSync(); wire();
 }
@@ -2126,7 +2144,13 @@ function setTheme_(){
 const cur=theme.preset;
 const custom=(theme.custom&&theme.custom.length===5)?theme.custom:PALETTES[0].ramp;
 const night=isNight();
-return `<div class="card"><h2>โหมดกลางวัน / กลางคืน <small>${night?"ตอนนี้: กลางคืน 🌙":"ตอนนี้: กลางวัน ☀️"}</small></h2>
+return `<div class="card"><h2>ขนาดหน้าจอ <small>ใช้เฉพาะเครื่องนี้</small></h2>
+<div class="seg" id="zoomseg" style="margin-top:10px">${ZOOMS.map(([v,l])=>`<button data-zm="${v}" aria-pressed="${curZoom()===v}">${l} · ${v}%</button>`).join("")}</div>
+<div class="hint">ย่อทั้งหน้าให้เห็นเนื้อหาต่อหน้ามากขึ้น แยกตามเครื่อง (คอมกับมือถือตั้งไม่เหมือนกันได้)</div></div>
+<div class="card" style="margin-top:16px"><h2>สไตล์ปุ่ม · เมนูที่เลือก · การ์ดเด่น <small>ใช้เฉพาะเครื่องนี้</small></h2>
+<div class="seg" id="hlseg" style="margin-top:10px;flex-wrap:wrap">${HLS.map(([v,l])=>`<button data-hl="${v}" aria-pressed="${curHL()===v}">${l}</button>`).join("")}</div>
+<div class="hint">${esc((HLS.find(x=>x[0]===curHL())||HLS[0])[2])} · ลองกดสลับดูได้เลย เห็นผลทันที</div></div>
+<div class="card" style="margin-top:16px"><h2>โหมดกลางวัน / กลางคืน <small>${night?"ตอนนี้: กลางคืน 🌙":"ตอนนี้: กลางวัน ☀️"}</small></h2>
 <div class="seg" id="modeseg" style="margin-top:10px">
 <button data-md="auto" aria-pressed="${theme.mode==="auto"}">ตามเวลา</button>
 <button data-md="light" aria-pressed="${theme.mode==="light"}">สว่างเสมอ</button>
@@ -2517,6 +2541,8 @@ if(F.type&&v&&!typesFor(v).includes(F.type)&&!items.some(t=>t.track===v&&(t.type
 el("grpseg")&&(el("grpseg").onclick=e=>{const b=e.target.closest("button[data-grp]"); if(!b)return;
 F.grp=b.dataset.grp; render();});
 bind("q","q");bind("fl-track","track");bind("fl-type","type");bind("fl-status","status");bind("fl-company","company");
+el("hlseg")&&(el("hlseg").onclick=e=>{const b=e.target.closest("button[data-hl]"); if(!b)return; setHL(b.dataset.hl); render();});
+el("zoomseg")&&(el("zoomseg").onclick=e=>{const b=e.target.closest("button[data-zm]"); if(!b)return; setZoom(b.dataset.zm); render();});
 el("modeseg")&&(el("modeseg").onclick=async e=>{
 const b=e.target.closest("button[data-md]"); if(!b)return;
 await setTheme({preset:theme.preset,custom:theme.custom,mode:b.dataset.md});});
