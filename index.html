@@ -406,6 +406,13 @@ html[data-hl="p"][data-night="0"] .toolbar select,html[data-hl="p"][data-night="
 .aiin{display:flex;gap:8px;align-items:flex-end}.aiin textarea{flex:1;border:1px solid var(--line);border-radius:18px;padding:10px 14px;font:inherit;resize:none;background:var(--card);color:var(--ink)}
 .aipaste{border:1px dashed var(--line);border-radius:16px;padding:12px;font-size:13.5px}.aipaste textarea{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:14px;padding:10px;font:inherit;background:var(--card);color:var(--ink);box-sizing:border-box}
 html[data-hl="p"][data-night="0"] .aib.u{background:var(--pa-s)}html[data-hl="p"][data-night="0"] .aib.a{background:#F5F3EE}
+
+.aifab{position:fixed;right:24px;bottom:24px;z-index:22;width:52px;height:52px;border-radius:50%;border:0;cursor:pointer;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--sky),var(--accent));color:#fff;box-shadow:var(--sh-l);transition:transform .14s}
+.aifab:hover{transform:translateY(-2px) scale(1.05)}.aifab[hidden]{display:none}
+html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
+.side{padding-bottom:40px;overflow-y:auto}.side .foot{margin-bottom:8px}
+@media(max-width:820px){.aifab{right:14px;bottom:76px;width:46px;height:46px}.aifab svg{width:21px;height:21px}}
+@media print{.aifab{display:none!important}}
 </style>
 </head><body>
 <div class="shell">
@@ -426,6 +433,7 @@ html[data-hl="p"][data-night="0"] .aib.u{background:var(--pa-s)}html[data-hl="p"
 </main>
 </div>
 <nav class="tabbar" id="tabbar"></nav>
+<button class="aifab" id="aifab" title="ผู้ช่วย AI" aria-label="ผู้ช่วย AI" hidden></button>
 <button class="tbshow" id="tbshow" title="แสดงแถบเมนู" aria-label="แสดงแถบเมนู"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
 <dialog id="pickdlg"><form method="dialog" onsubmit="return false">
 <div class="dlg-h">จะเพิ่มอะไรดีคะ</div>
@@ -690,5 +698,5 @@ html[data-hl="p"][data-night="0"] .aib.u{background:var(--pa-s)}html[data-hl="p"
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=14.0"></script>
+<script src="app.js?v=14.1"></script>
 </body></html>
