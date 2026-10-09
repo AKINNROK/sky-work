@@ -1,4 +1,4 @@
-const APP_VERSION="14.2"; const APP_DATE="8 ต.ค. 2026";
+const APP_VERSION="14.3"; const APP_DATE="8 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -473,7 +473,7 @@ const DBShim={
 doc(path){const[c,i]=path.split("/");const coll=c==="meta"?"meta":c;
 return {id:i,path,
 get:async()=>snapDoc(i,cache[coll].get(i)),
-set:d=>up(coll,i,d), update:d=>up(coll,i,Object.assign({},cache[coll].get(i)||{},d)),
+set:(d,o)=>up(coll,i,o&&o.merge?Object.assign({},cache[coll].get(i)||{},d):d), update:d=>up(coll,i,Object.assign({},cache[coll].get(i)||{},d)),
 delete:()=>del(coll,i),
 onSnapshot:cb=>{ if(coll==="meta"){const a=listeners.meta.get(i)||[];a.push(cb);listeners.meta.set(i,a);cb(snapDoc(i,cache.meta.get(i)));}
 return ()=>{}; }};},
@@ -530,6 +530,7 @@ sub("meta/tags",d=>{if(Array.isArray(d.list))tagList=d.list;});
 sub("meta/courses",d=>{if(Array.isArray(d.list))courses=d.list;});
 sub("meta/skills",d=>{if(Array.isArray(d.list))skillList=d.list;});
 sub("meta/modes",d=>{if(Array.isArray(d.list))modeList=d.list;});
+sub("meta/idxcats",d=>{if(Array.isArray(d.list))idxCats=d.list;});
 sub("meta/hr",d=>{hrdata={manpower:d.manpower||{},certified:d.certified||{},dsd:d.dsd||{},subsidy:d.subsidy||{pct:70,rate:200}};});
 sub("meta/theme",d=>{if(d.preset){theme={preset:d.preset,custom:d.custom||null,mode:d.mode||"auto"};try{localStorage.setItem("hr-theme",JSON.stringify(theme));}catch(e){} applyTheme();}});
 const splitTrash=(docs,key)=>{const all=docs.map(d=>Object.assign({},d.data(),{_id:d.id}));
@@ -2137,54 +2138,113 @@ return opt([["",fc?"ทุกหมวดของบริษัทนี้":"
 </div>`;
 }
 const IDXSTATUS=["ใช้งานอยู่","กำลังพัฒนา","ไม่ได้ใช้งาน"];
+let idxCats=[];
+let IDXFOLD=new Set(); try{ IDXFOLD=new Set(JSON.parse(localStorage.getItem("sw-idxfold")||"[]")); }catch(e){}
+const idxSaveFold=()=>{ try{localStorage.setItem("sw-idxfold",JSON.stringify([...IDXFOLD]));}catch(e){} };
+const IDX_NONE="__none";
+const idxCatNames=()=>{ const used=[...new Set(idx.map(x=>(x.group||"").trim()).filter(Boolean))]; const base=[...new Set(idxCats.filter(Boolean))]; return [...base,...used.filter(g=>!base.includes(g)).sort()]; };
 function idxView(){
-const fg=R.idxGroup||"", fs2=R.idxStatus||"";
-const groups2=[...new Set(idx.map(x=>(x.group||"").trim()).filter(Boolean))].sort();
-const list=idx.filter(x=>(!fg||x.group===fg)&&(!fs2||(x.status||"ใช้งานอยู่")===fs2))
-.sort((a,b)=>((a.group||"")+(a.title||""))<((b.group||"")+(b.title||""))?-1:1);
+const fs2=R.idxStatus||"", q=(R.idxQ||"").trim().toLowerCase();
+const cats=idxCatNames();
+const match=x=>(!fs2||(x.status||"ใช้งานอยู่")===fs2)&&(!q||[x.title,x.url,x.owner,x.detail,x.note,x.group].join(" ").toLowerCase().includes(q));
+const sortT=(a,b)=>(a.title||"")<(b.title||"")?-1:1;
+const secs=[...cats.map(c=>({key:c,label:c,all:idx.filter(x=>(x.group||"").trim()===c).sort(sortT)})),{key:IDX_NONE,label:"ไม่ระบุหมวด",all:idx.filter(x=>!(x.group||"").trim()).sort(sortT)}]
+.map(s2=>({...s2,list:s2.all.filter(match)})).filter(s2=>s2.all.length||(s2.key!==IDX_NONE&&!q&&!fs2));
+const shown=secs.filter(s2=>!(q||fs2)||s2.list.length);
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
 const active=idx.filter(x=>(x.status||"ใช้งานอยู่")==="ใช้งานอยู่").length;
+const total=shown.reduce((n,s2)=>n+s2.list.length,0);
+const folded=s2=>!(q||fs2)&&IDXFOLD.has(s2.key);
+const row=x=>`<tr data-ix="${x._id}">
+<td><div style="font-weight:600">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1" class="lklink">${esc(x.title)}</a>`:esc(x.title)}</div>
+${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อใส่</div>`}
+${x.note?`<div class="t-note">${esc(x.note)}</div>`:""}</td>
+<td>${esc(x.owner||"—")}</td>
+<td><div class="t-note">${esc(x.detail||"—")}</div></td>
+<td><span class="pill ${(x.status||"ใช้งานอยู่")==="ใช้งานอยู่"?"s-done":(x.status==="กำลังพัฒนา"?"s-run":"s-cancel")}">${esc(x.status||"ใช้งานอยู่")}</span></td></tr>`;
 return header("Index Online","ทะเบียนเอกสารและเว็บไซต์ที่ HR ใช้งาน · รวมลิงก์ไว้ที่เดียว",false)+
 `<div class="head" style="margin-top:-6px"><div></div>
 <button class="btn addbtn" id="addIdx">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มรายการ</span></button></div>
 <div class="dash">
 <div class="card hero span2"><div class="lab">ทะเบียนทั้งหมด</div><div class="big">${idx.length}</div>
-<div class="meta"><span>ใช้งานอยู่ ${active}</span><span>${groups2.length} กลุ่มงาน</span></div></div>
+<div class="meta"><span>ใช้งานอยู่ ${active}</span><span>${cats.length} หมวดหมู่</span></div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.link,16)}</span> มีลิงก์แล้ว</div>
 <div class="v">${idx.filter(x=>x.url).length}</div><div class="d">จาก ${idx.length} รายการ · ที่เหลือใส่ลิงก์เพิ่มได้</div></div>
 <div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ผู้ดูแล</div>
 <div class="v">${[...new Set(idx.map(x=>(x.owner||"").trim()).filter(Boolean))].length}</div><div class="d">คน</div></div>
-${(()=>{const withUrl=idx.filter(x=>x.url&&(x.status||"ใช้งานอยู่")!=="ไม่ได้ใช้งาน");
-if(!withUrl.length)return `<div class="card span4"><h2>ลิงก์ด่วน</h2>
-<div class="empty">ยังไม่มีรายการไหนใส่ลิงก์ไว้ — แตะรายการในตารางด้านล่าง แล้วใส่ลิงก์ในช่อง “ลิงก์”<br>
-<span style="font-size:12.5px">ใส่แล้วจะขึ้นเป็นปุ่มกดเปิดได้ทันทีตรงนี้</span></div></div>`;
-const byG={}; withUrl.forEach(x=>{const g=x.group||"อื่นๆ";(byG[g]=byG[g]||[]).push(x);});
-return `<div class="card span4"><h2>ลิงก์ด่วน <small>${withUrl.length} ลิงก์ · แตะเพื่อเปิดในแท็บใหม่</small></h2>
-${Object.keys(byG).sort().map(g=>`<div class="lkgroup"><div class="lkg">${esc(g)}</div>
-<div class="lkrow">${byG[g].map(x=>`<a class="lkchip" href="${esc(x.url)}" target="_blank" rel="noopener">
-${svg(ICON.link,15)}<span>${esc(x.title)}</span></a>`).join("")}</div></div>`).join("")}</div>`;})()}
 <div class="card span4">
-<div class="toolbar" style="margin-bottom:6px">
-<select id="ix-group">${opt([["","ทุกกลุ่มงาน"],...groups2.map(g=>[g,g])],fg)}</select>
+<div class="toolbar" style="margin-bottom:10px">
+<input type="search" id="ix-q" placeholder="ค้นหาชื่อ / ลิงก์ / ผู้ดูแล" value="${esc(R.idxQ||"")}">
 <select id="ix-status">${opt([["","ทุกสถานะ"],...IDXSTATUS.map(x=>[x,x])],fs2)}</select>
-<span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
-<div class="tblwrap"><table>
-<thead><tr><th>สารบัญ / ระบบ</th><th>กลุ่มงาน</th><th>ผู้ดูแล</th><th>รายละเอียด</th><th>สถานะ</th></tr></thead>
-<tbody>${list.map(x=>`<tr data-ix="${x._id}">
-<td><div style="font-weight:600">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1" class="lklink">${esc(x.title)}</a>`:esc(x.title)}</div>
-${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อใส่</div>`}
-${x.note?`<div class="t-note">${esc(x.note)}</div>`:""}</td>
-<td>${esc(x.group||"—")}</td><td>${esc(x.owner||"—")}</td>
-<td><div class="t-note">${esc(x.detail||"—")}</div></td>
-<td><span class="pill ${(x.status||"ใช้งานอยู่")==="ใช้งานอยู่"?"s-done":(x.status==="กำลังพัฒนา"?"s-run":"s-cancel")}">${esc(x.status||"ใช้งานอยู่")}</span></td>
-</tr>`).join("")
-||`<tr><td colspan="5"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV (หัวคอลัมน์แรก “สารบัญ”)</div></td></tr>`}</tbody></table></div></div>
+<span style="font-size:13px;color:var(--ink-3)">${total} รายการ</span>
+<span style="flex:1"></span>
+<button class="gcbtn" id="ix-collapse" title="ดูเฉพาะชื่อหมวดหมู่">ย่อทั้งหมด</button>
+<button class="gcbtn" id="ix-expand" title="เปิดดูรายการทุกหมวด">ขยายทั้งหมด</button>
+<button class="gcbtn" id="ix-cats">${svg('<path d="M4 7h16M4 12h16M4 17h10"/>',13)} จัดการหมวดหมู่</button></div>
+${shown.map(s2=>{ const f=folded(s2), nUrl=s2.all.filter(x=>x.url).length; return `<div class="ixsec${f?" folded":""}">
+<button type="button" class="ixsh" data-ixfold="${esc(s2.key)}" aria-expanded="${!f}">
+<span class="chev">${svg('<path d="M9 6l6 6-6 6"/>',16)}</span><b>${esc(s2.label)}</b>
+<span class="ixn">${(q||fs2)?s2.list.length+" / "+s2.all.length:s2.all.length} รายการ${nUrl?` · ${nUrl} ลิงก์`:""}</span></button>
+${f?"":`<div class="tblwrap"><table>
+<thead><tr><th>สารบัญ / ระบบ</th><th>ผู้ดูแล</th><th>รายละเอียด</th><th>สถานะ</th></tr></thead>
+<tbody>${s2.list.map(row).join("")||`<tr><td colspan="4"><div class="empty">ยังไม่มีรายการในหมวดนี้ — กด “เพิ่มรายการ” แล้วเลือกหมวดนี้</div></td></tr>`}</tbody></table></div>`}</div>`; }).join("")
+||`<div class="empty">${idx.length?"ไม่พบรายการที่ตรงกับตัวกรอง":"ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV (หัวคอลัมน์แรก “สารบัญ”)"}</div>`}
+</div>
 </div>`;
 }
+function paintIxCats(){
+const names=idxCatNames(); const cnt=c=>idx.filter(x=>(x.group||"").trim()===c).length;
+el("ixc-rows").innerHTML=names.map((c,i)=>`<div class="ixcrow"><input data-ixcn="${i}" value="${esc(c)}" aria-label="ชื่อหมวด">
+<span class="n">${cnt(c)} รายการ</span>
+<button type="button" class="iconbtn" data-ixcm="${i}:-1" ${i===0?"disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button>
+<button type="button" class="iconbtn" data-ixcm="${i}:1" ${i===names.length-1?"disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button type="button" class="btn danger sm" data-ixcd="${i}">ลบ</button></div>`).join("")||`<div class="empty">ยังไม่มีหมวดหมู่ — เพิ่มด้านล่างได้เลย</div>`;
+}
+async function idxSaveCats(list){ idxCats=list; try{ await saveMeta("idxcats",idxCats); }catch(e){} }
+function openIxCats(){ paintIxCats(); el("ixcdlg").showModal(); }
+el("ixc-close").onclick=()=>el("ixcdlg").close();
+el("ixc-add").onclick=async()=>{ const v=el("ixc-new").value.trim(); if(!v){el("ixc-new").focus();return;}
+const names=idxCatNames(); if(names.includes(v)){ tell("มีหมวด “"+esc(v)+"” อยู่แล้วค่ะ"); return; }
+el("ixc-new").value=""; await idxSaveCats([...names,v]); paintIxCats(); render(); };
+el("ixc-new").onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); el("ixc-add").click(); } };
+el("ixc-rows").addEventListener("change",async e=>{ const inp=e.target.closest("[data-ixcn]"); if(!inp)return;
+const names=idxCatNames(), old=names[+inp.dataset.ixcn], nv=inp.value.trim();
+if(!nv||nv===old){ inp.value=old; return; }
+if(names.includes(nv)){ tell("มีหมวด “"+esc(nv)+"” อยู่แล้วค่ะ"); inp.value=old; return; }
+const next=names.slice(); next[+inp.dataset.ixcn]=nv; await idxSaveCats(next);
+if(IDXFOLD.has(old)){ IDXFOLD.delete(old); IDXFOLD.add(nv); idxSaveFold(); }
+for(const x of idx.filter(x=>(x.group||"").trim()===old)){ try{ await DB.collection("index").doc(x._id).set({group:nv},{merge:true}); }catch(err){} }
+paintIxCats(); render(); });
+el("ixc-rows").addEventListener("click",async e=>{
+const mv=e.target.closest("[data-ixcm]"), dl=e.target.closest("[data-ixcd]");
+if(mv){ const [i,d]=mv.dataset.ixcm.split(":").map(Number); const n=idxCatNames(); const j=i+d; if(j<0||j>=n.length)return; [n[i],n[j]]=[n[j],n[i]]; await idxSaveCats(n); paintIxCats(); render(); return; }
+if(dl){ const names=idxCatNames(), c=names[+dl.dataset.ixcd]; const k=idx.filter(x=>(x.group||"").trim()===c).length;
+ el("ixcdlg").close();
+ const ok=await ask("ลบหมวด “"+esc(c)+"” ใช่ไหมคะ?"+(k?`<div style="font-size:13px;margin-top:8px;line-height:1.7">ลิงก์ในหมวดนี้ ${k} รายการ <b>จะไม่ถูกลบ</b> แต่จะย้ายไปอยู่ “ไม่ระบุหมวด” — ไปเลือกหมวดใหม่ทีหลังได้</div>`:""),"ลบหมวด");
+ if(ok){ await idxSaveCats(names.filter(x=>x!==c)); IDXFOLD.delete(c); idxSaveFold();
+  for(const x of idx.filter(x=>(x.group||"").trim()===c)){ try{ await DB.collection("index").doc(x._id).set({group:""},{merge:true}); }catch(err){} } render(); }
+ openIxCats(); } });
+// ---- เนื้อหาบันทึกแบบจัดรูปแบบ (fmt:"h" = HTML ที่ผ่านตัวกรอง; ไม่มี fmt = ข้อความล้วนแบบเดิม)
+const NT_OK={B:1,STRONG:1,I:1,EM:1,U:1,S:1,H2:1,H3:1,UL:1,OL:1,LI:1,P:1,DIV:1,BR:1,SPAN:1,BLOCKQUOTE:1,HR:1};
+function ntClean(html){
+const d=document.createElement("div"); d.innerHTML=String(html||"");
+d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.remove());
+(function walk(p){ [...p.childNodes].forEach(n=>{
+ if(n.nodeType===3)return;
+ if(n.nodeType!==1){ n.remove(); return; }
+ if(!NT_OK[n.tagName]){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
+ const keep=n.tagName==="SPAN"&&n.classList.contains("lt")?"lt":"";
+ [...n.attributes].forEach(at=>n.removeAttribute(at.name)); if(keep)n.className=keep;
+ else if(n.tagName==="SPAN"){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
+ walk(n); }); })(d);
+return d.innerHTML;
+}
+const ntPlain=n=>{ if(!n)return""; if(n.fmt!=="h")return n.body||""; const d=document.createElement("div"); d.innerHTML=ntClean(n.body||"").replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n"); return (d.textContent||"").replace(/\n{3,}/g,"\n\n").trim(); };
+const ntHtml=n=>n&&n.fmt==="h"?ntClean(n.body||""):esc((n&&n.body)||"").replace(/\n/g,"<br>");
 const NOTEKIND=["บันทึกการประชุม","โน้ต","ไอเดีย"];
 function noteView(){
 const fk=R.noteKind||"", q=(R.noteQ||"").toLowerCase();
-const list=notes.filter(n=>(!fk||n.kind===fk)&&(!q||((n.title||"")+" "+(n.body||"")+" "+(n.tag||"")).toLowerCase().includes(q)))
+const list=notes.filter(n=>(!fk||n.kind===fk)&&(!q||((n.title||"")+" "+ntPlain(n)+" "+(n.tag||"")).toLowerCase().includes(q)))
 .sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||((b.date||"")<(a.date||"")?-1:1));
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
 const cnt=k=>notes.filter(n=>n.kind===k).length;
@@ -2205,9 +2265,10 @@ return header("บันทึก & ไอเดีย","บันทึกก�
 <div class="notegrid">${list.map(n=>`<div class="notecard" data-nt="${n._id}" style="border-left:5px solid ${n.color||"var(--accent-2)"}">
 <div class="nh"><span class="tag${n.kind==="ไอเดีย"?" sky":""}">${esc(n.kind||"โน้ต")}</span>
 ${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}
-<span style="margin-left:auto;font-size:12px;color:var(--ink-3)">${esc(n.date||"")}</span></div>
+<span style="margin-left:auto;font-size:12px;color:var(--ink-3)">${esc(n.date||"")}</span>
+<button class="ntedit" data-ntedit="${n._id}" title="แก้ไข" aria-label="แก้ไข">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',14)}</button></div>
 <div class="nt1">${esc(n.title||"(ไม่มีหัวข้อ)")}</div>
-<div class="nb">${esc((n.body||"").slice(0,180))}${(n.body||"").length>180?"…":""}</div>
+<div class="nb">${(()=>{const t=ntPlain(n); return esc(t.slice(0,180))+(t.length>180?"…":"");})()}</div>
 ${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</div>`).join("")
 ||`<div class="empty">ยังไม่มีบันทึก — กด “เขียนบันทึก”</div>`}</div></div>
 </div>`;
@@ -2717,9 +2778,15 @@ el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
 const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdx(x);});
-document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=()=>{
-const x=notes.find(v=>v._id===n.dataset.nt); if(x)openNote(x);});
-el("ix-group")&&(el("ix-group").onchange=e=>{R.idxGroup=e.target.value;render();});
+document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=e=>{
+const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
+if(e.target.closest("[data-ntedit]")){ openNote(x); return; }
+viewNote(x);});
+el("ix-q")&&(el("ix-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.idxQ=v;render();const m=el("ix-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
+el("ix-collapse")&&(el("ix-collapse").onclick=()=>{ IDXFOLD=new Set([...idxCatNames(),IDX_NONE]); idxSaveFold(); render(); });
+el("ix-expand")&&(el("ix-expand").onclick=()=>{ IDXFOLD=new Set(); idxSaveFold(); render(); });
+el("ix-cats")&&(el("ix-cats").onclick=openIxCats);
+document.querySelectorAll("[data-ixfold]").forEach(b=>b.onclick=()=>{ const k=b.dataset.ixfold; IDXFOLD.has(k)?IDXFOLD.delete(k):IDXFOLD.add(k); idxSaveFold(); render(); });
 el("ix-status")&&(el("ix-status").onchange=e=>{R.idxStatus=e.target.value;render();});
 el("nt-kind")&&(el("nt-kind").onchange=e=>{R.noteKind=e.target.value;render();});
 el("pq")&&(el("pq").oninput=e=>{const v=e.target.value,p2=e.target.selectionStart;R.pq=v;render();
@@ -3221,7 +3288,7 @@ el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skywork-index",
 idx.map(x=>[x.title,x.group,x.owner,x.url,x.status,x.detail,x.note])));
 el("expNote")&&(el("expNote").onclick=()=>exportCSV("skywork-notes",
 ["หัวข้อ","ประเภท","วันที่","ป้ายกำกับ","เนื้อหา"],
-notes.map(n=>[n.title,n.kind,n.date,n.tag,n.body])));
+notes.map(n=>[n.title,n.kind,n.date,n.tag,ntPlain(n)])));
 el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
 ["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
 legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));
@@ -3767,26 +3834,71 @@ function openIdx(x){
 editingIdx=x;
 el("idlgh").textContent=x?"แก้ไขรายการ Index":"เพิ่มรายการ Index";
 el("idel").style.display=x?"":"none";
-el("i-title").value=x?.title||""; el("i-group").value=x?.group||"";
+el("i-title").value=x?.title||"";
+fill("i-group",[["","ไม่ระบุหมวด"],...idxCatNames().map(c=>[c,c]),["__new","＋ สร้างหมวดใหม่…"]],(x?.group||"").trim());
+el("i-newwrap").hidden=true; el("i-newcat").value="";
 el("i-owner").value=x?.owner||""; el("i-url").value=x?.url||"";
 fill("i-status",IDXSTATUS.map(v=>[v,v]),x?.status||"ใช้งานอยู่");
 el("i-detail").value=x?.detail||""; el("i-note").value=x?.note||"";
-el("ixgroups").innerHTML=[...new Set(idx.map(v=>(v.group||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
 el("ixowners").innerHTML=[...new Set(idx.map(v=>(v.owner||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
 el("idlg").showModal();
 }
 el("icancel").onclick=()=>el("idlg").close();
+el("i-group").onchange=()=>{ const n=el("i-group").value==="__new"; el("i-newwrap").hidden=!n; if(n)el("i-newcat").focus(); };
 el("isave").onclick=async()=>{
 if(!el("i-title").value.trim()){el("i-title").focus();return;}
-const d={title:el("i-title").value.trim(),group:el("i-group").value.trim(),owner:el("i-owner").value.trim(),
+let grp=el("i-group").value; if(grp==="__new"){ grp=el("i-newcat").value.trim(); if(!grp){el("i-newcat").focus();return;} }
+const d={title:el("i-title").value.trim(),group:grp,owner:el("i-owner").value.trim(),
 url:el("i-url").value.trim(),status:el("i-status").value,detail:el("i-detail").value.trim(),note:el("i-note").value.trim()};
 el("idlg").close();
+if(grp&&!idxCatNames().includes(grp)) await idxSaveCats([...idxCatNames(),grp]);
 try{ editingIdx? await DB.collection("index").doc(editingIdx._id).set(d) : await DB.collection("index").add(d); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("idel").onclick=async()=>{ if(!editingIdx)return; const x=editingIdx; el("idlg").close();
 if(!await ask("ลบ “"+esc(x.title)+"” ใช่ไหมคะ?","ลบรายการ"))return;
 await softDel("index",x);};
+let viewingNote=null;
+function viewNote(n){
+viewingNote=n;
+el("nvk").textContent=n.kind||"โน้ต"; el("nvd").textContent=n.date||"";
+el("nvt").textContent=n.title||"(ไม่มีหัวข้อ)";
+el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>';
+el("nvtag").textContent=n.tag?"#"+n.tag:"";
+el("nvpin").textContent=n.pin?"เลิกปักหมุด":"ปักหมุด";
+el("nvdlg").querySelector(".nvbar").style.background=n.color||"var(--accent-2)";
+el("nvdlg").showModal();
+}
+el("nvclose").onclick=()=>el("nvdlg").close();
+el("nvedit").onclick=()=>{ const n=viewingNote; el("nvdlg").close(); if(n)openNote(n); };
+el("nvpin").onclick=async()=>{ const n=viewingNote; if(!n)return; el("nvdlg").close(); try{ await DB.collection("note").doc(n._id).set({pin:!n.pin},{merge:true}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); } };
+// ตัวแก้ไขแบบจัดรูปแบบ
+const NE=()=>el("n-body");
+function neCmd(cmd,val){ NE().focus(); document.execCommand(cmd,false,val||null); neState(); }
+function neLight(){
+NE().focus(); const s=getSelection(); if(!s.rangeCount)return; const r=s.getRangeAt(0);
+let n=s.anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.classList&&n.classList.contains("lt")){ while(n.firstChild)n.parentNode.insertBefore(n.firstChild,n); n.remove(); neState(); return; } n=n.parentNode; }
+if(r.collapsed||!NE().contains(r.commonAncestorContainer))return;
+const sp=document.createElement("span"); sp.className="lt"; sp.appendChild(r.extractContents()); r.insertNode(sp); s.removeAllRanges(); const r2=document.createRange(); r2.selectNodeContents(sp); s.addRange(r2); neState();
+}
+function neBlock(tag){ NE().focus(); const cur=(document.queryCommandValue("formatBlock")||"").toLowerCase(); document.execCommand("formatBlock",false,cur===tag||cur==="<"+tag+">"?"p":tag); neState(); }
+function neState(){
+const on=c=>{try{return document.queryCommandState(c);}catch(e){return false;}};
+const blk=(document.queryCommandValue("formatBlock")||"").toLowerCase().replace(/[<>]/g,"");
+document.querySelectorAll("#ntool [data-ne]").forEach(b=>{ const k=b.dataset.ne; let v=false;
+ if(k==="bold")v=on("bold"); else if(k==="italic")v=on("italic"); else if(k==="underline")v=on("underline"); else if(k==="strike")v=on("strikeThrough");
+ else if(k==="ul")v=on("insertUnorderedList"); else if(k==="ol")v=on("insertOrderedList");
+ else if(k==="h2")v=blk==="h2"; else if(k==="h3")v=blk==="h3"; else if(k==="light"){ let n=getSelection().anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.classList&&n.classList.contains("lt")){v=true;break;} n=n.parentNode; } }
+ b.classList.toggle("on",v); });
+}
+el("ntool").addEventListener("mousedown",e=>{ if(e.target.closest("[data-ne]"))e.preventDefault(); });
+el("ntool").addEventListener("click",e=>{ const b=e.target.closest("[data-ne]"); if(!b)return; const k=b.dataset.ne;
+ if(k==="bold")neCmd("bold"); else if(k==="italic")neCmd("italic"); else if(k==="underline")neCmd("underline"); else if(k==="strike")neCmd("strikeThrough");
+ else if(k==="light")neLight(); else if(k==="h2")neBlock("h2"); else if(k==="h3")neBlock("h3");
+ else if(k==="ul")neCmd("insertUnorderedList"); else if(k==="ol")neCmd("insertOrderedList"); else if(k==="hr")neCmd("insertHorizontalRule");
+ else if(k==="clear"){ neCmd("removeFormat"); document.execCommand("formatBlock",false,"p"); NE().querySelectorAll(".lt").forEach(n=>{while(n.firstChild)n.parentNode.insertBefore(n.firstChild,n);n.remove();}); } });
+NE().addEventListener("keyup",neState); NE().addEventListener("mouseup",neState);
+NE().addEventListener("paste",e=>{ e.preventDefault(); const t=(e.clipboardData||window.clipboardData).getData("text/plain"); document.execCommand("insertText",false,t); });
 function openNote(n){
 editingNote=n;
 el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
@@ -3794,7 +3906,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; el("n-body").value=n?.body||"";
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):"";
 el("n-pin").checked=!!n?.pin;
 el("n-colors").innerHTML=[["","ค่าเริ่มต้น"],...TAGCOLORS.map(c=>[c,c])].map(([c])=>
 `<button type="button" class="sw1${(n?.color||"")===c?" on":""}" data-ncolor="${c}" style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
@@ -3803,13 +3915,13 @@ el("n-colors").querySelectorAll("[data-ncolor]").forEach(x=>x.classList.remove("
 b.classList.add("on"); el("n-colors").dataset.val=b.dataset.ncolor;});
 el("n-colors").dataset.val=n?.color||"";
 el("ntaglist").innerHTML=[...new Set(notes.map(v=>(v.tag||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
-el("ndlg").showModal();
+el("ndlg").showModal(); neState();
 }
 el("ncancel").onclick=()=>el("ndlg").close();
 el("nsave").onclick=async()=>{
 const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
-tag:el("n-tag").value.trim(),body:el("n-body").value,color:el("n-colors").dataset.val||"",pin:el("n-pin").checked};
-if(!d.title&&!d.body.trim()){el("n-title").focus();return;}
+tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",color:el("n-colors").dataset.val||"",pin:el("n-pin").checked};
+if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
 el("ndlg").close();
 try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
