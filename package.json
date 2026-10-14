@@ -1,0 +1,9 @@
+{
+  "name": "sky-work",
+  "version": "14.9.0",
+  "private": true,
+  "description": "Sky Work — static PWA + serverless functions (ai, push)",
+  "dependencies": {
+    "web-push": "3.6.7"
+  }
+}
