@@ -1,5 +1,5 @@
-const C="skywork-14.9";
-const FILES=["./","./index.html","./js/01-core.js","./js/02-nav-render.js","./js/03-views-home.js","./js/04-5w1h-ai.js","./js/05-views-more.js","./js/06-settings.js","./js/07-wire.js","./js/08-forms.js","./js/09-boot.js","./icon-192.png","./logo.png","./manifest.json"];
+const C="skywork-14.9.1";
+const FILES=["./","./index.html","./app.js","./icon-192.png","./logo.png","./manifest.json"];
 self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)).catch(()=>{}));});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()));});
 self.addEventListener("fetch",e=>{

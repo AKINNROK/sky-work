@@ -77,4 +77,5 @@ el("gate").close(); boot();
 async function signOut(){ if(SB)await SB.auth.signOut(); location.reload(); }
 addEventListener("resize",()=>{if(view==="all")render();});
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+window.__skyBoot=1;
 boot();

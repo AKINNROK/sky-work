@@ -352,14 +352,14 @@ html[data-hl="c"] .btn:not(.ghost):not(.danger),html[data-hl="c"] .nav button[ar
 html[data-hl="c"] .btn:not(.ghost):not(.danger):hover{background:color-mix(in srgb,var(--accent) 16%,var(--card));transform:none;box-shadow:none}
 html[data-hl="c"] .dlg-h{background:var(--card);color:var(--ink);border-bottom:1px solid var(--line)}
 /* v13.1 สไตล์พาสเทล (ตามภาพอ้างอิง): พื้นครีม · การ์ดขาวมนมาก · ไทล์พาสเทลแยกสี · ปุ่ม/เมนูที่เลือกเป็นสีดำมน */
-html[data-hl="p"][data-night="0"]{--paper:#F6F4EE!important;--card:#ffffff!important;--line:#E9E5DA!important;--line-2:#F2EFE7!important;--ink:#22262b!important;--ink-2:#5d6570!important;--ink-3:#9aa1aa!important;--accent-soft:#F0EDE4!important;--r:28px;--r-sm:20px;
+html[data-hl="p"][data-night="0"]{--r:28px;--r-sm:20px;
 --pa-y:#FFEFC2;--pa-s:#D9ECF8;--pa-p:#FADCE1;--pa-m:#DAF0E2;--pa-o:#FDE4D0;--pa-l:#E6E0F7;--dk:#23272c}
 html[data-hl="p"][data-night="0"] .card{box-shadow:none;border:1px solid var(--line);border-radius:28px}
 html[data-hl="p"][data-night="0"] .nav button{border-radius:999px}
 html[data-hl="p"][data-night="0"] .nav button[aria-current="true"],html[data-hl="p"][data-night="0"] .tabbar button[aria-current="true"],html[data-hl="p"][data-night="0"] .btn:not(.ghost):not(.danger){background:var(--dk);color:#fff;box-shadow:none}
-html[data-hl="p"][data-night="0"] .btn:not(.ghost):not(.danger):hover{background:#3b4148;transform:none;box-shadow:none}
+html[data-hl="p"][data-night="0"] .btn:not(.ghost):not(.danger):hover{background:var(--dk-h,#3b4148);transform:none;box-shadow:none}
 html[data-hl="p"][data-night="0"] .btn.ghost,html[data-hl="p"][data-night="0"] .btn.danger{box-shadow:none;border:1px solid var(--line)}
-html[data-hl="p"][data-night="0"] .seg{background:#EEEBE2}
+html[data-hl="p"][data-night="0"] .seg{background:var(--seg-bg,#EEEBE2)}
 html[data-hl="p"][data-night="0"] .seg button[aria-pressed="true"]{background:var(--dk);color:#fff;box-shadow:none}
 html[data-hl="p"][data-night="0"] .dlg-h{background:var(--card);color:var(--ink);border-bottom:1px solid var(--line)}
 html[data-hl="p"][data-night="0"] .card.hero{background:var(--pa-s);color:var(--ink);border:0}
@@ -390,8 +390,8 @@ html[data-hl="p"][data-night="0"] .banner.bad{background:var(--pa-p);color:#b13a
 html[data-hl="p"][data-night="0"] .banner.ok{background:var(--pa-m);color:#2f7a58}
 html[data-hl="p"][data-night="0"] .mod .modh,html[data-hl="p"][data-night="0"] .mod div:not(.modh):not(.modv),html[data-hl="p"][data-night="0"] .stat .k,html[data-hl="p"][data-night="0"] .stat .d{color:var(--ink-2)}
 html[data-hl="p"][data-night="0"] body{background:#fff}
-html[data-hl="p"][data-night="0"] .card{border-color:#EDEAE2}
-html[data-hl="p"][data-night="0"] .toolbar select,html[data-hl="p"][data-night="0"] .toolbar input,html[data-hl="p"][data-night="0"] .yrnav .iconbtn,html[data-hl="p"][data-night="0"] .syncchip{border:1px solid #EDEAE2;box-shadow:none}
+html[data-hl="p"][data-night="0"] .card{border-color:var(--line-3,#EDEAE2)}
+html[data-hl="p"][data-night="0"] .toolbar select,html[data-hl="p"][data-night="0"] .toolbar input,html[data-hl="p"][data-night="0"] .yrnav .iconbtn,html[data-hl="p"][data-night="0"] .syncchip{border:1px solid var(--line-3,#EDEAE2);box-shadow:none}
 .aiwrap{display:flex;flex-direction:column;gap:10px}
 .aistatus{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--ink-3)}
 .aimsgs{display:flex;flex-direction:column;gap:10px;overflow-y:auto;height:min(54vh,520px);padding:4px 2px}
@@ -461,6 +461,54 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .ixsh .chev{display:inline-flex;transition:transform .15s;transform:rotate(90deg);color:var(--ink-3)}.ixsec.folded .chev{transform:rotate(0)}
 .ixsec .tblwrap{background:var(--card);margin:0 8px 8px;border-radius:12px;padding:2px 6px}
 .ixcrows{display:flex;flex-direction:column;gap:7px}.ixcrow{display:flex;gap:7px;align-items:center}.ixcrow input{flex:1;min-width:0}.ixcrow .n{font-size:12.5px;color:var(--ink-3);white-space:nowrap}
+
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qgrid .q{border:2px solid transparent;border-radius:16px;padding:11px 14px;text-align:left;cursor:pointer;font:inherit;color:#23272c;display:flex;flex-direction:column;gap:2px;transition:.14s}
+.qgrid .q b{font-family:var(--head);font-size:15px;font-weight:600}.qgrid .q i{font-style:normal;font-size:12px;opacity:.75}
+.qgrid .q1,.mxq.q1{background:#F8D7DC}.qgrid .q2,.mxq.q2{background:#D6E6F5}.qgrid .q3,.mxq.q3{background:#FBE8BC}.qgrid .q4,.mxq.q4{background:#E7E5DE}
+.qgrid .q:hover{transform:translateY(-1px)}.qgrid .q.on{border-color:#23272c;box-shadow:0 4px 14px rgba(30,40,60,.18)}.qgrid .q.on b:after{content:" ✓"}
+.dlchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}.dlchips button{border:0;background:var(--paper);color:var(--ink-2);border-radius:999px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}.dlchips button:hover{background:var(--ink);color:var(--card)}
+.mxgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+.mxq{border-radius:var(--r);padding:16px;min-width:0;color:#23272c}
+.mxq h3{margin:0;font-family:var(--head);font-size:17px;font-weight:600;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.mxq h3 small{font-family:var(--sans);font-weight:400;font-size:12.5px;opacity:.7}.mxq .mxn{margin-left:auto;font-family:var(--sans);font-size:13px;font-weight:600;background:rgba(255,255,255,.65);border-radius:999px;padding:1px 10px}
+.mxq .mxh{font-size:12px;opacity:.7;margin:2px 0 10px}
+.mxlist{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto}
+.mxc{background:rgba(255,255,255,.82);border-radius:14px;padding:10px 12px;cursor:pointer;color:#23272c}.mxc:hover{background:#fff}
+.mxc .t1{font-weight:600;font-size:14px;line-height:1.4}.mxc .t2{font-size:12.5px;opacity:.75;margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.mxc .late{color:#C0392B;font-weight:600;opacity:1}.mxc .soon{color:#B9770E;font-weight:600;opacity:1}
+.mxmv{display:flex;gap:4px;margin-top:7px;align-items:center}.mxmv span{font-size:11px;opacity:.6;margin-right:2px}
+.mxmv button{border:0;width:22px;height:22px;border-radius:7px;cursor:pointer;font-size:11px;font-weight:700;color:#23272c}.mxmv button.cur{outline:2px solid #23272c}
+.mxmv button.b1{background:#F8D7DC}.mxmv button.b2{background:#D6E6F5}.mxmv button.b3{background:#FBE8BC}.mxmv button.b4{background:#E7E5DE}.mxmv button.bx{background:none;border:1px dashed var(--line);color:var(--ink-3);width:auto;padding:0 7px}
+.mxtray{background:var(--paper);border-radius:var(--r);padding:16px;margin-top:14px}.mxtray .mxlist{max-height:380px}.mxtray .mxc{background:var(--card);color:var(--ink)}.mxtray .mxc:hover{background:var(--paper)}.mxtray .mxmv span{color:var(--ink-3)}
+@media(max-width:760px){.mxgrid{grid-template-columns:1fr}.qgrid .q{padding:9px 11px}}
+@media print{.mxmv{display:none}}
+
+.mxhome{background:#F8D7DC;color:#23272c}.mxhome h2{color:#23272c;margin-bottom:10px}.mxhome h2 small{color:rgba(35,39,44,.65)}.mxhome .sub{color:rgba(35,39,44,.7)}.mxhome .lklink{color:#23272c;font-weight:600}
+.mxhome .mxc{background:rgba(255,255,255,.82)}.mxhome .mxlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}
+.mxchips{display:inline-flex;gap:5px;flex-wrap:wrap}.mxchips i{font-style:normal;font-family:var(--sans);font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;color:#23272c}
+.mxchips .mc1{background:#fff}.mxchips .mc2{background:#D6E6F5}.mxchips .mc3{background:#FBE8BC}.mxchips .mc4{background:#E7E5DE}.mxchips .mc0{background:transparent;border:1px dashed rgba(35,39,44,.4)}
+.qtag{font-size:11px;font-weight:600;padding:1px 8px;border-radius:999px;color:#23272c;white-space:nowrap}.qtag.q-q1{background:#F8D7DC}.qtag.q-q2{background:#D6E6F5}.qtag.q-q3{background:#FBE8BC}.qtag.q-q4{background:#E7E5DE}
+.n2trows{display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto}
+.n2trow{display:grid;grid-template-columns:28px minmax(0,2.2fr) minmax(0,1.1fr) minmax(0,1fr) minmax(0,1fr);gap:8px;align-items:center}.n2trow.off{opacity:.45}
+.n2trow input,.n2trow select{min-width:0;width:100%}.n2tck{display:flex;justify-content:center}
+@media(max-width:760px){.n2trow{grid-template-columns:28px 1fr 1fr}.n2trow .n2tt{grid-column:2/-1}.n2trow select{grid-column:2}.n2trow input[type=date]{grid-column:3}.n2trow input[data-n2t^="o"]{grid-column:2/-1}}
+
+.w5grid{display:grid;grid-template-columns:1fr;gap:10px;padding:4px 14px 12px}
+.w5bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.w5bar .hint{margin:0;flex:1;min-width:160px}
+.w5line{font-size:12px;color:var(--ink-3);margin-top:3px;line-height:1.5}
+.w5line b{color:var(--ink-2);font-weight:600}
+.n2tw5{grid-column:1/-1;font-size:12px;color:var(--ink-3);line-height:1.5;padding:2px 4px 0}
+.ixuse{font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.5}
+.ixuse b{color:var(--ink-2);font-weight:600}
+.gapchips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.gapchips b{font-size:11px;padding:2px 9px;border-radius:999px;background:var(--over-soft);color:var(--over);font-weight:600}
+.gapf .gcbtn.on{background:var(--accent);color:#fff}.gapf .gcbtn b{margin-left:4px}
+.tplh{font-weight:600;font-size:13px;margin:6px 0 8px}.tplh small{font-weight:400;color:var(--ink-3)}
+.tplrows{display:flex;flex-direction:column;gap:8px;max-height:210px;overflow:auto}
+.tplrow{display:flex;gap:6px;align-items:stretch}
+.tplgo{flex:1;text-align:left;background:var(--paper);border:0;border-radius:var(--r-sm);padding:10px 14px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:2px}
+.tplgo:hover{box-shadow:inset 0 0 0 1.5px var(--accent-2)}.tplgo i{font-style:normal;font-size:12px;color:var(--ink-3)}
+.tpldel{border:0;background:var(--paper);border-radius:var(--r-sm);width:38px;cursor:pointer;color:var(--ink-3);font-size:18px}.tpldel:hover{color:var(--over)}
 </style>
 </head><body>
 <div class="shell">
@@ -484,6 +532,11 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="aipop" id="aipop" hidden role="dialog" aria-label="ผู้ช่วย AI"></div>
 <button class="aifab" id="aifab" title="ผู้ช่วย AI" aria-label="ผู้ช่วย AI" hidden></button>
 <button class="tbshow" id="tbshow" title="แสดงแถบเมนู" aria-label="แสดงแถบเมนู"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+<dialog id="tpsdlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h">บันทึกเป็นแม่แบบ</div>
+<div class="dlg-b" style="grid-template-columns:1fr"><div class="f"><label for="tps-name">ชื่อแม่แบบ</label><input id="tps-name" placeholder="เช่น ส่งแบบ สปส. รายเดือน"></div>
+<div class="hint" style="margin:0">เก็บ ชื่องาน กลุ่มงาน บริษัท ประเภท ผู้รับผิดชอบ Matrix 5W1H และรายละเอียด · ไม่เก็บ Deadline (ตั้งใหม่ทุกครั้ง) · ชื่อซ้ำ = อัปเดตแม่แบบเดิม</div></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="tps-cancel">ยกเลิก</button><button type="button" class="btn" id="tps-ok">บันทึก</button></div></form></dialog>
 <dialog id="pickdlg"><form method="dialog" onsubmit="return false">
 <div class="dlg-h">จะเพิ่มอะไรดีคะ</div>
 <div class="dlg-b" style="grid-template-columns:1fr 1fr;gap:12px">
@@ -493,6 +546,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <button type="button" class="pick" data-pick="act"><span class="pi" id="pi-act"></span><b>เพิ่มกิจกรรม</b><i>สถานที่ · ผู้เข้าร่วม · ของที่ต้องเตรียม</i></button>
 <button type="button" class="pick" data-pick="task"><span class="pi" id="pi-task"></span><b>เพิ่มงานทั่วไป</b><i>งานประจำ · เอกสาร · งานต่ออายุ</i></button>
 <button type="button" class="pick" data-pick="note"><span class="pi" id="pi-note"></span><b>บันทึก &amp; ไอเดีย</b><i>จดสั้นๆ ไม่ต้องมีวันที่</i></button>
+<div id="tplbox" style="grid-column:1/-1;margin-top:4px"></div>
 </div>
 <div class="dlg-f"><button class="btn ghost" id="pickcancel">ยกเลิก</button></div>
 </form></dialog>
@@ -509,8 +563,16 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f"><label for="f-track">กลุ่มงาน</label><select id="f-track"></select></div>
 <div class="f"><label for="f-type">ประเภท</label><select id="f-type"></select></div>
 <div class="f"><label for="f-status" id="lbl-status">สถานะ</label><select id="f-status"></select></div>
+<div class="f wide" id="wrap-quad"><label>จัดลำดับงาน · Eisenhower Matrix <span style="font-weight:400;color:var(--ink-3)">— ดูจากความสำคัญ × ความเร่งด่วน</span></label>
+<div class="qgrid" id="f-quad">
+<button type="button" data-q="q1" class="q q1"><b>ทำเลย</b><i>สำคัญ · เร่งด่วน</i></button>
+<button type="button" data-q="q2" class="q q2"><b>วางแผน</b><i>สำคัญ · ไม่เร่งด่วน</i></button>
+<button type="button" data-q="q3" class="q q3"><b>มอบหมาย</b><i>ไม่สำคัญ · เร่งด่วน</i></button>
+<button type="button" data-q="q4" class="q q4"><b>ไว้ทีหลัง</b><i>ไม่สำคัญ · ไม่เร่งด่วน</i></button></div>
+<div class="hint" id="f-quadhint" style="margin-top:6px"></div></div>
 <div class="f"><label for="f-owner">ผู้รับผิดชอบ</label><input id="f-owner"></div>
-<div class="f"><label for="f-date">วันที่</label><input id="f-date" type="date"></div>
+<div class="f"><label for="f-date">วันที่</label><input id="f-date" type="date">
+<div class="dlchips" id="f-dlchips" hidden><button type="button" data-dl="0">วันนี้</button><button type="button" data-dl="1">พรุ่งนี้</button><button type="button" data-dl="3">ใน 3 วัน</button><button type="button" data-dl="7">ใน 1 สัปดาห์</button><button type="button" data-dl="14">ใน 2 สัปดาห์</button><button type="button" data-dl="-1">สิ้นเดือน</button></div></div>
 <div class="f"><label for="f-freq">การเกิดซ้ำ</label><select id="f-freq"></select></div>
 <div class="f wide" id="wrap-wd" hidden><label>วันในสัปดาห์</label><div class="months" id="f-wd"></div></div>
 <div class="f wide" id="wrap-nth" hidden><label>สัปดาห์ที่</label><div class="months" id="f-nth"></div></div>
@@ -581,6 +643,14 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f"><label for="f-code" id="lbl-code">รหัสอ้างอิง (ไม่บังคับ)</label><input id="f-code" placeholder="เช่น 1.0 หรือเลขที่เอกสาร"></div>
 <div class="f"><label for="f-tag">ป้ายกำกับ</label><select id="f-tag"></select></div>
 <div class="swrow" id="f-colors" hidden></div>
+<details class="f wide foldbox" id="wrap-5w"><summary id="w5sum">5W1H · รายละเอียดงาน (ไม่บังคับ)</summary>
+<div class="w5grid">
+<div class="f wide"><label for="f-why" id="lbl-why">Why · ทำไมต้องทำ</label><input id="f-why"></div>
+<div class="f wide"><label for="f-inv" id="lbl-inv">Who · ผู้เกี่ยวข้อง / ผู้อนุมัติ</label><input id="f-inv"></div>
+<div class="f wide" id="wrap-whr"><label for="f-whr" id="lbl-whr">Where · สถานที่ / ระบบ / ลิงก์</label><input id="f-whr"></div>
+<div class="f wide"><label for="f-how" id="lbl-how">How · ขั้นตอน / เช็กลิสต์</label><textarea id="f-how" rows="3"></textarea></div>
+<div class="w5bar"><button type="button" class="btn ghost sm" id="w5ai">✨ ให้ AI ช่วยเติมช่องที่ว่าง</button><button type="button" class="btn ghost sm" id="tplsave" hidden>💾 บันทึกเป็นแม่แบบ</button><span class="hint" id="w5hint"></span></div>
+</div></details>
 <div class="f wide"><label for="f-note">รายละเอียด</label><textarea id="f-note"></textarea></div>
 <div class="f wide" id="wrap-occ" hidden><label>ปิดงานรายรอบ <span style="font-weight:400;color:var(--ink-3)">— ติ๊กเฉพาะรอบที่ทำเสร็จแล้ว รอบอื่นยังคงเตือนตามปกติ</span></label>
 <div class="addg" style="margin:6px 0 2px">
@@ -591,6 +661,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f wide"><label>เดือนที่มีงาน</label><div class="months" id="f-months"></div></div>
 </div>
 <div class="dlg-f">
+<button type="button" class="btn ghost" id="back" hidden style="margin-right:auto">← ย้อนกลับ</button>
 <button type="button" class="btn danger" id="del">ลบงานนี้</button>
 <button type="button" class="btn ghost" id="cancel">ยกเลิก</button>
 <button type="button" class="btn" id="save">บันทึก</button>
@@ -613,7 +684,10 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f wide"><label for="i-url">ลิงก์</label><input id="i-url" type="url" placeholder="https://..."></div>
 <div class="f"><label for="i-status">สถานะ</label><select id="i-status"></select></div>
 <div class="f"><label for="i-note">หมายเหตุ</label><input id="i-note"></div>
-<div class="f wide"><label for="i-detail">รายละเอียดเอกสาร</label><textarea id="i-detail"></textarea></div>
+<div class="f wide"><label for="i-use">ใช้ทำอะไร <span style="font-weight:400;color:var(--ink-3)">— What / Why</span></label><input id="i-use" placeholder="เช่น ยื่นขอเปิดหลักสูตรกับกรมพัฒนาฝีมือแรงงาน"></div>
+<div class="f"><label for="i-who">ใครใช้ <span style="font-weight:400;color:var(--ink-3)">— Who</span></label><input id="i-who" placeholder="เช่น ทีม HR / ทุกแผนก"></div>
+<div class="f"><label for="i-when">ใช้เมื่อไหร่ <span style="font-weight:400;color:var(--ink-3)">— When</span></label><input id="i-when" placeholder="เช่น ทุกต้นเดือน / ตอนรับพนักงานใหม่"></div>
+<div class="f wide"><label for="i-detail">รายละเอียดเอกสาร <span style="font-weight:400;color:var(--ink-3)">— How / ขั้นตอนใช้งาน</span></label><textarea id="i-detail"></textarea></div>
 </div>
 <div class="dlg-f"><button type="button" class="btn danger" id="idel">ลบรายการ</button>
 <button type="button" class="btn ghost" id="icancel">ยกเลิก</button>
@@ -622,12 +696,19 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="nvh"><span class="tag" id="nvk"></span><span id="nvd" class="nvdate"></span><span style="flex:1"></span>
 <button type="button" class="aipb" id="nvedit" title="แก้ไข" aria-label="แก้ไข"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
 <h2 class="nvt" id="nvt"></h2><div class="nrich view" id="nvb"></div><div class="t-note" id="nvtag" style="margin-top:10px"></div>
-<div class="dlg-f"><button type="button" class="btn ghost" id="nvpin">ปักหมุด</button><button type="button" class="btn ghost" id="nvedit2" onclick="document.getElementById('nvedit').click()">แก้ไข</button><button type="button" class="btn" id="nvclose">ปิด</button></div></dialog>
+<div class="dlg-f"><button type="button" class="btn ghost" id="nvtask" title="แยกข้อความเป็นงาน ใส่ Matrix + Deadline">→ สร้างงานจากบันทึก</button><button type="button" class="btn ghost" id="nvpin">ปักหมุด</button><button type="button" class="btn ghost" id="nvedit2" onclick="document.getElementById('nvedit').click()">แก้ไข</button><button type="button" class="btn" id="nvclose">ปิด</button></div></dialog>
 <dialog id="ixcdlg"><form method="dialog" onsubmit="return false">
 <div class="dlg-h">จัดการหมวดหมู่ · Index Online</div>
 <div class="dlg-b"><div class="f wide"><div class="hint" style="margin-bottom:8px">แก้ชื่อได้ตรงช่อง (ลิงก์ในหมวดย้ายตามให้) · เลื่อนลำดับด้วยลูกศร · ลบหมวดแล้วลิงก์ไม่หาย แค่ไปอยู่ “ไม่ระบุหมวด”</div><div id="ixc-rows" class="ixcrows"></div></div>
 <div class="f wide"><label for="ixc-new">เพิ่มหมวดใหม่</label><div style="display:flex;gap:8px"><input id="ixc-new" placeholder="ชื่อหมวด เช่น HR, Training, PMS" style="flex:1"><button type="button" class="btn sm" id="ixc-add">เพิ่ม</button></div></div></div>
 <div class="dlg-f"><button type="button" class="btn" id="ixc-close">เสร็จ</button></div></form></dialog>
+<dialog id="n2tdlg" class="ndlgw"><form method="dialog" onsubmit="return false">
+<div class="dlg-h">สร้างงานจากบันทึก</div>
+<div class="dlg-b" style="grid-template-columns:1fr">
+<div class="hint" style="margin:0">จากบันทึก: <b id="n2tsrc"></b> — ระบบแยกเป็นข้อๆ ให้ (บูเลตหรือบรรทัด) ติ๊กเฉพาะข้อที่เป็นงาน แก้ชื่อได้ แล้วเลือก Matrix · Deadline · ผู้รับผิดชอบ</div>
+<div class="n2trows" id="n2trows"></div></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="n2tall">เลือก/ไม่เลือกทั้งหมด</button><button type="button" class="btn ghost" id="n2tai" style="margin-right:auto">✨ AI เติม 5W1H</button>
+<button type="button" class="btn ghost" id="n2tcancel">ยกเลิก</button><button type="button" class="btn" id="n2tgo">สร้างงาน</button></div></form></dialog>
 <dialog id="ndlg" class="ndlgw"><form method="dialog" onsubmit="return false">
 <div class="dlg-h" id="ndlgh">เขียนบันทึกใหม่</div>
 <div class="dlg-b">
@@ -765,5 +846,10 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <button type="button" class="btn" id="tsave">บันทึก</button>
 </div>
 </form></dialog>
-<script src="app.js?v=14.4"></script>
-</body></html>
+<script>
+window.__errs=[]; addEventListener("error",function(e){window.__errs.push((e.message||"")+(e.filename?" @"+String(e.filename).split("/").pop()+":"+e.lineno:""));},true);
+setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement("div");
+d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
+d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
+</script>
+<script src="app.js?v=14.9.1"></script></body></html>
