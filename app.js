@@ -1,4 +1,4 @@
-const APP_VERSION="14.9.1"; const APP_DATE="14 ต.ค. 2026";
+const APP_VERSION="14.9.2"; const APP_DATE="14 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -84,8 +84,8 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["home","ภาพรวม"],["all","งานทั้งหมด"],["matrix","Matrix งาน"],["gaps","งานค้างข้อมูล"],["cal","ปฏิทิน"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["ai","ผู้ช่วย AI"],["set","ตั้งค่า"]];
-const TABS=["home","all","matrix","gaps","cal","budget","exec","meet","train","dsd","legal","idx","note","ai","set"];
+const VIEWS=[["cal","ปฏิทิน"],["home","ภาพรวม"],["all","งานทั้งหมด"],["matrix","Matrix งาน"],["gaps","งานค้างข้อมูล"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["ai","ผู้ช่วย AI"],["set","ตั้งค่า"]];
+const TABS=["cal","home","all","matrix","gaps","budget","exec","meet","train","dsd","legal","idx","note","ai","set"];
 const TABLABEL={gaps:"ค้างข้อมูล",home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",matrix:"Matrix",budget:"งบ",exec:"ผู้บริหาร",ai:"AI",set:"ตั้งค่า"};
 const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["trash","ถังขยะ"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
