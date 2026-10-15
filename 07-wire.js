@@ -10,7 +10,7 @@ if(el("bkLater"))el("bkLater").onclick=()=>{ const d=new Date(); d.setDate(d.get
 document.querySelectorAll("[data-go]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();
 try{const d=JSON.parse(n.dataset.go);
- if(d.id){const t=items.find(x=>x._id===d.id); if(t){open_(t);return;}}
+ if(d.id){const t=items.find(x=>x._id===d.id); if(t){openCard(t);return;}}
  if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegal(L);return;}}
  goTo(d.v,{F:d.F,R:d.R});}catch(err){}};});
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
@@ -43,7 +43,7 @@ el("addIdx")&&(el("addIdx").onclick=()=>openIdx(null));
 document.querySelectorAll("[data-mx]").forEach(n=>n.onclick=e=>{
 const qm=e.target.closest("[data-qm]");
 if(qm){ e.stopPropagation(); const [id,q]=qm.dataset.qm.split(":"); DB.collection("items").doc(id).set({quad:q||""},{merge:true}).catch(err=>{const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>");}); return; }
-const t=items.find(v=>v._id===n.dataset.mx); if(t)open_(t);});
+const t=items.find(v=>v._id===n.dataset.mx); if(t)openCard(t);});
 el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
@@ -71,7 +71,7 @@ if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
-const t=items.find(x=>x._id===n.dataset.id); if(t)open_(t);};});
+const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
 const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
 const sc=el("sc1");
@@ -443,6 +443,7 @@ gls=[...gls,{key,code,dept,label:label||code,budget:0,budgets:b?{[(R.glYear||R.y
 el("gldept").value=el("glcode").value=el("glname").value=el("glbud").value="";
 render();await saveMeta("gl",gls);};
 }
+el("glGo")&&(el("glGo").onclick=()=>{view="set";settab="gl";renderNav();render();window.scrollTo(0,0);});
 document.querySelectorAll("[data-glplan]").forEach(n=>n.onclick=()=>openGlPlan(n.dataset.glplan));
 el("glYearSel")&&(el("glYearSel").onchange=e=>{R.glYear=+e.target.value;render();});
 el("glCopy")&&(el("glCopy").onclick=async()=>{

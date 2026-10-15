@@ -1,4 +1,4 @@
-const APP_VERSION="14.9.2"; const APP_DATE="14 ต.ค. 2026";
+const APP_VERSION="14.9.3"; const APP_DATE="14 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -834,7 +834,7 @@ el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>`<div class="li" da
 <div class="hint">แตะรายการเพื่อเปิดแก้ไข</div>`;
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
-if(r.id){const t=items.find(x=>x._id===r.id); if(t)open_(t);}
+if(r.id){const t=items.find(x=>x._id===r.id); if(t)openCard(t);}
 else if(r.tx){const x=ledger.find(v=>v._id===r.tx); if(x)openTx(x);}
 else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegal(g);}
 });
@@ -1183,7 +1183,7 @@ ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <button id="nm">›</button></div>${yearSel("yrSel2")}`:""}
 </div>`+
 (R.calMode==="month"
-? `<div class="dash">
+? `<div class="dash calw">
 <div class="card span3"><h2>${MTHFULL[m]} ${y+543} <small>${items.filter(t=>occDays(t,y,m).length).length} งานในเดือนนี้</small></h2>
 <div class="mcal">${DOW.map(d=>`<div class="dh">${d}</div>`).join("")}${cells.join("")}</div>
 ${calColor()==="matrix"
@@ -1193,7 +1193,7 @@ ${calColor()==="matrix"
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
 <span><i style="background:var(--over)"></i>ค้างรอบที่ผ่านมา</span></div>`}</div>
-<div class="card">
+<div class="card calpanel">
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานประจำเดือนนี้"}</h2>
 <div class="list">${
 R.selDay
@@ -1369,6 +1369,7 @@ ${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth())}
 ${dualBars(planM,actM,MTH,scope==="month"?m:new Date().getMonth(),"แผนงบ","ใช้จริง","var(--sky)","var(--accent)")}
 <div class="legend"><span><i style="background:var(--sky)"></i>แผนงบ</span><span><i style="background:var(--accent)"></i>ใช้จริง (งาน + บันทึกเงิน)</span></div></div>
 <div class="card span4"><h2>งบตามหมวด GL <small>แผน / ใช้จริง / คงเหลือ · แตะแถวเพื่อดูรายเดือนและที่มาของตัวเลข</small></h2>
+<div class="glfix"><button class="btn sm" id="glGo">✎ แก้ไขหมวด GL / ตั้งงบ</button><span class="hint" style="margin:0;align-self:center">เพิ่ม · แก้ชื่อ · รหัส GL · งบรายเดือน ทำที่ ตั้งค่า › หมวดงบประมาณ</span></div>
 <div class="hint" style="margin:2px 0 10px">
 <b>งบที่ตั้งไว้</b> = แต่ละเดือนใช้ค่าที่มากกว่าระหว่าง “แผนงบเดือนนั้นของหมวด (หน้าตั้งค่า)” กับ “ผลรวมช่องงบของงานที่ตกเดือนนั้น” (ไม่บวกซ้ำ) · งานที่ยกเลิกไม่นับงบ<br>
 <b>ใช้จริง</b> = ช่องใช้จริงของงาน (นับในเดือนของวันครบกำหนด) + รายจ่ายที่บันทึกในหน้านี้ ที่แท็กหมวดเดียวกัน<br>
@@ -2989,7 +2990,7 @@ if(el("bkLater"))el("bkLater").onclick=()=>{ const d=new Date(); d.setDate(d.get
 document.querySelectorAll("[data-go]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();
 try{const d=JSON.parse(n.dataset.go);
- if(d.id){const t=items.find(x=>x._id===d.id); if(t){open_(t);return;}}
+ if(d.id){const t=items.find(x=>x._id===d.id); if(t){openCard(t);return;}}
  if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegal(L);return;}}
  goTo(d.v,{F:d.F,R:d.R});}catch(err){}};});
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
@@ -3022,7 +3023,7 @@ el("addIdx")&&(el("addIdx").onclick=()=>openIdx(null));
 document.querySelectorAll("[data-mx]").forEach(n=>n.onclick=e=>{
 const qm=e.target.closest("[data-qm]");
 if(qm){ e.stopPropagation(); const [id,q]=qm.dataset.qm.split(":"); DB.collection("items").doc(id).set({quad:q||""},{merge:true}).catch(err=>{const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>");}); return; }
-const t=items.find(v=>v._id===n.dataset.mx); if(t)open_(t);});
+const t=items.find(v=>v._id===n.dataset.mx); if(t)openCard(t);});
 el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
@@ -3050,7 +3051,7 @@ if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
-const t=items.find(x=>x._id===n.dataset.id); if(t)open_(t);};});
+const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
 const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
 const sc=el("sc1");
@@ -3422,6 +3423,7 @@ gls=[...gls,{key,code,dept,label:label||code,budget:0,budgets:b?{[(R.glYear||R.y
 el("gldept").value=el("glcode").value=el("glname").value=el("glbud").value="";
 render();await saveMeta("gl",gls);};
 }
+el("glGo")&&(el("glGo").onclick=()=>{view="set";settab="gl";renderNav();render();window.scrollTo(0,0);});
 document.querySelectorAll("[data-glplan]").forEach(n=>n.onclick=()=>openGlPlan(n.dataset.glplan));
 el("glYearSel")&&(el("glYearSel").onchange=e=>{R.glYear=+e.target.value;render();});
 el("glCopy")&&(el("glCopy").onclick=async()=>{
@@ -3823,6 +3825,7 @@ return KINDG.proj.test(s2)?"proj":KINDG.act.test(s2)?"act":"";})();
 const on=(ids,show)=>ids.forEach(id=>{const n=el(id); if(n)n.hidden=!show;});
 on(["wrap-proj","wrap-proj1","wrap-proj2","wrap-proj3","wrap-proj4","wrap-proj5","wrap-proj6","wrap-ms"],k==="proj");
 on(["wrap-act","wrap-act1","wrap-act2","wrap-act3","wrap-act4","wrap-act5","wrap-act6","wrap-act7","wrap-aprep"],k==="act");
+el("sec-proj").hidden=k!=="proj"; el("sec-act").hidden=k!=="act";
 if(k==="proj")syncProg(); if(k==="act")syncAper();}
 function open_(t,kind,fromPick){
 backable=!!fromPick&&!t;
@@ -4596,6 +4599,77 @@ if(!await ask("ลบรายการเงินนี้ใช่ไหม�
 await softDel("ledger",x);
 };
 let gateMode="setup";
+
+// ===== การ์ดดูงาน (เปิดงานเดิม → ดูก่อน แล้วกด "แก้ไข" ค่อยเข้าฟอร์ม) =====
+let cardItem=null;
+function openCard(t){
+if(!t)return;
+cardItem=t;
+const kind=kindOfItem(t)||(isTrain(t)?"train":isMeet(t)?"meet":"");
+const V=(label,val,wide)=>{
+const has=!(val===undefined||val===null||String(val).trim()==="");
+return `<div class="vf${wide?" w":""}"><span>${esc(label)}</span><b class="${has?"":"mut"}">${has?esc(String(val)):"—"}</b></div>`;};
+const R_=(label,val,wide)=>(val===undefined||val===null||String(val).trim()==="")?"":V(label,val,wide);
+const sec=(title,inner)=>inner.trim()?`<div class="vsec"><h4>${esc(title)}</h4><div class="vgrid">${inner}</div></div>`:"";
+const S=occState(t);
+el("vc-kind").textContent=(KINDLAB[kind]||"งาน")+(t.code?" · "+t.code:"");
+el("vc-title").textContent=t.title||"(ไม่มีชื่อ)";
+el("vc-pills").innerHTML=`<span class="pill ${S.cls}">${esc(S.label)}</span>`+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
+const main=V("บริษัท",t.company?cLabel(t.company):"")+V("กลุ่มงาน",t.track?gLabel(t.track):"")
++V("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
+const when=V("ผู้รับผิดชอบ",t.owner)+V(rr(t)?"เริ่ม / วันที่อ้างอิง":"วันที่",t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):"")
++(rr(t)?V("การเกิดซ้ำ",rruleText(t)):R_("รอบงาน",t.recurring))
++(rr(t)&&t.recurring?R_("หมายเหตุรอบงาน",t.recurring):"")
++R_("เดือนที่มีงาน",(t.months||[]).map(m=>MTH[m-1]).join(" "),true);
+const meet=isMeet(t)&&kind!=="proj"&&kind!=="act"?sec("ข้อมูลการประชุม",R_("เวลาเริ่ม",tShow(t.time))+R_("สถานที่ / ลิงก์",t.place)+R_("ผู้เข้าร่วม / ประธาน",t.attendees)
++R_("เตรียมข้อมูลล่วงหน้า",+t.prepDays?t.prepDays+" วัน":"")+R_("สิ่งที่ต้องเตรียม",t.prepNote,true)):"";
+const train=isTrain(t)&&kind!=="proj"&&kind!=="act"?sec("ข้อมูลการฝึกอบรม",
+R_("หลักสูตร",crsCodeOf(t))+R_("รุ่นที่",t.batch?(t.batch+(+t.batches>1?" / "+t.batches:"")):"")
++R_("ผู้เข้าอบรม",t.pax?t.pax+" คน":"")+R_("ชั่วโมงต่อคน",t.hours)+R_("วิทยากร / สถาบัน",t.vendor)+R_("สถานที่",t.place)
++R_("หมวดทักษะ",t.skill)+R_("รูปแบบ",t.mode)+R_("ยื่นกรมพัฒนาฝีมือแรงงาน",t.dsd)+R_("แบบที่ยื่น (ยป.)",t.yp)
++R_("วันที่ฝึกเสร็จสิ้น",t.dsdEnd?fmtDate(t.dsdEnd):"")+R_("วันที่ยื่นขอเปิด",t.dsdOpenDate?fmtDate(t.dsdOpenDate):"")+R_("เลขคำขอเปิด",t.dsdOpenNo)
++R_("วันที่ยื่นรับรองรุ่น",t.dsdCertDate?fmtDate(t.dsdCertDate):"")+R_("เลขคำขอรับรอง",t.dsdCertNo)):"";
+const chips=a=>chkList(a).length?`<div class="vf w"><span>${a===t.ms?"ขั้นตอนย่อย":"ของที่ต้องเตรียม"}</span><div class="vchips">${chkList(a).map(x=>`<em>${x.d?"✓ ":"○ "}${esc(x.t)}</em>`).join("")}</div></div>`:"";
+const pv=(t.prog!==undefined&&t.prog!==null&&t.prog!=="")?Math.max(0,Math.min(100,+t.prog||0)):null;
+const proj=kind==="proj"?sec("รายละเอียดโปรเจค",R_("วันเริ่ม",t.pstart?fmtDate(t.pstart):"")+R_("กำหนดเสร็จ",t.pend?fmtDate(t.pend):"")+R_("ทีมงาน",t.team)
++(pv!==null?`<div class="vf"><span>ความคืบหน้า</span><b>${pv}%</b><div class="vbar"><i style="width:${pv}%"></i></div></div>`:"")
++R_("เป้าหมาย",t.pgoal,true)+R_("อุปสรรค / ความเสี่ยง",t.prisk,true)+chips(t.ms)):"";
+const act=kind==="act"?sec("รายละเอียดกิจกรรม",R_("เวลา",(t.astart?tShow(t.astart):"")+(t.aend?" – "+tShow(t.aend):""))+R_("สถานที่",t.aplace)
++R_("ผู้เข้าร่วม (เป้า)",t.apax?t.apax+" คน":"")+R_("ผู้เข้าร่วม (จริง)",t.apaxreal?t.apaxreal+" คน":"")+R_("ผู้จัด / ผู้รับเหมา",t.aorg)+chips(t.aprep)):"";
+const glL=(g,b)=>g?`${glLabel(glKeyOf(g))}${+b?" · "+baht(b)+" ฿":""}`:"";
+const money=sec("งบประมาณ",R_("หมวด GL หลัก",glL(t.gl1,t.b1),true)+R_("หมวด GL รอง",glL(t.gl2,t.b2),true)
++R_("งบรวม",budgetOf(t)?baht(budgetOf(t))+" ฿":"")+R_("ใช้จริง",+t.actual?baht(t.actual)+" ฿":""));
+const k5=isTrain(t)?"train":isMeet(t)?"meet":"task", L5=W5LAB[k5];
+const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("Where · สถานที่ / ระบบ / ลิงก์",t.whr,true):"")+R_(L5[4],t.how,true));
+const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";
+const _o=rr(t)?S.d:null, _isoO=_o?isoOf(_o):"";
+const quick=`<div class="vsec vquick"><h4>เปลี่ยนสถานะได้เลย</h4>
+${rr(t)&&_o?`<button type="button" class="btn vq-big" data-vqocc="${_isoO}">${svg(ICON.check,17)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]} เสร็จแล้ว</button>`
+:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big" data-vqst="${STATUS_DONE}">${svg(ICON.check,17)} เสร็จแล้ว</button>`:"")}
+<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div>
+${rr(t)?`<div class="hint" style="margin:6px 0 0">งานซ้ำ: ปุ่มด้านบนปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มสถานะด้านล่างเปลี่ยนสถานะรวมของงาน</div>`:""}</div>`;
+el("vc-body").innerHTML=quick+sec("ข้อมูลหลัก",main)+sec("ใครทำ · ทำเมื่อไหร่",when)+meet+train+proj+act+money+w5+note;
+el("cardlg").showModal();
+}
+el("vc-close").onclick=()=>el("cardlg").close();
+el("vc-edit").onclick=()=>{const t=cardItem; el("cardlg").close(); if(t)setTimeout(()=>open_(t),60);};
+el("vc-del").onclick=async()=>{const t=cardItem; if(!t)return; el("cardlg").close();
+if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
+await softDel("items",t);};
+
+async function cardSave(patch){
+const t=cardItem; if(!t)return;
+const {_id,...rest}=t;
+try{ await saveItem({...rest,...patch},_id); }
+catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); return; }
+const f=items.find(x=>x._id===_id)||{...t,...patch,_id};
+el("cardlg").close(); openCard(f);
+}
+el("vc-body").onclick=e=>{
+const b=e.target.closest("button"); if(!b||!cardItem)return;
+if(b.dataset.vqst){ cardSave({status:b.dataset.vqst}); }
+else if(b.dataset.vqocc){ const done=[...(cardItem.done||[])]; if(!done.includes(b.dataset.vqocc))done.push(b.dataset.vqocc); cardSave({done}); }
+};
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");
