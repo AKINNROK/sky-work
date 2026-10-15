@@ -510,7 +510,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .tplgo:hover{box-shadow:inset 0 0 0 1.5px var(--accent-2)}.tplgo i{font-style:normal;font-size:12px;color:var(--ink-3)}
 .tpldel{border:0;background:var(--paper);border-radius:var(--r-sm);width:38px;cursor:pointer;color:var(--ink-3);font-size:18px}.tpldel:hover{color:var(--over)}
 
-/* v14.9.3 — ฟอร์มแบ่งหมวด / การ์ดดูงาน / แผงปฏิทิน */
+/* v14.9.5 — ฟอร์มแบ่งหมวด / การ์ดดูงาน / แผงปฏิทิน */
 .dlg-b{gap:16px}
 .f.fsec{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 16px 18px;border:1px solid var(--line-2);border-radius:20px;background:var(--card);align-content:start}
 .f.fsec1{display:flex;flex-direction:column;gap:12px}
@@ -532,25 +532,29 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .calpanel .li .pill{margin-left:56px!important;font-size:12.5px}
 .calpanel .li .okbtn{margin-left:auto}
 .calpanel h2{font-size:17px}
-.vcard-h{display:flex;gap:12px;align-items:flex-start;padding:20px 24px 14px;border-bottom:1px solid var(--line-2)}
-.vcard-h .vt{flex:1;min-width:0}
-.vcard-h .vt b{display:block;font-size:19px;line-height:1.3}
-.vcard-h .vk{font-size:12.5px;color:var(--ink-3);margin-bottom:4px}
-.vcard-b{padding:18px 24px;display:grid;gap:14px;max-height:66vh;overflow-y:auto}
-.vsec{border:1px solid var(--line-2);border-radius:18px;padding:14px 16px;background:var(--card)}
-.vsec h4{margin:0 0 10px;font-size:13.5px;border-left:4px solid var(--accent);padding-left:10px;line-height:1.2}
-.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px}
+.vcdlg{width:min(560px,94vw);padding:0;overflow:hidden;position:relative}
+.vcdlg .nvt.vct{font-size:20px;margin:8px 22px 4px;line-height:1.35}
+.vc-pills{padding:0 22px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vcard-b{padding:6px 22px 4px;display:grid;gap:0;max-height:54vh;overflow-y:auto}
+.vsec{padding:12px 0;border-top:1px solid var(--line-2)}
+.vsec:first-child{border-top:0}
+.vsec h4{margin:0 0 8px;font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.vsec h4:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
 .vgrid .vf{min-width:0}.vgrid .vf.w{grid-column:1/-1}
-.vf span{display:block;font-size:11.5px;color:var(--ink-3);margin-bottom:2px}
-.vf b{font-weight:600;font-size:14.5px;overflow-wrap:anywhere;white-space:pre-wrap}
+.vf span{display:block;font-size:11px;color:var(--ink-3);margin-bottom:1px}
+.vf b{font-weight:500;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
 .vf b.mut{color:var(--ink-3);font-weight:400}
-.vbar{height:8px;border-radius:99px;background:var(--line-2);overflow:hidden;margin-top:6px}.vbar i{display:block;height:100%;background:var(--accent)}
-.vchips{display:flex;flex-wrap:wrap;gap:6px}.vchips em{font-style:normal;font-size:12px;background:var(--paper);border-radius:99px;padding:3px 10px}
-@media(max-width:620px){.vgrid{grid-template-columns:1fr}.vcard-b{padding:14px}.vcard-h{padding:16px 16px 12px}}
-.vquick .vq-big{width:100%;justify-content:center;margin-bottom:10px}
-.vq-chips{display:flex;flex-wrap:wrap;gap:6px}
-.vq{border:0;border-radius:99px;padding:7px 14px;font-size:13px;background:var(--paper);color:var(--ink-2);cursor:pointer}
+.vbar{height:6px;border-radius:99px;background:var(--line-2);overflow:hidden;margin-top:5px}.vbar i{display:block;height:100%;background:var(--accent)}
+.vchips{display:flex;flex-wrap:wrap;gap:5px}.vchips em{font-style:normal;font-size:12px;background:var(--paper);border-radius:99px;padding:2px 10px}
+.vcdlg .dlg-f{padding:12px 22px 16px}
+.vquick{padding-top:8px}
+.vquick .vq-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.vq-big{display:inline-flex;align-items:center;gap:6px;padding:7px 14px!important;font-size:13px!important}
+.vq-chips{display:contents}
+.vq{border:0;border-radius:99px;padding:5px 11px;font-size:12px;background:var(--paper);color:var(--ink-2);cursor:pointer}
 .vq.on{background:var(--accent);color:#fff;font-weight:600}
+@media(max-width:560px){.vgrid{grid-template-columns:1fr}.vcard-b,.vc-pills,.vcdlg .nvh{padding-left:16px;padding-right:16px}.vcdlg .nvt.vct{margin-left:16px;margin-right:16px}}
 .glfix{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 </style>
 </head><body>
@@ -593,9 +597,12 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 </div>
 <div class="dlg-f"><button class="btn ghost" id="pickcancel">ยกเลิก</button></div>
 </form></dialog>
-<dialog id="cardlg"><div class="vcard-h"><div class="vt"><div class="vk" id="vc-kind"></div><b id="vc-title"></b><div id="vc-pills" style="margin-top:8px"></div></div></div>
+<dialog id="cardlg" class="vcdlg"><div class="nvbar" id="vc-bar"></div>
+<div class="nvh"><span class="tag" id="vc-kind"></span><span class="nvdate" id="vc-date"></span><span style="flex:1"></span>
+<button type="button" class="aipb" id="vc-edit" title="แก้ไข" aria-label="แก้ไข"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
+<h2 class="nvt vct" id="vc-title"></h2><div id="vc-pills" class="vc-pills"></div>
 <div class="vcard-b" id="vc-body"></div>
-<div class="dlg-f"><button type="button" class="btn danger" id="vc-del">ลบงานนี้</button><button type="button" class="btn ghost" id="vc-close">ปิด</button><button type="button" class="btn" id="vc-edit">✎ แก้ไข</button></div></dialog>
+<div class="dlg-f"><button type="button" class="btn ghost danger" id="vc-del">ลบ</button><span style="flex:1"></span><button type="button" class="btn ghost" id="vc-edit2" onclick="document.getElementById('vc-edit').click()">แก้ไข</button><button type="button" class="btn" id="vc-close">ปิด</button></div></dialog>
 <dialog id="dlg"><form method="dialog">
 <div class="dlg-h" id="dlgh">แก้ไขงาน</div>
 <div class="dlg-b">
@@ -914,4 +921,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.9.3"></script></body></html>
+<script src="app.js?v=14.9.5"></script></body></html>

@@ -179,12 +179,12 @@ el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>`<div class="li" da
 <div class="ic" style="background:${r.c||"var(--line-2)"};color:${r.ic||"var(--ink-2)"}">${r.d||"—"}</div>
 <div class="tx"><div class="t1">${esc(r.t1)}</div><div class="t2">${esc(r.t2||"")}</div></div>
 <span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span></div>`).join("")}</div>
-<div class="hint">แตะรายการเพื่อเปิดแก้ไข</div>`;
+<div class="hint">แตะรายการเพื่อเปิดดู</div>`;
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
 if(r.id){const t=items.find(x=>x._id===r.id); if(t)openCard(t);}
-else if(r.tx){const x=ledger.find(v=>v._id===r.tx); if(x)openTx(x);}
-else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegal(g);}
+else if(r.tx){const x=ledger.find(v=>v._id===r.tx); if(x)openTxCard(x);}
+else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegalCard(g);}
 });
 el("pdlg").showModal();
 }

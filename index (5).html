@@ -509,6 +509,53 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .tplgo{flex:1;text-align:left;background:var(--paper);border:0;border-radius:var(--r-sm);padding:10px 14px;cursor:pointer;color:var(--ink);display:flex;flex-direction:column;gap:2px}
 .tplgo:hover{box-shadow:inset 0 0 0 1.5px var(--accent-2)}.tplgo i{font-style:normal;font-size:12px;color:var(--ink-3)}
 .tpldel{border:0;background:var(--paper);border-radius:var(--r-sm);width:38px;cursor:pointer;color:var(--ink-3);font-size:18px}.tpldel:hover{color:var(--over)}
+
+/* v14.9.5 — ฟอร์มแบ่งหมวด / การ์ดดูงาน / แผงปฏิทิน */
+.dlg-b{gap:16px}
+.f.fsec{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 16px 18px;border:1px solid var(--line-2);border-radius:20px;background:var(--card);align-content:start}
+.f.fsec1{display:flex;flex-direction:column;gap:12px}
+.f.fsec[hidden]{display:none!important}
+.f.fsec>.f.wide,.f.fsec>.fsh{grid-column:1/-1}
+.fsh{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 10px;font-weight:700;font-size:15px;color:var(--ink);padding-left:12px;border-left:4px solid var(--accent);line-height:1.3}
+.fsh small{font-weight:400;font-size:12px;color:var(--ink-3)}
+@media(max-width:620px){.f.fsec{grid-template-columns:1fr;padding:14px}}
+.dash.calw{grid-template-columns:minmax(0,1.45fr) minmax(340px,1fr)}
+.dash.calw>.span3{grid-column:auto}
+@media(max-width:1000px){.dash.calw{grid-template-columns:1fr}}
+.calpanel{position:sticky;top:12px}
+.calpanel .list{display:flex;flex-direction:column;gap:8px}
+.calpanel .li{flex-wrap:wrap!important;align-items:flex-start;gap:8px 12px;padding:12px 14px;background:var(--paper);border-radius:16px}
+.calpanel .li .ic{width:44px;height:44px;border-radius:13px;font-size:12px}
+.calpanel .li .tx{flex:1 1 calc(100% - 60px)!important;min-width:0}
+.calpanel .li .t1{white-space:normal;font-size:15.5px;line-height:1.35}
+.calpanel .li .t2{white-space:normal;font-size:13px;line-height:1.5;margin-top:3px}
+.calpanel .li .pill{margin-left:56px!important;font-size:12.5px}
+.calpanel .li .okbtn{margin-left:auto}
+.calpanel h2{font-size:17px}
+.vcdlg{width:min(560px,94vw);padding:0;overflow:hidden;position:relative}
+.vcdlg .nvt.vct{font-size:20px;margin:8px 22px 4px;line-height:1.35}
+.vc-pills{padding:0 22px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.vcard-b{padding:6px 22px 4px;display:grid;gap:0;max-height:54vh;overflow-y:auto}
+.vsec{padding:12px 0;border-top:1px solid var(--line-2)}
+.vsec:first-child{border-top:0}
+.vsec h4{margin:0 0 8px;font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--ink-3);display:flex;align-items:center;gap:6px}
+.vsec h4:before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px}
+.vgrid .vf{min-width:0}.vgrid .vf.w{grid-column:1/-1}
+.vf span{display:block;font-size:11px;color:var(--ink-3);margin-bottom:1px}
+.vf b{font-weight:500;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
+.vf b.mut{color:var(--ink-3);font-weight:400}
+.vbar{height:6px;border-radius:99px;background:var(--line-2);overflow:hidden;margin-top:5px}.vbar i{display:block;height:100%;background:var(--accent)}
+.vchips{display:flex;flex-wrap:wrap;gap:5px}.vchips em{font-style:normal;font-size:12px;background:var(--paper);border-radius:99px;padding:2px 10px}
+.vcdlg .dlg-f{padding:12px 22px 16px}
+.vquick{padding-top:8px}
+.vquick .vq-row{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.vq-big{display:inline-flex;align-items:center;gap:6px;padding:7px 14px!important;font-size:13px!important}
+.vq-chips{display:contents}
+.vq{border:0;border-radius:99px;padding:5px 11px;font-size:12px;background:var(--paper);color:var(--ink-2);cursor:pointer}
+.vq.on{background:var(--accent);color:#fff;font-weight:600}
+@media(max-width:560px){.vgrid{grid-template-columns:1fr}.vcard-b,.vc-pills,.vcdlg .nvh{padding-left:16px;padding-right:16px}.vcdlg .nvt.vct{margin-left:16px;margin-right:16px}}
+.glfix{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 </style>
 </head><body>
 <div class="shell">
@@ -550,9 +597,17 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 </div>
 <div class="dlg-f"><button class="btn ghost" id="pickcancel">ยกเลิก</button></div>
 </form></dialog>
+<dialog id="cardlg" class="vcdlg"><div class="nvbar" id="vc-bar"></div>
+<div class="nvh"><span class="tag" id="vc-kind"></span><span class="nvdate" id="vc-date"></span><span style="flex:1"></span>
+<button type="button" class="aipb" id="vc-edit" title="แก้ไข" aria-label="แก้ไข"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
+<h2 class="nvt vct" id="vc-title"></h2><div id="vc-pills" class="vc-pills"></div>
+<div class="vcard-b" id="vc-body"></div>
+<div class="dlg-f"><button type="button" class="btn ghost danger" id="vc-del">ลบ</button><span style="flex:1"></span><button type="button" class="btn ghost" id="vc-edit2" onclick="document.getElementById('vc-edit').click()">แก้ไข</button><button type="button" class="btn" id="vc-close">ปิด</button></div></dialog>
 <dialog id="dlg"><form method="dialog">
 <div class="dlg-h" id="dlgh">แก้ไขงาน</div>
 <div class="dlg-b">
+<div class="f wide fsec">
+<div class="fsh">ข้อมูลหลัก <small>ชื่องาน · สังกัด · สถานะ</small></div>
 <div class="f wide" id="wrap-course" hidden><label for="f-course">หลักสูตรจากทะเบียน</label>
 <div style="display:flex;gap:8px;flex-wrap:wrap">
 <input id="f-crscode" placeholder="พิมพ์รหัส เช่น 001" style="max-width:170px;font-family:var(--mono)">
@@ -563,13 +618,16 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f"><label for="f-track">กลุ่มงาน</label><select id="f-track"></select></div>
 <div class="f"><label for="f-type">ประเภท</label><select id="f-type"></select></div>
 <div class="f"><label for="f-status" id="lbl-status">สถานะ</label><select id="f-status"></select></div>
-<div class="f wide" id="wrap-quad"><label>จัดลำดับงาน · Eisenhower Matrix <span style="font-weight:400;color:var(--ink-3)">— ดูจากความสำคัญ × ความเร่งด่วน</span></label>
-<div class="qgrid" id="f-quad">
-<button type="button" data-q="q1" class="q q1"><b>ทำเลย</b><i>สำคัญ · เร่งด่วน</i></button>
-<button type="button" data-q="q2" class="q q2"><b>วางแผน</b><i>สำคัญ · ไม่เร่งด่วน</i></button>
-<button type="button" data-q="q3" class="q q3"><b>มอบหมาย</b><i>ไม่สำคัญ · เร่งด่วน</i></button>
-<button type="button" data-q="q4" class="q q4"><b>ไว้ทีหลัง</b><i>ไม่สำคัญ · ไม่เร่งด่วน</i></button></div>
-<div class="hint" id="f-quadhint" style="margin-top:6px"></div></div>
+<div class="f"><label for="f-code" id="lbl-code">รหัสอ้างอิง (ไม่บังคับ)</label><input id="f-code" placeholder="เช่น 1.0 หรือเลขที่เอกสาร"></div>
+<div class="f"><label for="f-tag">ป้ายกำกับ</label><select id="f-tag"></select></div>
+<div class="swrow" id="f-colors" hidden></div>
+<div class="f wide" id="wrap-flags"><div class="flagrow">
+<label class="flag" for="f-meet"><input type="checkbox" id="f-meet"><span>งานนี้เป็นการประชุม</span></label>
+<label class="flag" for="f-train"><input type="checkbox" id="f-train"><span>งานนี้เป็นงานฝึกอบรม</span></label>
+</div></div>
+</div>
+<div class="f wide fsec">
+<div class="fsh">ใครทำ · ทำเมื่อไหร่ <small>ผู้รับผิดชอบ · กำหนดวัน · การเกิดซ้ำ</small></div>
 <div class="f"><label for="f-owner">ผู้รับผิดชอบ</label><input id="f-owner"></div>
 <div class="f"><label for="f-date">วันที่</label><input id="f-date" type="date">
 <div class="dlchips" id="f-dlchips" hidden><button type="button" data-dl="0">วันนี้</button><button type="button" data-dl="1">พรุ่งนี้</button><button type="button" data-dl="3">ใน 3 วัน</button><button type="button" data-dl="7">ใน 1 สัปดาห์</button><button type="button" data-dl="14">ใน 2 สัปดาห์</button><button type="button" data-dl="-1">สิ้นเดือน</button></div></div>
@@ -578,11 +636,24 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f wide" id="wrap-nth" hidden><label>สัปดาห์ที่</label><div class="months" id="f-nth"></div></div>
 <div class="f" id="wrap-md" hidden><label for="f-md">วันที่ของเดือน</label><input id="f-md" type="number" min="1" max="31" placeholder="เช่น 10"></div>
 <div class="f" id="wrap-recur"><label for="f-recur">หมายเหตุรอบงาน (เดิม)</label><input id="f-recur" placeholder="เว้นว่างได้"></div>
-<div class="f wide" id="wrap-flags"><div class="flagrow">
-<label class="flag" for="f-meet"><input type="checkbox" id="f-meet"><span>งานนี้เป็นการประชุม</span></label>
-<label class="flag" for="f-train"><input type="checkbox" id="f-train"><span>งานนี้เป็นงานฝึกอบรม</span></label>
-</div></div>
-<div class="f wide" id="wrap-meet" hidden>
+<div class="f wide"><label>เดือนที่มีงาน</label><div class="months" id="f-months"></div></div>
+<div class="f wide" id="wrap-occ" hidden><label>ปิดงานรายรอบ <span style="font-weight:400;color:var(--ink-3)">— ติ๊กเฉพาะรอบที่ทำเสร็จแล้ว รอบอื่นยังคงเตือนตามปกติ</span></label>
+<div class="addg" style="margin:6px 0 2px">
+<button type="button" class="btn ghost sm" id="occAll">ดูทุกรอบของปีนี้</button>
+<button type="button" class="btn ghost sm" id="occPast">ติ๊กรอบที่ผ่านมาทั้งหมด</button>
+<button type="button" class="btn ghost sm" id="occClear">ล้างเครื่องหมายทั้งหมด</button></div>
+<div class="occs" id="f-occs"></div></div>
+
+</div>
+<div class="f wide fsec fsec1" id="wrap-quad"><div class="fsh">ความสำคัญของงาน <small>Eisenhower Matrix · ดูจากความสำคัญ × ความเร่งด่วน</small></div>
+<div class="qgrid" id="f-quad">
+<button type="button" data-q="q1" class="q q1"><b>ทำเลย</b><i>สำคัญ · เร่งด่วน</i></button>
+<button type="button" data-q="q2" class="q q2"><b>วางแผน</b><i>สำคัญ · ไม่เร่งด่วน</i></button>
+<button type="button" data-q="q3" class="q q3"><b>มอบหมาย</b><i>ไม่สำคัญ · เร่งด่วน</i></button>
+<button type="button" data-q="q4" class="q q4"><b>ไว้ทีหลัง</b><i>ไม่สำคัญ · ไม่เร่งด่วน</i></button></div>
+<div class="hint" id="f-quadhint" style="margin-top:6px"></div></div>
+<div class="f wide fsec fsec1" id="wrap-meet" hidden>
+<div class="fsh">ข้อมูลการประชุม <small>เวลา · สถานที่ · ผู้เข้าร่วม · สิ่งที่ต้องเตรียม</small></div>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
 <div class="f"><label for="f-time">เวลาเริ่ม</label><input id="f-time" type="time"></div>
 <div class="f"><label for="f-place">สถานที่ / ลิงก์</label><input id="f-place" placeholder="ห้องประชุม 2 หรือ Zoom"></div>
@@ -590,8 +661,8 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f"><label for="f-prepd">เตรียมข้อมูลล่วงหน้า (วัน)</label><input id="f-prepd" type="number" min="0" max="60" step="1" placeholder="เช่น 3"></div>
 <div class="f wide" style="grid-column:1/-1"><label for="f-prepn">สิ่งที่ต้องเตรียม</label><input id="f-prepn" placeholder="เช่น สรุปอัตรากำลัง + ตัวเลข Turnover"></div>
 </div></div>
-
-<div class="f wide" id="wrap-train" hidden>
+<div class="f wide fsec fsec1" id="wrap-train" hidden>
+<div class="fsh">ข้อมูลการฝึกอบรม <small>ผู้เข้าอบรม · วิทยากร · ทะเบียนยื่นกรมพัฒนาฝีมือแรงงาน</small></div>
 <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px">
 <div class="f"><label for="f-pax">จำนวนผู้เข้าอบรม (คน)</label><input id="f-pax" type="number" min="0" step="1"></div>
 <div class="f"><label for="f-hours">ชั่วโมงอบรม (ต่อคน)</label><input id="f-hours" type="number" min="0" step="0.5"></div>
@@ -611,8 +682,8 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f"><label for="f-dsdcert">วันที่ยื่นรับรองรุ่น</label><input id="f-dsdcert" type="date"></div>
 <div class="f"><label for="f-dsdcertno">เลขคำขอรับรองรุ่น</label><input id="f-dsdcertno" placeholder="เช่น รง 0438/รง1-4367"></div>
 </div></div>
-<div class="f wide" id="wrap-proj" hidden>
-<label style="color:var(--accent);font-weight:600">รายละเอียดโปรเจค</label></div>
+<div class="f wide fsec" id="sec-proj" hidden>
+<div class="f wide" id="wrap-proj" hidden><div class="fsh">รายละเอียดโปรเจค <small>ช่วงเวลา · ทีม · ความคืบหน้า · ขั้นตอนย่อย</small></div></div>
 <div class="f" id="wrap-proj1" hidden><label for="f-pstart">วันเริ่มโปรเจค</label><input id="f-pstart" type="date"></div>
 <div class="f" id="wrap-proj2" hidden><label for="f-pend">กำหนดเสร็จ</label><input id="f-pend" type="date"></div>
 <div class="f" id="wrap-proj3" hidden><label for="f-powner">ทีมงาน / ผู้เกี่ยวข้อง</label><input id="f-powner" placeholder="เช่น HR, บัญชี, IT"></div>
@@ -623,8 +694,9 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f wide" id="wrap-ms" hidden><label>ขั้นตอนย่อย (Milestone) <span style="font-weight:400;color:var(--ink-3)">— ติ๊กแล้วความคืบหน้า % คิดให้อัตโนมัติ</span></label>
 <div class="chk" id="ms-list"></div>
 <div class="chkadd"><input id="ms-new" placeholder="เพิ่มขั้นตอน เช่น สำรวจความต้องการ"><button type="button" class="btn ghost sm" id="ms-add">เพิ่ม</button></div></div>
-<div class="f wide" id="wrap-act" hidden>
-<label style="color:var(--accent);font-weight:600">รายละเอียดกิจกรรม</label></div>
+</div>
+<div class="f wide fsec" id="sec-act" hidden>
+<div class="f wide" id="wrap-act" hidden><div class="fsh">รายละเอียดกิจกรรม <small>เวลา · สถานที่ · ผู้เข้าร่วม · ของที่ต้องเตรียม</small></div></div>
 <div class="f" id="wrap-act1" hidden><label for="f-astart">เวลาเริ่ม</label><input id="f-astart" type="time"></div>
 <div class="f" id="wrap-act2" hidden><label for="f-aend">เวลาเลิก</label><input id="f-aend" type="time"></div>
 <div class="f wide" id="wrap-act3" hidden><label for="f-aplace">สถานที่จัดงาน</label><input id="f-aplace" placeholder="เช่น ลานหน้าโรงงาน LKL หรือ โรงแรม…"></div>
@@ -635,14 +707,17 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="f wide" id="wrap-aprep" hidden><label>ของที่ต้องเตรียม</label>
 <div class="chk" id="ap-list"></div>
 <div class="chkadd"><input id="ap-new" placeholder="เพิ่มรายการ เช่น ป้ายไวนิล · ของชำร่วย"><button type="button" class="btn ghost sm" id="ap-add">เพิ่ม</button></div></div>
+</div>
+<div class="f wide fsec">
+<div class="fsh">งบประมาณ <small>หมวด GL · งบที่ตั้ง · ใช้จริง</small></div>
 <div class="f"><label for="f-gl1">หมวด GL หลัก</label><select id="f-gl1"></select></div>
 <div class="f"><label for="f-b1">งบ GL หลัก</label><input id="f-b1" type="number" step="1"></div>
 <div class="f"><label for="f-gl2">หมวด GL รอง</label><select id="f-gl2"></select></div>
 <div class="f"><label for="f-b2">งบ GL รอง</label><input id="f-b2" type="number" step="1"></div>
 <div class="f"><label for="f-actual">ใช้จริง</label><input id="f-actual" type="number" step="1"></div>
-<div class="f"><label for="f-code" id="lbl-code">รหัสอ้างอิง (ไม่บังคับ)</label><input id="f-code" placeholder="เช่น 1.0 หรือเลขที่เอกสาร"></div>
-<div class="f"><label for="f-tag">ป้ายกำกับ</label><select id="f-tag"></select></div>
-<div class="swrow" id="f-colors" hidden></div>
+</div>
+<div class="f wide fsec fsec1">
+<div class="fsh">รายละเอียดเพิ่มเติม <small>5W1H · หมายเหตุ</small></div>
 <details class="f wide foldbox" id="wrap-5w"><summary id="w5sum">5W1H · รายละเอียดงาน (ไม่บังคับ)</summary>
 <div class="w5grid">
 <div class="f wide"><label for="f-why" id="lbl-why">Why · ทำไมต้องทำ</label><input id="f-why"></div>
@@ -652,13 +727,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <div class="w5bar"><button type="button" class="btn ghost sm" id="w5ai">✨ ให้ AI ช่วยเติมช่องที่ว่าง</button><button type="button" class="btn ghost sm" id="tplsave" hidden>💾 บันทึกเป็นแม่แบบ</button><span class="hint" id="w5hint"></span></div>
 </div></details>
 <div class="f wide"><label for="f-note">รายละเอียด</label><textarea id="f-note"></textarea></div>
-<div class="f wide" id="wrap-occ" hidden><label>ปิดงานรายรอบ <span style="font-weight:400;color:var(--ink-3)">— ติ๊กเฉพาะรอบที่ทำเสร็จแล้ว รอบอื่นยังคงเตือนตามปกติ</span></label>
-<div class="addg" style="margin:6px 0 2px">
-<button type="button" class="btn ghost sm" id="occAll">ดูทุกรอบของปีนี้</button>
-<button type="button" class="btn ghost sm" id="occPast">ติ๊กรอบที่ผ่านมาทั้งหมด</button>
-<button type="button" class="btn ghost sm" id="occClear">ล้างเครื่องหมายทั้งหมด</button></div>
-<div class="occs" id="f-occs"></div></div>
-<div class="f wide"><label>เดือนที่มีงาน</label><div class="months" id="f-months"></div></div>
+</div>
 </div>
 <div class="dlg-f">
 <button type="button" class="btn ghost" id="back" hidden style="margin-right:auto">← ย้อนกลับ</button>
@@ -852,4 +921,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.9.2"></script></body></html>
+<script src="app.js?v=14.9.5"></script></body></html>

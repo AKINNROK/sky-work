@@ -452,7 +452,7 @@ const total=shown.reduce((n,s2)=>n+s2.list.length,0);
 const folded=s2=>!(q||fs2)&&IDXFOLD.has(s2.key);
 const row=x=>`<tr data-ix="${x._id}">
 <td><div style="font-weight:600">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1" class="lklink">${esc(x.title)}</a>`:esc(x.title)}</div>
-${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อใส่</div>`}
+${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อดู/ใส่</div>`}
 ${x.note?`<div class="t-note">${esc(x.note)}</div>`:""}${(x.iuse||x.iwho||x.iwhen)?`<div class="ixuse">${[x.iuse&&`<b>ใช้ทำ</b> ${esc(x.iuse)}`,x.iwho&&`<b>ใคร</b> ${esc(x.iwho)}`,x.iwhen&&`<b>เมื่อ</b> ${esc(x.iwhen)}`].filter(Boolean).join(" · ")}</div>`:""}</td>
 <td>${esc(x.owner||"—")}</td>
 <td><div class="t-note">${esc(x.detail||"—")}</div></td>

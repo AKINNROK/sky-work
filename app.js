@@ -1,4 +1,4 @@
-const APP_VERSION="14.9.3"; const APP_DATE="14 ต.ค. 2026";
+const APP_VERSION="14.9.5"; const APP_DATE="14 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -831,12 +831,12 @@ el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>`<div class="li" da
 <div class="ic" style="background:${r.c||"var(--line-2)"};color:${r.ic||"var(--ink-2)"}">${r.d||"—"}</div>
 <div class="tx"><div class="t1">${esc(r.t1)}</div><div class="t2">${esc(r.t2||"")}</div></div>
 <span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span></div>`).join("")}</div>
-<div class="hint">แตะรายการเพื่อเปิดแก้ไข</div>`;
+<div class="hint">แตะรายการเพื่อเปิดดู</div>`;
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
 if(r.id){const t=items.find(x=>x._id===r.id); if(t)openCard(t);}
-else if(r.tx){const x=ledger.find(v=>v._id===r.tx); if(x)openTx(x);}
-else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegal(g);}
+else if(r.tx){const x=ledger.find(v=>v._id===r.tx); if(x)openTxCard(x);}
+else if(r.lg){const g=legal.find(x=>x._id===r.lg); if(g)openLegalCard(g);}
 });
 el("pdlg").showModal();
 }
@@ -2291,7 +2291,7 @@ const total=shown.reduce((n,s2)=>n+s2.list.length,0);
 const folded=s2=>!(q||fs2)&&IDXFOLD.has(s2.key);
 const row=x=>`<tr data-ix="${x._id}">
 <td><div style="font-weight:600">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1" class="lklink">${esc(x.title)}</a>`:esc(x.title)}</div>
-${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อใส่</div>`}
+${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อดู/ใส่</div>`}
 ${x.note?`<div class="t-note">${esc(x.note)}</div>`:""}${(x.iuse||x.iwho||x.iwhen)?`<div class="ixuse">${[x.iuse&&`<b>ใช้ทำ</b> ${esc(x.iuse)}`,x.iwho&&`<b>ใคร</b> ${esc(x.iwho)}`,x.iwhen&&`<b>เมื่อ</b> ${esc(x.iwhen)}`].filter(Boolean).join(" · ")}</div>`:""}</td>
 <td>${esc(x.owner||"—")}</td>
 <td><div class="t-note">${esc(x.detail||"—")}</div></td>
@@ -2991,7 +2991,7 @@ document.querySelectorAll("[data-go]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();
 try{const d=JSON.parse(n.dataset.go);
  if(d.id){const t=items.find(x=>x._id===d.id); if(t){openCard(t);return;}}
- if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegal(L);return;}}
+ if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegalCard(L);return;}}
  goTo(d.v,{F:d.F,R:d.R});}catch(err){}};});
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();openListBox(n.dataset.list);};});
@@ -3027,7 +3027,7 @@ const t=items.find(v=>v._id===n.dataset.mx); if(t)openCard(t);});
 el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
-const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdx(x);});
+const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdxCard(x);});
 document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=e=>{
 const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
 if(e.target.closest("[data-ntedit]")){ openNote(x); return; }
@@ -3044,7 +3044,7 @@ const m=el("pq"); if(m){m.focus();m.setSelectionRange(p2,p2);}});
 el("nt-q")&&(el("nt-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.noteQ=v;render();
 const m=el("nt-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
 document.querySelectorAll("[data-lg]").forEach(n=>n.onclick=()=>{
-const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegal(L);});
+const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegalCard(L);});
 el("lg-comp")&&(el("lg-comp").onchange=e=>{R.legalComp=e.target.value;
 const inCo=legal.filter(L=>!R.legalComp||(L.comps||[]).includes(R.legalComp));
 if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
@@ -3053,7 +3053,7 @@ el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
 const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
-const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
+const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTxCard(t);});
 const sc=el("sc1");
 if(sc){sc.onclick=e=>{const b=e.target.closest("button[data-sc]");if(!b)return;R.scope=b.dataset.sc;render();};
 el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
@@ -4408,7 +4408,7 @@ render(); tell("<b>คัดลอกแล้ว "+ok+" รุ่น</b> ไป
 el("crs-rows")&&el("crsdlg").addEventListener("click",e=>{
 const n=e.target.closest("[data-crsitem]"); if(!n)return;
 const t=items.find(x=>x._id===n.dataset.crsitem); if(!t)return;
-el("crsdlg").close(); setTimeout(()=>open_(t),200);});
+el("crsdlg").close(); setTimeout(()=>openCard(t),200);});
 let editingGl=null, glDraft=null, glDraftCo="";
 function openGlPlan(key){
 const g=gls.find(x=>x.key===key); if(!g)return;
@@ -4602,21 +4602,33 @@ let gateMode="setup";
 
 // ===== การ์ดดูงาน (เปิดงานเดิม → ดูก่อน แล้วกด "แก้ไข" ค่อยเข้าฟอร์ม) =====
 let cardItem=null;
+// ตัวช่วยสร้างการ์ด (ใช้ร่วมกันทุกหน้า)
+const cV=(label,val,wide)=>{
+const has=!(val===undefined||val===null||String(val).trim()==="");
+return `<div class="vf${wide?" w":""}"><span>${esc(label)}</span><b class="${has?"":"mut"}">${has?esc(String(val)):"—"}</b></div>`;};
+const cR=(label,val,wide)=>(val===undefined||val===null||String(val).trim()==="")?"":cV(label,val,wide);
+const cH=(label,html,wide)=>`<div class="vf${wide?" w":""}"><span>${esc(label)}</span><b>${html}</b></div>`;
+const cS=(title,inner)=>inner.trim()?`<div class="vsec"><h4>${esc(title)}</h4><div class="vgrid">${inner}</div></div>`:"";
+let cardCtx=null;
+function cardShow(o){
+cardCtx=o;
+el("vc-kind").textContent=o.kind||""; el("vc-date").textContent=o.date||"";
+el("vc-bar").style.background=o.color||"var(--accent-2)";
+el("vc-title").textContent=o.title||"(ไม่มีชื่อ)";
+el("vc-pills").innerHTML=o.pills||""; el("vc-body").innerHTML=o.body||"";
+el("vc-del").style.display=o.del?"":"none";
+if(!el("cardlg").open)el("cardlg").showModal();
+}
 function openCard(t){
 if(!t)return;
 cardItem=t;
 const kind=kindOfItem(t)||(isTrain(t)?"train":isMeet(t)?"meet":"");
-const V=(label,val,wide)=>{
-const has=!(val===undefined||val===null||String(val).trim()==="");
-return `<div class="vf${wide?" w":""}"><span>${esc(label)}</span><b class="${has?"":"mut"}">${has?esc(String(val)):"—"}</b></div>`;};
-const R_=(label,val,wide)=>(val===undefined||val===null||String(val).trim()==="")?"":V(label,val,wide);
-const sec=(title,inner)=>inner.trim()?`<div class="vsec"><h4>${esc(title)}</h4><div class="vgrid">${inner}</div></div>`:"";
+const V=cV,R_=cR,sec=cS;
 const S=occState(t);
-el("vc-kind").textContent=(KINDLAB[kind]||"งาน")+(t.code?" · "+t.code:"");
-el("vc-title").textContent=t.title||"(ไม่มีชื่อ)";
-el("vc-pills").innerHTML=`<span class="pill ${S.cls}">${esc(S.label)}</span>`+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
-const main=V("บริษัท",t.company?cLabel(t.company):"")+V("กลุ่มงาน",t.track?gLabel(t.track):"")
-+V("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
+const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):""));
+const _pills=(rr(t)?`<span class="pill ${S.cls}">${esc(S.label)}</span>`:"")+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
+const main=R_("บริษัท",t.company?cLabel(t.company):"")+R_("กลุ่มงาน",t.track?gLabel(t.track):"")
++R_("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
 const when=V("ผู้รับผิดชอบ",t.owner)+V(rr(t)?"เริ่ม / วันที่อ้างอิง":"วันที่",t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):"")
 +(rr(t)?V("การเกิดซ้ำ",rruleText(t)):R_("รอบงาน",t.recurring))
 +(rr(t)&&t.recurring?R_("หมายเหตุรอบงาน",t.recurring):"")
@@ -4643,33 +4655,72 @@ const k5=isTrain(t)?"train":isMeet(t)?"meet":"task", L5=W5LAB[k5];
 const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("Where · สถานที่ / ระบบ / ลิงก์",t.whr,true):"")+R_(L5[4],t.how,true));
 const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";
 const _o=rr(t)?S.d:null, _isoO=_o?isoOf(_o):"";
-const quick=`<div class="vsec vquick"><h4>เปลี่ยนสถานะได้เลย</h4>
-${rr(t)&&_o?`<button type="button" class="btn vq-big" data-vqocc="${_isoO}">${svg(ICON.check,17)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]} เสร็จแล้ว</button>`
-:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big" data-vqst="${STATUS_DONE}">${svg(ICON.check,17)} เสร็จแล้ว</button>`:"")}
-<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div>
-${rr(t)?`<div class="hint" style="margin:6px 0 0">งานซ้ำ: ปุ่มด้านบนปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มสถานะด้านล่างเปลี่ยนสถานะรวมของงาน</div>`:""}</div>`;
-el("vc-body").innerHTML=quick+sec("ข้อมูลหลัก",main)+sec("ใครทำ · ทำเมื่อไหร่",when)+meet+train+proj+act+money+w5+note;
-el("cardlg").showModal();
+const quick=`<div class="vsec vquick"><h4>สถานะ</h4><div class="vq-row">
+${rr(t)&&_o?`<button type="button" class="btn vq-big" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`
+:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
+<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
+${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">ปุ่มดำ = ปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มเล็ก = สถานะรวมของงาน</div>`:""}</div>`;
+cardShow({kind:_kind,date:_date,title:t.title,color:itemColor(t),pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
+edit:()=>open_(t),del:async()=>{
+if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
+await softDel("items",t);}});
 }
 el("vc-close").onclick=()=>el("cardlg").close();
-el("vc-edit").onclick=()=>{const t=cardItem; el("cardlg").close(); if(t)setTimeout(()=>open_(t),60);};
-el("vc-del").onclick=async()=>{const t=cardItem; if(!t)return; el("cardlg").close();
-if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
-await softDel("items",t);};
-
+el("vc-edit").onclick=()=>{const k=cardCtx; el("cardlg").close(); if(k&&k.edit)setTimeout(k.edit,60);};
+el("vc-del").onclick=()=>{const k=cardCtx; el("cardlg").close(); if(k&&k.del)k.del();};
 async function cardSave(patch){
 const t=cardItem; if(!t)return;
 const {_id,...rest}=t;
 try{ await saveItem({...rest,...patch},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); return; }
 const f=items.find(x=>x._id===_id)||{...t,...patch,_id};
-el("cardlg").close(); openCard(f);
+openCard(f);
 }
 el("vc-body").onclick=e=>{
 const b=e.target.closest("button"); if(!b||!cardItem)return;
 if(b.dataset.vqst){ cardSave({status:b.dataset.vqst}); }
 else if(b.dataset.vqocc){ const done=[...(cardItem.done||[])]; if(!done.includes(b.dataset.vqocc))done.push(b.dataset.vqocc); cardSave({done}); }
 };
+
+// ===== การ์ดดู: Index / กฎหมาย / รายการเงิน =====
+function openIdxCard(x){
+if(!x)return;
+const st=x.status||"ใช้งานอยู่";
+const pc=st==="ใช้งานอยู่"?"s-done":st==="กำลังพัฒนา"?"s-run":"s-cancel";
+const link=x.url?cH("ลิงก์",`<a href="${esc(x.url)}" target="_blank" rel="noopener" class="lklink">${esc(x.url.replace(/^https?:\/\//,"").slice(0,60))}</a>`,true):cV("ลิงก์","",true);
+cardShow({kind:"Index Online",date:(x.group||"").trim()||"ไม่ระบุหมวด",title:x.title,
+color:st==="ใช้งานอยู่"?"var(--ok)":st==="กำลังพัฒนา"?"var(--run)":"var(--line)",
+pills:`<span class="pill ${pc}">${esc(st)}</span>`,
+body:cS("ข้อมูลหลัก",link+cR("ผู้ดูแล",x.owner)+cR("หมายเหตุ",x.note))
++cS("ใช้ทำอะไร",cR("ใช้ทำอะไร (What / Why)",x.iuse,true)+cR("ใครใช้",x.iwho)+cR("ใช้เมื่อไหร่",x.iwhen)+cR("ขั้นตอนใช้งาน (How)",x.detail,true)),
+edit:()=>openIdx(x),
+del:async()=>{ if(!await ask("ลบ “"+esc(x.title)+"” ใช่ไหมคะ?","ลบรายการ"))return; await softDel("index",x);}});
+}
+function openLegalCard(L){
+if(!L)return;
+const S=legalState(L), d=legalDue(L);
+const cyc=(CYCLES.find(v=>v[0]===String(L.cycle||""))||["",""])[1];
+const yr=v=>fmtDate(v)+" "+(new Date(v).getFullYear()+543);
+const comps=(L.comps||[]).length?cH("บริษัทที่ต้องมี",`<div class="vchips">${L.comps.map(k=>`<em>${esc(cLabel(k))}</em>`).join("")}</div>`,true):"";
+cardShow({kind:"กฎหมาย & ใบรับรอง",date:L.lifetime?"ไม่มีวันหมดอายุ":(d?"ครบกำหนด "+yr(d):""),title:L.title,
+color:S.c==="s-over"?"var(--over)":S.c==="s-run"?"var(--run)":S.c==="s-done"?"var(--ok)":"var(--wait)",
+pills:`<span class="pill ${S.c}">${esc(S.t)}</span>`+(L.cat?` <span class="tag">${esc(L.cat)}</span>`:""),
+body:cS("ผู้รับผิดชอบ",cV("ผู้รับผิดชอบปัจจุบัน",L.person)+cR("ตำแหน่ง / หน่วยงาน",L.unit)+comps)
++cS("วันที่",cR("วันที่ออก / แต่งตั้ง",L.issued?yr(L.issued):"")+cR("ครบกำหนด",L.lifetime?"ไม่มีกำหนด":(d?yr(d):""))+cR("รอบทบทวน / ต่ออายุ",cyc&&String(L.cycle)?cyc:""))
++cS("เงื่อนไขตามกฎหมาย",cR("เงื่อนไข / หมายเหตุ",L.note,true)),
+edit:()=>openLegal(L),
+del:async()=>{ if(!await ask("ลบรายการ “"+esc(L.title)+"” ใช่ไหมคะ?","ลบรายการ"))return; await softDel("legal",L);}});
+}
+function openTxCard(x){
+if(!x)return;
+const inc=x.kind==="income", t=x.taskId?items.find(v=>v._id===x.taskId):null;
+cardShow({kind:inc?"รายรับ":"รายจ่าย",date:x.date?fmtDate(x.date)+" "+(new Date(x.date).getFullYear()+543):"",
+title:(inc?"+ ":"− ")+baht(x.amount)+" ฿",color:inc?"var(--ok)":"var(--run)",
+pills:x.company?`<span class="tag">${esc(cLabel(x.company))}</span>`:"",
+body:cS("รายละเอียด",cR("หมวด GL",x.gl?glLabel(x.gl):"",true)+cR("บริษัท",x.company?cLabel(x.company):"")+cR("งานที่ผูกไว้",t?t.title:"")+cR("หมายเหตุ",x.note,true)),
+edit:()=>openTx(x),
+del:async()=>{ if(!await ask("ลบรายการเงินนี้ใช่ไหมคะ?","ลบรายการ"))return; await softDel("ledger",x);}});
+}
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

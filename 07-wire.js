@@ -11,7 +11,7 @@ document.querySelectorAll("[data-go]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();
 try{const d=JSON.parse(n.dataset.go);
  if(d.id){const t=items.find(x=>x._id===d.id); if(t){openCard(t);return;}}
- if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegal(L);return;}}
+ if(d.lg){const L=legal.find(x=>x._id===d.lg); if(L){openLegalCard(L);return;}}
  goTo(d.v,{F:d.F,R:d.R});}catch(err){}};});
 document.querySelectorAll("[data-list]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();openListBox(n.dataset.list);};});
@@ -47,7 +47,7 @@ const t=items.find(v=>v._id===n.dataset.mx); if(t)openCard(t);});
 el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
-const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdx(x);});
+const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdxCard(x);});
 document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=e=>{
 const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
 if(e.target.closest("[data-ntedit]")){ openNote(x); return; }
@@ -64,7 +64,7 @@ const m=el("pq"); if(m){m.focus();m.setSelectionRange(p2,p2);}});
 el("nt-q")&&(el("nt-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.noteQ=v;render();
 const m=el("nt-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
 document.querySelectorAll("[data-lg]").forEach(n=>n.onclick=()=>{
-const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegal(L);});
+const L=legal.find(x=>x._id===n.dataset.lg); if(L)openLegalCard(L);});
 el("lg-comp")&&(el("lg-comp").onchange=e=>{R.legalComp=e.target.value;
 const inCo=legal.filter(L=>!R.legalComp||(L.comps||[]).includes(R.legalComp));
 if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
@@ -73,7 +73,7 @@ el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
 const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
-const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTx(t);});
+const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTxCard(t);});
 const sc=el("sc1");
 if(sc){sc.onclick=e=>{const b=e.target.closest("button[data-sc]");if(!b)return;R.scope=b.dataset.sc;render();};
 el("scMonth")&&(el("scMonth").onchange=e=>{R.month=+e.target.value;render();});}
