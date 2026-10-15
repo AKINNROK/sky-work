@@ -3,7 +3,7 @@ const mi=matrixItems().filter(inScope), q1=mi.filter(t=>quadOf(t)==="q1").sort((
 const cn=k=>mi.filter(t=>quadOf(t)===k).length;
 const late=q1.filter(t=>mxDl(t).n<0).length;
 return `<div class="card span4 mxhome"><h2><span>ทำเลยวันนี้ <small>ช่อง 1 · สำคัญ + เร่งด่วน</small></span>
-<span class="mxchips">${QUADS.map((x,i)=>`<i class="mc${i+1}" title="${esc(x[1])}">${i+1} · ${cn(x[0])}</i>`).join("")}${un?`<i class="mc0" title="ยังไม่จัดลำดับ">? · ${un}</i>`:""}</span></h2>
+<span class="mxchips">${QUADS.map((x,i)=>`<i class="mc${i+1}"${tipAttr(i+1+". "+x[1]+" · "+x[2]+" — "+cn(x[0])+" งาน",tipList(mi.filter(t=>quadOf(t)===x[0]),t=>t.title,5))}>${i+1} · ${cn(x[0])}</i>`).join("")}${un?`<i class="mc0"${tipAttr("ยังไม่จัดลำดับ — "+un+" งาน",tipList(mi.filter(t=>!quadOf(t)),t=>t.title,5),"ไปจัดที่หน้า Matrix งาน")}>? · ${un}</i>`:""}</span></h2>
 ${q1.length?`<div class="mxlist" style="max-height:none">${q1.slice(0,5).map(t=>{const dl=mxDl(t);return `<div class="mxc" data-id="${t._id}"><div class="t1">${esc(t.title)}</div>
 <div class="t2"><span class="${dl.cls}">${esc(dl.txt)}</span>${t.owner?`<span>· ${esc(t.owner)}</span>`:""}</div></div>`;}).join("")}</div>
 <div class="sub" style="margin-top:8px">${q1.length>5?`และอีก ${q1.length-5} งาน · `:""}${late?`เลย Deadline แล้ว ${late} งาน · `:""}<a class="lklink" ${jump("matrix")} style="cursor:pointer">เปิด Matrix งาน →</a></div>`
@@ -22,6 +22,9 @@ const up=items.filter(t=>t.date&&new Date(t.date)>=new Date(now.toDateString())&
 .sort((a,b)=>a.date<b.date?-1:1).slice(0,6);
 const pct=A.length?Math.round(done/A.length*100):0;
 const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
+const byMonthTip=MTH.map((_,i)=>tipList(items.filter(t=>monthsOf(t).includes(i+1)),t=>t.title+(t.status?" · "+t.status:"")));
+const stParts=[{n:"เสร็จสิ้น",v:done,c:"var(--ok)",tip:tipList(A.filter(t=>t.status==="เสร็จสิ้น"))},{n:"กำลังดำเนินการ",v:run,c:"var(--run)",tip:tipList(A.filter(t=>t.status==="กำลังดำเนินการ"))},{n:"รอดำเนินการ",v:wait,c:"var(--wait)",tip:tipList(A.filter(t=>t.status==="รอดำเนินการ"))}];
+const stCancel={n:"ยกเลิก",v:cancelled,c:"var(--ink-3)",tip:tipList(scoped.filter(t=>t.status===STATUS_CANCEL))};
 return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+bkBanner()+
 (()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
@@ -50,13 +53,13 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 budBanner(THISYEAR)+
 `<div class="dash">
 ${homeQ1()}
-<div class="card hero span2"><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
+<div class="card hero span2"${tipAttr("ความคืบหน้า · "+scopeLabel()+" · "+pct+"%","เสร็จสิ้น|"+done+" งาน","กำลังดำเนินการ|"+run+" งาน","รอดำเนินการ|"+wait+" งาน",cancelled?"ยกเลิก|"+cancelled+" งาน (ไม่นับ)":"","คิดจาก งานเสร็จ ÷ งานทั้งหมด ไม่รวมงานที่ยกเลิกและไอเดีย")}><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
 <div class="big">${pct}%</div>
 <div class="meta"><span>เสร็จแล้ว ${done} งาน</span><span>เหลืออีก ${A.length-done} งาน</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
+<div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}${tipAttr("กำลังดำเนินการ · "+run+" งาน",tipList(A.filter(t=>t.status==="กำลังดำเนินการ"),t=>t.title+(t.owner?" · "+t.owner:"")),wait?"รอเริ่มอีก "+wait+" งาน":"")}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
 <div class="v">${run}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
-<div class="card stat" ${jump("budget")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
+<div class="card stat" ${jump("budget")}${tipAttr("งบคงเหลือ · "+scopeLabel(),"งบที่ตั้งไว้|"+baht(bud)+" ฿","ใช้จริง|"+baht(act)+" ฿","คงเหลือ|"+(bud-act<0?"เกิน ":"")+baht(Math.abs(bud-act))+" ฿","ใช้ไป|"+(bud?Math.round(act/bud*100):0)+"%",over.length?"มี "+over.length+" งานใช้เกินงบของงานนั้น":"","(รวมงบ GL หลัก+รอง ของงานในช่วงที่เลือก)")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
 <div class="v">${baht(bud-act)}</div><div class="d">ใช้ไป ${baht(act)} จาก ${baht(bud)}</div>
 <div class="bar"><i class="${act>bud?"hot":""}" style="width:${bud?Math.min(100,act/bud*100):0}%"></i></div></div>
 <div class="card span4"><h2>สรุปทุกหมวด <small>แตะการ์ดเพื่อไปดูที่มาของตัวเลข · ${scopeLabel()}</small></h2>
@@ -70,7 +73,7 @@ const lgLate=legal.filter(L=>legalState(L).k==="late").length;
 const lgSoon=legal.filter(L=>legalState(L).k==="soon").length;
 const lgNo=legal.filter(L=>legalState(L).k==="noperson").length;
 const need=dsdList(R.year).map(c=>dsdCalc(dsdRec(c.key,R.year)).need).reduce((a,b)=>a+b,0);
-const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go}>
+const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go}${tipAttr(name+" · "+String(big).replace(/<[^>]+>/g,""),String(sub).replace(/<[^>]+>/g,""),"แตะเพื่อเปิดหน้านี้")}>
 <div class="modh"><span class="ic">${svg(icon,16)}</span>${name}</div>
 <div class="modv">${big}</div><div class="mods">${sub}</div></div>`;
 return [
@@ -89,14 +92,15 @@ card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใ�
 </div></div>
 <div class="card span2"><h2>สัดส่วนสถานะงาน <small>${scopeLabel()} · ${A.length} งาน</small></h2>
 <div class="donutwrap">
-${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
+${donut(stParts,A.length,"งานทั้งหมด")}
 <div class="dlist">
-<div ${jump("all",{F:{status:"เสร็จสิ้น"}})}><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
-<div ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
-<div ${jump("all",{F:{status:"รอดำเนินการ"}})}><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div>
-${cancelled?`<div ${jump("all",{F:{status:"ยกเลิก"}})}><i style="background:var(--ink-3)"></i>ยกเลิก<b>${cancelled}</b></div>`:""}</div></div></div>
+<div ${jump("all",{F:{status:"เสร็จสิ้น"}})}${donutTip(stParts,stParts[0])}><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
+<div ${jump("all",{F:{status:"กำลังดำเนินการ"}})}${donutTip(stParts,stParts[1])}><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
+<div ${jump("all",{F:{status:"รอดำเนินการ"}})}${donutTip(stParts,stParts[2])}><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div>
+${cancelled?`<div ${jump("all",{F:{status:"ยกเลิก"}})}${tipAttr("ยกเลิก · "+cancelled+" งาน (ไม่นับในโดนัท)",stCancel.tip)}><i style="background:var(--ink-3)"></i>ยกเลิก<b>${cancelled}</b></div>`:""}</div></div></div>
 <div class="card span2"><h2>จำนวนงานรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
-${bars(byMonth,MTH,v=>v||"",now.getMonth())}</div>
+${bars(byMonth,MTH,v=>v||"",now.getMonth(),byMonthTip,"งาน","งานทั้งปี")}
+<div class="hint" style="margin:6px 0 0">เลื่อนเมาส์/แตะที่แท่งเพื่อดูว่ามีงานอะไรบ้าง · งานประจำที่เกิดหลายเดือนนับซ้ำทุกเดือนที่มี</div></div>
 <div class="card span2"><h2>งานใน${scopeLabel()} <small>${scoped.filter(t=>isOpenStatus(t.status)).length} รายการที่ยังไม่ปิด</small></h2>
 <div class="list">${scoped.filter(t=>isOpenStatus(t.status)).slice(0,6).map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานค้างในช่วงนี้ 🎉</div>`}</div></div>
 <div class="card span2"><h2>กำหนดการถัดไป <small>เรียงตามวันที่</small></h2>
@@ -217,10 +221,11 @@ for(let d=1;d<=days;d++){
 const ts=tasksOnDay(y,m,d);
 const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
 const sel=R.selDay===d;
-cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}">
+const dayTip=tipAttr(d+" "+MTHFULL[m]+" "+(y+543)+(ts.length?" · "+ts.length+" งาน":" · ไม่มีงาน"),ts.length?["เสร็จสิ้น|"+ts.filter(t=>t.status===STATUS_DONE).length,"กำลังดำเนินการ|"+ts.filter(t=>t.status==="กำลังดำเนินการ").length,"รอดำเนินการ|"+ts.filter(t=>t.status==="รอดำเนินการ").length]:"",tipList(ts,t=>t.title+" · "+(rr(t)&&occDone(t,new Date(y,m,d))?"ปิดรอบแล้ว":t.status),6));
+cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}"${dayTip}>
 <span class="dn">${d}</span>
-<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,rr(t)?(occDone(t,dt)?"var(--ok)":itemColor(t)):itemColor(t));
-return `<i style="background:${cl}" title="${esc(t.title)}${rr(t)&&occDone(t,dt)?" · ปิดรอบแล้ว":""}"></i>`;}).join("")}</span>
+<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,calColor()==="group"?gTagColor(t.track):(rr(t)?(occDone(t,dt)?"var(--ok)":(occState(t).cls==="s-over"?"var(--over)":itemColor(t))):itemColor(t)));
+return `<i style="background:${cl}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
@@ -229,7 +234,8 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <div class="seg" id="calmode">
 <button data-cm="month" aria-pressed="${R.calMode==="month"}">รายเดือน</button>
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
-<div class="seg" id="calcol" title="สีจุดในปฏิทิน"><button data-cc="" aria-pressed="${calColor()!=="matrix"}">สีตามกลุ่มงาน</button>
+<div class="seg" id="calcol" title="สีจุดในปฏิทิน"><button data-cc="" aria-pressed="${calColor()===""}">สีตามสถานะ</button>
+<button data-cc="group" aria-pressed="${calColor()==="group"}">สีตามกลุ่มงาน</button>
 <button data-cc="matrix" aria-pressed="${calColor()==="matrix"}">สีตาม Matrix</button></div>
 ${R.calMode==="year"?yearSel("yrSel2"):""}
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
@@ -242,6 +248,8 @@ ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <div class="mcal">${DOW.map(d=>`<div class="dh">${d}</div>`).join("")}${cells.join("")}</div>
 ${calColor()==="matrix"
 ?`<div class="legend" style="margin-top:14px">${QUADS.map((x,i)=>`<span><i style="background:${QCOL[x[0]]}"></i>${i+1} ${x[1]}</span>`).join("")}<span><i style="background:var(--line)"></i>ยังไม่จัดลำดับ</span></div>`
+:calColor()==="group"
+?`<div class="legend" style="margin-top:14px">${visible(groups).map(g=>`<span><i style="background:${gTagColor(g.key)}"></i>${esc(g.label)}</span>`).join("")}</div>`
 :`<div class="legend" style="margin-top:14px">
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
@@ -284,7 +292,8 @@ const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,
 // แถวสรุปจำนวนงานรายเดือน (ทุกหมวดรวมกัน) ใต้หัวตาราง
 const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
 MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
-return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
+const L=list.filter(t=>monthsOf(t).includes(i+1));
+return `<div class="msum${i+1===now?" now":""}"${tipAttr(MTHFULL[i]+" · "+n+" งาน",n?["เสร็จสิ้น|"+L.filter(t=>t.status===STATUS_DONE).length,"กำลังดำเนินการ|"+L.filter(t=>t.status==="กำลังดำเนินการ").length,"รอดำเนินการ|"+L.filter(t=>t.status==="รอดำเนินการ").length,tipList(L,t=>t.title+" · "+t.status,8)]:"ไม่มีงาน")}>${n||"—"}</div>`;}).join("");
 // แยกตามกลุ่มงาน: แสดงทุกกลุ่มที่ตั้งไว้ (รวมกลุ่มที่ยังไม่มีงาน) + กองงานที่ไม่มีกลุ่ม/กลุ่มถูกลบ
 const orphan=list.filter(t=>!t.track||!groups.some(g=>g.key===t.track));
 const buckets=[...groups.map(x=>[x.label,x.key,x.hidden]),...(orphan.length?[["ยังไม่ระบุกลุ่มงาน","__none__",false]]:[])];
@@ -292,12 +301,12 @@ const rows=buckets.map(([name,key,hid])=>{
 const g=(key==="__none__")?orphan:list.filter(t=>t.track===key);
 
 return `<div class="cgroup${g.length?"":" zero"}"><span class="tagdot" style="background:${gTagColor(key)};width:10px;height:10px;display:inline-block;margin-right:6px"></span>${esc(name)}${hid?' <small style="color:var(--ink-3)">· ซ่อนอยู่</small>':""} <span>${g.length?g.length:"ยังไม่มีงาน"}</span></div>`+
-MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
+MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}"${(()=>{const L=g.filter(t=>monthsOf(t).includes(i+1));return L.length?tipAttr(name+" · "+MTHFULL[i]+" · "+L.length+" งาน",tipList(L,t=>t.title+" · "+t.status,8)):"";})()}>${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
 MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
 ?(()=>{const S=monthState(t,R.year,i);
-return `<span class="mark" title="${esc(gLabel(t.track)+" · "+S.n)}">
-<i class="mdot" style="background:${S.c}"></i><i class="mbar" style="background:${dotCol(t,itemColor(t))}"></i></span>`;})():""}</div>`).join("");}).join("");
+return `<span class="mark"${tipAttr(t.title,"กลุ่มงาน|"+gLabel(t.track),MTHFULL[i]+"|"+S.n,"สถานะงาน|"+t.status,t.owner?"ผู้รับผิดชอบ|"+t.owner:"")}>
+<i class="mdot" style="background:${S.c}"></i><i class="mbar" style="background:${dotCol(t,gTagColor(t.track))}"></i></span>`;})():""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
@@ -306,9 +315,9 @@ return `<div class="card">
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
 <span style="margin-left:auto;color:var(--ink-3)">แยกตามกลุ่มงาน · ${groups.length} กลุ่ม · ${list.length} งานในปี ${R.year+543}</span></div>
-${(()=>{const gs=groups.filter(g=>g.color);
+${(()=>{const gs=visible(groups);
 return gs.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">
-<span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
+<span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${gTagColor(g.key)}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
 ${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
 return tg.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">${tg.map(n=>`<span><i style="background:${tagColor(n)||"var(--ink-3)"}"></i>${esc(n)}</span>`).join("")}</div>`:"";})()}
 <div class="cal"><div class="calgrid">${head}${totRow}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>
@@ -394,6 +403,9 @@ const monthsInc=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind==="income"&&new D
 const monthsExp=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind!=="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===y).reduce((s,x)=>s+(+x.amount||0),0));
 const planM=MTH.map((_,i)=>Object.values(flow).reduce((s,r)=>s+r.eff[i],0));
 const actM=MTH.map((_,i)=>Object.values(flow).reduce((s,r)=>s+r.act[i],0));
+const txOfMonth=(i,kind)=>ledger.filter(x=>x.date&&(kind==="income"?x.kind==="income":x.kind!=="income")&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===y).sort((a,b)=>(+b.amount||0)-(+a.amount||0));
+const incTip=i=>{const a=txOfMonth(i,"income"),b=txOfMonth(i,"exp"); return [a.length?"รายรับ "+a.length+" รายการ":"ไม่มีรายรับ",...tipList(a,x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",5),b.length?"รายจ่าย "+b.length+" รายการ":"ไม่มีรายจ่าย",...tipList(b,x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",5),"(เฉพาะที่บันทึกในปุ่ม “บันทึกเงิน”)"];};
+const planTip=i=>{const rs=Object.values(flow).filter(r=>r.eff[i]||r.act[i]).sort((a,b)=>(b.eff[i]-a.eff[i])||(b.act[i]-a.act[i])); return [rs.length?rs.length+" หมวด GL ในเดือนนี้ (เรียงตามแผน)":"ไม่มีหมวด GL ที่มีแผน/ใช้จริงเดือนนี้",...tipList(rs,r=>(r.k?glLabel(r.k):"ยังไม่ระบุหมวด GL")+" — แผน "+baht(r.eff[i])+" / ใช้ "+baht(r.act[i]),7),"ผลต่าง = แผน − ใช้จริง (บวก=ยังเหลือ, ลบ=เกินแผน)"];};
 const rawPct=B?Math.round(A/B*100):0, pct=Math.min(100,rawPct);
 const heroTag=!B?"":rawPct>=100?`<span class="bchip over onhero">เกินงบแล้ว</span>`:rawPct>=BUD_WARN?`<span class="bchip warn onhero">ใกล้เต็ม</span>`:"";
 const recent=tx.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,10);
@@ -407,20 +419,20 @@ ${scope==="month"?`<select id="budMonth" style="border:0;background:var(--card);
 </div></div>
 ${budBanner(y)}
 <div class="dash">
-<div class="card hero span2"><div class="lab">ใช้ไปแล้วจาก${scope==="month"?"งบเดือน"+MTHFULL[m]+" "+(y+543):"งบทั้งปี "+(y+543)} ${heroTag}</div>
+<div class="card hero span2"${tipAttr("ใช้ไปแล้ว "+rawPct+"% ของงบ","งบตั้งไว้|"+baht(B)+" ฿","ใช้จริง|"+baht(A)+" ฿",(B-A>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(B-A))+" ฿",cut>=0&&ytdB?"สะสมถึง "+MTHFULL[cut]+"|ใช้ "+baht(ytdA)+" จากแผน "+baht(ytdB):"","จำนวนหมวด GL ที่มีงบ|"+keys.length)}><div class="lab">ใช้ไปแล้วจาก${scope==="month"?"งบเดือน"+MTHFULL[m]+" "+(y+543):"งบทั้งปี "+(y+543)} ${heroTag}</div>
 <div class="big">${rawPct}%</div>
 <div class="meta"><span>ใช้จริง ${baht(A)} ฿</span><span>งบตั้งไว้ ${baht(B)} ฿</span><span>${B-A>=0?"คงเหลือ "+baht(B-A):"เกินงบ "+baht(A-B)} ฿</span></div>
 ${cut>=0&&ytdB?`<div class="meta" style="margin-top:4px"><span>สะสมถึง ${MTHFULL[cut]}: แผน ${baht(ytdB)} · ใช้ ${baht(ytdA)} ฿ (${Math.round(ytdA/ytdB*100)}% ของแผนสะสม)</span></div>`:""}
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic" style="background:var(--ok-soft);color:var(--ok)">${svg(ICON.up,16)}</span> รายรับ</div>
+<div class="card stat"${tipAttr("รายรับ · "+(scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"),tx.filter(x=>x.kind==="income").length+" รายการ · รวม "+baht(inc)+" ฿",tipList(tx.filter(x=>x.kind==="income").sort((a,b)=>(+b.amount||0)-(+a.amount||0)),x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",6))}><div class="k"><span class="ic" style="background:var(--ok-soft);color:var(--ok)">${svg(ICON.up,16)}</span> รายรับ</div>
 <div class="v" style="color:var(--ok)">${baht(inc)}</div><div class="d">${scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.down,16)}</span> รายจ่าย</div>
+<div class="card stat"${tipAttr("รายจ่าย · "+(scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"),tx.filter(x=>x.kind!=="income").length+" รายการ · รวม "+baht(exp)+" ฿",tipList(tx.filter(x=>x.kind!=="income").sort((a,b)=>(+b.amount||0)-(+a.amount||0)),x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",6),"สุทธิ (รับ−จ่าย)|"+(inc-exp<0?"−":"")+baht(Math.abs(inc-exp))+" ฿")}><div class="k"><span class="ic">${svg(ICON.down,16)}</span> รายจ่าย</div>
 <div class="v">${baht(exp)}</div><div class="d">สุทธิ ${baht(inc-exp)} ฿</div></div>
 <div class="card span2"><h2>รายรับ – รายจ่ายรายเดือน <small>ปี ${y+543}</small></h2>
-${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth())}
+${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth(),"รายรับ","รายจ่าย","var(--ok)","var(--accent-2)",incTip,"สุทธิ")}
 <div class="legend"><span><i style="background:var(--ok)"></i>รายรับ</span><span><i style="background:var(--accent-2)"></i>รายจ่าย</span></div></div>
 <div class="card span2"><h2>แผนงบ – ใช้จริงรายเดือน <small>ทุกหมวด GL · ปี ${y+543}</small></h2>
-${dualBars(planM,actM,MTH,scope==="month"?m:new Date().getMonth(),"แผนงบ","ใช้จริง","var(--sky)","var(--accent)")}
+${dualBars(planM,actM,MTH,scope==="month"?m:new Date().getMonth(),"แผนงบ","ใช้จริง","var(--sky)","var(--accent)",planTip,"แผน−ใช้จริง")}
 <div class="legend"><span><i style="background:var(--sky)"></i>แผนงบ</span><span><i style="background:var(--accent)"></i>ใช้จริง (งาน + บันทึกเงิน)</span></div></div>
 <div class="card span4"><h2>งบตามหมวด GL <small>แผน / ใช้จริง / คงเหลือ · แตะแถวเพื่อดูรายเดือนและที่มาของตัวเลข</small></h2>
 <div class="glfix"><button class="btn sm" id="glGo">✎ แก้ไขหมวด GL / ตั้งงบ</button><span class="hint" style="margin:0;align-self:center">เพิ่ม · แก้ชื่อ · รหัส GL · งบรายเดือน ทำที่ ตั้งค่า › หมวดงบประมาณ</span></div>
@@ -451,10 +463,11 @@ const lk=regList("gl:"+k,esc(nm)+" · ปี "+(y+543),rowsL);
 const chip=s.lvl==="over"?`<span class="bchip over">เกินงบ</span>`:s.lvl==="warn"?`<span class="bchip warn">ใกล้เต็ม ${Math.round(s.pct)}%</span>`
 :s.lvl==="nob"?`<span class="bchip nob">ยังไม่ได้ตั้งงบ</span>`:s.pace?`<span class="bchip warn">เร็วกว่าแผน</span>`:`<span class="bchip">${Math.round(s.pct)}%</span>`;
 const pacePos=(mSel==null&&s.plan&&s.ytdP&&cut>=0)?Math.min(100,s.ytdP/s.plan*100):null;
-return `<div class="glrow" ${lk} style="cursor:pointer">
+const glTip=tipAttr(nm,"งบตั้งไว้|"+baht(s.plan)+" ฿","ใช้จริง|"+baht(s.act)+" ฿ ("+Math.round(s.pct)+"%)",(s.left>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(s.left))+" ฿",pacePos!=null?"แผนสะสมถึง "+MTHFULL[cut]+"|"+baht(s.ytdP)+" ฿ (ขีดบนแถบ)":"",pacePos!=null?"ใช้สะสมถึง "+MTHFULL[cut]+"|"+baht(s.ytdA)+" ฿":"",tks.length+" งาน · "+txs.length+" รายการเงิน ที่นับรวม","แตะแถวเพื่อดูรายเดือน");
+return `<div class="glrow" ${lk} style="cursor:pointer"${glTip}>
 <div class="top"><span>${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
 <span class="amt"${s.lvl==="over"?' style="color:var(--over);font-weight:600"':""}>${baht(s.act)} / ${baht(s.plan)} ›</span></div>
-<div class="bar"><i class="${s.lvl==="over"?"hot":s.lvl==="warn"?"warn":""}" style="width:${p}%"></i>${pacePos!=null?`<u class="pace" style="left:${pacePos}%" title="แผนสะสมถึง ${MTHFULL[cut]}"></u>`:""}</div>
+<div class="bar"${glTip}><i class="${s.lvl==="over"?"hot":s.lvl==="warn"?"warn":""}" style="width:${p}%"></i>${pacePos!=null?`<u class="pace" style="left:${pacePos}%" title="แผนสะสมถึง ${MTHFULL[cut]}"></u>`:""}</div>
 <div class="sub">${chip}<span>${s.left>=0?"คงเหลือ "+baht(s.left):"เกิน "+baht(-s.left)} ฿</span>${s.plan&&cut>=0&&s.ytdP?`<span>สะสมถึง ${MTH[cut]}: ใช้ ${baht(s.ytdA)} จากแผน ${baht(s.ytdP)} ฿ (${Math.round(s.ytdA/s.ytdP*100)}%)</span>`:""}</div></div>`;}).join("")
 :`<div class="empty">ยังไม่มีงบในปีนี้ — ใส่งบในงานแต่ละงาน หรือเพิ่มหมวด GL ที่หน้าตั้งค่า</div>`}
 ${noGL?`<div class="hint">มี <b>${noGL}</b> งานที่ใส่งบไว้แต่ยังไม่ได้เลือกหมวด GL — เปิดงานแล้วเลือกหมวด เพื่อให้ยอดแยกตามหมวดได้</div>`:""}
@@ -519,18 +532,18 @@ return `<div class="head"><div><h1>รายงานผู้บริหาร
 <div class="toolbar noprint">${yearSel("yrSelB")}</div>
 <div class="printhead">LeKise Group · HR — รายงานผู้บริหาร ปี ${y+543} · ข้อมูล ณ ${today.getDate()} ${MTHFULL[today.getMonth()]} ${today.getFullYear()+543}</div>
 <div class="dash">
-<div class="card hero span2"><div class="lab">ความคืบหน้างานปี ${y+543}</div><div class="big">${pct}%</div>
+<div class="card hero span2"${tipAttr("ความคืบหน้างานปี "+(y+543)+" · "+pct+"%","เสร็จสิ้น|"+D.done+" งาน","ยังไม่เสร็จ|"+(D.A.length-D.done)+" งาน","เลยกำหนดแล้ว|"+D.late.length+" งาน",tipList(D.late,t=>t.title,4),"คิดจากงานเสร็จ ÷ งานทั้งปี ไม่รวมยกเลิก/ไอเดีย")}><div class="lab">ความคืบหน้างานปี ${y+543}</div><div class="big">${pct}%</div>
 <div class="meta"><span>เสร็จ ${D.done} งาน</span><span>เหลือ ${D.A.length-D.done} งาน</span><span>เลยกำหนด ${D.late.length}</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบใช้ไป</div>
+<div class="card stat"${tipAttr("งบใช้ไป ปี "+(y+543)+" · "+(D.B?bp+"%":"—"),"งบตั้งไว้|"+baht(D.B)+" ฿","ใช้จริง|"+baht(D.Ac)+" ฿",(D.B-D.Ac>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(D.B-D.Ac))+" ฿","หมวด GL ที่มีงบ/ใช้จริง|"+D.gl.length,D.alerts&&D.alerts.over.length?"เกินงบ "+D.alerts.over.length+" หมวด":"")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบใช้ไป</div>
 <div class="v"${bp>=100?' style="color:var(--over)"':""}>${D.B?bp+"%":"—"}</div><div class="d">${baht(D.Ac)} จาก ${baht(D.B)} ฿</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> อบรมปีนี้</div>
+<div class="card stat"${tipAttr("อบรมปี "+(y+543),"รุ่นทั้งหมด|"+D.trainN.n,"จัดแล้ว (เสร็จสิ้น)|"+D.trainN.done+" รุ่น","ผู้เข้าอบรมรวม|"+baht(D.trainN.pax)+" คน","ชั่วโมงอบรมรวม (ชม.×คน)|"+baht(D.trainN.hrs),"ค่าใช้จ่าย (ใช้จริง หรืองบถ้ายังไม่มี)|"+baht(D.trainN.cost)+" ฿")}><div class="k"><span class="ic">${svg(ICON.train,16)}</span> อบรมปีนี้</div>
 <div class="v">${D.trainN.n}</div><div class="d">จัดแล้ว ${D.trainN.done} รุ่น · ${baht(D.trainN.pax)} คน</div></div>
 <div class="card span4"><h2>ประเด็นสำคัญ <small>สรุปให้อัตโนมัติจากข้อมูล ณ วันนี้</small></h2>
 <div class="exlist">${H.map(h=>`<div class="exrow ${h.c}"><i></i><span>${h.t}</span></div>`).join("")}</div></div>
 <div class="card span4"><h2>งบประมาณตามหมวด GL <small>ปี ${y+543} · แผน / ใช้จริง / คงเหลือ</small></h2>
 ${D.gl.length?`<div class="tblwrap wide"><table><thead><tr><th>หมวด GL</th><th class="num">งบตั้งไว้</th><th class="num">ใช้จริง</th><th class="num">คงเหลือ</th><th class="num">% ใช้</th><th>สถานะ</th></tr></thead><tbody>
-${D.gl.map(x=>`<tr><td>${esc(nm(x.k))}</td><td class="num">${baht(x.s.plan)}</td><td class="num">${baht(x.s.act)}</td>
+${D.gl.map(x=>`<tr${tipAttr(nm(x.k),"งบตั้งไว้|"+baht(x.s.plan)+" ฿","ใช้จริง|"+baht(x.s.act)+" ฿ ("+(x.s.plan?Math.round(x.s.pct)+"%":"—")+")",(x.s.left>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(x.s.left))+" ฿",D.cut>=0&&x.s.ytdP?"สะสมถึง "+MTH[D.cut]+"|ใช้ "+baht(x.s.ytdA)+" จากแผน "+baht(x.s.ytdP):"",x.s.lvl==="over"?"สถานะ: ใช้เกินงบแล้ว":x.s.lvl==="warn"?"สถานะ: ใกล้เต็ม (≥"+BUD_WARN+"%)":x.s.lvl==="nob"?"สถานะ: มียอดใช้แต่ยังไม่ได้ตั้งงบ":x.s.pace?"สถานะ: ใช้เร็วกว่าแผนสะสม":"สถานะ: ปกติ")}><td>${esc(nm(x.k))}</td><td class="num">${baht(x.s.plan)}</td><td class="num">${baht(x.s.act)}</td>
 <td class="num"${x.s.left<0?' style="color:var(--over);font-weight:600"':""}>${x.s.left<0?"−"+baht(-x.s.left):baht(x.s.left)}</td>
 <td class="num">${x.s.plan?Math.round(x.s.pct)+"%":"—"}</td><td>${chip(x.s)}</td></tr>`).join("")}
 <tr style="font-weight:700;border-top:2px solid var(--line)"><td>รวม</td><td class="num">${baht(D.B)}</td><td class="num">${baht(D.Ac)}</td><td class="num">${D.B-D.Ac<0?"−"+baht(D.Ac-D.B):baht(D.B-D.Ac)}</td><td class="num">${D.B?bp+"%":"—"}</td><td></td></tr>

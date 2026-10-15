@@ -389,14 +389,14 @@ return `<div class="banner ${on?"ok":"bad"}">${svg(on?ICON.check:ICON.bell,19)}
 ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ · ข้อมูลซิงก์อัตโนมัติทุกเครื่อง":"ยังเชื่อมต่อฐานข้อมูลไม่ได้ · ตอนนี้แก้ไขข้อมูลไม่ได้"}</div>
 <div id="health"></div>
 <div class="dash">
-<div class="card stat"><div class="k"><span class="ic">${svg(isMobile?ICON.phone:ICON.laptop,16)}</span> เครื่องที่ใช้อยู่</div>
+<div class="card stat"${tipAttr("เครื่องที่ใช้อยู่ · "+dev,"ระบบ|"+os,"หน้าจอ|"+innerWidth+"×"+innerHeight)}><div class="k"><span class="ic">${svg(isMobile?ICON.phone:ICON.laptop,16)}</span> เครื่องที่ใช้อยู่</div>
 <div class="v" style="font-size:19px">${dev}</div><div class="d">ระบบ ${os} · หน้าจอ ${innerWidth}×${innerHeight}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.link,16)}</span> สถานะซิงก์</div>
+<div class="card stat"${tipAttr("สถานะซิงก์ · "+(on?"ออนไลน์":"ออฟไลน์"),on?"บันทึกแล้วเห็นทุกเครื่องทันที":"ตรวจการเชื่อมต่ออินเทอร์เน็ต")}><div class="k"><span class="ic">${svg(ICON.link,16)}</span> สถานะซิงก์</div>
 <div class="v" style="font-size:19px;color:${on?"var(--ok)":"var(--over)"}">${on?"ออนไลน์":"ออฟไลน์"}</div>
 <div class="d">${on?"บันทึกแล้วเห็นทุกเครื่องทันที":"ตรวจการเชื่อมต่ออินเทอร์เน็ต"}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.check,16)}</span> เวอร์ชันแอป</div>
+<div class="card stat"${tipAttr("เวอร์ชันแอป · "+APP_VERSION,"อัปเดต|"+APP_DATE)}><div class="k"><span class="ic">${svg(ICON.check,16)}</span> เวอร์ชันแอป</div>
 <div class="v" style="font-size:19px">${APP_VERSION}</div><div class="d">อัปเดต ${APP_DATE}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.file,16)}</span> ข้อมูลบนเซิร์ฟเวอร์</div>
+<div class="card stat"${tipAttr("ข้อมูลบนเซิร์ฟเวอร์","งาน|"+items.length,"รายการเงิน|"+ledger.length,"กลุ่มงาน|"+groups.length,"หมวด GL|"+gls.length,"บริษัท|"+companies.length)}><div class="k"><span class="ic">${svg(ICON.file,16)}</span> ข้อมูลบนเซิร์ฟเวอร์</div>
 <div class="v" style="font-size:19px">${items.length} งาน · ${ledger.length} รายการเงิน</div>
 <div class="d">${groups.length} กลุ่ม · ${gls.length} หมวด GL · ${companies.length} บริษัท</div></div>
 <div class="card span4"><h2>แอปนี้ทำงานยังไง</h2>

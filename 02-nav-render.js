@@ -221,7 +221,7 @@ return `<div class="li" data-id="${t._id}">
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}<span class="gdot" style="background:${gTagColor(t.track)}"></span>${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${tagColor(t.tag)||itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}<span class="gdot" style="background:${gTagColor(t.track)}"></span>${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
 ${(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
 (S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบวันที่ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>`:"");})()}</div>`;

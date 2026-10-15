@@ -465,7 +465,7 @@ fill("i-group",[["","ไม่ระบุหมวด"],...idxCatNames().map(c=
 el("i-newwrap").hidden=true; el("i-newcat").value="";
 el("i-owner").value=x?.owner||""; el("i-url").value=x?.url||"";
 fill("i-status",IDXSTATUS.map(v=>[v,v]),x?.status||"ใช้งานอยู่");
-el("i-detail").value=x?.detail||""; el("i-note").value=x?.note||"";
+el("i-detail").value=x?.detail||""; el("i-note").value=x?.note||""; el("i-fav").checked=!!x?.fav;
 el("i-use").value=x?.iuse||""; el("i-who").value=x?.iwho||""; el("i-when").value=x?.iwhen||"";
 el("ixowners").innerHTML=[...new Set(idx.map(v=>(v.owner||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
 el("idlg").showModal();
@@ -477,6 +477,10 @@ if(!el("i-title").value.trim()){el("i-title").focus();return;}
 let grp=el("i-group").value; if(grp==="__new"){ grp=el("i-newcat").value.trim(); if(!grp){el("i-newcat").focus();return;} }
 const d={title:el("i-title").value.trim(),group:grp,owner:el("i-owner").value.trim(),
 url:el("i-url").value.trim(),status:el("i-status").value,detail:el("i-detail").value.trim(),note:el("i-note").value.trim(),iuse:el("i-use").value.trim(),iwho:el("i-who").value.trim(),iwhen:el("i-when").value.trim()};
+if(el("i-fav").checked)d.fav=true;
+if(editingIdx){ if(editingIdx.ord!=null)d.ord=editingIdx.ord; if(editingIdx.fo!=null)d.fo=editingIdx.fo; }
+else if(d.fav){ d.fo=Math.max(0,...idx.filter(v=>v.fav).map(v=>+v.fo||0))+10; }
+if(d.fav&&editingIdx&&!editingIdx.fav&&d.fo==null)d.fo=Math.max(0,...idx.filter(v=>v.fav).map(v=>+v.fo||0))+10;
 el("idlg").close();
 if(grp&&!idxCatNames().includes(grp)) await idxSaveCats([...idxCatNames(),grp]);
 try{ editingIdx? await DB.collection("index").doc(editingIdx._id).set(d) : await DB.collection("index").add(d); }
@@ -640,7 +644,7 @@ return `<div class="li" data-crsitem="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(crsCodeOf(t)||"")} ${esc(t.batch||"ไม่ระบุรุ่น")}${t.company?" · "+esc(cLabel(t.company)):""}</div>
 <div class="t2">${t.pax?t.pax+" คน · ":""}${ypNoOf(t)?"ยป. "+esc(ypNoOf(t))+" · ":""}${t.dsdCertNo?"รับรอง "+esc(t.dsdCertNo):esc(y.step)}</div></div>
-<span class="pill ${y.cls}">${esc(t.status)}</span></div>`;}).join("")||`<div class="empty">ยังไม่มีรุ่นของหลักสูตรนี้</div>`;
+<span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;}).join("")||`<div class="empty">ยังไม่มีรุ่นของหลักสูตรนี้</div>`;
 el("crsdlg").showModal();
 }
 el("crscancel").onclick=()=>el("crsdlg").close();
@@ -903,7 +907,7 @@ const kind=kindOfItem(t)||(isTrain(t)?"train":isMeet(t)?"meet":"");
 const V=cV,R_=cR,sec=cS;
 const S=occState(t);
 const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):""));
-const _pills=(rr(t)?`<span class="pill ${S.cls}">${esc(S.label)}</span>`:"")+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
+const _pills=`<span class="pill ${S.cls}">${esc(S.label)}</span>`+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
 const main=R_("บริษัท",t.company?cLabel(t.company):"")+R_("กลุ่มงาน",t.track?gLabel(t.track):"")
 +R_("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
 const when=V("ผู้รับผิดชอบ",t.owner)+V(rr(t)?"เริ่ม / วันที่อ้างอิง":"วันที่",t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):"")
@@ -933,11 +937,11 @@ const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("W
 const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";
 const _o=rr(t)?S.d:null, _isoO=_o?isoOf(_o):"";
 const quick=`<div class="vsec vquick"><h4>สถานะ</h4><div class="vq-row">
-${rr(t)&&_o?`<button type="button" class="btn vq-big" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`
-:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
-<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
+${rr(t)&&_o?`<button type="button" class="btn vq-big ok" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`
+:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big ok" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
+<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq ${sCls(x)}${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
 ${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">ปุ่มดำ = ปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มเล็ก = สถานะรวมของงาน</div>`:""}</div>`;
-cardShow({kind:_kind,date:_date,title:t.title,color:itemColor(t),pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
+cardShow({kind:_kind,date:_date,title:t.title,color:({"s-done":"var(--ok)","s-over":"var(--over)","s-run":"var(--run)","s-cancel":"var(--ink-3)"})[S.cls]||"var(--wait)",pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
 edit:()=>open_(t),del:async()=>{
 if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
 await softDel("items",t);}});

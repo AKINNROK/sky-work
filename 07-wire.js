@@ -53,6 +53,11 @@ const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
 if(e.target.closest("[data-ntedit]")){ openNote(x); return; }
 viewNote(x);});
 el("ix-q")&&(el("ix-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.idxQ=v;render();const m=el("ix-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
+el("ix-sort")&&(el("ix-sort").onclick=()=>{ R.idxSort=!R.idxSort; render(); });
+document.querySelectorAll("[data-ixfav]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); ixToggleFav(b.dataset.ixfav); });
+document.querySelectorAll("[data-ixmv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const [id,d]=b.dataset.ixmv.split(":"); ixMove("c",id,d); });
+document.querySelectorAll("[data-ixfmv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const [id,d]=b.dataset.ixfmv.split(":"); ixMove("f",id,d); });
+ixDnd();
 el("ix-collapse")&&(el("ix-collapse").onclick=()=>{ IDXFOLD=new Set([...idxCatNames(),IDX_NONE]); idxSaveFold(); render(); });
 el("ix-expand")&&(el("ix-expand").onclick=()=>{ IDXFOLD=new Set(); idxSaveFold(); render(); });
 el("ix-cats")&&(el("ix-cats").onclick=openIxCats);

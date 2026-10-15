@@ -1,4 +1,4 @@
-const APP_VERSION="14.9.7"; const APP_DATE="14 ต.ค. 2026";
+const APP_VERSION="14.9.10"; const APP_DATE="15 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -315,7 +315,7 @@ const QCOL={q1:"#E5636F",q2:"#5B9BD5",q3:"#F0B429",q4:"#A8A59B"};
 const calColor=()=>{try{return localStorage.getItem("sw-calcolor")||"";}catch(e){return "";}};
 const dotCol=(t,def)=>calColor()==="matrix"?(QCOL[quadOf(t)]||"var(--line)"):def;
 const itemColor=t=>{ if(!t)return sColor("");
-return gColor(t.track)||sColor(t.status); };
+return sColor(t.status); };
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 // ทะเบียนหลักสูตร — รหัสรันอัตโนมัติ กันคีย์มือผิด
 const CRSPREFIX="TRN";
@@ -419,38 +419,47 @@ ${R.scope==="month"?`<select id="scMonth" style="border:0;background:var(--card)
 }
 function donut(parts,centerTop,centerSub){
 const tot=parts.reduce((s,p)=>s+p.v,0)||1, R2=52, C=2*Math.PI*R2; let off=0;
+const pctOf=p=>Math.round(p.v/tot*1000)/10;
 const arcs=parts.filter(p=>p.v>0).map(p=>{
 const len=p.v/tot*C;
 const a=`<circle cx="70" cy="70" r="${R2}" fill="none" stroke="${p.c}" stroke-width="20"
 stroke-dasharray="${Math.max(len-3,1)} ${C-Math.max(len-3,1)}" stroke-dashoffset="${-off}"
-stroke-linecap="round" transform="rotate(-90 70 70)"><title>${esc(p.n)}: ${p.v}</title></circle>`;
+stroke-linecap="round" transform="rotate(-90 70 70)"${tipAttr(p.n+" · "+p.v+" ("+pctOf(p)+"%)",p.tip)}></circle>`;
 off+=len; return a;}).join("");
-return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="สัดส่วนงาน">
+return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="สัดส่วน">
 <circle cx="70" cy="70" r="${R2}" fill="none" stroke="var(--line-2)" stroke-width="20"/>${arcs}
 <text x="70" y="66" text-anchor="middle" font-size="26" font-weight="600" fill="var(--ink)" font-family="Mitr,sans-serif">${centerTop}</text>
 <text x="70" y="86" text-anchor="middle" font-size="11" fill="var(--ink-3)" font-family="Sarabun,sans-serif">${centerSub}</text></svg>`;
 }
-function bars(vals,labels,fmt,hi){
-const max=Math.max(...vals,1), W=430, H=150, bw=W/vals.length;
-return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="กราฟรายเดือน">
+// tooltip ของแถวในคำอธิบายโดนัท (ใช้ข้อความเดียวกับชิ้นโดนัท)
+const donutTip=(parts,p)=>{const tot=parts.reduce((s,x)=>s+x.v,0)||1; return tipAttr(p.n+" · "+p.v+" ("+Math.round(p.v/tot*1000)/10+"%)",p.tip);};
+// bars(ค่า, ป้ายแกน, รูปแบบตัวเลข, เดือนที่เน้น, tips[i] = บรรทัดรายละเอียดเพิ่มเติม (array หรือ string), unit = หน่วย เช่น "งาน")
+function bars(vals,labels,fmt,hi,tips,unit,sumLabel){
+const max=Math.max(...vals,1), W=430, H=150, bw=W/vals.length, tot=vals.reduce((a,b)=>a+b,0);
+return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="กราฟแท่ง">
 <line x1="0" y1="118" x2="${W}" y2="118" stroke="var(--line-2)" stroke-width="1.5"/>
 ${vals.map((v,i)=>{
 const h=Math.max(v/max*104,v>0?5:0), x=i*bw+bw*.2, y=118-h, on=i===hi;
-return `<g><rect x="${x}" y="${y}" width="${bw*.6}" height="${h}" rx="5" fill="${on?"var(--accent)":"var(--accent-2)"}" opacity="${on?1:.55}"><title>${labels[i]}: ${fmt(v)}</title></rect>
-${v>0?`<text x="${x+bw*.3}" y="${y-5}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)" font-family="Sarabun,sans-serif">${fmt(v)}</text>`:""}
-<text x="${x+bw*.3}" y="134" text-anchor="middle" font-size="9.5" fill="${on?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif">${labels[i]}</text></g>`;}).join("")}
+const head=labels[i]+" · "+(fmt(v)||0)+(unit?" "+unit:"")+(tot&&v?" ("+Math.round(v/tot*1000)/10+"% ของ"+(sumLabel||"ทั้งหมด")+")":"");
+return `<g><rect class="chartcol" x="${i*bw}" y="0" width="${bw}" height="134"${tipAttr(head,(tips&&tips[i])||(v?"":"ไม่มีรายการ"))}/>
+<rect x="${x}" y="${y}" width="${bw*.6}" height="${h}" rx="5" fill="${on?"var(--accent)":"var(--accent-2)"}" opacity="${on?1:.55}" pointer-events="none"></rect>
+${v>0?`<text x="${x+bw*.3}" y="${y-5}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)" font-family="Sarabun,sans-serif" pointer-events="none">${fmt(v)}</text>`:""}
+<text x="${x+bw*.3}" y="134" text-anchor="middle" font-size="9.5" fill="${on?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif" pointer-events="none">${labels[i]}</text></g>`;}).join("")}
 </svg>`;
 }
-function dualBars(inc,exp,labels,hi,n1="รายรับ",n2="รายจ่าย",c1="var(--ok)",c2="var(--accent-2)"){
+// dualBars: tips(i) → บรรทัดเพิ่มเติมของเดือนที่ i (array)
+function dualBars(inc,exp,labels,hi,n1="รายรับ",n2="รายจ่าย",c1="var(--ok)",c2="var(--accent-2)",tips,diffLabel){
 const max=Math.max(...inc,...exp,1), W=430, H=155, bw=W/12;
-return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="รายรับรายจ่ายรายเดือน">
+return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="กราฟแท่งคู่รายเดือน">
 <line x1="0" y1="120" x2="${W}" y2="120" stroke="var(--line-2)" stroke-width="1.5"/>
 ${labels.map((l,i)=>{
 const hi2=Math.max(inc[i]/max*98,inc[i]>0?4:0), he=Math.max(exp[i]/max*98,exp[i]>0?4:0);
-const x=i*bw+bw*.14, w=bw*.34;
-return `<g><rect x="${x}" y="${120-hi2}" width="${w}" height="${hi2}" rx="4" fill="${c1}"><title>${l} ${n1}: ${baht(inc[i])}</title></rect>
-<rect x="${x+w+2}" y="${120-he}" width="${w}" height="${he}" rx="4" fill="${c2}"><title>${l} ${n2}: ${baht(exp[i])}</title></rect>
-<text x="${i*bw+bw*.5}" y="136" text-anchor="middle" font-size="9.5" fill="${i===hi?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif">${l}</text></g>`;}).join("")}
+const x=i*bw+bw*.14, w=bw*.34, dif=inc[i]-exp[i];
+const head=[l,n1+"|"+baht(inc[i])+" ฿",n2+"|"+baht(exp[i])+" ฿",(diffLabel||"ผลต่าง")+"|"+(dif<0?"−":dif>0?"+":"")+baht(Math.abs(dif))+" ฿"];
+return `<g><rect class="chartcol" x="${i*bw}" y="0" width="${bw}" height="138"${tipAttr(head,tips&&(typeof tips==="function"?tips(i):tips[i]))}/>
+<rect x="${x}" y="${120-hi2}" width="${w}" height="${hi2}" rx="4" fill="${c1}" pointer-events="none"></rect>
+<rect x="${x+w+2}" y="${120-he}" width="${w}" height="${he}" rx="4" fill="${c2}" pointer-events="none"></rect>
+<text x="${i*bw+bw*.5}" y="136" text-anchor="middle" font-size="9.5" fill="${i===hi?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif" pointer-events="none">${l}</text></g>`;}).join("")}
 </svg>`;
 }
 const CFG_BAKED={url:"",key:""};
