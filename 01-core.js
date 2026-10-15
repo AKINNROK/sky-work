@@ -1,8 +1,10 @@
-const APP_VERSION="14.9.5"; const APP_DATE="14 ต.ค. 2026";
+const APP_VERSION="14.9.7"; const APP_DATE="14 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
-const STATUS=["รอดำเนินการ","อยู่ระหว่างดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
+const STATUS=["รอดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
+// "อยู่ระหว่างดำเนินการ" (ของเดิม) = "กำลังดำเนินการ" — รวมเป็นอันเดียวตอนโหลดข้อมูล
+const normSt=s=>s==="อยู่ระหว่างดำเนินการ"?"กำลังดำเนินการ":s;
 const STATUS_DONE="เสร็จสิ้น", STATUS_CANCEL="ยกเลิก";
 const isOpenStatus=x=>x!==STATUS_DONE&&x!==STATUS_CANCEL;
 const TAGCOLORS=[
@@ -249,6 +251,9 @@ return v;}
 const sCls=x=>x==="เสร็จสิ้น"?"s-done":x==="ยกเลิก"?"s-cancel":x==="กำลังดำเนินการ"?"s-run":x==="อยู่ระหว่างดำเนินการ"?"s-mid":"s-wait";
 const sColor=x=>x==="เสร็จสิ้น"?"var(--ok)":x==="ยกเลิก"?"var(--ink-3)":x==="กำลังดำเนินการ"?"var(--run)":x==="อยู่ระหว่างดำเนินการ"?"var(--sky)":"var(--wait)";
 const visible=a=>a.filter(x=>!x.hidden);
+const G_AUTO=["#3d86d6","#12a08a","#ef7d1a","#9d6fc4","#d6549b","#8fbf3f","#e0606d","#2bb3c9","#b3a99a","#7f8fd0"];
+const gTagColor=k=>{const g=groups.find(x=>x.key===k); if(g&&g.color)return g.color; const i=groups.findIndex(x=>x.key===k); return i<0?"var(--wait)":G_AUTO[i%G_AUTO.length];};
+const gChip=k=>{const c=gTagColor(k); return `<span class="tag gtag" style="background:color-mix(in srgb,${c} 16%,transparent)"><i style="background:${c}"></i>${esc(gLabel(k))}</span>`;};
 const gLabel=k=>(groups.find(g=>g.key===k)||{}).label||k||"ไม่ระบุกลุ่ม";
 const isGroupCo=c=>!!(c&&c.isGroup);
 const realCos=()=>visible(companies).filter(c=>!isGroupCo(c));
@@ -557,6 +562,7 @@ TRASH[key]=all.filter(t=>t._trash).sort((a,b)=>String(b._trash).localeCompare(St
 return all.filter(t=>!t._trash);};
 DBShim.collection("items").onSnapshot(s=>{
 items=splitTrash(s.docs,"items").filter(t=>!isSysRow(t));
+items.forEach(t=>{ if(t.status)t.status=normSt(t.status); });
 maybeSeedGL(); autoPurgeTrash();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
 DBShim.collection("index").onSnapshot(s=>{ idx=splitTrash(s.docs,"index"); render();});

@@ -510,7 +510,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .tplgo:hover{box-shadow:inset 0 0 0 1.5px var(--accent-2)}.tplgo i{font-style:normal;font-size:12px;color:var(--ink-3)}
 .tpldel{border:0;background:var(--paper);border-radius:var(--r-sm);width:38px;cursor:pointer;color:var(--ink-3);font-size:18px}.tpldel:hover{color:var(--over)}
 
-/* v14.9.5 — ฟอร์มแบ่งหมวด / การ์ดดูงาน / แผงปฏิทิน */
+/* v14.9.7 — ฟอร์มแบ่งหมวด / การ์ดดูงาน / แผงปฏิทิน */
 .dlg-b{gap:16px}
 .f.fsec{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:16px 16px 18px;border:1px solid var(--line-2);border-radius:20px;background:var(--card);align-content:start}
 .f.fsec1{display:flex;flex-direction:column;gap:12px}
@@ -555,6 +555,23 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .vq{border:0;border-radius:99px;padding:5px 11px;font-size:12px;background:var(--paper);color:var(--ink-2);cursor:pointer}
 .vq.on{background:var(--accent);color:#fff;font-weight:600}
 @media(max-width:560px){.vgrid{grid-template-columns:1fr}.vcard-b,.vc-pills,.vcdlg .nvh{padding-left:16px;padding-right:16px}.vcdlg .nvt.vct{margin-left:16px;margin-right:16px}}
+.gtag{display:inline-flex;align-items:center;gap:6px;color:var(--ink)}.gtag i{width:8px;height:8px;border-radius:50%;flex:none}
+.gdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.li.static{cursor:default}.li.static:hover{background:transparent}
+.lchev{color:var(--ink-3);font-size:20px;margin-left:2px;flex:none}
+.lsec{font-size:12px;font-weight:600;color:var(--ink-3);margin:14px 4px 4px;padding-top:12px;border-top:1px solid var(--line-2)}
+.foldbar{display:flex!important;flex-direction:row!important;align-items:center;justify-content:flex-end;gap:8px;margin:-4px 0 -4px;font-size:12px;color:var(--ink-3)}
+.foldbar .btn{padding:5px 12px!important;font-size:12px!important}
+.fsec>.fsh,.fsec .fhold>.fsh{cursor:pointer;user-select:none}
+.fsh:after{content:"▾";margin-left:auto;color:var(--ink-3);font-size:13px;font-weight:400;order:3}
+.fsec.fold .fsh:after{content:"▸"}
+.fsh .fcnt{font-style:normal;font-weight:500;font-size:11.5px;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:1px 9px;order:2}
+.fsh:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.fsec.fold>:not(.fhold){display:none!important}
+.fsec.fold{padding-bottom:12px;gap:0}
+.fsec.fold .fsh{margin:0}
+.fsh{flex:1}.fsec1>.fsh{flex:none}
+.fhold{grid-column:1/-1}
 .glfix{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 </style>
 </head><body>
@@ -606,6 +623,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 <dialog id="dlg"><form method="dialog">
 <div class="dlg-h" id="dlgh">แก้ไขงาน</div>
 <div class="dlg-b">
+<div class="f wide foldbar"><span>ปรับมุมมอง</span><button type="button" class="btn ghost sm" id="unfoldAll">ขยายทั้งหมด</button><button type="button" class="btn ghost sm" id="foldAll">ย่อทั้งหมด</button></div>
 <div class="f wide fsec">
 <div class="fsh">ข้อมูลหลัก <small>ชื่องาน · สังกัด · สถานะ</small></div>
 <div class="f wide" id="wrap-course" hidden><label for="f-course">หลักสูตรจากทะเบียน</label>
@@ -921,4 +939,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.9.5"></script></body></html>
+<script src="app.js?v=14.9.7"></script></body></html>

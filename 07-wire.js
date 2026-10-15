@@ -638,7 +638,7 @@ glKey=g.key;
 }
 try{
 await saveItem({
-title, track:g.key, type:get(r,"ประเภท"), status:STATUS.includes(get(r,"สถานะ"))?get(r,"สถานะ"):"รอดำเนินการ",
+title, track:g.key, type:get(r,"ประเภท"), status:STATUS.includes(normSt(get(r,"สถานะ")))?normSt(get(r,"สถานะ")):"รอดำเนินการ",
 owner:get(r,"ผู้รับผิดชอบ"), date:/^\d{4}-\d{2}-\d{2}$/.test(date)?date:null,
 recurring:/^\d{4}-\d{2}-\d{2}$/.test(date)?null:(date||null),
 company:c?c.key:"", gl1:glKey, b1:+get(r,"งบ")||0, gl2:gl2Key, b2:+get(r,"งบรอง")||0,

@@ -1,8 +1,10 @@
-const APP_VERSION="14.9.5"; const APP_DATE="14 ต.ค. 2026";
+const APP_VERSION="14.9.7"; const APP_DATE="14 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
-const STATUS=["รอดำเนินการ","อยู่ระหว่างดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
+const STATUS=["รอดำเนินการ","กำลังดำเนินการ","เสร็จสิ้น","ยกเลิก"];
+// "อยู่ระหว่างดำเนินการ" (ของเดิม) = "กำลังดำเนินการ" — รวมเป็นอันเดียวตอนโหลดข้อมูล
+const normSt=s=>s==="อยู่ระหว่างดำเนินการ"?"กำลังดำเนินการ":s;
 const STATUS_DONE="เสร็จสิ้น", STATUS_CANCEL="ยกเลิก";
 const isOpenStatus=x=>x!==STATUS_DONE&&x!==STATUS_CANCEL;
 const TAGCOLORS=[
@@ -249,6 +251,9 @@ return v;}
 const sCls=x=>x==="เสร็จสิ้น"?"s-done":x==="ยกเลิก"?"s-cancel":x==="กำลังดำเนินการ"?"s-run":x==="อยู่ระหว่างดำเนินการ"?"s-mid":"s-wait";
 const sColor=x=>x==="เสร็จสิ้น"?"var(--ok)":x==="ยกเลิก"?"var(--ink-3)":x==="กำลังดำเนินการ"?"var(--run)":x==="อยู่ระหว่างดำเนินการ"?"var(--sky)":"var(--wait)";
 const visible=a=>a.filter(x=>!x.hidden);
+const G_AUTO=["#3d86d6","#12a08a","#ef7d1a","#9d6fc4","#d6549b","#8fbf3f","#e0606d","#2bb3c9","#b3a99a","#7f8fd0"];
+const gTagColor=k=>{const g=groups.find(x=>x.key===k); if(g&&g.color)return g.color; const i=groups.findIndex(x=>x.key===k); return i<0?"var(--wait)":G_AUTO[i%G_AUTO.length];};
+const gChip=k=>{const c=gTagColor(k); return `<span class="tag gtag" style="background:color-mix(in srgb,${c} 16%,transparent)"><i style="background:${c}"></i>${esc(gLabel(k))}</span>`;};
 const gLabel=k=>(groups.find(g=>g.key===k)||{}).label||k||"ไม่ระบุกลุ่ม";
 const isGroupCo=c=>!!(c&&c.isGroup);
 const realCos=()=>visible(companies).filter(c=>!isGroupCo(c));
@@ -557,6 +562,7 @@ TRASH[key]=all.filter(t=>t._trash).sort((a,b)=>String(b._trash).localeCompare(St
 return all.filter(t=>!t._trash);};
 DBShim.collection("items").onSnapshot(s=>{
 items=splitTrash(s.docs,"items").filter(t=>!isSysRow(t));
+items.forEach(t=>{ if(t.status)t.status=normSt(t.status); });
 maybeSeedGL(); autoPurgeTrash();
 setFoot(items.length+" งาน · ซิงก์แล้ว"); render();});
 DBShim.collection("index").onSnapshot(s=>{ idx=splitTrash(s.docs,"index"); render();});
@@ -827,11 +833,18 @@ function regList(key,title,rows){ LISTBOX[key]={title,rows}; return `data-list="
 function openListBox(key){
 const L=LISTBOX[key]; if(!L||!L.rows.length)return;
 el("pdlgh").textContent=L.title;
-el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>`<div class="li" data-pick="${i}">
+const clk=r=>!!(r.id||r.tx||r.lg);
+const anyClk=L.rows.some(clk);
+let seenClk=false, seenStatic=false;
+el("pdlgb").innerHTML=`<div class="list">${L.rows.map((r,i)=>{
+let pre="";
+if(clk(r)&&!seenClk){ seenClk=true; if(seenStatic)pre=`<div class="lsec">งาน / รายการที่นับรวมในหมวดนี้ · แตะเพื่อเปิดดูการ์ด</div>`; }
+if(!clk(r)){ seenStatic=true; }
+return pre+`<div class="li${clk(r)?"":" static"}"${clk(r)?` data-pick="${i}"`:""}>
 <div class="ic" style="background:${r.c||"var(--line-2)"};color:${r.ic||"var(--ink-2)"}">${r.d||"—"}</div>
 <div class="tx"><div class="t1">${esc(r.t1)}</div><div class="t2">${esc(r.t2||"")}</div></div>
-<span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span></div>`).join("")}</div>
-<div class="hint">แตะรายการเพื่อเปิดดู</div>`;
+<span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span>${clk(r)?`<span class="lchev">›</span>`:""}</div>`;}).join("")}</div>
+${anyClk&&!seenStatic?`<div class="hint">แตะรายการเพื่อเปิดดู</div>`:""}`;
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
 if(r.id){const t=items.find(x=>x._id===r.id); if(t)openCard(t);}
@@ -866,7 +879,7 @@ return `<div class="li" data-id="${t._id}">
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}<span class="gdot" style="background:${gTagColor(t.track)}"></span>${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
 ${(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
 (S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบวันที่ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>`:"");})()}</div>`;
@@ -959,7 +972,7 @@ const now=new Date();
 const scoped=items.filter(inScope);
 const A=scoped.filter(t=>t.track!=="idea"&&t.status!==STATUS_CANCEL);
 const cnt=s=>A.filter(t=>t.status===s).length;
-const done=cnt("เสร็จสิ้น"), run=cnt("กำลังดำเนินการ"), mid=cnt("อยู่ระหว่างดำเนินการ"), wait=cnt("รอดำเนินการ");
+const done=cnt("เสร็จสิ้น"), run=cnt("กำลังดำเนินการ"), wait=cnt("รอดำเนินการ");
 const cancelled=scoped.filter(t=>t.status===STATUS_CANCEL).length;
 const bud=scoped.reduce((s,t)=>s+budgetOf(t),0), act=scoped.reduce((s,t)=>s+(+t.actual||0),0);
 const over=items.filter(t=>budgetOf(t)>0&&(+t.actual||0)>budgetOf(t));
@@ -1000,7 +1013,7 @@ ${homeQ1()}
 <div class="meta"><span>เสร็จแล้ว ${done} งาน</span><span>เหลืออีก ${A.length-done} งาน</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
 <div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
-<div class="v">${run+mid}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
+<div class="v">${run}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
 <div class="card stat" ${jump("budget")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
 <div class="v">${baht(bud-act)}</div><div class="d">ใช้ไป ${baht(act)} จาก ${baht(bud)}</div>
 <div class="bar"><i class="${act>bud?"hot":""}" style="width:${bud?Math.min(100,act/bud*100):0}%"></i></div></div>
@@ -1034,11 +1047,10 @@ card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใ�
 </div></div>
 <div class="card span2"><h2>สัดส่วนสถานะงาน <small>${scopeLabel()} · ${A.length} งาน</small></h2>
 <div class="donutwrap">
-${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"อยู่ระหว่างดำเนินการ",v:mid,c:"var(--sky)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
+${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
 <div class="dlist">
 <div ${jump("all",{F:{status:"เสร็จสิ้น"}})}><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
 <div ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
-<div ${jump("all",{F:{status:"อยู่ระหว่างดำเนินการ"}})}><i style="background:var(--sky)"></i>อยู่ระหว่างดำเนินการ<b>${mid}</b></div>
 <div ${jump("all",{F:{status:"รอดำเนินการ"}})}><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div>
 ${cancelled?`<div ${jump("all",{F:{status:"ยกเลิก"}})}><i style="background:var(--ink-3)"></i>ยกเลิก<b>${cancelled}</b></div>`:""}</div></div></div>
 <div class="card span2"><h2>จำนวนงานรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
@@ -1073,7 +1085,7 @@ const ms=monthsOf(t); if(!ms.length)return {k:"zz",lab:"ยังไม่ได
 return {k:String(ms[0]).padStart(2,"0"),lab:MTHFULL[ms[0]-1],c:ms[0]-1===new Date().getMonth()&&R.year===THISYEAR?"var(--accent)":""};};
 const bucket=t=>{
 if(F.grp==="track"){const g=groups.find(x=>x.key===t.track);
-return {k:g?String(groups.indexOf(g)).padStart(3,"0"):"zzz",lab:g?g.label:"ยังไม่ระบุกลุ่มงาน",c:(g&&g.color)||""};}
+return {k:g?String(groups.indexOf(g)).padStart(3,"0"):"zzz",lab:g?g.label:"ยังไม่ระบุกลุ่มงาน",c:g?gTagColor(g.key):""};}
 if(F.grp==="status"){const i=STATUS.indexOf(t.status);
 return {k:String(i<0?9:i),lab:t.status||"ไม่ระบุสถานะ",c:sColor(t.status)};}
 if(F.grp==="company"){const c=companies.find(x=>x.key===t.company);
@@ -1112,7 +1124,7 @@ return (p||g||n)?`<div class="t-note">${(p||g)?`ผู้เข้าร่ว�
 return "";})()}
 ${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}${w5Line(t)}</td>
 <td>${esc(t.company?cLabel(t.company):"—")}</td>
-<td><span class="tag sky">${esc(gLabel(t.track))}</span></td>
+<td>${gChip(t.track)}</td>
 <td class="num">${rr(t)?esc(rruleText(t)):(t.date?fmtDate(t.date):esc(t.recurring||"—"))}</td>
 <td>${esc(t.owner||"—")}</td>
 <td class="num">${budgetOf(t)?baht(budgetOf(t)):"—"}</td>
@@ -1237,7 +1249,7 @@ const buckets=[...groups.map(x=>[x.label,x.key,x.hidden]),...(orphan.length?[["�
 const rows=buckets.map(([name,key,hid])=>{
 const g=(key==="__none__")?orphan:list.filter(t=>t.track===key);
 
-return `<div class="cgroup${g.length?"":" zero"}"><span class="tagdot" style="background:${gColor(key)||"var(--wait)"};width:10px;height:10px;display:inline-block;margin-right:6px"></span>${esc(name)}${hid?' <small style="color:var(--ink-3)">· ซ่อนอยู่</small>':""} <span>${g.length?g.length:"ยังไม่มีงาน"}</span></div>`+
+return `<div class="cgroup${g.length?"":" zero"}"><span class="tagdot" style="background:${gTagColor(key)};width:10px;height:10px;display:inline-block;margin-right:6px"></span>${esc(name)}${hid?' <small style="color:var(--ink-3)">· ซ่อนอยู่</small>':""} <span>${g.length?g.length:"ยังไม่มีงาน"}</span></div>`+
 MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
 MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
@@ -2529,7 +2541,7 @@ function setGroups(){
 return `<div class="card"><h2>กลุ่มงาน <small>${groups.length} กลุ่ม</small></h2>
 <div class="rows">${groups.map((g,i)=>{const n=items.filter(t=>t.track===g.key).length;
 return `<div class="rw${g.hidden?" off":""}">
-<span class="tagdot" style="background:${g.color||"var(--wait)"}"></span>
+<span class="tagdot" style="background:${gTagColor(g.key)}"></span>
 ${nameInput("data-ren",g.key,g.label)}
 <span class="swrow">${["",...TAGCOLORS].map(c=>`<button class="sw1${(g.color||"")===c?" on":""}" data-gcol="${esc(g.key)}|${c}" title="${c||"ตามสถานะ"}" style="background:${c||"transparent"};${c?"":"border:2px dashed var(--line)"}"></button>`).join("")}</span>
 <button class="gcbtn" data-see="track:${esc(g.key)}" title="ดูงานในกลุ่มนี้">${n} งาน</button>
@@ -2795,7 +2807,7 @@ return `<div class="card"><h2>สำรองข้อมูล & กู้ค�
 <div class="hint">
 • <b>วันที่</b> ใช้รูปแบบ ปี-เดือน-วัน เช่น 2026-07-16 (เว้นว่างได้ถ้าเป็นงานประจำ)<br>
 • <b>กลุ่ม</b> และ <b>บริษัท</b> พิมพ์ชื่อให้ตรงกับที่ตั้งไว้ในหน้าตั้งค่า ถ้าไม่ตรงระบบจะสร้างให้ใหม่<br>
-• <b>สถานะ</b> ใช้ได้ 3 แบบ: รอดำเนินการ / กำลังดำเนินการ / เสร็จสิ้น<br>
+• <b>สถานะ</b> ใช้ได้ 4 แบบ: รอดำเนินการ / กำลังดำเนินการ / เสร็จสิ้น / ยกเลิก (“อยู่ระหว่างดำเนินการ” ของเดิมถูกรวมเป็น “กำลังดำเนินการ” แล้ว)<br>
 • <b>หมวด GL</b> ใส่ "รหัส ชื่อหมวด" หรือชื่อหมวดอย่างเดียวก็ได้ ถ้ายังไม่มีระบบจะสร้างให้<br>
 • งานที่ใช้งบ 2 ก้อน ใส่ <b>หมวด GL รอง</b> กับ <b>งบรอง</b> เพิ่มได้ (เช่น BB-HR-CT กับ HR-LSC)<br>
 • <b>ผู้เข้าอบรม / ชั่วโมง / วิทยากร/สถาบัน / กรมพัฒฯ</b> ใส่เฉพาะงานอบรม (กรมพัฒฯ ใช้ได้: ไม่ต้องยื่น / รอยื่น / ยื่นแล้ว / อนุมัติแล้ว / ไม่ผ่าน)<br>
@@ -3618,7 +3630,7 @@ glKey=g.key;
 }
 try{
 await saveItem({
-title, track:g.key, type:get(r,"ประเภท"), status:STATUS.includes(get(r,"สถานะ"))?get(r,"สถานะ"):"รอดำเนินการ",
+title, track:g.key, type:get(r,"ประเภท"), status:STATUS.includes(normSt(get(r,"สถานะ")))?normSt(get(r,"สถานะ")):"รอดำเนินการ",
 owner:get(r,"ผู้รับผิดชอบ"), date:/^\d{4}-\d{2}-\d{2}$/.test(date)?date:null,
 recurring:/^\d{4}-\d{2}-\d{2}$/.test(date)?null:(date||null),
 company:c?c.key:"", gl1:glKey, b1:+get(r,"งบ")||0, gl2:gl2Key, b2:+get(r,"งบรอง")||0,
@@ -3909,7 +3921,7 @@ const ms=t?.months||[];
 occSkipDraft=[...((t&&t.skip)||[])]; occShowAll=false;
 paintOccs(t); syncStatusLabel();
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
-el("dlg").showModal();
+foldInit(t); el("dlg").showModal();
 }
 function paintQuad(){
 const box=el("f-quad"); if(!box)return;
@@ -4100,7 +4112,7 @@ else {w.hidden=true; h.innerHTML="";}}
 ["f-batches","f-batch"].forEach(id=>{const n=el(id); if(n){n.oninput=syncBatches; n.onchange=syncBatches;}});
 el("cancel").onclick=()=>el("dlg").close();
 el("save").onclick=async()=>{
-if(!el("f-title").value.trim()){el("f-title").focus();return;}
+if(!el("f-title").value.trim()){ foldOpen(el("f-title")); el("f-title").focus();return;}
 const data={
 title:el("f-title").value.trim(), company:el("f-company").value,
 track:el("f-track").value, type:(el("f-type").value==="__new__"?"":el("f-type").value).trim(),
@@ -4721,6 +4733,55 @@ body:cS("รายละเอียด",cR("หมวด GL",x.gl?glLabel(x.gl)
 edit:()=>openTx(x),
 del:async()=>{ if(!await ask("ลบรายการเงินนี้ใช่ไหมคะ?","ลบรายการ"))return; await softDel("ledger",x);}});
 }
+
+// ===== ฟอร์มงาน: พับ/ขยายแต่ละหมวด =====
+const foldSecs=()=>[...document.querySelectorAll("#dlg .fsec")];
+function foldHdr(sec){ const h=sec.querySelector(".fsh"); return h; }
+function foldCount(sec){
+let n=0;
+sec.querySelectorAll("input,textarea").forEach(i=>{
+if(i.closest("[hidden]"))return;
+if(i.type==="checkbox"){ if(i.checked&&!i.closest("#f-colors"))n++; return; }
+if(i.type==="button"||i.type==="hidden")return;
+if(String(i.value||"").trim())n++; });
+return n;
+}
+function foldPaint(sec){
+const h=foldHdr(sec); if(!h)return;
+let c=h.querySelector(".fcnt"); if(!c){ c=document.createElement("em"); c.className="fcnt"; h.appendChild(c); }
+const n=foldCount(sec);
+c.textContent=sec.classList.contains("fold")&&n?"กรอกแล้ว "+n+" ช่อง":"";
+}
+function foldSet(sec,open){
+const h=foldHdr(sec); if(!h)return;
+sec.classList.toggle("fold",!open);
+h.setAttribute("aria-expanded",open?"true":"false");
+foldPaint(sec);
+}
+function foldOpen(elm){ const sec=elm&&elm.closest(".fsec"); if(sec&&sec.classList.contains("fold"))foldSet(sec,true); }
+function foldInit(t){
+const secs=foldSecs();
+secs.forEach(sec=>{
+const h=foldHdr(sec); if(!h)return;
+const holder=h.parentElement===sec?h:h.parentElement; holder.classList.add("fhold");
+h.setAttribute("role","button"); h.setAttribute("tabindex","0");
+if(!h._f){ h._f=1;
+const tg=()=>{ foldSet(sec,sec.classList.contains("fold")); };
+h.onclick=tg; h.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); tg(); } };
+}
+});
+// ค่าเริ่มต้น: หมวดงบ / รายละเอียดเพิ่มเติม พับไว้ถ้ายังว่าง
+secs.forEach(sec=>{
+const isMoney=!!sec.querySelector("#f-gl1"), isMore=!!sec.querySelector("#wrap-5w");
+let open=true;
+if(isMoney)open=!!(t&&(t.gl1||t.gl2||+t.b1||+t.b2||+t.actual));
+if(isMore)open=!!(genMode||(t&&(t.note||w5Has(t))));
+foldSet(sec,open);
+});
+}
+el("dlg").addEventListener("input",e=>{ const s=e.target.closest&&e.target.closest(".fsec"); if(s&&s.classList.contains("fold"))foldPaint(s); });
+el("foldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,false));
+el("unfoldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,true));
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

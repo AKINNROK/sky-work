@@ -186,7 +186,7 @@ const ms=t?.months||[];
 occSkipDraft=[...((t&&t.skip)||[])]; occShowAll=false;
 paintOccs(t); syncStatusLabel();
 el("f-months").innerHTML=MTH.map((m,i)=>`<label><input type="checkbox" value="${i+1}"${ms.includes(i+1)?" checked":""}>${m}</label>`).join("");
-el("dlg").showModal();
+foldInit(t); el("dlg").showModal();
 }
 function paintQuad(){
 const box=el("f-quad"); if(!box)return;
@@ -377,7 +377,7 @@ else {w.hidden=true; h.innerHTML="";}}
 ["f-batches","f-batch"].forEach(id=>{const n=el(id); if(n){n.oninput=syncBatches; n.onchange=syncBatches;}});
 el("cancel").onclick=()=>el("dlg").close();
 el("save").onclick=async()=>{
-if(!el("f-title").value.trim()){el("f-title").focus();return;}
+if(!el("f-title").value.trim()){ foldOpen(el("f-title")); el("f-title").focus();return;}
 const data={
 title:el("f-title").value.trim(), company:el("f-company").value,
 track:el("f-track").value, type:(el("f-type").value==="__new__"?"":el("f-type").value).trim(),
@@ -998,3 +998,52 @@ body:cS("รายละเอียด",cR("หมวด GL",x.gl?glLabel(x.gl)
 edit:()=>openTx(x),
 del:async()=>{ if(!await ask("ลบรายการเงินนี้ใช่ไหมคะ?","ลบรายการ"))return; await softDel("ledger",x);}});
 }
+
+// ===== ฟอร์มงาน: พับ/ขยายแต่ละหมวด =====
+const foldSecs=()=>[...document.querySelectorAll("#dlg .fsec")];
+function foldHdr(sec){ const h=sec.querySelector(".fsh"); return h; }
+function foldCount(sec){
+let n=0;
+sec.querySelectorAll("input,textarea").forEach(i=>{
+if(i.closest("[hidden]"))return;
+if(i.type==="checkbox"){ if(i.checked&&!i.closest("#f-colors"))n++; return; }
+if(i.type==="button"||i.type==="hidden")return;
+if(String(i.value||"").trim())n++; });
+return n;
+}
+function foldPaint(sec){
+const h=foldHdr(sec); if(!h)return;
+let c=h.querySelector(".fcnt"); if(!c){ c=document.createElement("em"); c.className="fcnt"; h.appendChild(c); }
+const n=foldCount(sec);
+c.textContent=sec.classList.contains("fold")&&n?"กรอกแล้ว "+n+" ช่อง":"";
+}
+function foldSet(sec,open){
+const h=foldHdr(sec); if(!h)return;
+sec.classList.toggle("fold",!open);
+h.setAttribute("aria-expanded",open?"true":"false");
+foldPaint(sec);
+}
+function foldOpen(elm){ const sec=elm&&elm.closest(".fsec"); if(sec&&sec.classList.contains("fold"))foldSet(sec,true); }
+function foldInit(t){
+const secs=foldSecs();
+secs.forEach(sec=>{
+const h=foldHdr(sec); if(!h)return;
+const holder=h.parentElement===sec?h:h.parentElement; holder.classList.add("fhold");
+h.setAttribute("role","button"); h.setAttribute("tabindex","0");
+if(!h._f){ h._f=1;
+const tg=()=>{ foldSet(sec,sec.classList.contains("fold")); };
+h.onclick=tg; h.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); tg(); } };
+}
+});
+// ค่าเริ่มต้น: หมวดงบ / รายละเอียดเพิ่มเติม พับไว้ถ้ายังว่าง
+secs.forEach(sec=>{
+const isMoney=!!sec.querySelector("#f-gl1"), isMore=!!sec.querySelector("#wrap-5w");
+let open=true;
+if(isMoney)open=!!(t&&(t.gl1||t.gl2||+t.b1||+t.b2||+t.actual));
+if(isMore)open=!!(genMode||(t&&(t.note||w5Has(t))));
+foldSet(sec,open);
+});
+}
+el("dlg").addEventListener("input",e=>{ const s=e.target.closest&&e.target.closest(".fsec"); if(s&&s.classList.contains("fold"))foldPaint(s); });
+el("foldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,false));
+el("unfoldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,true));
