@@ -221,10 +221,11 @@ for(let d=1;d<=days;d++){
 const ts=tasksOnDay(y,m,d);
 const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
 const sel=R.selDay===d;
-const dayTip=tipAttr(d+" "+MTHFULL[m]+" "+(y+543)+(ts.length?" · "+ts.length+" งาน":" · ไม่มีงาน"),ts.length?["เสร็จสิ้น|"+ts.filter(t=>t.status===STATUS_DONE).length,"กำลังดำเนินการ|"+ts.filter(t=>t.status==="กำลังดำเนินการ").length,"รอดำเนินการ|"+ts.filter(t=>t.status==="รอดำเนินการ").length]:"",tipList(ts,t=>t.title+" · "+(rr(t)&&occDone(t,new Date(y,m,d))?"ปิดรอบแล้ว":t.status),6));
+const dtD=new Date(y,m,d), stOn=t=>occStat(t,dtD);
+const dayTip=tipAttr(d+" "+MTHFULL[m]+" "+(y+543)+(ts.length?" · "+ts.length+" งาน":" · ไม่มีงาน"),ts.length?["เสร็จสิ้น|"+ts.filter(t=>stOn(t)===STATUS_DONE).length,"กำลังดำเนินการ|"+ts.filter(t=>stOn(t)==="กำลังดำเนินการ").length,"รอดำเนินการ|"+ts.filter(t=>stOn(t)==="รอดำเนินการ").length,ts.some(t=>stOn(t)===STATUS_CANCEL)?"ยกเลิก|"+ts.filter(t=>stOn(t)===STATUS_CANCEL).length:""]:"",tipList(ts,t=>t.title+" · "+stOn(t),6));
 cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}"${dayTip}>
 <span class="dn">${d}</span>
-<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,calColor()==="group"?gTagColor(t.track):(rr(t)?(occDone(t,dt)?"var(--ok)":(occState(t).cls==="s-over"?"var(--over)":itemColor(t))):itemColor(t)));
+<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,calColor()==="group"?gTagColor(t.track):(rr(t)?occColor(t,dt):itemColor(t)));
 return `<i style="background:${cl}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
@@ -259,7 +260,7 @@ ${calColor()==="matrix"
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานประจำเดือนนี้"}</h2>
 <div class="list">${
 R.selDay
-? (selTasks.map(t=>liRow(t)).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
+? (selTasks.map(t=>liRow(t,false,new Date(y,m,R.selDay))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
 : (recurring.map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานประจำในเดือนนี้</div>`)}</div>
 ${R.selDay?`<div class="addg" style="margin-top:12px">
 <button class="btn sm" id="addOnDay">${svg('<path d="M12 5v14M5 12h14"/>',16)}เพิ่มงานวันที่ ${R.selDay} ${MTH[m]}</button>
@@ -276,10 +277,11 @@ if(!days.length)return {c:sColor(t.status),n:t.status};
 const today=new Date(); today.setHours(0,0,0,0);
 const ds=days.map(i=>new Date(y,m,i));
 const done=ds.filter(d=>occDone(t,d)).length;
-const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const cx=ds.filter(d=>occCancel(t,d)).length;
+const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d)&&!occCancel(t,d));
 const late=open.filter(d=>d<today).length;
-if(!open.length)return {c:sColor(STATUS_DONE),n:done?"ปิดครบ "+done+" รอบ":"งดทุกรอบ"};
-if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")};
+if(!open.length)return {c:sColor(done?STATUS_DONE:STATUS_CANCEL),n:done?"ปิดครบ "+done+" รอบ"+(cx?" · ยกเลิก "+cx:""):(cx?"ยกเลิกทุกรอบ":"งดทุกรอบ")};
+if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")+(cx?" · ยกเลิก "+cx:"")};
 if(done)return {c:sColor("กำลังดำเนินการ"),n:"ปิดแล้ว "+done+"/"+ds.length+" รอบ"};
 return {c:sColor("รอดำเนินการ"),n:"ยังไม่ถึงรอบ ("+ds.length+" รอบ)"};
 }

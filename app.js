@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.9.10"; const APP_DATE="15 ต.ค. 2026";
+const APP_VERSION="14.9.11"; const APP_DATE="22 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -236,6 +236,7 @@ function isLastWeek(d){ return d.getDate()+7>new Date(d.getFullYear(),d.getMonth
 function occursOn(t,d){
 const R2=rr(t);
 if(R2&&occSkip(t,d))return false;
+if(R2&&R2.until&&isoOf(d)>R2.until)return false;
 if(R2){
 const start=t.date?new Date(t.date):null;
 if(start&&d<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
@@ -325,7 +326,37 @@ const isLawItem=t=>isLawTrain(t);
 const lawSrc=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
 return (c&&(c.law===true||c.law===false))?"หลักสูตร":"ประเภทงาน";};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
+// ===== สถานะรายรอบ (แบบ Google Calendar) =====
+// งานที่เกิดซ้ำ: แต่ละวันมีสถานะของตัวเอง เก็บใน t.ov[วันที่]={status} (เสร็จสิ้นเก็บใน t.done[] เหมือนเดิม)
+// ถ้าไม่ได้ตั้งเฉพาะวัน ใช้สถานะรวมของซีรีส์ (t.status) · ยกเลิกทั้งซีรีส์ = t.status ยกเลิก · "รอบนี้และต่อจากนี้" = rrule.until
+const isoDate=iso=>{const [y,m,d]=String(iso).split("-").map(Number); return new Date(y,(m||1)-1,d||1);};
+const serDefault=t=>{const s=normSt(t.status); return s===STATUS_CANCEL?STATUS_CANCEL:(s==="กำลังดำเนินการ"?s:"รอดำเนินการ");};
+function occStat(t,d){
+if(!rr(t))return normSt(t.status);
+const iso=isoOf(d), o=(t.ov||{})[iso];
+if(o&&o.status)return normSt(o.status);
+if((t.done||[]).includes(iso))return STATUS_DONE;
+return serDefault(t);
+}
+const occDone=(t,d)=>rr(t)?occStat(t,d)===STATUS_DONE:(((t&&t.done)||[]).includes(isoOf(d)));
+const occCancel=(t,d)=>rr(t)&&occStat(t,d)===STATUS_CANCEL;
+// สีของจุดในวันนั้น: ปิดแล้ว=เขียว · ยกเลิก=เทา · ยังเปิดและเลยวัน=แดง · อื่นๆตามสถานะ
+function occColor(t,d){
+const st=occStat(t,d); if(st===STATUS_DONE)return sColor(st); if(st===STATUS_CANCEL)return sColor(st);
+const today=new Date(); today.setHours(0,0,0,0);
+return d<today?"var(--over)":sColor(st);
+}
+// แพตช์ข้อมูลเมื่อเปลี่ยนสถานะ "เฉพาะรอบนี้"
+function occPatch(t,iso,status){
+const ov={...(t.ov||{})}; const done=(t.done||[]).filter(x=>x!==iso);
+delete ov[iso];
+if(status===STATUS_DONE)done.push(iso);
+else if(status!==serDefault(t)||t.status===STATUS_CANCEL)ov[iso]={status};
+const p={ov,done};
+if(t.status===STATUS_CANCEL&&status!==STATUS_CANCEL){ p.status="รอดำเนินการ"; if(status==="รอดำเนินการ")delete ov[iso]; }
+return p;
+}
+function occPrevDay(iso){ const d=isoDate(iso); d.setDate(d.getDate()-1); return isoOf(d); }
 // งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
 const occSkip=(t,d)=>(((t&&t.skip)||[]).includes(isoOf(d)));
 function occList(t,from,months){
@@ -338,7 +369,7 @@ function nextOpenOcc(t){
 const today=new Date(); today.setHours(0,0,0,0);
 const st=t.date?new Date(t.date):today;
 const from=new Date(Math.min(st.getTime(),today.getTime()));
-const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d)&&!occCancel(t,d));
 const past=list.filter(d=>d<today);
 return past.length?past[0]:(list.find(d=>d>=today)||null);
 }
@@ -927,15 +958,18 @@ const lab=(view==="train"||view==="dsd")?"เพิ่มหลักสูต�
 return `<div class="head"><div><h1>${title}</h1><div class="sub">${sub} · ${syncChip()}</div></div>
 ${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>${lab}</span></button>`:""}</div>`;
 }
-function liRow(t,showDate){
+// occD = วันที่ที่กำลังดูอยู่ (เช่นกดวันในปฏิทิน) → งานซ้ำจะแสดงสถานะของ "วันนั้น" ไม่ใช่สถานะรวม
+function liRow(t,showDate,occD){
 const ms=monthsOf(t), d=t.date?fmtDate(t.date).split(" "):null;
-return `<div class="li" data-id="${t._id}">
-<div class="ic" style="background:var(--line-2);color:${sColor(t.status)}">${(()=>{const n=rr(t)?dueDate(t):null;
+const OC=(occD&&rr(t))?occD:null, ost=OC?occStat(t,OC):null;
+return `<div class="li" data-id="${t._id}"${OC?` data-occ="${isoOf(OC)}"`:""}>
+<div class="ic" style="background:var(--line-2);color:${OC?occColor(t,OC):sColor(t.status)}">${(()=>{const n=OC?OC:(rr(t)?dueDate(t):null);
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
 <div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${tagColor(t.tag)||itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}<span class="gdot" style="background:${gTagColor(t.track)}"></span>${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
-${(()=>{const S=occState(t);
+${OC?(()=>{const od=OC<new Date(new Date().setHours(0,0,0,0))&&isOpenStatus(ost);
+return `<span class="pill ${od?"s-over":sCls(ost)}">${esc(od?"ค้างรอบนี้":ost)}</span>`+(ost===STATUS_CANCEL?"":`<button class="okbtn${ost===STATUS_DONE?" on":""}" data-done="${t._id}|${isoOf(OC)}" title="${ost===STATUS_DONE?"ยกเลิกการปิดรอบ ":"ปิดรอบวันที่ "}${OC.getDate()} ${MTH[OC.getMonth()]}">${svg(ICON.check,15)}</button>`);})():(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
 (S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบวันที่ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>`:"");})()}</div>`;
 }
@@ -1234,10 +1268,11 @@ for(let d=1;d<=days;d++){
 const ts=tasksOnDay(y,m,d);
 const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
 const sel=R.selDay===d;
-const dayTip=tipAttr(d+" "+MTHFULL[m]+" "+(y+543)+(ts.length?" · "+ts.length+" งาน":" · ไม่มีงาน"),ts.length?["เสร็จสิ้น|"+ts.filter(t=>t.status===STATUS_DONE).length,"กำลังดำเนินการ|"+ts.filter(t=>t.status==="กำลังดำเนินการ").length,"รอดำเนินการ|"+ts.filter(t=>t.status==="รอดำเนินการ").length]:"",tipList(ts,t=>t.title+" · "+(rr(t)&&occDone(t,new Date(y,m,d))?"ปิดรอบแล้ว":t.status),6));
+const dtD=new Date(y,m,d), stOn=t=>occStat(t,dtD);
+const dayTip=tipAttr(d+" "+MTHFULL[m]+" "+(y+543)+(ts.length?" · "+ts.length+" งาน":" · ไม่มีงาน"),ts.length?["เสร็จสิ้น|"+ts.filter(t=>stOn(t)===STATUS_DONE).length,"กำลังดำเนินการ|"+ts.filter(t=>stOn(t)==="กำลังดำเนินการ").length,"รอดำเนินการ|"+ts.filter(t=>stOn(t)==="รอดำเนินการ").length,ts.some(t=>stOn(t)===STATUS_CANCEL)?"ยกเลิก|"+ts.filter(t=>stOn(t)===STATUS_CANCEL).length:""]:"",tipList(ts,t=>t.title+" · "+stOn(t),6));
 cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}"${dayTip}>
 <span class="dn">${d}</span>
-<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,calColor()==="group"?gTagColor(t.track):(rr(t)?(occDone(t,dt)?"var(--ok)":(occState(t).cls==="s-over"?"var(--over)":itemColor(t))):itemColor(t)));
+<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,calColor()==="group"?gTagColor(t.track):(rr(t)?occColor(t,dt):itemColor(t)));
 return `<i style="background:${cl}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
@@ -1272,7 +1307,7 @@ ${calColor()==="matrix"
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานประจำเดือนนี้"}</h2>
 <div class="list">${
 R.selDay
-? (selTasks.map(t=>liRow(t)).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
+? (selTasks.map(t=>liRow(t,false,new Date(y,m,R.selDay))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
 : (recurring.map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานประจำในเดือนนี้</div>`)}</div>
 ${R.selDay?`<div class="addg" style="margin-top:12px">
 <button class="btn sm" id="addOnDay">${svg('<path d="M12 5v14M5 12h14"/>',16)}เพิ่มงานวันที่ ${R.selDay} ${MTH[m]}</button>
@@ -1289,10 +1324,11 @@ if(!days.length)return {c:sColor(t.status),n:t.status};
 const today=new Date(); today.setHours(0,0,0,0);
 const ds=days.map(i=>new Date(y,m,i));
 const done=ds.filter(d=>occDone(t,d)).length;
-const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const cx=ds.filter(d=>occCancel(t,d)).length;
+const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d)&&!occCancel(t,d));
 const late=open.filter(d=>d<today).length;
-if(!open.length)return {c:sColor(STATUS_DONE),n:done?"ปิดครบ "+done+" รอบ":"งดทุกรอบ"};
-if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")};
+if(!open.length)return {c:sColor(done?STATUS_DONE:STATUS_CANCEL),n:done?"ปิดครบ "+done+" รอบ"+(cx?" · ยกเลิก "+cx:""):(cx?"ยกเลิกทุกรอบ":"งดทุกรอบ")};
+if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")+(cx?" · ยกเลิก "+cx:"")};
 if(done)return {c:sColor("กำลังดำเนินการ"),n:"ปิดแล้ว "+done+"/"+ds.length+" รอบ"};
 return {c:sColor("รอดำเนินการ"),n:"ยังไม่ถึงรอบ ("+ds.length+" รอบ)"};
 }
@@ -3165,10 +3201,9 @@ document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async e=>{
 e.stopPropagation();
 const [id,iso]=b.dataset.done.split("|");
 const t=items.find(x=>x._id===id); if(!t)return;
-const done=[...(t.done||[])];
-const i=done.indexOf(iso); if(i>=0)done.splice(i,1); else done.push(iso);
+const patchD=occPatch(t,iso,occStat(t,isoDate(iso))===STATUS_DONE?"รอดำเนินการ":STATUS_DONE);
 const {_id,...rest}=t;
-try{ await saveItem({...rest,done},_id); }
+try{ await saveItem({...rest,...patchD},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); }
 });
 el("add")&&(el("add").onclick=()=>openPick());
@@ -3211,7 +3246,7 @@ if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
-const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
+const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t,n.dataset.occ||"");};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
 const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTxCard(t);});
 const sc=el("sc1");
@@ -3927,6 +3962,7 @@ el("wrap-wd").hidden=!(f==="week"||f==="monthnth");
 el("wrap-nth").hidden=(f!=="monthnth");
 el("wrap-md").hidden=(f!=="monthday");
 el("wrap-recur").hidden=(f!=="none");
+el("wrap-until").hidden=(f==="none");
 const dl=el("f-date").parentElement.querySelector("label");
 if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เริ่มต้น";
 }
@@ -4018,7 +4054,7 @@ const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
 el("f-wd").innerHTML=DOW.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d}.</label>`).join("");
 el("f-nth").innerHTML=NTH.map(([v,l])=>`<label><input type="checkbox" class="nth" value="${v}"${(RU.nth||[]).includes(v)?" checked":""}>${l}</label>`).join("");
-el("f-md").value=RU.monthday||"";
+el("f-md").value=RU.monthday||""; el("f-until").value=RU.until||"";
 syncFreq();
 el("f-meet").checked=genMode?false:(formCtx?formCtx==="meet":isMeet(t||{}));
 el("f-time").value=t?.time||""; el("f-place").value=t?.place||"";
@@ -4179,7 +4215,7 @@ el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d), sk=occSkipDraft.includes
 return `<label class="occ${d<=today?"":" fut"}${sk?" skip":""}">
 <input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}${sk?" disabled":""}>
 <span>${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500}</span>
-<i>${sk?"งดรอบนี้":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
+<i>${sk?"งดรอบนี้":occCancel(t,d)?"ยกเลิกแล้ว":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
 <button type="button" class="skipbtn${sk?" on":""}" data-skip="${iso}" title="${sk?"กลับมาจัดตามปกติ":"งดรอบนี้ (ไม่จัด)"}">${sk?"↺ จัดตามเดิม":"งด"}</button></label>`;}).join("")
 ||`<div class="hint" style="margin:0">ยังไม่มีรอบให้แสดง</div>`;
 el("occAll").onclick=ev=>{ev.preventDefault();occShowAll=!occShowAll;paintOccs(t);};
@@ -4270,7 +4306,7 @@ rrule:(()=>{const f=el("f-freq").value; if(f==="none")return null;
 return {freq:f,
 weekdays:[...el("f-wd").querySelectorAll("input:checked")].map(i=>+i.value),
 nth:[...el("f-nth").querySelectorAll("input:checked")].map(i=>+i.value),
-monthday:+el("f-md").value||null};})(),
+monthday:+el("f-md").value||null, ...(el("f-until").value?{until:el("f-until").value}:{})};})(),
 gl1:el("f-gl1").value, b1:+el("f-b1").value||0,
 gl2:el("f-gl2").value, b2:+el("f-b2").value||0,
 actual:+el("f-actual").value||0, code:el("f-code").value.trim(), course:el("f-course").value,
@@ -4293,6 +4329,7 @@ why:el("f-why").value.trim(), inv:el("f-inv").value.trim(), whr:el("f-whr").valu
 tag:el("f-tag").value.trim(), color:"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
 skip:(el("wrap-occ").hidden?(editing?.skip||[]):occSkipDraft.slice()),
+ov:(()=>{const ov={...(editing?.ov||{})}; if(!el("wrap-occ").hidden)el("f-occs").querySelectorAll(".oc:checked").forEach(i=>{delete ov[i.value];}); return ov;})(),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
 const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
@@ -4783,13 +4820,19 @@ el("vc-pills").innerHTML=o.pills||""; el("vc-body").innerHTML=o.body||"";
 el("vc-del").style.display=o.del?"":"none";
 if(!el("cardlg").open)el("cardlg").showModal();
 }
-function openCard(t){
+let cardOcc="";   // วันที่ (รอบ) ที่การ์ดกำลังพูดถึง — ใช้กับงานที่เกิดซ้ำ
+function openCard(t,occIso){
 if(!t)return;
 cardItem=t;
 const kind=kindOfItem(t)||(isTrain(t)?"train":isMeet(t)?"meet":"");
 const V=cV,R_=cR,sec=cS;
-const S=occState(t);
-const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):""));
+let S=occState(t);
+// งานเกิดซ้ำ: การ์ดแสดง "รอบวันที่..." พร้อมสถานะของรอบนั้นโดยเฉพาะ
+let O=null; cardOcc="";
+if(rr(t)){ if(occIso&&occursOn(t,isoDate(occIso)))O=isoDate(occIso); else if(S.d)O=S.d; else{ const l=occList(t,new Date(new Date().getFullYear(),new Date().getMonth()-1,1),6); O=l.find(d=>d>=new Date(new Date().setHours(0,0,0,0)))||l[l.length-1]||null; }
+if(O){ cardOcc=isoOf(O); const st=occStat(t,O), od=O<new Date(new Date().setHours(0,0,0,0))&&isOpenStatus(st);
+S={label:od?"ค้างรอบนี้":st,cls:od?"s-over":sCls(st),recur:true,d:O,st}; } }
+const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(O?"รอบวันที่ "+O.getDate()+" "+MTH[O.getMonth()]+" "+(O.getFullYear()+543)+" · "+rruleText(t):(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):"")));
 const _pills=`<span class="pill ${S.cls}">${esc(S.label)}</span>`+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
 const main=R_("บริษัท",t.company?cLabel(t.company):"")+R_("กลุ่มงาน",t.track?gLabel(t.track):"")
 +R_("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
@@ -4819,11 +4862,12 @@ const k5=isTrain(t)?"train":isMeet(t)?"meet":"task", L5=W5LAB[k5];
 const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("Where · สถานที่ / ระบบ / ลิงก์",t.whr,true):"")+R_(L5[4],t.how,true));
 const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";
 const _o=rr(t)?S.d:null, _isoO=_o?isoOf(_o):"";
-const quick=`<div class="vsec vquick"><h4>สถานะ</h4><div class="vq-row">
-${rr(t)&&_o?`<button type="button" class="btn vq-big ok" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`
+const curSt=_o?S.st:normSt(t.status);
+const quick=`<div class="vsec vquick"><h4>${_o?`สถานะ · รอบวันที่ ${_o.getDate()} ${MTH[_o.getMonth()]}`:"สถานะ"}${_o?`<span class="vq-nav"><button type="button" data-vqnav="-1" title="รอบก่อนหน้า">${svg('<path d="M15 6l-6 6 6 6"/>',14)}</button><button type="button" data-vqnav="1" title="รอบถัดไป">${svg('<path d="M9 6l6 6-6 6"/>',14)}</button></span>`:""}</h4><div class="vq-row">
+${rr(t)&&_o?(curSt!==STATUS_DONE&&curSt!==STATUS_CANCEL?`<button type="button" class="btn vq-big ok" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`:"")
 :(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big ok" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
-<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq ${sCls(x)}${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
-${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">ปุ่มดำ = ปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มเล็ก = สถานะรวมของงาน</div>`:""}</div>`;
+<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq ${sCls(x)}${x===curSt?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
+${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">${t.status===STATUS_CANCEL?"ยกเลิกทั้งซีรีส์อยู่ — เลือกสถานะอื่นเพื่อเปิดงานนี้กลับมา · ":""}สถานะมีผลเฉพาะรอบวันที่ ${_o?_o.getDate()+" "+MTH[_o.getMonth()]:"—"} รอบอื่นไม่กระทบ · ตอนกด “ยกเลิก” เลือกได้ว่าจะยกเลิกแค่รอบนี้ หรือรอบนี้เป็นต้นไป หรือทุกรอบ</div>`:""}</div>`;
 cardShow({kind:_kind,date:_date,title:t.title,color:({"s-done":"var(--ok)","s-over":"var(--over)","s-run":"var(--run)","s-cancel":"var(--ink-3)"})[S.cls]||"var(--wait)",pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
 edit:()=>open_(t),del:async()=>{
 if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
@@ -4835,15 +4879,49 @@ el("vc-del").onclick=()=>{const k=cardCtx; el("cardlg").close(); if(k&&k.del)k.d
 async function cardSave(patch){
 const t=cardItem; if(!t)return;
 const {_id,...rest}=t;
+const occKeep=cardOcc;
 try{ await saveItem({...rest,...patch},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); return; }
 const f=items.find(x=>x._id===_id)||{...t,...patch,_id};
-openCard(f);
+openCard(f,occKeep);
+}
+// ถามขอบเขตตอนยกเลิกงานที่เกิดซ้ำ (เหมือน Google Calendar: รอบนี้ / รอบนี้และต่อจากนี้ / ทุกรอบ)
+function askScope(title,opts){
+el("sc-title").textContent=title;
+el("sc-opts").innerHTML=opts.map((o,i)=>`<label class="scopeopt"><input type="radio" name="scopev" value="${esc(o.v)}"${i===0?" checked":""}><span><b>${esc(o.l)}</b>${o.s?`<small>${esc(o.s)}</small>`:""}</span></label>`).join("");
+el("scopedlg").showModal();
+return new Promise(r=>{ scopeResolve=r; });
+}
+let scopeResolve=null;
+el("sc-ok").onclick=()=>{ const v=(el("sc-opts").querySelector("input:checked")||{}).value||null; el("scopedlg").close(); const r=scopeResolve; scopeResolve=null; r&&r(v); };
+el("sc-no").onclick=()=>{ el("scopedlg").close(); const r=scopeResolve; scopeResolve=null; r&&r(null); };
+el("scopedlg").addEventListener("cancel",()=>{ const r=scopeResolve; scopeResolve=null; r&&r(null); });
+async function cardOccStatus(st){
+const t=cardItem; if(!t)return;
+const iso=cardOcc; if(!iso){ cardSave({status:st}); return; }
+const dl=isoDate(iso), lab=dl.getDate()+" "+MTH[dl.getMonth()]+" "+(dl.getFullYear()+543);
+if(st!==STATUS_CANCEL){ cardSave(occPatch(t,iso,st)); return; }
+const start=t.date||"";
+const v=await askScope("ยกเลิก “"+t.title+"”",[
+{v:"this",l:"เฉพาะรอบนี้ ("+lab+")",s:"รอบอื่นๆ ยังอยู่ตามปกติ"},
+{v:"following",l:"รอบนี้และรอบต่อจากนี้ทั้งหมด",s:"รอบก่อนหน้าไม่เปลี่ยน · จบการเกิดซ้ำตั้งแต่ "+lab},
+{v:"all",l:"ทุกรอบ (ยกเลิกทั้งงาน)",s:"ทุกรอบกลายเป็นยกเลิก"}]);
+if(!v)return;
+if(v==="this")cardSave(occPatch(t,iso,STATUS_CANCEL));
+else if(v==="all")cardSave({status:STATUS_CANCEL});
+else{
+if(start&&iso<=start)cardSave({status:STATUS_CANCEL});
+else cardSave({rrule:{...rr(t),until:occPrevDay(iso)}});
+}
 }
 el("vc-body").onclick=e=>{
 const b=e.target.closest("button"); if(!b||!cardItem)return;
-if(b.dataset.vqst){ cardSave({status:b.dataset.vqst}); }
-else if(b.dataset.vqocc){ const done=[...(cardItem.done||[])]; if(!done.includes(b.dataset.vqocc))done.push(b.dataset.vqocc); cardSave({done}); }
+if(b.dataset.vqst){ if(rr(cardItem))cardOccStatus(b.dataset.vqst); else cardSave({status:b.dataset.vqst}); }
+else if(b.dataset.vqocc){ cardSave(occPatch(cardItem,b.dataset.vqocc,STATUS_DONE)); }
+else if(b.dataset.vqnav){ const dir=+b.dataset.vqnav, cur=cardOcc?isoDate(cardOcc):new Date();
+const base=new Date(cur.getFullYear(),cur.getMonth()-4,1), l=occList(cardItem,base,9);
+const nx=dir<0?l.filter(d=>d<cur).pop():l.find(d=>d>cur);
+if(nx)openCard(cardItem,isoOf(nx)); else setFoot("ไม่มีรอบที่"+(dir<0?"ก่อนหน้า":"ถัดไป")+"แล้วค่ะ"); }
 };
 
 // ===== การ์ดดู: Index / กฎหมาย / รายการเงิน =====

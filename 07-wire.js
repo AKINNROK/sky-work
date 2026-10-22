@@ -30,10 +30,9 @@ document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async e=>{
 e.stopPropagation();
 const [id,iso]=b.dataset.done.split("|");
 const t=items.find(x=>x._id===id); if(!t)return;
-const done=[...(t.done||[])];
-const i=done.indexOf(iso); if(i>=0)done.splice(i,1); else done.push(iso);
+const patchD=occPatch(t,iso,occStat(t,isoDate(iso))===STATUS_DONE?"รอดำเนินการ":STATUS_DONE);
 const {_id,...rest}=t;
-try{ await saveItem({...rest,done},_id); }
+try{ await saveItem({...rest,...patchD},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); }
 });
 el("add")&&(el("add").onclick=()=>openPick());
@@ -76,7 +75,7 @@ if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
-const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
+const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t,n.dataset.occ||"");};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
 const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTxCard(t);});
 const sc=el("sc1");

@@ -1,4 +1,50 @@
-const APP_VERSION="14.9.7"; const APP_DATE="14 ต.ค. 2026";
+// ===== Tooltip กลาง: ใส่ data-tip="บรรทัด1\nบรรทัด2" ที่ element ไหนก็ได้ (รวมถึงกราฟ SVG) =====
+// บรรทัดแรก = หัวข้อ (ตัวหนา) · บรรทัดที่ขึ้นต้นด้วย "• " = รายการย่อย · บรรทัด "ชื่อ|ค่า" = แถวตัวเลข
+function tipAttr(...lines){
+const s=lines.flat(Infinity).filter(x=>x!==undefined&&x!==null&&x!==""&&x!==false).join("\n");
+return s?` data-tip="${String(s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}"`:"";
+}
+// รายการย่อยสำหรับ tooltip: โชว์สูงสุด max รายการ แล้วสรุป "และอีก N"
+function tipList(arr,f,max){
+max=max||8; f=f||(t=>t.title||"");
+const a=(arr||[]).slice(0,max).map(x=>"• "+f(x));
+if((arr||[]).length>max)a.push("…และอีก "+(arr.length-max)+" รายการ");
+return a;
+}
+let _tipEl=null, _tipFor=null, _touchAt=0;
+function tipBox(){ if(!_tipEl){ _tipEl=document.createElement("div"); _tipEl.id="tip"; _tipEl.setAttribute("role","tooltip"); _tipEl.hidden=true; document.body.appendChild(_tipEl);} return _tipEl; }
+function tipHide(){ if(_tipEl)_tipEl.hidden=true; _tipFor=null; }
+function tipShow(target,x,y){
+const raw=target.getAttribute("data-tip"); if(!raw)return;
+const b=tipBox();
+if(_tipFor!==target){
+_tipFor=target; b.textContent="";
+raw.split("\n").forEach((ln,i)=>{
+const d=document.createElement("div");
+if(i===0){ d.className="th"; d.textContent=ln; }
+else if(ln.startsWith("• ")){ d.className="tl"; d.textContent=ln.slice(2); }
+else if(ln.includes("|")&&!ln.startsWith("…")){ const k=ln.indexOf("|"); d.className="tr"; const a=document.createElement("span"); a.textContent=ln.slice(0,k); const v=document.createElement("b"); v.textContent=ln.slice(k+1); d.append(a,v); }
+else { d.className="tn"; d.textContent=ln; }
+b.appendChild(d); });
+}
+b.hidden=false;
+const r=b.getBoundingClientRect(), W=innerWidth, H=innerHeight;
+let L=x+14, T=y+16;
+if(L+r.width>W-8)L=Math.max(8,x-r.width-14);
+if(T+r.height>H-8)T=Math.max(8,y-r.height-14);
+b.style.left=L+"px"; b.style.top=T+"px";
+}
+function tipAnchor(t){ const r=t.getBoundingClientRect(); return [r.left+r.width/2,r.top+r.height/2]; }
+document.addEventListener("mouseover",e=>{ if(Date.now()-_touchAt<900)return; const t=e.target.closest&&e.target.closest("[data-tip]"); if(t)tipShow(t,e.clientX,e.clientY); else tipHide(); });
+document.addEventListener("mousemove",e=>{ if(Date.now()-_touchAt<900)return; if(!_tipFor||!_tipEl||_tipEl.hidden)return; const t=e.target.closest&&e.target.closest("[data-tip]"); if(t&&t===_tipFor)tipShow(t,e.clientX,e.clientY); });
+document.addEventListener("mouseout",e=>{ if(Date.now()-_touchAt<900)return; if(!e.relatedTarget)tipHide(); });
+document.addEventListener("focusin",e=>{ const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const [x,y]=tipAnchor(t); tipShow(t,x,y); } });
+document.addEventListener("focusout",()=>tipHide());
+// มือถือ/ทัช: แตะที่กราฟเพื่อดู แตะที่อื่นเพื่อปิด
+document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
+window.addEventListener("scroll",tipHide,{passive:true});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
+const APP_VERSION="14.9.11"; const APP_DATE="22 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -190,6 +236,7 @@ function isLastWeek(d){ return d.getDate()+7>new Date(d.getFullYear(),d.getMonth
 function occursOn(t,d){
 const R2=rr(t);
 if(R2&&occSkip(t,d))return false;
+if(R2&&R2.until&&isoOf(d)>R2.until)return false;
 if(R2){
 const start=t.date?new Date(t.date):null;
 if(start&&d<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
@@ -279,7 +326,37 @@ const isLawItem=t=>isLawTrain(t);
 const lawSrc=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
 return (c&&(c.law===true||c.law===false))?"หลักสูตร":"ประเภทงาน";};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
+// ===== สถานะรายรอบ (แบบ Google Calendar) =====
+// งานที่เกิดซ้ำ: แต่ละวันมีสถานะของตัวเอง เก็บใน t.ov[วันที่]={status} (เสร็จสิ้นเก็บใน t.done[] เหมือนเดิม)
+// ถ้าไม่ได้ตั้งเฉพาะวัน ใช้สถานะรวมของซีรีส์ (t.status) · ยกเลิกทั้งซีรีส์ = t.status ยกเลิก · "รอบนี้และต่อจากนี้" = rrule.until
+const isoDate=iso=>{const [y,m,d]=String(iso).split("-").map(Number); return new Date(y,(m||1)-1,d||1);};
+const serDefault=t=>{const s=normSt(t.status); return s===STATUS_CANCEL?STATUS_CANCEL:(s==="กำลังดำเนินการ"?s:"รอดำเนินการ");};
+function occStat(t,d){
+if(!rr(t))return normSt(t.status);
+const iso=isoOf(d), o=(t.ov||{})[iso];
+if(o&&o.status)return normSt(o.status);
+if((t.done||[]).includes(iso))return STATUS_DONE;
+return serDefault(t);
+}
+const occDone=(t,d)=>rr(t)?occStat(t,d)===STATUS_DONE:(((t&&t.done)||[]).includes(isoOf(d)));
+const occCancel=(t,d)=>rr(t)&&occStat(t,d)===STATUS_CANCEL;
+// สีของจุดในวันนั้น: ปิดแล้ว=เขียว · ยกเลิก=เทา · ยังเปิดและเลยวัน=แดง · อื่นๆตามสถานะ
+function occColor(t,d){
+const st=occStat(t,d); if(st===STATUS_DONE)return sColor(st); if(st===STATUS_CANCEL)return sColor(st);
+const today=new Date(); today.setHours(0,0,0,0);
+return d<today?"var(--over)":sColor(st);
+}
+// แพตช์ข้อมูลเมื่อเปลี่ยนสถานะ "เฉพาะรอบนี้"
+function occPatch(t,iso,status){
+const ov={...(t.ov||{})}; const done=(t.done||[]).filter(x=>x!==iso);
+delete ov[iso];
+if(status===STATUS_DONE)done.push(iso);
+else if(status!==serDefault(t)||t.status===STATUS_CANCEL)ov[iso]={status};
+const p={ov,done};
+if(t.status===STATUS_CANCEL&&status!==STATUS_CANCEL){ p.status="รอดำเนินการ"; if(status==="รอดำเนินการ")delete ov[iso]; }
+return p;
+}
+function occPrevDay(iso){ const d=isoDate(iso); d.setDate(d.getDate()-1); return isoOf(d); }
 // งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
 const occSkip=(t,d)=>(((t&&t.skip)||[]).includes(isoOf(d)));
 function occList(t,from,months){
@@ -292,7 +369,7 @@ function nextOpenOcc(t){
 const today=new Date(); today.setHours(0,0,0,0);
 const st=t.date?new Date(t.date):today;
 const from=new Date(Math.min(st.getTime(),today.getTime()));
-const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d)&&!occCancel(t,d));
 const past=list.filter(d=>d<today);
 return past.length?past[0]:(list.find(d=>d>=today)||null);
 }
@@ -315,7 +392,7 @@ const QCOL={q1:"#E5636F",q2:"#5B9BD5",q3:"#F0B429",q4:"#A8A59B"};
 const calColor=()=>{try{return localStorage.getItem("sw-calcolor")||"";}catch(e){return "";}};
 const dotCol=(t,def)=>calColor()==="matrix"?(QCOL[quadOf(t)]||"var(--line)"):def;
 const itemColor=t=>{ if(!t)return sColor("");
-return gColor(t.track)||sColor(t.status); };
+return sColor(t.status); };
 const svg=(p,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
 // ทะเบียนหลักสูตร — รหัสรันอัตโนมัติ กันคีย์มือผิด
 const CRSPREFIX="TRN";
@@ -419,38 +496,47 @@ ${R.scope==="month"?`<select id="scMonth" style="border:0;background:var(--card)
 }
 function donut(parts,centerTop,centerSub){
 const tot=parts.reduce((s,p)=>s+p.v,0)||1, R2=52, C=2*Math.PI*R2; let off=0;
+const pctOf=p=>Math.round(p.v/tot*1000)/10;
 const arcs=parts.filter(p=>p.v>0).map(p=>{
 const len=p.v/tot*C;
 const a=`<circle cx="70" cy="70" r="${R2}" fill="none" stroke="${p.c}" stroke-width="20"
 stroke-dasharray="${Math.max(len-3,1)} ${C-Math.max(len-3,1)}" stroke-dashoffset="${-off}"
-stroke-linecap="round" transform="rotate(-90 70 70)"><title>${esc(p.n)}: ${p.v}</title></circle>`;
+stroke-linecap="round" transform="rotate(-90 70 70)"${tipAttr(p.n+" · "+p.v+" ("+pctOf(p)+"%)",p.tip)}></circle>`;
 off+=len; return a;}).join("");
-return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="สัดส่วนงาน">
+return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="สัดส่วน">
 <circle cx="70" cy="70" r="${R2}" fill="none" stroke="var(--line-2)" stroke-width="20"/>${arcs}
 <text x="70" y="66" text-anchor="middle" font-size="26" font-weight="600" fill="var(--ink)" font-family="Mitr,sans-serif">${centerTop}</text>
 <text x="70" y="86" text-anchor="middle" font-size="11" fill="var(--ink-3)" font-family="Sarabun,sans-serif">${centerSub}</text></svg>`;
 }
-function bars(vals,labels,fmt,hi){
-const max=Math.max(...vals,1), W=430, H=150, bw=W/vals.length;
-return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="กราฟรายเดือน">
+// tooltip ของแถวในคำอธิบายโดนัท (ใช้ข้อความเดียวกับชิ้นโดนัท)
+const donutTip=(parts,p)=>{const tot=parts.reduce((s,x)=>s+x.v,0)||1; return tipAttr(p.n+" · "+p.v+" ("+Math.round(p.v/tot*1000)/10+"%)",p.tip);};
+// bars(ค่า, ป้ายแกน, รูปแบบตัวเลข, เดือนที่เน้น, tips[i] = บรรทัดรายละเอียดเพิ่มเติม (array หรือ string), unit = หน่วย เช่น "งาน")
+function bars(vals,labels,fmt,hi,tips,unit,sumLabel){
+const max=Math.max(...vals,1), W=430, H=150, bw=W/vals.length, tot=vals.reduce((a,b)=>a+b,0);
+return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="กราฟแท่ง">
 <line x1="0" y1="118" x2="${W}" y2="118" stroke="var(--line-2)" stroke-width="1.5"/>
 ${vals.map((v,i)=>{
 const h=Math.max(v/max*104,v>0?5:0), x=i*bw+bw*.2, y=118-h, on=i===hi;
-return `<g><rect x="${x}" y="${y}" width="${bw*.6}" height="${h}" rx="5" fill="${on?"var(--accent)":"var(--accent-2)"}" opacity="${on?1:.55}"><title>${labels[i]}: ${fmt(v)}</title></rect>
-${v>0?`<text x="${x+bw*.3}" y="${y-5}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)" font-family="Sarabun,sans-serif">${fmt(v)}</text>`:""}
-<text x="${x+bw*.3}" y="134" text-anchor="middle" font-size="9.5" fill="${on?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif">${labels[i]}</text></g>`;}).join("")}
+const head=labels[i]+" · "+(fmt(v)||0)+(unit?" "+unit:"")+(tot&&v?" ("+Math.round(v/tot*1000)/10+"% ของ"+(sumLabel||"ทั้งหมด")+")":"");
+return `<g><rect class="chartcol" x="${i*bw}" y="0" width="${bw}" height="134"${tipAttr(head,(tips&&tips[i])||(v?"":"ไม่มีรายการ"))}/>
+<rect x="${x}" y="${y}" width="${bw*.6}" height="${h}" rx="5" fill="${on?"var(--accent)":"var(--accent-2)"}" opacity="${on?1:.55}" pointer-events="none"></rect>
+${v>0?`<text x="${x+bw*.3}" y="${y-5}" text-anchor="middle" font-size="9.5" fill="var(--ink-3)" font-family="Sarabun,sans-serif" pointer-events="none">${fmt(v)}</text>`:""}
+<text x="${x+bw*.3}" y="134" text-anchor="middle" font-size="9.5" fill="${on?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif" pointer-events="none">${labels[i]}</text></g>`;}).join("")}
 </svg>`;
 }
-function dualBars(inc,exp,labels,hi,n1="รายรับ",n2="รายจ่าย",c1="var(--ok)",c2="var(--accent-2)"){
+// dualBars: tips(i) → บรรทัดเพิ่มเติมของเดือนที่ i (array)
+function dualBars(inc,exp,labels,hi,n1="รายรับ",n2="รายจ่าย",c1="var(--ok)",c2="var(--accent-2)",tips,diffLabel){
 const max=Math.max(...inc,...exp,1), W=430, H=155, bw=W/12;
-return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="รายรับรายจ่ายรายเดือน">
+return `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="กราฟแท่งคู่รายเดือน">
 <line x1="0" y1="120" x2="${W}" y2="120" stroke="var(--line-2)" stroke-width="1.5"/>
 ${labels.map((l,i)=>{
 const hi2=Math.max(inc[i]/max*98,inc[i]>0?4:0), he=Math.max(exp[i]/max*98,exp[i]>0?4:0);
-const x=i*bw+bw*.14, w=bw*.34;
-return `<g><rect x="${x}" y="${120-hi2}" width="${w}" height="${hi2}" rx="4" fill="${c1}"><title>${l} ${n1}: ${baht(inc[i])}</title></rect>
-<rect x="${x+w+2}" y="${120-he}" width="${w}" height="${he}" rx="4" fill="${c2}"><title>${l} ${n2}: ${baht(exp[i])}</title></rect>
-<text x="${i*bw+bw*.5}" y="136" text-anchor="middle" font-size="9.5" fill="${i===hi?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif">${l}</text></g>`;}).join("")}
+const x=i*bw+bw*.14, w=bw*.34, dif=inc[i]-exp[i];
+const head=[l,n1+"|"+baht(inc[i])+" ฿",n2+"|"+baht(exp[i])+" ฿",(diffLabel||"ผลต่าง")+"|"+(dif<0?"−":dif>0?"+":"")+baht(Math.abs(dif))+" ฿"];
+return `<g><rect class="chartcol" x="${i*bw}" y="0" width="${bw}" height="138"${tipAttr(head,tips&&(typeof tips==="function"?tips(i):tips[i]))}/>
+<rect x="${x}" y="${120-hi2}" width="${w}" height="${hi2}" rx="4" fill="${c1}" pointer-events="none"></rect>
+<rect x="${x+w+2}" y="${120-he}" width="${w}" height="${he}" rx="4" fill="${c2}" pointer-events="none"></rect>
+<text x="${i*bw+bw*.5}" y="136" text-anchor="middle" font-size="9.5" fill="${i===hi?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif" pointer-events="none">${l}</text></g>`;}).join("")}
 </svg>`;
 }
 const CFG_BAKED={url:"",key:""};
@@ -872,15 +958,18 @@ const lab=(view==="train"||view==="dsd")?"เพิ่มหลักสูต�
 return `<div class="head"><div><h1>${title}</h1><div class="sub">${sub} · ${syncChip()}</div></div>
 ${btn?`<button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>${lab}</span></button>`:""}</div>`;
 }
-function liRow(t,showDate){
+// occD = วันที่ที่กำลังดูอยู่ (เช่นกดวันในปฏิทิน) → งานซ้ำจะแสดงสถานะของ "วันนั้น" ไม่ใช่สถานะรวม
+function liRow(t,showDate,occD){
 const ms=monthsOf(t), d=t.date?fmtDate(t.date).split(" "):null;
-return `<div class="li" data-id="${t._id}">
-<div class="ic" style="background:var(--line-2);color:${sColor(t.status)}">${(()=>{const n=rr(t)?dueDate(t):null;
+const OC=(occD&&rr(t))?occD:null, ost=OC?occStat(t,OC):null;
+return `<div class="li" data-id="${t._id}"${OC?` data-occ="${isoOf(OC)}"`:""}>
+<div class="ic" style="background:var(--line-2);color:${OC?occColor(t,OC):sColor(t.status)}">${(()=>{const n=OC?OC:(rr(t)?dueDate(t):null);
 if(n)return n.getDate()+"<br>"+MTH[n.getMonth()];
 return d?`${d[0]}<br>${d[1]}`:(ms.length>1?"ประจำ":"—");})()}</div>
 <div class="tx"><div class="t1">${esc(t.title)}</div>
-<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}<span class="gdot" style="background:${gTagColor(t.track)}"></span>${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
-${(()=>{const S=occState(t);
+<div class="t2">${(()=>{const cc=crsCodeOf(t);return cc?`<b style="font-family:var(--mono);color:var(--accent)">${esc(cc)}</b>${t.batch?" "+esc(t.batch):""} · `:"";})()}${quadOf(t)?`<b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b> `:""}${t.tag?`<b style="color:${tagColor(t.tag)||itemColor(t)}">● ${esc(t.tag)}</b> · `:""}${rruleText(t)?esc(rruleText(t))+" · ":""}<span class="gdot" style="background:${gTagColor(t.track)}"></span>${esc(gLabel(t.track))}${t.company?" · "+esc(cLabel(t.company)):""}${t.owner?" · "+esc(t.owner):""}${budgetOf(t)?" · "+baht(budgetOf(t))+" ฿":""}</div></div>
+${OC?(()=>{const od=OC<new Date(new Date().setHours(0,0,0,0))&&isOpenStatus(ost);
+return `<span class="pill ${od?"s-over":sCls(ost)}">${esc(od?"ค้างรอบนี้":ost)}</span>`+(ost===STATUS_CANCEL?"":`<button class="okbtn${ost===STATUS_DONE?" on":""}" data-done="${t._id}|${isoOf(OC)}" title="${ost===STATUS_DONE?"ยกเลิกการปิดรอบ ":"ปิดรอบวันที่ "}${OC.getDate()} ${MTH[OC.getMonth()]}">${svg(ICON.check,15)}</button>`);})():(()=>{const S=occState(t);
 return `<span class="pill ${S.cls}">${esc(S.label)}</span>`+
 (S.recur&&S.d&&daysTo(S.d)<=0?`<button class="okbtn" data-done="${t._id}|${isoOf(S.d)}" title="ปิดรอบวันที่ ${S.d.getDate()} ${MTH[S.d.getMonth()]}">${svg(ICON.check,15)}</button>`:"");})()}</div>`;
 }
@@ -961,7 +1050,7 @@ const mi=matrixItems().filter(inScope), q1=mi.filter(t=>quadOf(t)==="q1").sort((
 const cn=k=>mi.filter(t=>quadOf(t)===k).length;
 const late=q1.filter(t=>mxDl(t).n<0).length;
 return `<div class="card span4 mxhome"><h2><span>ทำเลยวันนี้ <small>ช่อง 1 · สำคัญ + เร่งด่วน</small></span>
-<span class="mxchips">${QUADS.map((x,i)=>`<i class="mc${i+1}" title="${esc(x[1])}">${i+1} · ${cn(x[0])}</i>`).join("")}${un?`<i class="mc0" title="ยังไม่จัดลำดับ">? · ${un}</i>`:""}</span></h2>
+<span class="mxchips">${QUADS.map((x,i)=>`<i class="mc${i+1}"${tipAttr(i+1+". "+x[1]+" · "+x[2]+" — "+cn(x[0])+" งาน",tipList(mi.filter(t=>quadOf(t)===x[0]),t=>t.title,5))}>${i+1} · ${cn(x[0])}</i>`).join("")}${un?`<i class="mc0"${tipAttr("ยังไม่จัดลำดับ — "+un+" งาน",tipList(mi.filter(t=>!quadOf(t)),t=>t.title,5),"ไปจัดที่หน้า Matrix งาน")}>? · ${un}</i>`:""}</span></h2>
 ${q1.length?`<div class="mxlist" style="max-height:none">${q1.slice(0,5).map(t=>{const dl=mxDl(t);return `<div class="mxc" data-id="${t._id}"><div class="t1">${esc(t.title)}</div>
 <div class="t2"><span class="${dl.cls}">${esc(dl.txt)}</span>${t.owner?`<span>· ${esc(t.owner)}</span>`:""}</div></div>`;}).join("")}</div>
 <div class="sub" style="margin-top:8px">${q1.length>5?`และอีก ${q1.length-5} งาน · `:""}${late?`เลย Deadline แล้ว ${late} งาน · `:""}<a class="lklink" ${jump("matrix")} style="cursor:pointer">เปิด Matrix งาน →</a></div>`
@@ -980,6 +1069,9 @@ const up=items.filter(t=>t.date&&new Date(t.date)>=new Date(now.toDateString())&
 .sort((a,b)=>a.date<b.date?-1:1).slice(0,6);
 const pct=A.length?Math.round(done/A.length*100):0;
 const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
+const byMonthTip=MTH.map((_,i)=>tipList(items.filter(t=>monthsOf(t).includes(i+1)),t=>t.title+(t.status?" · "+t.status:"")));
+const stParts=[{n:"เสร็จสิ้น",v:done,c:"var(--ok)",tip:tipList(A.filter(t=>t.status==="เสร็จสิ้น"))},{n:"กำลังดำเนินการ",v:run,c:"var(--run)",tip:tipList(A.filter(t=>t.status==="กำลังดำเนินการ"))},{n:"รอดำเนินการ",v:wait,c:"var(--wait)",tip:tipList(A.filter(t=>t.status==="รอดำเนินการ"))}];
+const stCancel={n:"ยกเลิก",v:cancelled,c:"var(--ink-3)",tip:tipList(scoped.filter(t=>t.status===STATUS_CANCEL))};
 return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+bkBanner()+
 (()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
@@ -1008,13 +1100,13 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 budBanner(THISYEAR)+
 `<div class="dash">
 ${homeQ1()}
-<div class="card hero span2"><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
+<div class="card hero span2"${tipAttr("ความคืบหน้า · "+scopeLabel()+" · "+pct+"%","เสร็จสิ้น|"+done+" งาน","กำลังดำเนินการ|"+run+" งาน","รอดำเนินการ|"+wait+" งาน",cancelled?"ยกเลิก|"+cancelled+" งาน (ไม่นับ)":"","คิดจาก งานเสร็จ ÷ งานทั้งหมด ไม่รวมงานที่ยกเลิกและไอเดีย")}><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
 <div class="big">${pct}%</div>
 <div class="meta"><span>เสร็จแล้ว ${done} งาน</span><span>เหลืออีก ${A.length-done} งาน</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
+<div class="card stat" ${jump("all",{F:{status:"กำลังดำเนินการ"}})}${tipAttr("กำลังดำเนินการ · "+run+" งาน",tipList(A.filter(t=>t.status==="กำลังดำเนินการ"),t=>t.title+(t.owner?" · "+t.owner:"")),wait?"รอเริ่มอีก "+wait+" งาน":"")}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> กำลังดำเนินการ</div>
 <div class="v">${run}</div><div class="d">รอเริ่มอีก ${wait} งาน · แตะเพื่อดูรายการ</div></div>
-<div class="card stat" ${jump("budget")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
+<div class="card stat" ${jump("budget")}${tipAttr("งบคงเหลือ · "+scopeLabel(),"งบที่ตั้งไว้|"+baht(bud)+" ฿","ใช้จริง|"+baht(act)+" ฿","คงเหลือ|"+(bud-act<0?"เกิน ":"")+baht(Math.abs(bud-act))+" ฿","ใช้ไป|"+(bud?Math.round(act/bud*100):0)+"%",over.length?"มี "+over.length+" งานใช้เกินงบของงานนั้น":"","(รวมงบ GL หลัก+รอง ของงานในช่วงที่เลือก)")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบคงเหลือ · ${scopeLabel()}</div>
 <div class="v">${baht(bud-act)}</div><div class="d">ใช้ไป ${baht(act)} จาก ${baht(bud)}</div>
 <div class="bar"><i class="${act>bud?"hot":""}" style="width:${bud?Math.min(100,act/bud*100):0}%"></i></div></div>
 <div class="card span4"><h2>สรุปทุกหมวด <small>แตะการ์ดเพื่อไปดูที่มาของตัวเลข · ${scopeLabel()}</small></h2>
@@ -1028,7 +1120,7 @@ const lgLate=legal.filter(L=>legalState(L).k==="late").length;
 const lgSoon=legal.filter(L=>legalState(L).k==="soon").length;
 const lgNo=legal.filter(L=>legalState(L).k==="noperson").length;
 const need=dsdList(R.year).map(c=>dsdCalc(dsdRec(c.key,R.year)).need).reduce((a,b)=>a+b,0);
-const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go}>
+const card=(icon,name,big,sub,go,warn)=>`<div class="mod${warn?" warn":""}" ${go}${tipAttr(name+" · "+String(big).replace(/<[^>]+>/g,""),String(sub).replace(/<[^>]+>/g,""),"แตะเพื่อเปิดหน้านี้")}>
 <div class="modh"><span class="ic">${svg(icon,16)}</span>${name}</div>
 <div class="modv">${big}</div><div class="mods">${sub}</div></div>`;
 return [
@@ -1047,14 +1139,15 @@ card(ICON.clock,"เตรียมประชุม",pr.length,pr.length?`ใ�
 </div></div>
 <div class="card span2"><h2>สัดส่วนสถานะงาน <small>${scopeLabel()} · ${A.length} งาน</small></h2>
 <div class="donutwrap">
-${donut([{n:"เสร็จสิ้น",v:done,c:"var(--ok)"},{n:"กำลังดำเนินการ",v:run,c:"var(--run)"},{n:"รอดำเนินการ",v:wait,c:"var(--wait)"}],A.length,"งานทั้งหมด")}
+${donut(stParts,A.length,"งานทั้งหมด")}
 <div class="dlist">
-<div ${jump("all",{F:{status:"เสร็จสิ้น"}})}><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
-<div ${jump("all",{F:{status:"กำลังดำเนินการ"}})}><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
-<div ${jump("all",{F:{status:"รอดำเนินการ"}})}><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div>
-${cancelled?`<div ${jump("all",{F:{status:"ยกเลิก"}})}><i style="background:var(--ink-3)"></i>ยกเลิก<b>${cancelled}</b></div>`:""}</div></div></div>
+<div ${jump("all",{F:{status:"เสร็จสิ้น"}})}${donutTip(stParts,stParts[0])}><i style="background:var(--ok)"></i>เสร็จสิ้น<b>${done}</b></div>
+<div ${jump("all",{F:{status:"กำลังดำเนินการ"}})}${donutTip(stParts,stParts[1])}><i style="background:var(--run)"></i>กำลังดำเนินการ<b>${run}</b></div>
+<div ${jump("all",{F:{status:"รอดำเนินการ"}})}${donutTip(stParts,stParts[2])}><i style="background:var(--wait)"></i>รอดำเนินการ<b>${wait}</b></div>
+${cancelled?`<div ${jump("all",{F:{status:"ยกเลิก"}})}${tipAttr("ยกเลิก · "+cancelled+" งาน (ไม่นับในโดนัท)",stCancel.tip)}><i style="background:var(--ink-3)"></i>ยกเลิก<b>${cancelled}</b></div>`:""}</div></div></div>
 <div class="card span2"><h2>จำนวนงานรายเดือน <small>ทั้งปี ${R.year+543}</small></h2>
-${bars(byMonth,MTH,v=>v||"",now.getMonth())}</div>
+${bars(byMonth,MTH,v=>v||"",now.getMonth(),byMonthTip,"งาน","งานทั้งปี")}
+<div class="hint" style="margin:6px 0 0">เลื่อนเมาส์/แตะที่แท่งเพื่อดูว่ามีงานอะไรบ้าง · งานประจำที่เกิดหลายเดือนนับซ้ำทุกเดือนที่มี</div></div>
 <div class="card span2"><h2>งานใน${scopeLabel()} <small>${scoped.filter(t=>isOpenStatus(t.status)).length} รายการที่ยังไม่ปิด</small></h2>
 <div class="list">${scoped.filter(t=>isOpenStatus(t.status)).slice(0,6).map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานค้างในช่วงนี้ 🎉</div>`}</div></div>
 <div class="card span2"><h2>กำหนดการถัดไป <small>เรียงตามวันที่</small></h2>
@@ -1175,10 +1268,12 @@ for(let d=1;d<=days;d++){
 const ts=tasksOnDay(y,m,d);
 const isToday=today.getFullYear()===y&&today.getMonth()===m&&today.getDate()===d;
 const sel=R.selDay===d;
-cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}">
+const dtD=new Date(y,m,d), stOn=t=>occStat(t,dtD);
+const dayTip=tipAttr(d+" "+MTHFULL[m]+" "+(y+543)+(ts.length?" · "+ts.length+" งาน":" · ไม่มีงาน"),ts.length?["เสร็จสิ้น|"+ts.filter(t=>stOn(t)===STATUS_DONE).length,"กำลังดำเนินการ|"+ts.filter(t=>stOn(t)==="กำลังดำเนินการ").length,"รอดำเนินการ|"+ts.filter(t=>stOn(t)==="รอดำเนินการ").length,ts.some(t=>stOn(t)===STATUS_CANCEL)?"ยกเลิก|"+ts.filter(t=>stOn(t)===STATUS_CANCEL).length:""]:"",tipList(ts,t=>t.title+" · "+stOn(t),6));
+cells.push(`<div class="day${isToday?" today":""}${sel?" sel":""}" data-day="${d}"${dayTip}>
 <span class="dn">${d}</span>
-<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,rr(t)?(occDone(t,dt)?"var(--ok)":itemColor(t)):itemColor(t));
-return `<i style="background:${cl}" title="${esc(t.title)}${rr(t)&&occDone(t,dt)?" · ปิดรอบแล้ว":""}"></i>`;}).join("")}</span>
+<span class="dots">${ts.slice(0,4).map(t=>{const dt=new Date(y,m,d);const cl=dotCol(t,calColor()==="group"?gTagColor(t.track):(rr(t)?occColor(t,dt):itemColor(t)));
+return `<i style="background:${cl}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
@@ -1187,7 +1282,8 @@ return header("ปฏิทิน","แตะวันที่เพื่อ�
 <div class="seg" id="calmode">
 <button data-cm="month" aria-pressed="${R.calMode==="month"}">รายเดือน</button>
 <button data-cm="year" aria-pressed="${R.calMode==="year"}">ทั้งปี</button></div>
-<div class="seg" id="calcol" title="สีจุดในปฏิทิน"><button data-cc="" aria-pressed="${calColor()!=="matrix"}">สีตามกลุ่มงาน</button>
+<div class="seg" id="calcol" title="สีจุดในปฏิทิน"><button data-cc="" aria-pressed="${calColor()===""}">สีตามสถานะ</button>
+<button data-cc="group" aria-pressed="${calColor()==="group"}">สีตามกลุ่มงาน</button>
 <button data-cc="matrix" aria-pressed="${calColor()==="matrix"}">สีตาม Matrix</button></div>
 ${R.calMode==="year"?yearSel("yrSel2"):""}
 ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
@@ -1200,6 +1296,8 @@ ${R.calMode==="month"?`<div class="seg"><button id="pm">‹</button>
 <div class="mcal">${DOW.map(d=>`<div class="dh">${d}</div>`).join("")}${cells.join("")}</div>
 ${calColor()==="matrix"
 ?`<div class="legend" style="margin-top:14px">${QUADS.map((x,i)=>`<span><i style="background:${QCOL[x[0]]}"></i>${i+1} ${x[1]}</span>`).join("")}<span><i style="background:var(--line)"></i>ยังไม่จัดลำดับ</span></div>`
+:calColor()==="group"
+?`<div class="legend" style="margin-top:14px">${visible(groups).map(g=>`<span><i style="background:${gTagColor(g.key)}"></i>${esc(g.label)}</span>`).join("")}</div>`
 :`<div class="legend" style="margin-top:14px">
 <span><i style="background:var(--ok)"></i>เสร็จสิ้น</span>
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
@@ -1209,7 +1307,7 @@ ${calColor()==="matrix"
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานประจำเดือนนี้"}</h2>
 <div class="list">${
 R.selDay
-? (selTasks.map(t=>liRow(t)).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
+? (selTasks.map(t=>liRow(t,false,new Date(y,m,R.selDay))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
 : (recurring.map(t=>liRow(t)).join("")||`<div class="empty">ไม่มีงานประจำในเดือนนี้</div>`)}</div>
 ${R.selDay?`<div class="addg" style="margin-top:12px">
 <button class="btn sm" id="addOnDay">${svg('<path d="M12 5v14M5 12h14"/>',16)}เพิ่มงานวันที่ ${R.selDay} ${MTH[m]}</button>
@@ -1226,10 +1324,11 @@ if(!days.length)return {c:sColor(t.status),n:t.status};
 const today=new Date(); today.setHours(0,0,0,0);
 const ds=days.map(i=>new Date(y,m,i));
 const done=ds.filter(d=>occDone(t,d)).length;
-const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const cx=ds.filter(d=>occCancel(t,d)).length;
+const open=ds.filter(d=>!occDone(t,d)&&!occSkip(t,d)&&!occCancel(t,d));
 const late=open.filter(d=>d<today).length;
-if(!open.length)return {c:sColor(STATUS_DONE),n:done?"ปิดครบ "+done+" รอบ":"งดทุกรอบ"};
-if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")};
+if(!open.length)return {c:sColor(done?STATUS_DONE:STATUS_CANCEL),n:done?"ปิดครบ "+done+" รอบ"+(cx?" · ยกเลิก "+cx:""):(cx?"ยกเลิกทุกรอบ":"งดทุกรอบ")};
+if(late)return {c:"var(--over)",n:"ค้าง "+late+" รอบ"+(done?" · ปิดแล้ว "+done:"")+(cx?" · ยกเลิก "+cx:"")};
 if(done)return {c:sColor("กำลังดำเนินการ"),n:"ปิดแล้ว "+done+"/"+ds.length+" รอบ"};
 return {c:sColor("รอดำเนินการ"),n:"ยังไม่ถึงรอบ ("+ds.length+" รอบ)"};
 }
@@ -1242,7 +1341,8 @@ const head=`<div class="mh" style="text-align:left">งาน</div>${MTH.map((x,
 // แถวสรุปจำนวนงานรายเดือน (ทุกหมวดรวมกัน) ใต้หัวตาราง
 const totRow=`<div class="msum" style="text-align:left">รวมทุกหมวด <span>${list.length} งาน</span></div>`+
 MTH.map((_,i)=>{const n=list.filter(t=>monthsOf(t).includes(i+1)).length;
-return `<div class="msum${i+1===now?" now":""}">${n||"—"}</div>`;}).join("");
+const L=list.filter(t=>monthsOf(t).includes(i+1));
+return `<div class="msum${i+1===now?" now":""}"${tipAttr(MTHFULL[i]+" · "+n+" งาน",n?["เสร็จสิ้น|"+L.filter(t=>t.status===STATUS_DONE).length,"กำลังดำเนินการ|"+L.filter(t=>t.status==="กำลังดำเนินการ").length,"รอดำเนินการ|"+L.filter(t=>t.status==="รอดำเนินการ").length,tipList(L,t=>t.title+" · "+t.status,8)]:"ไม่มีงาน")}>${n||"—"}</div>`;}).join("");
 // แยกตามกลุ่มงาน: แสดงทุกกลุ่มที่ตั้งไว้ (รวมกลุ่มที่ยังไม่มีงาน) + กองงานที่ไม่มีกลุ่ม/กลุ่มถูกลบ
 const orphan=list.filter(t=>!t.track||!groups.some(g=>g.key===t.track));
 const buckets=[...groups.map(x=>[x.label,x.key,x.hidden]),...(orphan.length?[["ยังไม่ระบุกลุ่มงาน","__none__",false]]:[])];
@@ -1250,12 +1350,12 @@ const rows=buckets.map(([name,key,hid])=>{
 const g=(key==="__none__")?orphan:list.filter(t=>t.track===key);
 
 return `<div class="cgroup${g.length?"":" zero"}"><span class="tagdot" style="background:${gTagColor(key)};width:10px;height:10px;display:inline-block;margin-right:6px"></span>${esc(name)}${hid?' <small style="color:var(--ink-3)">· ซ่อนอยู่</small>':""} <span>${g.length?g.length:"ยังไม่มีงาน"}</span></div>`+
-MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}">${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
+MTH.map((_,i)=>`<div class="cgroup gcell${i+1===now?" now":""}"${(()=>{const L=g.filter(t=>monthsOf(t).includes(i+1));return L.length?tipAttr(name+" · "+MTHFULL[i]+" · "+L.length+" งาน",tipList(L,t=>t.title+" · "+t.status,8)):"";})()}>${(()=>{const n=g.filter(t=>monthsOf(t).includes(i+1)).length;return n||"";})()}</div>`).join("")+
 g.map(t=>{const ms=monthsOf(t);return `<div class="cname" data-id="${t._id}">${esc(t.title)}</div>`+
 MTH.map((_,i)=>`<div class="cell${i+1===now?" now":""}">${ms.includes(i+1)
 ?(()=>{const S=monthState(t,R.year,i);
-return `<span class="mark" title="${esc(gLabel(t.track)+" · "+S.n)}">
-<i class="mdot" style="background:${S.c}"></i><i class="mbar" style="background:${dotCol(t,itemColor(t))}"></i></span>`;})():""}</div>`).join("");}).join("");
+return `<span class="mark"${tipAttr(t.title,"กลุ่มงาน|"+gLabel(t.track),MTHFULL[i]+"|"+S.n,"สถานะงาน|"+t.status,t.owner?"ผู้รับผิดชอบ|"+t.owner:"")}>
+<i class="mdot" style="background:${S.c}"></i><i class="mbar" style="background:${dotCol(t,gTagColor(t.track))}"></i></span>`;})():""}</div>`).join("");}).join("");
 }).join("");
 return `<div class="card">
 <div class="legend">
@@ -1264,9 +1364,9 @@ return `<div class="card">
 <span><i style="background:var(--run)"></i>กำลังดำเนินการ</span>
 <span><i style="background:var(--wait)"></i>รอดำเนินการ</span>
 <span style="margin-left:auto;color:var(--ink-3)">แยกตามกลุ่มงาน · ${groups.length} กลุ่ม · ${list.length} งานในปี ${R.year+543}</span></div>
-${(()=>{const gs=groups.filter(g=>g.color);
+${(()=>{const gs=visible(groups);
 return gs.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">
-<span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${g.color}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
+<span style="color:var(--ink-3)">สีของกลุ่มงาน:</span>${gs.map(g=>`<span><i style="background:${gTagColor(g.key)}"></i>${esc(g.label)}</span>`).join("")}</div>`:"";})()}
 ${(()=>{const tg=[...new Set(list.map(t=>(t.tag||"").trim()).filter(Boolean))];
 return tg.length?`<div class="legend" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line-2)">${tg.map(n=>`<span><i style="background:${tagColor(n)||"var(--ink-3)"}"></i>${esc(n)}</span>`).join("")}</div>`:"";})()}
 <div class="cal"><div class="calgrid">${head}${totRow}${rows||`<div style="grid-column:1/-1"><div class="empty">ไม่มีงานในปีนี้</div></div>
@@ -1352,6 +1452,9 @@ const monthsInc=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind==="income"&&new D
 const monthsExp=MTH.map((_,i)=>ledger.filter(x=>x.date&&x.kind!=="income"&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===y).reduce((s,x)=>s+(+x.amount||0),0));
 const planM=MTH.map((_,i)=>Object.values(flow).reduce((s,r)=>s+r.eff[i],0));
 const actM=MTH.map((_,i)=>Object.values(flow).reduce((s,r)=>s+r.act[i],0));
+const txOfMonth=(i,kind)=>ledger.filter(x=>x.date&&(kind==="income"?x.kind==="income":x.kind!=="income")&&new Date(x.date).getMonth()===i&&new Date(x.date).getFullYear()===y).sort((a,b)=>(+b.amount||0)-(+a.amount||0));
+const incTip=i=>{const a=txOfMonth(i,"income"),b=txOfMonth(i,"exp"); return [a.length?"รายรับ "+a.length+" รายการ":"ไม่มีรายรับ",...tipList(a,x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",5),b.length?"รายจ่าย "+b.length+" รายการ":"ไม่มีรายจ่าย",...tipList(b,x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",5),"(เฉพาะที่บันทึกในปุ่ม “บันทึกเงิน”)"];};
+const planTip=i=>{const rs=Object.values(flow).filter(r=>r.eff[i]||r.act[i]).sort((a,b)=>(b.eff[i]-a.eff[i])||(b.act[i]-a.act[i])); return [rs.length?rs.length+" หมวด GL ในเดือนนี้ (เรียงตามแผน)":"ไม่มีหมวด GL ที่มีแผน/ใช้จริงเดือนนี้",...tipList(rs,r=>(r.k?glLabel(r.k):"ยังไม่ระบุหมวด GL")+" — แผน "+baht(r.eff[i])+" / ใช้ "+baht(r.act[i]),7),"ผลต่าง = แผน − ใช้จริง (บวก=ยังเหลือ, ลบ=เกินแผน)"];};
 const rawPct=B?Math.round(A/B*100):0, pct=Math.min(100,rawPct);
 const heroTag=!B?"":rawPct>=100?`<span class="bchip over onhero">เกินงบแล้ว</span>`:rawPct>=BUD_WARN?`<span class="bchip warn onhero">ใกล้เต็ม</span>`:"";
 const recent=tx.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,10);
@@ -1365,20 +1468,20 @@ ${scope==="month"?`<select id="budMonth" style="border:0;background:var(--card);
 </div></div>
 ${budBanner(y)}
 <div class="dash">
-<div class="card hero span2"><div class="lab">ใช้ไปแล้วจาก${scope==="month"?"งบเดือน"+MTHFULL[m]+" "+(y+543):"งบทั้งปี "+(y+543)} ${heroTag}</div>
+<div class="card hero span2"${tipAttr("ใช้ไปแล้ว "+rawPct+"% ของงบ","งบตั้งไว้|"+baht(B)+" ฿","ใช้จริง|"+baht(A)+" ฿",(B-A>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(B-A))+" ฿",cut>=0&&ytdB?"สะสมถึง "+MTHFULL[cut]+"|ใช้ "+baht(ytdA)+" จากแผน "+baht(ytdB):"","จำนวนหมวด GL ที่มีงบ|"+keys.length)}><div class="lab">ใช้ไปแล้วจาก${scope==="month"?"งบเดือน"+MTHFULL[m]+" "+(y+543):"งบทั้งปี "+(y+543)} ${heroTag}</div>
 <div class="big">${rawPct}%</div>
 <div class="meta"><span>ใช้จริง ${baht(A)} ฿</span><span>งบตั้งไว้ ${baht(B)} ฿</span><span>${B-A>=0?"คงเหลือ "+baht(B-A):"เกินงบ "+baht(A-B)} ฿</span></div>
 ${cut>=0&&ytdB?`<div class="meta" style="margin-top:4px"><span>สะสมถึง ${MTHFULL[cut]}: แผน ${baht(ytdB)} · ใช้ ${baht(ytdA)} ฿ (${Math.round(ytdA/ytdB*100)}% ของแผนสะสม)</span></div>`:""}
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic" style="background:var(--ok-soft);color:var(--ok)">${svg(ICON.up,16)}</span> รายรับ</div>
+<div class="card stat"${tipAttr("รายรับ · "+(scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"),tx.filter(x=>x.kind==="income").length+" รายการ · รวม "+baht(inc)+" ฿",tipList(tx.filter(x=>x.kind==="income").sort((a,b)=>(+b.amount||0)-(+a.amount||0)),x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",6))}><div class="k"><span class="ic" style="background:var(--ok-soft);color:var(--ok)">${svg(ICON.up,16)}</span> รายรับ</div>
 <div class="v" style="color:var(--ok)">${baht(inc)}</div><div class="d">${scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.down,16)}</span> รายจ่าย</div>
+<div class="card stat"${tipAttr("รายจ่าย · "+(scope==="year"?"ทั้งปี":scope==="month"?MTHFULL[m]:"สัปดาห์นี้"),tx.filter(x=>x.kind!=="income").length+" รายการ · รวม "+baht(exp)+" ฿",tipList(tx.filter(x=>x.kind!=="income").sort((a,b)=>(+b.amount||0)-(+a.amount||0)),x=>(x.note||glLabel(x.gl))+" · "+baht(x.amount)+" ฿",6),"สุทธิ (รับ−จ่าย)|"+(inc-exp<0?"−":"")+baht(Math.abs(inc-exp))+" ฿")}><div class="k"><span class="ic">${svg(ICON.down,16)}</span> รายจ่าย</div>
 <div class="v">${baht(exp)}</div><div class="d">สุทธิ ${baht(inc-exp)} ฿</div></div>
 <div class="card span2"><h2>รายรับ – รายจ่ายรายเดือน <small>ปี ${y+543}</small></h2>
-${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth())}
+${dualBars(monthsInc,monthsExp,MTH,new Date().getMonth(),"รายรับ","รายจ่าย","var(--ok)","var(--accent-2)",incTip,"สุทธิ")}
 <div class="legend"><span><i style="background:var(--ok)"></i>รายรับ</span><span><i style="background:var(--accent-2)"></i>รายจ่าย</span></div></div>
 <div class="card span2"><h2>แผนงบ – ใช้จริงรายเดือน <small>ทุกหมวด GL · ปี ${y+543}</small></h2>
-${dualBars(planM,actM,MTH,scope==="month"?m:new Date().getMonth(),"แผนงบ","ใช้จริง","var(--sky)","var(--accent)")}
+${dualBars(planM,actM,MTH,scope==="month"?m:new Date().getMonth(),"แผนงบ","ใช้จริง","var(--sky)","var(--accent)",planTip,"แผน−ใช้จริง")}
 <div class="legend"><span><i style="background:var(--sky)"></i>แผนงบ</span><span><i style="background:var(--accent)"></i>ใช้จริง (งาน + บันทึกเงิน)</span></div></div>
 <div class="card span4"><h2>งบตามหมวด GL <small>แผน / ใช้จริง / คงเหลือ · แตะแถวเพื่อดูรายเดือนและที่มาของตัวเลข</small></h2>
 <div class="glfix"><button class="btn sm" id="glGo">✎ แก้ไขหมวด GL / ตั้งงบ</button><span class="hint" style="margin:0;align-self:center">เพิ่ม · แก้ชื่อ · รหัส GL · งบรายเดือน ทำที่ ตั้งค่า › หมวดงบประมาณ</span></div>
@@ -1409,10 +1512,11 @@ const lk=regList("gl:"+k,esc(nm)+" · ปี "+(y+543),rowsL);
 const chip=s.lvl==="over"?`<span class="bchip over">เกินงบ</span>`:s.lvl==="warn"?`<span class="bchip warn">ใกล้เต็ม ${Math.round(s.pct)}%</span>`
 :s.lvl==="nob"?`<span class="bchip nob">ยังไม่ได้ตั้งงบ</span>`:s.pace?`<span class="bchip warn">เร็วกว่าแผน</span>`:`<span class="bchip">${Math.round(s.pct)}%</span>`;
 const pacePos=(mSel==null&&s.plan&&s.ytdP&&cut>=0)?Math.min(100,s.ytdP/s.plan*100):null;
-return `<div class="glrow" ${lk} style="cursor:pointer">
+const glTip=tipAttr(nm,"งบตั้งไว้|"+baht(s.plan)+" ฿","ใช้จริง|"+baht(s.act)+" ฿ ("+Math.round(s.pct)+"%)",(s.left>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(s.left))+" ฿",pacePos!=null?"แผนสะสมถึง "+MTHFULL[cut]+"|"+baht(s.ytdP)+" ฿ (ขีดบนแถบ)":"",pacePos!=null?"ใช้สะสมถึง "+MTHFULL[cut]+"|"+baht(s.ytdA)+" ฿":"",tks.length+" งาน · "+txs.length+" รายการเงิน ที่นับรวม","แตะแถวเพื่อดูรายเดือน");
+return `<div class="glrow" ${lk} style="cursor:pointer"${glTip}>
 <div class="top"><span>${esc(nm)} <small style="color:var(--ink-3);font-weight:400">${tks.length+txs.length?`· ${tks.length} งาน${txs.length?` · ${txs.length} รายการเงิน`:""}`:""}</small></span>
 <span class="amt"${s.lvl==="over"?' style="color:var(--over);font-weight:600"':""}>${baht(s.act)} / ${baht(s.plan)} ›</span></div>
-<div class="bar"><i class="${s.lvl==="over"?"hot":s.lvl==="warn"?"warn":""}" style="width:${p}%"></i>${pacePos!=null?`<u class="pace" style="left:${pacePos}%" title="แผนสะสมถึง ${MTHFULL[cut]}"></u>`:""}</div>
+<div class="bar"${glTip}><i class="${s.lvl==="over"?"hot":s.lvl==="warn"?"warn":""}" style="width:${p}%"></i>${pacePos!=null?`<u class="pace" style="left:${pacePos}%" title="แผนสะสมถึง ${MTHFULL[cut]}"></u>`:""}</div>
 <div class="sub">${chip}<span>${s.left>=0?"คงเหลือ "+baht(s.left):"เกิน "+baht(-s.left)} ฿</span>${s.plan&&cut>=0&&s.ytdP?`<span>สะสมถึง ${MTH[cut]}: ใช้ ${baht(s.ytdA)} จากแผน ${baht(s.ytdP)} ฿ (${Math.round(s.ytdA/s.ytdP*100)}%)</span>`:""}</div></div>`;}).join("")
 :`<div class="empty">ยังไม่มีงบในปีนี้ — ใส่งบในงานแต่ละงาน หรือเพิ่มหมวด GL ที่หน้าตั้งค่า</div>`}
 ${noGL?`<div class="hint">มี <b>${noGL}</b> งานที่ใส่งบไว้แต่ยังไม่ได้เลือกหมวด GL — เปิดงานแล้วเลือกหมวด เพื่อให้ยอดแยกตามหมวดได้</div>`:""}
@@ -1477,18 +1581,18 @@ return `<div class="head"><div><h1>รายงานผู้บริหาร
 <div class="toolbar noprint">${yearSel("yrSelB")}</div>
 <div class="printhead">LeKise Group · HR — รายงานผู้บริหาร ปี ${y+543} · ข้อมูล ณ ${today.getDate()} ${MTHFULL[today.getMonth()]} ${today.getFullYear()+543}</div>
 <div class="dash">
-<div class="card hero span2"><div class="lab">ความคืบหน้างานปี ${y+543}</div><div class="big">${pct}%</div>
+<div class="card hero span2"${tipAttr("ความคืบหน้างานปี "+(y+543)+" · "+pct+"%","เสร็จสิ้น|"+D.done+" งาน","ยังไม่เสร็จ|"+(D.A.length-D.done)+" งาน","เลยกำหนดแล้ว|"+D.late.length+" งาน",tipList(D.late,t=>t.title,4),"คิดจากงานเสร็จ ÷ งานทั้งปี ไม่รวมยกเลิก/ไอเดีย")}><div class="lab">ความคืบหน้างานปี ${y+543}</div><div class="big">${pct}%</div>
 <div class="meta"><span>เสร็จ ${D.done} งาน</span><span>เหลือ ${D.A.length-D.done} งาน</span><span>เลยกำหนด ${D.late.length}</span></div>
 <div class="prog"><i style="width:${pct}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบใช้ไป</div>
+<div class="card stat"${tipAttr("งบใช้ไป ปี "+(y+543)+" · "+(D.B?bp+"%":"—"),"งบตั้งไว้|"+baht(D.B)+" ฿","ใช้จริง|"+baht(D.Ac)+" ฿",(D.B-D.Ac>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(D.B-D.Ac))+" ฿","หมวด GL ที่มีงบ/ใช้จริง|"+D.gl.length,D.alerts&&D.alerts.over.length?"เกินงบ "+D.alerts.over.length+" หมวด":"")}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> งบใช้ไป</div>
 <div class="v"${bp>=100?' style="color:var(--over)"':""}>${D.B?bp+"%":"—"}</div><div class="d">${baht(D.Ac)} จาก ${baht(D.B)} ฿</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> อบรมปีนี้</div>
+<div class="card stat"${tipAttr("อบรมปี "+(y+543),"รุ่นทั้งหมด|"+D.trainN.n,"จัดแล้ว (เสร็จสิ้น)|"+D.trainN.done+" รุ่น","ผู้เข้าอบรมรวม|"+baht(D.trainN.pax)+" คน","ชั่วโมงอบรมรวม (ชม.×คน)|"+baht(D.trainN.hrs),"ค่าใช้จ่าย (ใช้จริง หรืองบถ้ายังไม่มี)|"+baht(D.trainN.cost)+" ฿")}><div class="k"><span class="ic">${svg(ICON.train,16)}</span> อบรมปีนี้</div>
 <div class="v">${D.trainN.n}</div><div class="d">จัดแล้ว ${D.trainN.done} รุ่น · ${baht(D.trainN.pax)} คน</div></div>
 <div class="card span4"><h2>ประเด็นสำคัญ <small>สรุปให้อัตโนมัติจากข้อมูล ณ วันนี้</small></h2>
 <div class="exlist">${H.map(h=>`<div class="exrow ${h.c}"><i></i><span>${h.t}</span></div>`).join("")}</div></div>
 <div class="card span4"><h2>งบประมาณตามหมวด GL <small>ปี ${y+543} · แผน / ใช้จริง / คงเหลือ</small></h2>
 ${D.gl.length?`<div class="tblwrap wide"><table><thead><tr><th>หมวด GL</th><th class="num">งบตั้งไว้</th><th class="num">ใช้จริง</th><th class="num">คงเหลือ</th><th class="num">% ใช้</th><th>สถานะ</th></tr></thead><tbody>
-${D.gl.map(x=>`<tr><td>${esc(nm(x.k))}</td><td class="num">${baht(x.s.plan)}</td><td class="num">${baht(x.s.act)}</td>
+${D.gl.map(x=>`<tr${tipAttr(nm(x.k),"งบตั้งไว้|"+baht(x.s.plan)+" ฿","ใช้จริง|"+baht(x.s.act)+" ฿ ("+(x.s.plan?Math.round(x.s.pct)+"%":"—")+")",(x.s.left>=0?"คงเหลือ|":"เกินงบ|")+baht(Math.abs(x.s.left))+" ฿",D.cut>=0&&x.s.ytdP?"สะสมถึง "+MTH[D.cut]+"|ใช้ "+baht(x.s.ytdA)+" จากแผน "+baht(x.s.ytdP):"",x.s.lvl==="over"?"สถานะ: ใช้เกินงบแล้ว":x.s.lvl==="warn"?"สถานะ: ใกล้เต็ม (≥"+BUD_WARN+"%)":x.s.lvl==="nob"?"สถานะ: มียอดใช้แต่ยังไม่ได้ตั้งงบ":x.s.pace?"สถานะ: ใช้เร็วกว่าแผนสะสม":"สถานะ: ปกติ")}><td>${esc(nm(x.k))}</td><td class="num">${baht(x.s.plan)}</td><td class="num">${baht(x.s.act)}</td>
 <td class="num"${x.s.left<0?' style="color:var(--over);font-weight:600"':""}>${x.s.left<0?"−"+baht(-x.s.left):baht(x.s.left)}</td>
 <td class="num">${x.s.plan?Math.round(x.s.pct)+"%":"—"}</td><td>${chip(x.s)}</td></tr>`).join("")}
 <tr style="font-weight:700;border-top:2px solid var(--line)"><td>รวม</td><td class="num">${baht(D.B)}</td><td class="num">${baht(D.Ac)}</td><td class="num">${D.B-D.Ac<0?"−"+baht(D.Ac-D.B):baht(D.B-D.Ac)}</td><td class="num">${D.B?bp+"%":"—"}</td><td></td></tr>
@@ -1865,10 +1969,10 @@ return `<div class="li" data-id="${t._id}"><div class="ic" style="background:var
 <div class="gapchips">${x.m.map(k=>`<b>ขาด ${k}</b>`).join("")}</div></div><span class="pill s-wait">เติม</span></div>`; };
 return header("งานค้างข้อมูล","งานที่ข้อมูล 5W1H ยังไม่ครบ · แตะงานเพื่อเติม (Where นับเฉพาะงานทั่วไป)",false)+
 `<div class="head" style="margin-top:-6px"><div></div><button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มงาน</span></button></div>
-<div class="dash"><div class="card hero span2"><div class="lab">งานเปิดที่ข้อมูลครบ 5W1H</div><div class="big">${pct}%</div>
+<div class="dash"><div class="card hero span2"${tipAttr("งานเปิดที่ข้อมูลครบ 5W1H · "+pct+"%","ครบทั้ง 5W1H|"+full+" งาน","ยังไม่ครบ|"+bad.length+" งาน","งานเปิดทั้งหมด|"+rows.length,...KEYS.map(([k,l])=>"ขาด "+k+" ("+l+")|"+cnt(k)+" งาน"),"งานเปิด = ยังไม่เสร็จ/ไม่ยกเลิก ไม่รวมประชุมและอบรม")}><div class="lab">งานเปิดที่ข้อมูลครบ 5W1H</div><div class="big">${pct}%</div>
 <div class="meta"><span>ครบ ${full}</span><span>ยังไม่ครบ ${bad.length}</span><span>ทั้งหมด ${rows.length}</span></div></div>
 <div class="card span2"><div class="lab" style="font-size:13px;color:var(--ink-3)">ขาดอะไรมากสุด (แตะเพื่อกรอง)</div>
-<div class="gapf" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${KEYS.map(([k,l])=>`<button type="button" class="gcbtn${F2===k?" on":""}" data-gapf="${k}">${k} · ${l} <b>${cnt(k)}</b></button>`).join("")}${F2?`<button type="button" class="gcbtn" data-gapf="">ล้างตัวกรอง</button>`:""}</div>
+<div class="gapf" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${KEYS.map(([k,l])=>`<button type="button" class="gcbtn${F2===k?" on":""}" data-gapf="${k}"${tipAttr(k+" · "+l+" — ขาด "+cnt(k)+" งาน",tipList(bad.filter(x=>x.m.includes(k)),x=>x.t.title,6),"แตะเพื่อกรองเฉพาะงานที่ขาดข้อนี้")}>${k} · ${l} <b>${cnt(k)}</b></button>`).join("")}${F2?`<button type="button" class="gcbtn" data-gapf="">ล้างตัวกรอง</button>`:""}</div>
 <div style="margin-top:12px"><button type="button" class="btn sm" id="gapAI">✨ ให้ AI เสนอเติมให้ (/5w1h)</button></div></div></div>
 <div class="card"><h2>${F2?"ขาด "+F2:"รอเติมข้อมูล"} <small>${shown.length} งาน · เรียงตาม Matrix แล้ว Deadline</small></h2>
 <div class="list">${shown.map(row).join("")||`<div class="empty">${rows.length?"ข้อมูลครบทุกงานแล้ว 🎉":"ยังไม่มีงานเปิด"}</div>`}</div></div>`;
@@ -1882,7 +1986,7 @@ const card=t=>{ const dl=mxDl(t), q=quadOf(t); return `<div class="mxc" data-mx=
 <div class="mxmv"><span>ย้ายไป</span>${QUADS.map((x,i)=>`<button type="button" class="b${i+1}${q===x[0]?" cur":""}" data-qm="${t._id}:${x[0]}" title="${esc(x[1]+" · "+x[2])}">${i+1}</button>`).join("")}${q?`<button type="button" class="bx" data-qm="${t._id}:" title="ถอดออกจาก Matrix">ล้าง</button>`:""}</div></div>`; };
 return header("Matrix งาน","จัดลำดับงานตามความสำคัญ × ความเร่งด่วน (Eisenhower) · แตะเลข 1–4 เพื่อย้ายช่อง",false)+
 `<div class="head" style="margin-top:-6px"><div></div><button class="btn addbtn" id="add">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มงาน</span></button></div>
-<div class="mxgrid">${QUADS.map((x,i)=>{const L=by(x[0]); return `<div class="mxq ${x[0]}"><h3>${i+1}. ${x[1]} <small>${x[2]}</small><span class="mxn">${L.length}</span></h3>
+<div class="mxgrid">${QUADS.map((x,i)=>{const L=by(x[0]); return `<div class="mxq ${x[0]}"><h3>${i+1}. ${x[1]} <small>${x[2]}</small><span class="mxn"${tipAttr(i+1+". "+x[1]+" · "+x[2]+" — "+L.length+" งาน",L.filter(t=>mxDl(t).n<0).length?"เลย Deadline แล้ว|"+L.filter(t=>mxDl(t).n<0).length+" งาน":"",tipList(L,t=>t.title+" · "+mxDl(t).txt,6))}>${L.length}</span></h3>
 <div class="mxh">${x[4]}</div>
 <div class="mxlist">${L.map(card).join("")||`<div class="empty" style="color:inherit;opacity:.6">ยังไม่มีงานในช่องนี้</div>`}</div></div>`;}).join("")}</div>
 <div class="mxtray"><h2 style="font-family:var(--head);font-size:16px;margin:0 0 4px">ยังไม่จัดลำดับ <small style="font-family:var(--sans);font-weight:400;color:var(--ink-3)">${none.length} งาน · เรียงตาม Deadline</small></h2>
@@ -1929,6 +2033,7 @@ const prepRow=x=>`<div class="li" data-id="${x.t._id}">
 <div class="t2">ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${tShow(x.t.time)?" "+tShow(x.t.time):""} · เตรียมล่วงหน้า ${x.t.prepDays} วัน${x.t.prepNote?" · "+esc(x.t.prepNote):""}</div></div>
 <span class="pill ${daysTo(x.p)<=0?"s-wait":sCls(x.t.status)}">${daysTo(x.p)<0?"เลยวันเตรียม "+(-daysTo(x.p))+" วัน":daysTo(x.p)===0?"เตรียมวันนี้":"อีก "+daysTo(x.p)+" วัน"}</span></div>`;
 const byDow=DOWFULL.map((_,i)=>routine.filter(t=>(t.rrule.weekdays||[]).includes(i)).length);
+const byDowTip=DOWFULL.map((d,i)=>tipList(routine.filter(t=>(t.rrule.weekdays||[]).includes(i)),t=>(tShow(t.time)?tShow(t.time)+" ":"")+t.title+" · "+rruleText(t),7));
 return header("การประชุม","ประชุมประจำ ประชุมเฉพาะกิจ และงานที่ต้องเตรียมข้อมูลก่อนประชุม")+
 `<div class="toolbar">${scopeBar("sc1")} ${pqBox("ค้นหาการประชุม / ผู้เข้าร่วม / สถานที่")}</div>`+
 (prepNow.length?`<div class="banner bad" ${regList("prepNow","ถึงกำหนดเตรียมข้อมูลแล้ว",prepNow.map(x=>({id:x.t._id,
@@ -1939,19 +2044,19 @@ p:daysTo(x.p)<0?"เลย "+(-daysTo(x.p))+" วัน":"วันนี้",pc
 t1:x.t.title,t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${x.t.prepNote?" · "+x.t.prepNote:""}`,
 d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--run-soft)",ic:"var(--run)",p:"อีก "+daysTo(x.p)+" วัน",pc:"s-run"})))}>${svg(ICON.clock,19)} ใกล้ถึงวันเตรียมข้อมูล <b>${prepSoon.length}</b> การประชุมใน 7 วัน</div>`:"")+
 `<div class="dash">
-<div class="card hero span2"><div class="lab">การประชุม · ${scopeLabel()}</div>
+<div class="card hero span2"${tipAttr("การประชุม · "+scopeLabel()+" · "+scoped.length+" รายการ","ประชุมประจำ (เกิดซ้ำ)|"+routine.length+" รายการ","ประชุมเฉพาะกิจ (วันเดียว)|"+oneoff.length+" รายการ","ยกเลิกแล้ว|"+scoped.filter(t=>t.status===STATUS_CANCEL).length)}><div class="lab">การประชุม · ${scopeLabel()}</div>
 <div class="big">${scoped.length}</div>
 <div class="meta"><span>ประชุมประจำ ${routine.length} รายการ</span><span>เฉพาะกิจ ${oneoff.length} รายการ</span></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> ต้องเตรียมข้อมูล</div>
+<div class="card stat"${tipAttr("ต้องเตรียมข้อมูลก่อนประชุม · "+prep.length+" รายการ",prepNow.length?"ถึงกำหนดเตรียมแล้ว|"+prepNow.length:"ยังไม่ถึงกำหนดเตรียม",tipList(prep,x=>x.t.title+" · เริ่มเตรียม "+fmtDate(isoOf(x.p)),6))}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> ต้องเตรียมข้อมูล</div>
 <div class="v">${prep.length}</div><div class="d">${prepNow.length?`ถึงกำหนดแล้ว ${prepNow.length}`:"ยังไม่ถึงกำหนด"}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.cal,16)}</span> ใน 14 วันข้างหน้า</div>
+<div class="card stat"${tipAttr("ประชุมใน 14 วันข้างหน้า · "+upcoming.length+" ครั้ง",tipList(upcoming,x=>fmtDate(isoOf(x.d))+" "+(tShow(x.t.time)?tShow(x.t.time)+" ":"")+x.t.title,7))}><div class="k"><span class="ic">${svg(ICON.cal,16)}</span> ใน 14 วันข้างหน้า</div>
 <div class="v">${upcoming.length}</div><div class="d">ครั้งถัดไป ${upcoming[0]?upcoming[0].d.getDate()+" "+MTH[upcoming[0].d.getMonth()]:"—"}</div></div>
 <div class="card span2"><h2>ต้องเตรียมข้อมูลก่อนประชุม <small>เรียงตามวันที่ต้องเริ่มเตรียม</small></h2>
 <div class="list">${prep.slice(0,10).map(prepRow).join("")||`<div class="empty">ยังไม่มีการประชุมที่ตั้งวันเตรียมข้อมูลไว้ — เปิดการประชุมแล้วใส่ “เตรียมล่วงหน้า (วัน)”</div>`}</div></div>
 <div class="card span2"><h2>ตารางประชุม 14 วันข้างหน้า <small>${upcoming.length} ครั้ง</small></h2>
 <div class="list">${upcoming.slice(0,12).map(x=>row(x.t,x.d,x.p)).join("")||`<div class="empty">ไม่มีการประชุมใน 14 วันนี้</div>`}</div></div>
 <div class="card span2"><h2>ประชุมประจำรายสัปดาห์ <small>กระจายตามวัน</small></h2>
-${bars(byDow,DOW,v=>v||"",new Date().getDay())}</div>
+${bars(byDow.map(v=>v),DOW,v=>v||"",new Date().getDay(),byDowTip,"รายการ","ประชุมประจำ")}</div>
 <div class="card span2"><h2>ประชุมประจำทั้งหมด <small>${routine.length} รายการ</small></h2>
 <div class="list">${routine.map(t=>row(t,dueDate(t),prepDate(t))).join("")||`<div class="empty">ยังไม่มีประชุมประจำ — เพิ่มงานแล้วตั้ง “การเกิดซ้ำ”</div>`}</div></div>
 <div class="card span4"><h2>ประชุมเฉพาะกิจ <small>${oneoff.length} รายการ</small></h2>
@@ -2012,7 +2117,7 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(-
 `<div class="dash">
 ${(()=>{const T=dsdTotals(R.year);
 const pass=T.pct>=50;
-return `<div class="card hero span2" style="padding-bottom:20px">
+return `<div class="card hero span2" style="padding-bottom:20px"${tipAttr("สรุปเกณฑ์กรมพัฒนาฯ ปี "+(R.year+543)+" · "+(T.mp?T.pct+"%":"—"),"พนักงานเฉลี่ยรวม|"+baht(T.mp)+" คน","เกณฑ์กฎหมาย "+LAWPCT+"%|"+baht(T.target)+" คน","ทำได้แล้ว (C)|"+baht(T.C)+" คน",T.need?"ขาดถึงเกณฑ์|"+baht(T.need)+" คน":"ครบเกณฑ์แล้ว",T.goalTarget>T.target?"เป้าที่ตั้งเอง "+T.goalPct+"%|"+baht(T.goalTarget)+" คน":"","ผ่านเกณฑ์|"+T.done+" จาก "+T.n+" แห่ง",T.subTotal?"เงินอุดหนุนคาดว่าได้|"+baht(T.subTotal)+" ฿":"","C = จำนวนคนที่นับได้ว่าผ่านการฝึกตามเงื่อนไขกรมฯ (กรอกที่ตารางด้านล่าง)")}>
 <div class="lab">สรุปเกณฑ์กรมพัฒนาฝีมือแรงงาน · ปี ${R.year+543} · ${T.n} สถานประกอบกิจการ</div>
 <div style="display:flex;flex-wrap:wrap;gap:14px 20px;align-items:flex-end;margin-top:4px;position:relative;z-index:1">
 <div><div class="big" style="margin:0">${T.mp?T.pct+"%":"—"}</div>
@@ -2027,7 +2132,7 @@ ${T.goalTarget>T.target?`<div><span>ขาดถึงเป้าเรา</spa
 <div><span>ผ่านเกณฑ์</span><b>${T.done}/${T.n} แห่ง</b></div>
 <div><span>เงินอุดหนุนคาดว่าได้</span><b style="color:${T.subTotal?"#8ef0c8":"inherit"}">${T.subTotal?baht(T.subTotal)+" ฿":"—"}</b></div>
 </div></div>
-<div class="prog goalbar" style="height:12px;margin-top:10px">
+<div class="prog goalbar" style="height:12px;margin-top:10px"${tipAttr("ทำได้ "+T.pct+"% ของลูกจ้างทั้งหมด","ขีดที่ "+LAWPCT+"%|เกณฑ์ตามกฎหมาย",T.goalPct>LAWPCT?"ขีดที่ "+T.goalPct+"%|เป้าที่ตั้งเอง":"",T.need?"ยังขาดอีก "+baht(T.need)+" คน ถึงจะครบเกณฑ์":"ครบเกณฑ์แล้ว")}>
 <i style="width:${Math.min(100,T.pct)}%;background:${T.pct>=T.goalPct?"#8ef0c8":pass?"#bfe9ff":"#ffd08a"}"></i>
 <u style="left:${LAWPCT}%"></u>${T.goalPct>LAWPCT?`<u class="g2" style="left:${Math.min(100,T.goalPct)}%"></u>`:""}</div>
 <div style="display:flex;font-size:11.5px;opacity:.9;margin-top:6px;position:relative;height:16px">
@@ -2041,7 +2146,7 @@ ${T.updated?`ข้อมูลอัปเดตล่าสุด ${fmtStamp(T
 <div class="cgrid2">
 ${T.rows.length?T.rows.map(({c,k})=>{const p=k.avg?Math.min(100,Math.round(k.pct)):0;
 const st=k.avg?(k.pct>=k.goal?"var(--ok)":k.pct>=LAWPCT?"var(--accent)":"var(--over)"):"var(--ink-3)";
-return `<div class="glrow"><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT?` <small style="color:var(--ink-3);font-weight:400">· เป้า ${k.goal}%</small>`:""}</span>
+return `<div class="glrow"${tipAttr(c.label+" · "+(k.avg?k.pct+"%":"ยังไม่มีข้อมูล"),"พนักงานเฉลี่ย|"+baht(k.avg)+" คน","เกณฑ์ "+LAWPCT+"%|"+baht(k.target)+" คน","ทำได้ (C)|"+baht(k.C)+" คน",k.need?"ขาดถึงเกณฑ์|"+baht(k.need)+" คน":"ครบเกณฑ์แล้ว",k.goal>LAWPCT?"เป้าตั้งเอง "+k.goal+"%|"+baht(k.goalTarget)+" คน"+(k.needGoal?" (ขาด "+baht(k.needGoal)+")":" ✓"):"","แตะแถวไม่ได้ — แก้ตัวเลขที่ตารางด้านล่าง")}><div class="top"><span>${esc(c.label)}${k.goal>LAWPCT?` <small style="color:var(--ink-3);font-weight:400">· เป้า ${k.goal}%</small>`:""}</span>
 <span class="amt" style="color:${st};font-weight:600">${k.avg?k.pct+"%":"—"}</span></div>
 <div class="bar goalbar"><i class="${k.avg&&k.pct<LAWPCT?"hot":""}" style="width:${p}%;${k.avg&&k.pct>=k.goal?"background:var(--ok)":""}"></i>
 <u style="left:${LAWPCT}%"></u>${k.goal>LAWPCT?`<u class="g2" style="left:${Math.min(100,k.goal)}%"></u>`:""}</div>
@@ -2089,18 +2194,18 @@ ${rows.length?`<tr data-nolink="1" style="background:var(--line-2)">
 </div>
 <div class="card span2"><h2>สถานะการยื่นหลักสูตร <small>${uniqCourses(ty)} หลักสูตร · ${ty.length} รุ่นในปีนี้</small></h2>
 <div class="donutwrap">
-${(()=>{const parts=[{n:"อนุมัติแล้ว",v:okd.length,c:"var(--ok)"},{n:"ยื่นแล้ว",v:sent.length,c:"var(--run)"},
-{n:"รอยื่น",v:waiting.length,c:"var(--wait)"},{n:"ไม่ผ่าน",v:bad.length,c:"var(--over)"}].filter(p=>p.v);
+${(()=>{const parts=[{n:"อนุมัติแล้ว",v:okd.length,c:"var(--ok)",tip:tipList(okd,t=>(crsCodeOf(t)?crsCodeOf(t)+" ":"")+t.title+(t.batch?" "+t.batch:""))},{n:"ยื่นแล้ว (รอผล)",v:sent.length,c:"var(--run)",tip:tipList(sent,t=>(crsCodeOf(t)?crsCodeOf(t)+" ":"")+t.title+(t.batch?" "+t.batch:""))},
+{n:"รอยื่น",v:waiting.length,c:"var(--wait)",tip:tipList(waiting,t=>(crsCodeOf(t)?crsCodeOf(t)+" ":"")+t.title+(t.batch?" "+t.batch:""))},{n:"ไม่ผ่าน",v:bad.length,c:"var(--over)",tip:tipList(bad,t=>(crsCodeOf(t)?crsCodeOf(t)+" ":"")+t.title+(t.batch?" "+t.batch:""))}].filter(p=>p.v);
 const tot=parts.reduce((a,b)=>a+b.v,0);
 return (tot?donut(parts,tot,"หลักสูตร"):`<div class="empty" style="flex:1">ยังไม่มีหลักสูตรที่ต้องยื่น</div>`)+
-`<div class="dlist">${parts.map(p=>`<div><i style="background:${p.c}"></i>${p.n}<b>${p.v}</b></div>`).join("")}
-${tot?`<div style="border-top:1px solid var(--line-2);padding-top:8px;margin-top:2px"><i style="background:transparent"></i>คืบหน้า<b>${Math.round((okd.length/tot)*100)}%</b></div>`:""}</div>`;})()}
+`<div class="dlist">${parts.map(p=>`<div${donutTip(parts,p)}><i style="background:${p.c}"></i>${p.n}<b>${p.v}</b></div>`).join("")}
+${tot?`<div${tipAttr("คืบหน้า "+Math.round((okd.length/tot)*100)+"%","อนุมัติแล้ว "+okd.length+" จาก "+tot+" หลักสูตร/รุ่นที่ต้องยื่น")} style="border-top:1px solid var(--line-2);padding-top:8px;margin-top:2px"><i style="background:transparent"></i>คืบหน้า<b>${Math.round((okd.length/tot)*100)}%</b></div>`:""}</div>`;})()}
 </div></div>`;})()}
 <div class="card span4"><h2>เกณฑ์กรมพัฒนาฝีมือแรงงาน ปี ${R.year+543} <small>โครงสร้างตามแบบยื่นของกรมฯ · เฉลี่ยจากจำนวนพนักงานรายเดือน</small></h2>
 <div class="tblwrap wide"><table>
 <thead><tr><th>สถานประกอบกิจการ</th><th style="text-align:right">พนักงานเฉลี่ย</th><th style="text-align:right">เกณฑ์ 50%</th><th style="text-align:right">เป้าที่ตั้งเอง</th>
-<th style="text-align:right">A ส่งฝึกแล้ว</th><th style="text-align:right">B ฝึกซ้ำ (ครั้ง)</th><th style="text-align:right">C = A−B</th>
-<th style="text-align:right">คิดเป็น %</th><th style="text-align:right">ต้องฝึกอีก</th><th>สถานะ</th><th>สท.2</th><th></th></tr></thead>
+<th style="text-align:right"${tipAttr("A · ส่งฝึกแล้ว","จำนวนครั้งที่ส่งลูกจ้างเข้าฝึกทั้งหมด (นับตามรายชื่อ)")}>A ส่งฝึกแล้ว</th><th style="text-align:right"${tipAttr("B · ฝึกซ้ำ (ครั้ง)","จำนวนครั้งที่คนเดิมฝึกซ้ำ — ไม่นับเป็นคนใหม่")}>B ฝึกซ้ำ (ครั้ง)</th><th style="text-align:right"${tipAttr("C = A − B","จำนวนคนไม่ซ้ำที่นับได้","ใช้เทียบกับเกณฑ์ 50% ของพนักงานเฉลี่ย")}>C = A−B</th>
+<th style="text-align:right"${tipAttr("คิดเป็น %","C ÷ พนักงานเฉลี่ย × 100","เทียบกับเกณฑ์ "+LAWPCT+"% ตามกฎหมาย")}>คิดเป็น %</th><th style="text-align:right">ต้องฝึกอีก</th><th>สถานะ</th><th>สท.2</th><th></th></tr></thead>
 <tbody>${(()=>{const L=dsdList(R.year);
 return L.length?L.map(c=>{const r=dsdRec(c.key,R.year), k=dsdCalc(r), auto=trainedPax(c.key,R.year);
 const pass=k.pct>=50;
@@ -2178,6 +2283,9 @@ const lawLate=live.filter(t=>isLawTrain(t)).filter(t=>{const d=dueDate(t);return
 const yearTy=items.filter(t=>isTrain(t)&&t.status!==STATUS_CANCEL&&hit(t)&&!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==R.year));
 const byMonth=MTH.map((_,i)=>yearTy.filter(t=>monthsOf(t).includes(i+1)).length);
 const noDate=yearTy.filter(t=>!monthsOf(t).length);
+const trLine=t=>(crsCodeOf(t)?crsCodeOf(t)+" ":"")+t.title+(t.batch?" "+t.batch:"")+(t.pax?" · "+t.pax+" คน":"")+(t.status===STATUS_DONE?" ✓":"");
+const byMonthTip=MTH.map((_,i)=>{const L=yearTy.filter(t=>monthsOf(t).includes(i+1)); const c=uniqCourses(L); return [L.length?"หลักสูตร|"+c+" หลักสูตร":"",L.length?"ผู้เข้าอบรมรวม|"+L.reduce((x,t)=>x+(+t.pax||0),0)+" คน":"",L.length?"ปิดงานแล้ว|"+L.filter(t=>t.status===STATUS_DONE).length+" รุ่น":"",tipList(L,trLine,8)];});
+const paxOf=a=>a.reduce((x,t)=>x+(+t.pax||0),0);
 const card=t=>{const d=dueDate(t);
 return `<div class="li" data-id="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
@@ -2195,34 +2303,36 @@ t1:t.title,t2:`${crsCodeOf(t)?crsCodeOf(t)+(t.batch?" "+t.batch:"")+" · ":""}${
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",
 p:d?"เลย "+(-daysTo(d))+" วัน":"—",pc:"s-over"};}))}>${svg(ICON.bell,19)} อบรมตามกฎหมาย ${lawLate.length} หลักสูตรเลยกำหนดแล้วและยังไม่ปิดงาน</div>`:"")+
 `<div class="dash">
-<div class="card hero span2"><div class="lab">หลักสูตร · ${scopeLabel()}</div>
+<div class="card hero span2"${tipAttr("หลักสูตร · "+scopeLabel()+" · "+nCourse+" หลักสูตร","รุ่นทั้งหมด (ไม่รวมยกเลิก)|"+live.length+" รุ่น","ปิดงานแล้ว|"+done+" รุ่น ("+(live.length?Math.round(done/live.length*100):0)+"%)","คงเหลือ|"+(live.length-done)+" รุ่น",cancel?"ยกเลิก|"+cancel+" รุ่น (ไม่นับในตัวเลข)":"",lawLate.length?"อบรมตามกฎหมายที่เลยกำหนด|"+lawLate.length+" รุ่น":"","รอยื่นกรมพัฒนาฯ|"+waiting.length+" · ยื่นแล้ว "+sent.length+" · อนุมัติ "+okd.length+" · ไม่ผ่าน "+bad.length)}><div class="lab">หลักสูตร · ${scopeLabel()}</div>
 <div class="big">${nCourse}</div>
 <div class="meta"><span>${live.length} รุ่น</span><span>ปิดงานแล้ว ${done}</span><span>คงเหลือ ${live.length-done}</span>${cancel?`<span>ยกเลิก ${cancel}</span>`:""}</div>
-<div class="prog"><i style="width:${live.length?Math.round(done/live.length*100):0}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.train,16)}</span> ผู้เข้าอบรม</div>
+<div class="prog"${tipAttr("ปิดงานแล้ว "+done+" จาก "+live.length+" รุ่น ("+(live.length?Math.round(done/live.length*100):0)+"%)",tipList(live.filter(t=>t.status!==STATUS_DONE),trLine,6))}><i style="width:${live.length?Math.round(done/live.length*100):0}%"></i></div></div>
+<div class="card stat"${tipAttr("ผู้เข้าอบรม · "+baht(pax)+" คน","คน-ชั่วโมงรวม|"+baht(Math.round(hrs)),"เฉลี่ยต่อรุ่น|"+(live.length?Math.round(pax/live.length*10)/10:0)+" คน",tipList(live.filter(t=>+t.pax).sort((a,b)=>(+b.pax)-(+a.pax)),trLine,6))}><div class="k"><span class="ic">${svg(ICON.train,16)}</span> ผู้เข้าอบรม</div>
 <div class="v">${baht(pax)}</div><div class="d">รวม ${baht(Math.round(hrs))} คน-ชั่วโมง</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
+<div class="card stat"${tipAttr("ค่าอบรมต่อหัว · "+(pax?baht(Math.round(cost/pax))+" ฿":"—"),"ค่าใช้จ่ายรวม|"+baht(cost)+" ฿","ผู้เข้าอบรม|"+baht(pax)+" คน","คิดจากยอดจ่ายจริง ถ้ายังไม่มีใช้งบที่ตั้งไว้",tipList(live.filter(t=>(+t.actual||0)||budgetOf(t)).sort((a,b)=>((+b.actual||0)||budgetOf(b))-((+a.actual||0)||budgetOf(a))),t=>trLine(t)+" · "+baht((+t.actual||0)||budgetOf(t))+" ฿",5))}><div class="k"><span class="ic">${svg(ICON.budget,16)}</span> ค่าอบรมต่อหัว</div>
 <div class="v">${pax?baht(Math.round(cost/pax)):"—"}</div><div class="d">ค่าใช้จ่ายรวม ${baht(cost)} ฿</div></div>
 <div class="card span2"><h2>หมวดทักษะ <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
 ${(()=>{const n=k=>live.filter(t=>skillOf(t)===k).length, un=live.filter(t=>!skillOf(t)).length;
-const parts=[...skills().filter(k=>n(k)).map(k=>({n:k,v:n(k),c:skillColor(k)})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+const mk=(k,a)=>({v:a.length,tip:["หลักสูตร|"+uniqCourses(a)+" หลักสูตร","ผู้เข้าอบรม|"+paxOf(a)+" คน",tipList(a,trLine,6)]});
+const parts=[...skills().filter(k=>n(k)).map(k=>({n:k,c:skillColor(k),...mk(k,live.filter(t=>skillOf(t)===k))})),...(un?[{n:"ยังไม่ระบุ",c:"var(--wait)",...mk("",live.filter(t=>!skillOf(t)))}]:[])];
 return donut(parts,live.length,"รุ่น")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"หมวดทักษะ · "+p.n,live.filter(t=>skillOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+`<div class="dlist">${parts.map(p=>`<div${donutTip(parts,p)} ${p.n==="ยังไม่ระบุ"?"":regList("sk:"+p.n,"หมวดทักษะ · "+p.n,live.filter(t=>skillOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
 t2:`${modeOf(t)||"ยังไม่ระบุรูปแบบ"}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
 <div class="card span2"><h2>รูปแบบการอบรม <small>ดึงจากทะเบียนหลักสูตรถ้าไม่ได้กรอกในงาน</small></h2>
 <div class="donutwrap">
 ${(()=>{const n=k=>live.filter(t=>modeOf(t)===k).length, un=live.filter(t=>!modeOf(t)).length;
-const parts=[...modes().filter(k=>n(k)).map(k=>({n:k,v:n(k),c:modeColor(k)})),...(un?[{n:"ยังไม่ระบุ",v:un,c:"var(--wait)"}]:[])];
+const mk=a=>({v:a.length,tip:["หลักสูตร|"+uniqCourses(a)+" หลักสูตร","ผู้เข้าอบรม|"+paxOf(a)+" คน",tipList(a,trLine,6)]});
+const parts=[...modes().filter(k=>n(k)).map(k=>({n:k,c:modeColor(k),...mk(live.filter(t=>modeOf(t)===k))})),...(un?[{n:"ยังไม่ระบุ",c:"var(--wait)",...mk(live.filter(t=>!modeOf(t)))}]:[])];
 return donut(parts,live.length,"รุ่น")+
-`<div class="dlist">${parts.map(p=>`<div ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,live.filter(t=>modeOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
+`<div class="dlist">${parts.map(p=>`<div${donutTip(parts,p)} ${p.n==="ยังไม่ระบุ"?"":regList("md:"+p.n,"รูปแบบการอบรม · "+p.n,live.filter(t=>modeOf(t)===p.n).map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
 t2:`${skillOf(t)||"ยังไม่ระบุหมวดทักษะ"}${t.vendor?" · "+t.vendor:""}${t.pax?" · "+t.pax+" คน":""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}))}><i style="background:${p.c}"></i>${esc(p.n)}<b>${p.v}</b></div>`).join("")}</div>`;})()}
 </div></div>
 <div class="card span2"><h2>แผนอบรมรายเดือน <small>ทั้งปี ${R.year+543} · ${byMonth.reduce((a,b)=>a+b,0)} รุ่นที่ลงวันแล้ว</small></h2>
-${bars(byMonth,MTH,v=>v||"",new Date().getMonth())}
+${bars(byMonth,MTH,v=>v||"",new Date().getMonth(),byMonthTip,"รุ่น","รุ่นทั้งปี")}
 ${noDate.length?`<div class="hint" style="cursor:pointer" ${regList("trNoDate","รุ่นอบรมที่ยังไม่ได้ลงวันที่",noDate.map(t=>({id:t._id,
 t1:t.title,t2:`${crsCodeOf(t)?crsCodeOf(t)+" · ":""}${trainKind(t)}${t.company?" · "+cLabel(t.company):""}${t.pax?" · "+t.pax+" คน":""}`,
 d:"—",p:t.status,pc:sCls(t.status)})))}>อีก <b>${noDate.length}</b> รุ่นยังไม่ได้ลงวันที่ จึงไม่ขึ้นในกราฟนี้ — กดเพื่อดูและเติมวันที่</div>`:""}</div>
@@ -2260,13 +2370,13 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(
 t1:L.title,t2:`${(L.comps||[]).map(cLabel).join(", ")||"ไม่ระบุบริษัท"}${L.person?" · "+L.person:""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:legalState(L).t,pc:"s-run"};}))}>${svg(ICON.clock,19)} ใกล้ครบกำหนดใน 90 วัน <b>${soon.length}</b> รายการ</div>`:"")+
 `<div class="dash">
-<div class="card hero span2"><div class="lab">รายการที่ต้องดูแล</div>
+<div class="card hero span2"${tipAttr("รายการที่ต้องดูแล · "+legal.length,"เรียบร้อย|"+legal.filter(L=>st(L).k==="ok").length,"เกินกำหนด|"+late.length,"ใกล้ครบ 90 วัน|"+soon.length,"ยังไม่มีผู้รับผิดชอบ/ข้อมูล|"+noP.length)}><div class="lab">รายการที่ต้องดูแล</div>
 <div class="big">${legal.length}</div>
 <div class="meta"><span>เรียบร้อย ${legal.filter(L=>st(L).k==="ok").length}</span><span>ต้องจัดการ ${late.length+soon.length+noP.length}</span></div>
-<div class="prog"><i style="width:${legal.length?Math.round(legal.filter(L=>st(L).k==="ok").length/legal.length*100):0}%"></i></div></div>
-<div class="card stat"><div class="k"><span class="ic" style="background:var(--over-soft);color:var(--over)">${svg(ICON.bell,16)}</span> เกินกำหนด</div>
+<div class="prog"${tipAttr("เรียบร้อย "+legal.filter(L=>st(L).k==="ok").length+" จาก "+legal.length+" รายการ ("+(legal.length?Math.round(legal.filter(L=>st(L).k==="ok").length/legal.length*100):0)+"%)","ที่ยังไม่เรียบร้อย:",tipList(legal.filter(L=>st(L).k!=="ok"),L=>L.title+" · "+st(L).t,6))}><i style="width:${legal.length?Math.round(legal.filter(L=>st(L).k==="ok").length/legal.length*100):0}%"></i></div></div>
+<div class="card stat"${tipAttr("เกินกำหนด · "+late.length+" รายการ",tipList(late,L=>L.title+(legalDue(L)?" · ครบ "+fmtDate(legalDue(L)):""),7),"ใกล้ครบ 90 วัน|"+soon.length+" รายการ",tipList(soon,L=>L.title+(legalDue(L)?" · ครบ "+fmtDate(legalDue(L)):""),4))}><div class="k"><span class="ic" style="background:var(--over-soft);color:var(--over)">${svg(ICON.bell,16)}</span> เกินกำหนด</div>
 <div class="v" style="color:${late.length?"var(--over)":"inherit"}">${late.length}</div><div class="d">ใกล้ครบอีก ${soon.length} รายการ</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ยังไม่มีผู้รับผิดชอบ</div>
+<div class="card stat"${tipAttr("ยังไม่มีผู้รับผิดชอบ · "+noP.length+" จาก "+legal.length+" รายการ",tipList(noP,L=>L.title+((L.comps||[]).length?" · "+(L.comps||[]).map(cLabel).join(", "):""),8))}><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ยังไม่มีผู้รับผิดชอบ</div>
 <div class="v">${noP.length}</div><div class="d">จาก ${legal.length} รายการ</div></div>
 <div class="card span4">
 <div class="toolbar">${pqBox("ค้นหารายการกฎหมาย / ผู้รับผิดชอบ")}
@@ -2288,12 +2398,77 @@ let tpls=[], bkAt="", pushSubs=[];
 let IDXFOLD=new Set(); try{ IDXFOLD=new Set(JSON.parse(localStorage.getItem("sw-idxfold")||"[]")); }catch(e){}
 const idxSaveFold=()=>{ try{localStorage.setItem("sw-idxfold",JSON.stringify([...IDXFOLD]));}catch(e){} };
 const IDX_NONE="__none";
+// ลำดับลิงก์: ord = ลำดับในหมวด, fo = ลำดับในแถบ "ใช้บ่อย" · ไม่มีค่า = ต่อท้ายเรียงตามชื่อ
+const idxSortFn=(a,b)=>{const A=a.ord==null?1e9:+a.ord,B=b.ord==null?1e9:+b.ord; return A!==B?A-B:((a.title||"")<(b.title||"")?-1:1);};
+const idxFavSortFn=(a,b)=>{const A=a.fo==null?1e9:+a.fo,B=b.fo==null?1e9:+b.fo; return A!==B?A-B:((a.title||"")<(b.title||"")?-1:1);};
+const ixStar=x=>`<button type="button" class="ixstar${x.fav?" on":""}" data-stop="1" data-ixfav="${x._id}" title="${x.fav?"เอาออกจากทางลัด “ใช้บ่อย”":"ปักเป็นทางลัด “ใช้บ่อย”"}" aria-pressed="${!!x.fav}">${svg('<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/>',16)}</button>`;
+const ixHost=u=>{try{return new URL(u).hostname;}catch(e){return "";}};
+const ixHash=s=>{let h=0; for(const ch of String(s||"")) h=(h*31+ch.codePointAt(0))>>>0; return h;};
+function ixTile(x,i,n,sortOn){
+const col=G_AUTO[ixHash(x.title)%G_AUTO.length], host=ixHost(x.url), init=(String(x.title||"?").trim().match(/[A-Za-z0-9ก-๙]/)||["?"])[0].toUpperCase();
+const ic=`<span class="qli" style="background:${col}"><b>${esc(init)}</b>${host?`<img src="https://www.google.com/s2/favicons?domain=${esc(host)}&sz=64" alt="" loading="lazy" onerror="this.remove()">`:""}</span>`;
+const tip=tipAttr(x.title,x.group?"หมวด|"+x.group:"",x.owner?"ผู้ดูแล|"+x.owner:"",x.iuse?x.iuse:"",x.url?"เปิด "+x.url.replace(/^https?:\/\//,"").slice(0,50):"ยังไม่ได้ใส่ลิงก์ — แตะเพื่อดูรายละเอียด");
+const main=x.url&&!sortOn?`<a class="qlb" href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1"${tip}>${ic}<span class="qlt">${esc(x.title)}</span></a>`
+:`<button type="button" class="qlb" data-ix="${x._id}"${sortOn?"":tip}>${ic}<span class="qlt">${esc(x.title)}</span></button>`;
+return `<div class="qlk${sortOn?" sorting":""}"${sortOn?` draggable="true" data-dnd="f" data-id="${x._id}"`:""}>${main}${sortOn?`<div class="qlctl" data-stop="1"><button type="button" class="iconbtn sm" data-ixfmv="${x._id}:-1" ${i===0?"disabled":""} title="เลื่อนไปก่อน">${svg('<path d="M15 6l-6 6 6 6"/>',14)}</button><button type="button" class="iconbtn sm" data-ixfmv="${x._id}:1" ${i===n-1?"disabled":""} title="เลื่อนไปหลัง">${svg('<path d="M9 6l6 6-6 6"/>',14)}</button><button type="button" class="iconbtn sm" data-ixfav="${x._id}" title="เอาออกจากทางลัด">${svg('<path d="M6 6l12 12M18 6L6 18"/>',14)}</button></div>`:""}</div>`;
+}
+function ixQuick(favs,sortOn){
+if(!idx.length)return "";
+if(!favs.length)return `<div class="card span4 qlinks"><h2>ใช้บ่อย <small>ทางลัดไปยังลิงก์ที่ใช้ทุกวัน</small></h2><div class="hint" style="margin:0">กดดาว ☆ หน้ารายการด้านล่างเพื่อปักเป็นไอคอนทางลัดที่นี่ — แตะไอคอนเพื่อเปิดลิงก์ได้ทันที</div></div>`;
+return `<div class="card span4 qlinks"><h2>ใช้บ่อย <small>${favs.length} ทางลัด · แตะไอคอนเพื่อเปิดลิงก์${sortOn?" · ลากหรือกด ◀ ▶ เพื่อเรียง":""}</small></h2>
+<div class="qlgrid">${favs.map((x,i)=>ixTile(x,i,favs.length,sortOn)).join("")}</div></div>`;
+}
 const idxCatNames=()=>{ const used=[...new Set(idx.map(x=>(x.group||"").trim()).filter(Boolean))]; const base=[...new Set(idxCats.filter(Boolean))]; return [...base,...used.filter(g=>!base.includes(g)).sort()]; };
+// ===== Index: ปักดาว / เรียงลำดับ / ลากวาง =====
+const ixFail=e=>{ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); };
+async function ixToggleFav(id){
+const x=idx.find(v=>v._id===id); if(!x)return;
+const d=x.fav?{fav:false}:{fav:true,fo:Math.max(0,...idx.filter(v=>v.fav).map(v=>+v.fo||0))+10};
+Object.assign(x,d); render();
+try{ await DB.collection("index").doc(id).set(d,{merge:true}); }catch(e){ ixFail(e); }
+}
+// scope "c" = ลำดับในหมวดเดียวกัน · "f" = ลำดับในแถบใช้บ่อย
+function ixScopeList(scope,id){
+if(scope==="f")return idx.filter(v=>v.fav).sort(idxFavSortFn);
+const x=idx.find(v=>v._id===id); const g=(x?.group||"").trim();
+return idx.filter(v=>(v.group||"").trim()===g).sort(idxSortFn);
+}
+async function ixWrite(list,scope){
+const f=scope==="f"?"fo":"ord";
+try{ await Promise.all(list.map((x,i)=>x[f]===(i+1)*10?null:DB.collection("index").doc(x._id).set({[f]:(i+1)*10},{merge:true}))); }catch(e){ ixFail(e); }
+}
+function ixMove(scope,id,dir){
+const list=ixScopeList(scope,id), i=list.findIndex(v=>v._id===id); if(i<0)return;
+const [it]=list.splice(i,1);
+const to=dir==="top"?0:Math.max(0,Math.min(list.length,i+(+dir)));
+list.splice(to,0,it);
+list.forEach((x,k)=>x[scope==="f"?"fo":"ord"]=(k+1)*10);
+ixWrite(list,scope); render();
+}
+function ixDnd(){
+let drag=null;
+const clear=()=>document.querySelectorAll(".dropat,.dragging").forEach(n=>n.classList.remove("dropat","dragging"));
+document.querySelectorAll("[data-dnd]").forEach(n=>{
+n.ondragstart=e=>{ drag=n; n.classList.add("dragging"); try{e.dataTransfer.effectAllowed="move"; e.dataTransfer.setData("text/plain",n.dataset.id);}catch(err){} };
+n.ondragend=()=>{ drag=null; clear(); };
+n.ondragover=e=>{ if(!drag||drag===n||drag.dataset.dnd!==n.dataset.dnd||(n.dataset.dnd==="c"&&drag.dataset.grp!==n.dataset.grp))return; e.preventDefault(); document.querySelectorAll(".dropat").forEach(m=>m.classList.remove("dropat")); n.classList.add("dropat"); };
+n.ondrop=e=>{ if(!drag||drag===n||drag.dataset.dnd!==n.dataset.dnd)return; e.preventDefault();
+const scope=n.dataset.dnd, list=ixScopeList(scope,n.dataset.id);
+if(scope==="c"&&drag.dataset.grp!==n.dataset.grp){ clear(); return; }
+const a=list.findIndex(v=>v._id===drag.dataset.id), b=list.findIndex(v=>v._id===n.dataset.id);
+if(a<0||b<0){ clear(); return; }
+const [it]=list.splice(a,1); list.splice(b,0,it);
+list.forEach((x,k)=>x[scope==="f"?"fo":"ord"]=(k+1)*10);
+drag=null; clear(); ixWrite(list,scope); render(); };
+});
+}
 function idxView(){
-const fs2=R.idxStatus||"", q=(R.idxQ||"").trim().toLowerCase();
+const sortOn=!!R.idxSort;
+const fs2=sortOn?"":(R.idxStatus||""), q=sortOn?"":(R.idxQ||"").trim().toLowerCase();
 const cats=idxCatNames();
 const match=x=>(!fs2||(x.status||"ใช้งานอยู่")===fs2)&&(!q||[x.title,x.url,x.owner,x.detail,x.note,x.group,x.iuse,x.iwho,x.iwhen].join(" ").toLowerCase().includes(q));
-const sortT=(a,b)=>(a.title||"")<(b.title||"")?-1:1;
+const sortT=idxSortFn;
+const favs=idx.filter(x=>x.fav).sort(idxFavSortFn);
 const secs=[...cats.map(c=>({key:c,label:c,all:idx.filter(x=>(x.group||"").trim()===c).sort(sortT)})),{key:IDX_NONE,label:"ไม่ระบุหมวด",all:idx.filter(x=>!(x.group||"").trim()).sort(sortT)}]
 .map(s2=>({...s2,list:s2.all.filter(match)})).filter(s2=>s2.all.length||(s2.key!==IDX_NONE&&!q&&!fs2));
 const shown=secs.filter(s2=>!(q||fs2)||s2.list.length);
@@ -2301,7 +2476,8 @@ const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" sele
 const active=idx.filter(x=>(x.status||"ใช้งานอยู่")==="ใช้งานอยู่").length;
 const total=shown.reduce((n,s2)=>n+s2.list.length,0);
 const folded=s2=>!(q||fs2)&&IDXFOLD.has(s2.key);
-const row=x=>`<tr data-ix="${x._id}">
+const row=(x,i,arr,key)=>`<tr data-ix="${x._id}"${sortOn?` draggable="true" data-dnd="c" data-grp="${esc(key===IDX_NONE?"":key)}" data-id="${x._id}"`:""}>
+<td class="ixc" data-stop="1">${sortOn?`<span class="drag" title="ลากแถวเพื่อย้าย">⠿</span><button type="button" class="iconbtn sm" data-ixmv="${x._id}:top" ${i===0?"disabled":""} title="ย้ายไปบนสุด">${svg('<path d="M6 4h12M12 20V9M7 13l5-5 5 5"/>',14)}</button><button type="button" class="iconbtn sm" data-ixmv="${x._id}:-1" ${i===0?"disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,14)}</button><button type="button" class="iconbtn sm" data-ixmv="${x._id}:1" ${i===arr.length-1?"disabled":""} title="เลื่อนลง">${svg(ICON_DN,14)}</button>`:""}${ixStar(x)}</td>
 <td><div style="font-weight:600">${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener" data-stop="1" class="lklink">${esc(x.title)}</a>`:esc(x.title)}</div>
 ${x.url?`<div class="t-note lkurl">${svg(ICON.link,12)} ${esc((x.url||"").replace(/^https?:\/\//,"").slice(0,48))}</div>`:`<div class="t-note">ยังไม่ได้ใส่ลิงก์ — แตะแถวเพื่อดู/ใส่</div>`}
 ${x.note?`<div class="t-note">${esc(x.note)}</div>`:""}${(x.iuse||x.iwho||x.iwhen)?`<div class="ixuse">${[x.iuse&&`<b>ใช้ทำ</b> ${esc(x.iuse)}`,x.iwho&&`<b>ใคร</b> ${esc(x.iwho)}`,x.iwhen&&`<b>เมื่อ</b> ${esc(x.iwhen)}`].filter(Boolean).join(" · ")}</div>`:""}</td>
@@ -2312,18 +2488,21 @@ return header("Index Online","ทะเบียนเอกสารและ�
 `<div class="head" style="margin-top:-6px"><div></div>
 <button class="btn addbtn" id="addIdx">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เพิ่มรายการ</span></button></div>
 <div class="dash">
-<div class="card hero span2"><div class="lab">ทะเบียนทั้งหมด</div><div class="big">${idx.length}</div>
+<div class="card hero span2"${tipAttr("ทะเบียนทั้งหมด · "+idx.length+" รายการ",...IDXSTATUS.map(k=>k+"|"+idx.filter(x=>(x.status||"ใช้งานอยู่")===k).length),"หมวดหมู่|"+cats.length,...cats.slice(0,8).map(c=>c+"|"+idx.filter(x=>(x.group||"").trim()===c).length+" รายการ"))}><div class="lab">ทะเบียนทั้งหมด</div><div class="big">${idx.length}</div>
 <div class="meta"><span>ใช้งานอยู่ ${active}</span><span>${cats.length} หมวดหมู่</span></div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.link,16)}</span> มีลิงก์แล้ว</div>
+<div class="card stat"${tipAttr("มีลิงก์แล้ว · "+idx.filter(x=>x.url).length+" จาก "+idx.length+" รายการ","ยังไม่มีลิงก์:",tipList(idx.filter(x=>!x.url),x=>x.title,7))}><div class="k"><span class="ic">${svg(ICON.link,16)}</span> มีลิงก์แล้ว</div>
 <div class="v">${idx.filter(x=>x.url).length}</div><div class="d">จาก ${idx.length} รายการ · ที่เหลือใส่ลิงก์เพิ่มได้</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ผู้ดูแล</div>
+<div class="card stat"${tipAttr("ผู้ดูแล · "+[...new Set(idx.map(x=>(x.owner||"").trim()).filter(Boolean))].length+" คน",...[...new Set(idx.map(x=>(x.owner||"").trim()).filter(Boolean))].slice(0,8).map(o=>o+"|"+idx.filter(x=>(x.owner||"").trim()===o).length+" รายการ"))}><div class="k"><span class="ic">${svg(ICON.meet,16)}</span> ผู้ดูแล</div>
 <div class="v">${[...new Set(idx.map(x=>(x.owner||"").trim()).filter(Boolean))].length}</div><div class="d">คน</div></div>
+${ixQuick(favs,sortOn)}
 <div class="card span4">
+${sortOn?`<div class="hint" style="margin-bottom:10px"><b>โหมดจัดเรียง</b> — ลากแถว (⠿) หรือกด ▲ ▼ / ⤒ ย้ายไปบนสุด · ลำดับบันทึกอัตโนมัติ · ตัวกรองค้นหาพักไว้ชั่วคราว · เปิด/ปิดหมวดได้ตามปกติ</div>`:""}
 <div class="toolbar" style="margin-bottom:10px">
 <input type="search" id="ix-q" placeholder="ค้นหาชื่อ / ลิงก์ / ผู้ดูแล" value="${esc(R.idxQ||"")}">
 <select id="ix-status">${opt([["","ทุกสถานะ"],...IDXSTATUS.map(x=>[x,x])],fs2)}</select>
 <span style="font-size:13px;color:var(--ink-3)">${total} รายการ</span>
 <span style="flex:1"></span>
+<button class="gcbtn${sortOn?" on":""}" id="ix-sort" title="ลากหรือกดลูกศรเพื่อเรียงลำดับลิงก์ในแต่ละหมวด และเรียงไอคอนทางลัด">${svg('<path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/>',13)} ${sortOn?"เสร็จสิ้นการจัดเรียง":"จัดเรียง"}</button>
 <button class="gcbtn" id="ix-collapse" title="ดูเฉพาะชื่อหมวดหมู่">ย่อทั้งหมด</button>
 <button class="gcbtn" id="ix-expand" title="เปิดดูรายการทุกหมวด">ขยายทั้งหมด</button>
 <button class="gcbtn" id="ix-cats">${svg('<path d="M4 7h16M4 12h16M4 17h10"/>',13)} จัดการหมวดหมู่</button></div>
@@ -2332,8 +2511,8 @@ ${shown.map(s2=>{ const f=folded(s2), nUrl=s2.all.filter(x=>x.url).length; retur
 <span class="chev">${svg('<path d="M9 6l6 6-6 6"/>',16)}</span><b>${esc(s2.label)}</b>
 <span class="ixn">${(q||fs2)?s2.list.length+" / "+s2.all.length:s2.all.length} รายการ${nUrl?` · ${nUrl} ลิงก์`:""}</span></button>
 ${f?"":`<div class="tblwrap"><table>
-<thead><tr><th>สารบัญ / ระบบ</th><th>ผู้ดูแล</th><th>รายละเอียด</th><th>สถานะ</th></tr></thead>
-<tbody>${s2.list.map(row).join("")||`<tr><td colspan="4"><div class="empty">ยังไม่มีรายการในหมวดนี้ — กด “เพิ่มรายการ” แล้วเลือกหมวดนี้</div></td></tr>`}</tbody></table></div>`}</div>`; }).join("")
+<thead><tr><th class="ixc"></th><th>สารบัญ / ระบบ</th><th>ผู้ดูแล</th><th>รายละเอียด</th><th>สถานะ</th></tr></thead>
+<tbody>${s2.list.map((x,i,arr)=>row(x,i,arr,s2.key)).join("")||`<tr><td colspan="5"><div class="empty">ยังไม่มีรายการในหมวดนี้ — กด “เพิ่มรายการ” แล้วเลือกหมวดนี้</div></td></tr>`}</tbody></table></div>`}</div>`; }).join("")
 ||`<div class="empty">${idx.length?"ไม่พบรายการที่ตรงกับตัวกรอง":"ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV (หัวคอลัมน์แรก “สารบัญ”)"}</div>`}
 </div>
 </div>`;
@@ -2398,11 +2577,11 @@ return header("บันทึก & ไอเดีย","บันทึกก�
 `<div class="head" style="margin-top:-6px"><div></div>
 <button class="btn addbtn" id="addNote">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เขียนบันทึก</span></button></div>
 <div class="dash">
-<div class="card hero span2"><div class="lab">บันทึกทั้งหมด</div><div class="big">${notes.length}</div>
+<div class="card hero span2"${tipAttr("บันทึกทั้งหมด · "+notes.length+" รายการ",...NOTEKIND.map(k=>k+"|"+cnt(k)+" รายการ"),"ปักหมุด|"+notes.filter(n=>n.pin).length)}><div class="lab">บันทึกทั้งหมด</div><div class="big">${notes.length}</div>
 <div class="meta">${NOTEKIND.map(k=>`<span>${k} ${cnt(k)}</span>`).join("")}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.bell,16)}</span> ปักหมุดไว้</div>
+<div class="card stat"${tipAttr("ปักหมุดไว้ · "+notes.filter(n=>n.pin).length+" รายการ",tipList(notes.filter(n=>n.pin),n=>n.title||"(ไม่มีชื่อ)",7))}><div class="k"><span class="ic">${svg(ICON.bell,16)}</span> ปักหมุดไว้</div>
 <div class="v">${notes.filter(n=>n.pin).length}</div><div class="d">ขึ้นบนสุดเสมอ</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> บันทึกล่าสุด</div>
+<div class="card stat"${tipAttr("บันทึกล่าสุด",tipList(notes.slice().sort((a,b)=>(b.date||"")<(a.date||"")?-1:1),n=>(n.date||"—")+" · "+(n.title||"(ไม่มีชื่อ)"),5))}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> บันทึกล่าสุด</div>
 <div class="v" style="font-size:17px">${notes.length?esc((notes.slice().sort((a,b)=>(b.date||"")<(a.date||"")?-1:1)[0].date||"—")):"—"}</div><div class="d">วันที่ล่าสุด</div></div>
 <div class="card span4">
 <div class="toolbar" style="margin-bottom:6px">
@@ -2827,14 +3006,14 @@ return `<div class="banner ${on?"ok":"bad"}">${svg(on?ICON.check:ICON.bell,19)}
 ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ · ข้อมูลซิงก์อัตโนมัติทุกเครื่อง":"ยังเชื่อมต่อฐานข้อมูลไม่ได้ · ตอนนี้แก้ไขข้อมูลไม่ได้"}</div>
 <div id="health"></div>
 <div class="dash">
-<div class="card stat"><div class="k"><span class="ic">${svg(isMobile?ICON.phone:ICON.laptop,16)}</span> เครื่องที่ใช้อยู่</div>
+<div class="card stat"${tipAttr("เครื่องที่ใช้อยู่ · "+dev,"ระบบ|"+os,"หน้าจอ|"+innerWidth+"×"+innerHeight)}><div class="k"><span class="ic">${svg(isMobile?ICON.phone:ICON.laptop,16)}</span> เครื่องที่ใช้อยู่</div>
 <div class="v" style="font-size:19px">${dev}</div><div class="d">ระบบ ${os} · หน้าจอ ${innerWidth}×${innerHeight}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.link,16)}</span> สถานะซิงก์</div>
+<div class="card stat"${tipAttr("สถานะซิงก์ · "+(on?"ออนไลน์":"ออฟไลน์"),on?"บันทึกแล้วเห็นทุกเครื่องทันที":"ตรวจการเชื่อมต่ออินเทอร์เน็ต")}><div class="k"><span class="ic">${svg(ICON.link,16)}</span> สถานะซิงก์</div>
 <div class="v" style="font-size:19px;color:${on?"var(--ok)":"var(--over)"}">${on?"ออนไลน์":"ออฟไลน์"}</div>
 <div class="d">${on?"บันทึกแล้วเห็นทุกเครื่องทันที":"ตรวจการเชื่อมต่ออินเทอร์เน็ต"}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.check,16)}</span> เวอร์ชันแอป</div>
+<div class="card stat"${tipAttr("เวอร์ชันแอป · "+APP_VERSION,"อัปเดต|"+APP_DATE)}><div class="k"><span class="ic">${svg(ICON.check,16)}</span> เวอร์ชันแอป</div>
 <div class="v" style="font-size:19px">${APP_VERSION}</div><div class="d">อัปเดต ${APP_DATE}</div></div>
-<div class="card stat"><div class="k"><span class="ic">${svg(ICON.file,16)}</span> ข้อมูลบนเซิร์ฟเวอร์</div>
+<div class="card stat"${tipAttr("ข้อมูลบนเซิร์ฟเวอร์","งาน|"+items.length,"รายการเงิน|"+ledger.length,"กลุ่มงาน|"+groups.length,"หมวด GL|"+gls.length,"บริษัท|"+companies.length)}><div class="k"><span class="ic">${svg(ICON.file,16)}</span> ข้อมูลบนเซิร์ฟเวอร์</div>
 <div class="v" style="font-size:19px">${items.length} งาน · ${ledger.length} รายการเงิน</div>
 <div class="d">${groups.length} กลุ่ม · ${gls.length} หมวด GL · ${companies.length} บริษัท</div></div>
 <div class="card span4"><h2>แอปนี้ทำงานยังไง</h2>
@@ -3022,10 +3201,9 @@ document.querySelectorAll("[data-done]").forEach(b=>b.onclick=async e=>{
 e.stopPropagation();
 const [id,iso]=b.dataset.done.split("|");
 const t=items.find(x=>x._id===id); if(!t)return;
-const done=[...(t.done||[])];
-const i=done.indexOf(iso); if(i>=0)done.splice(i,1); else done.push(iso);
+const patchD=occPatch(t,iso,occStat(t,isoDate(iso))===STATUS_DONE?"รอดำเนินการ":STATUS_DONE);
 const {_id,...rest}=t;
-try{ await saveItem({...rest,done},_id); }
+try{ await saveItem({...rest,...patchD},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); }
 });
 el("add")&&(el("add").onclick=()=>openPick());
@@ -3045,6 +3223,11 @@ const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
 if(e.target.closest("[data-ntedit]")){ openNote(x); return; }
 viewNote(x);});
 el("ix-q")&&(el("ix-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.idxQ=v;render();const m=el("ix-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
+el("ix-sort")&&(el("ix-sort").onclick=()=>{ R.idxSort=!R.idxSort; render(); });
+document.querySelectorAll("[data-ixfav]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); ixToggleFav(b.dataset.ixfav); });
+document.querySelectorAll("[data-ixmv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const [id,d]=b.dataset.ixmv.split(":"); ixMove("c",id,d); });
+document.querySelectorAll("[data-ixfmv]").forEach(b=>b.onclick=e=>{ e.stopPropagation(); const [id,d]=b.dataset.ixfmv.split(":"); ixMove("f",id,d); });
+ixDnd();
 el("ix-collapse")&&(el("ix-collapse").onclick=()=>{ IDXFOLD=new Set([...idxCatNames(),IDX_NONE]); idxSaveFold(); render(); });
 el("ix-expand")&&(el("ix-expand").onclick=()=>{ IDXFOLD=new Set(); idxSaveFold(); render(); });
 el("ix-cats")&&(el("ix-cats").onclick=openIxCats);
@@ -3063,7 +3246,7 @@ if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
-const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t);};});
+const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t,n.dataset.occ||"");};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
 const t=ledger.find(x=>x._id===n.dataset.tx); if(t)openTxCard(t);});
 const sc=el("sc1");
@@ -3779,6 +3962,7 @@ el("wrap-wd").hidden=!(f==="week"||f==="monthnth");
 el("wrap-nth").hidden=(f!=="monthnth");
 el("wrap-md").hidden=(f!=="monthday");
 el("wrap-recur").hidden=(f!=="none");
+el("wrap-until").hidden=(f==="none");
 const dl=el("f-date").parentElement.querySelector("label");
 if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เริ่มต้น";
 }
@@ -3870,7 +4054,7 @@ const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
 el("f-wd").innerHTML=DOW.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d}.</label>`).join("");
 el("f-nth").innerHTML=NTH.map(([v,l])=>`<label><input type="checkbox" class="nth" value="${v}"${(RU.nth||[]).includes(v)?" checked":""}>${l}</label>`).join("");
-el("f-md").value=RU.monthday||"";
+el("f-md").value=RU.monthday||""; el("f-until").value=RU.until||"";
 syncFreq();
 el("f-meet").checked=genMode?false:(formCtx?formCtx==="meet":isMeet(t||{}));
 el("f-time").value=t?.time||""; el("f-place").value=t?.place||"";
@@ -4031,7 +4215,7 @@ el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d), sk=occSkipDraft.includes
 return `<label class="occ${d<=today?"":" fut"}${sk?" skip":""}">
 <input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}${sk?" disabled":""}>
 <span>${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500}</span>
-<i>${sk?"งดรอบนี้":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
+<i>${sk?"งดรอบนี้":occCancel(t,d)?"ยกเลิกแล้ว":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
 <button type="button" class="skipbtn${sk?" on":""}" data-skip="${iso}" title="${sk?"กลับมาจัดตามปกติ":"งดรอบนี้ (ไม่จัด)"}">${sk?"↺ จัดตามเดิม":"งด"}</button></label>`;}).join("")
 ||`<div class="hint" style="margin:0">ยังไม่มีรอบให้แสดง</div>`;
 el("occAll").onclick=ev=>{ev.preventDefault();occShowAll=!occShowAll;paintOccs(t);};
@@ -4122,7 +4306,7 @@ rrule:(()=>{const f=el("f-freq").value; if(f==="none")return null;
 return {freq:f,
 weekdays:[...el("f-wd").querySelectorAll("input:checked")].map(i=>+i.value),
 nth:[...el("f-nth").querySelectorAll("input:checked")].map(i=>+i.value),
-monthday:+el("f-md").value||null};})(),
+monthday:+el("f-md").value||null, ...(el("f-until").value?{until:el("f-until").value}:{})};})(),
 gl1:el("f-gl1").value, b1:+el("f-b1").value||0,
 gl2:el("f-gl2").value, b2:+el("f-b2").value||0,
 actual:+el("f-actual").value||0, code:el("f-code").value.trim(), course:el("f-course").value,
@@ -4145,6 +4329,7 @@ why:el("f-why").value.trim(), inv:el("f-inv").value.trim(), whr:el("f-whr").valu
 tag:el("f-tag").value.trim(), color:"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
 skip:(el("wrap-occ").hidden?(editing?.skip||[]):occSkipDraft.slice()),
+ov:(()=>{const ov={...(editing?.ov||{})}; if(!el("wrap-occ").hidden)el("f-occs").querySelectorAll(".oc:checked").forEach(i=>{delete ov[i.value];}); return ov;})(),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
 const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
@@ -4200,7 +4385,7 @@ fill("i-group",[["","ไม่ระบุหมวด"],...idxCatNames().map(c=
 el("i-newwrap").hidden=true; el("i-newcat").value="";
 el("i-owner").value=x?.owner||""; el("i-url").value=x?.url||"";
 fill("i-status",IDXSTATUS.map(v=>[v,v]),x?.status||"ใช้งานอยู่");
-el("i-detail").value=x?.detail||""; el("i-note").value=x?.note||"";
+el("i-detail").value=x?.detail||""; el("i-note").value=x?.note||""; el("i-fav").checked=!!x?.fav;
 el("i-use").value=x?.iuse||""; el("i-who").value=x?.iwho||""; el("i-when").value=x?.iwhen||"";
 el("ixowners").innerHTML=[...new Set(idx.map(v=>(v.owner||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
 el("idlg").showModal();
@@ -4212,6 +4397,10 @@ if(!el("i-title").value.trim()){el("i-title").focus();return;}
 let grp=el("i-group").value; if(grp==="__new"){ grp=el("i-newcat").value.trim(); if(!grp){el("i-newcat").focus();return;} }
 const d={title:el("i-title").value.trim(),group:grp,owner:el("i-owner").value.trim(),
 url:el("i-url").value.trim(),status:el("i-status").value,detail:el("i-detail").value.trim(),note:el("i-note").value.trim(),iuse:el("i-use").value.trim(),iwho:el("i-who").value.trim(),iwhen:el("i-when").value.trim()};
+if(el("i-fav").checked)d.fav=true;
+if(editingIdx){ if(editingIdx.ord!=null)d.ord=editingIdx.ord; if(editingIdx.fo!=null)d.fo=editingIdx.fo; }
+else if(d.fav){ d.fo=Math.max(0,...idx.filter(v=>v.fav).map(v=>+v.fo||0))+10; }
+if(d.fav&&editingIdx&&!editingIdx.fav&&d.fo==null)d.fo=Math.max(0,...idx.filter(v=>v.fav).map(v=>+v.fo||0))+10;
 el("idlg").close();
 if(grp&&!idxCatNames().includes(grp)) await idxSaveCats([...idxCatNames(),grp]);
 try{ editingIdx? await DB.collection("index").doc(editingIdx._id).set(d) : await DB.collection("index").add(d); }
@@ -4375,7 +4564,7 @@ return `<div class="li" data-crsitem="${t._id}">
 <div class="ic" style="background:var(--accent-soft);color:var(--accent)">${d?d.getDate()+"<br>"+MTH[d.getMonth()]:"—"}</div>
 <div class="tx"><div class="t1">${esc(crsCodeOf(t)||"")} ${esc(t.batch||"ไม่ระบุรุ่น")}${t.company?" · "+esc(cLabel(t.company)):""}</div>
 <div class="t2">${t.pax?t.pax+" คน · ":""}${ypNoOf(t)?"ยป. "+esc(ypNoOf(t))+" · ":""}${t.dsdCertNo?"รับรอง "+esc(t.dsdCertNo):esc(y.step)}</div></div>
-<span class="pill ${y.cls}">${esc(t.status)}</span></div>`;}).join("")||`<div class="empty">ยังไม่มีรุ่นของหลักสูตรนี้</div>`;
+<span class="pill ${sCls(t.status)}">${esc(t.status)}</span></div>`;}).join("")||`<div class="empty">ยังไม่มีรุ่นของหลักสูตรนี้</div>`;
 el("crsdlg").showModal();
 }
 el("crscancel").onclick=()=>el("crsdlg").close();
@@ -4631,14 +4820,20 @@ el("vc-pills").innerHTML=o.pills||""; el("vc-body").innerHTML=o.body||"";
 el("vc-del").style.display=o.del?"":"none";
 if(!el("cardlg").open)el("cardlg").showModal();
 }
-function openCard(t){
+let cardOcc="";   // วันที่ (รอบ) ที่การ์ดกำลังพูดถึง — ใช้กับงานที่เกิดซ้ำ
+function openCard(t,occIso){
 if(!t)return;
 cardItem=t;
 const kind=kindOfItem(t)||(isTrain(t)?"train":isMeet(t)?"meet":"");
 const V=cV,R_=cR,sec=cS;
-const S=occState(t);
-const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):""));
-const _pills=(rr(t)?`<span class="pill ${S.cls}">${esc(S.label)}</span>`:"")+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
+let S=occState(t);
+// งานเกิดซ้ำ: การ์ดแสดง "รอบวันที่..." พร้อมสถานะของรอบนั้นโดยเฉพาะ
+let O=null; cardOcc="";
+if(rr(t)){ if(occIso&&occursOn(t,isoDate(occIso)))O=isoDate(occIso); else if(S.d)O=S.d; else{ const l=occList(t,new Date(new Date().getFullYear(),new Date().getMonth()-1,1),6); O=l.find(d=>d>=new Date(new Date().setHours(0,0,0,0)))||l[l.length-1]||null; }
+if(O){ cardOcc=isoOf(O); const st=occStat(t,O), od=O<new Date(new Date().setHours(0,0,0,0))&&isOpenStatus(st);
+S={label:od?"ค้างรอบนี้":st,cls:od?"s-over":sCls(st),recur:true,d:O,st}; } }
+const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(O?"รอบวันที่ "+O.getDate()+" "+MTH[O.getMonth()]+" "+(O.getFullYear()+543)+" · "+rruleText(t):(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):"")));
+const _pills=`<span class="pill ${S.cls}">${esc(S.label)}</span>`+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
 const main=R_("บริษัท",t.company?cLabel(t.company):"")+R_("กลุ่มงาน",t.track?gLabel(t.track):"")
 +R_("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
 const when=V("ผู้รับผิดชอบ",t.owner)+V(rr(t)?"เริ่ม / วันที่อ้างอิง":"วันที่",t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):"")
@@ -4667,12 +4862,13 @@ const k5=isTrain(t)?"train":isMeet(t)?"meet":"task", L5=W5LAB[k5];
 const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("Where · สถานที่ / ระบบ / ลิงก์",t.whr,true):"")+R_(L5[4],t.how,true));
 const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";
 const _o=rr(t)?S.d:null, _isoO=_o?isoOf(_o):"";
-const quick=`<div class="vsec vquick"><h4>สถานะ</h4><div class="vq-row">
-${rr(t)&&_o?`<button type="button" class="btn vq-big" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`
-:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
-<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
-${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">ปุ่มดำ = ปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มเล็ก = สถานะรวมของงาน</div>`:""}</div>`;
-cardShow({kind:_kind,date:_date,title:t.title,color:itemColor(t),pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
+const curSt=_o?S.st:normSt(t.status);
+const quick=`<div class="vsec vquick"><h4>${_o?`สถานะ · รอบวันที่ ${_o.getDate()} ${MTH[_o.getMonth()]}`:"สถานะ"}${_o?`<span class="vq-nav"><button type="button" data-vqnav="-1" title="รอบก่อนหน้า">${svg('<path d="M15 6l-6 6 6 6"/>',14)}</button><button type="button" data-vqnav="1" title="รอบถัดไป">${svg('<path d="M9 6l6 6-6 6"/>',14)}</button></span>`:""}</h4><div class="vq-row">
+${rr(t)&&_o?(curSt!==STATUS_DONE&&curSt!==STATUS_CANCEL?`<button type="button" class="btn vq-big ok" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`:"")
+:(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big ok" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
+<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq ${sCls(x)}${x===curSt?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
+${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">${t.status===STATUS_CANCEL?"ยกเลิกทั้งซีรีส์อยู่ — เลือกสถานะอื่นเพื่อเปิดงานนี้กลับมา · ":""}สถานะมีผลเฉพาะรอบวันที่ ${_o?_o.getDate()+" "+MTH[_o.getMonth()]:"—"} รอบอื่นไม่กระทบ · ตอนกด “ยกเลิก” เลือกได้ว่าจะยกเลิกแค่รอบนี้ หรือรอบนี้เป็นต้นไป หรือทุกรอบ</div>`:""}</div>`;
+cardShow({kind:_kind,date:_date,title:t.title,color:({"s-done":"var(--ok)","s-over":"var(--over)","s-run":"var(--run)","s-cancel":"var(--ink-3)"})[S.cls]||"var(--wait)",pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
 edit:()=>open_(t),del:async()=>{
 if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
 await softDel("items",t);}});
@@ -4683,15 +4879,49 @@ el("vc-del").onclick=()=>{const k=cardCtx; el("cardlg").close(); if(k&&k.del)k.d
 async function cardSave(patch){
 const t=cardItem; if(!t)return;
 const {_id,...rest}=t;
+const occKeep=cardOcc;
 try{ await saveItem({...rest,...patch},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); return; }
 const f=items.find(x=>x._id===_id)||{...t,...patch,_id};
-openCard(f);
+openCard(f,occKeep);
+}
+// ถามขอบเขตตอนยกเลิกงานที่เกิดซ้ำ (เหมือน Google Calendar: รอบนี้ / รอบนี้และต่อจากนี้ / ทุกรอบ)
+function askScope(title,opts){
+el("sc-title").textContent=title;
+el("sc-opts").innerHTML=opts.map((o,i)=>`<label class="scopeopt"><input type="radio" name="scopev" value="${esc(o.v)}"${i===0?" checked":""}><span><b>${esc(o.l)}</b>${o.s?`<small>${esc(o.s)}</small>`:""}</span></label>`).join("");
+el("scopedlg").showModal();
+return new Promise(r=>{ scopeResolve=r; });
+}
+let scopeResolve=null;
+el("sc-ok").onclick=()=>{ const v=(el("sc-opts").querySelector("input:checked")||{}).value||null; el("scopedlg").close(); const r=scopeResolve; scopeResolve=null; r&&r(v); };
+el("sc-no").onclick=()=>{ el("scopedlg").close(); const r=scopeResolve; scopeResolve=null; r&&r(null); };
+el("scopedlg").addEventListener("cancel",()=>{ const r=scopeResolve; scopeResolve=null; r&&r(null); });
+async function cardOccStatus(st){
+const t=cardItem; if(!t)return;
+const iso=cardOcc; if(!iso){ cardSave({status:st}); return; }
+const dl=isoDate(iso), lab=dl.getDate()+" "+MTH[dl.getMonth()]+" "+(dl.getFullYear()+543);
+if(st!==STATUS_CANCEL){ cardSave(occPatch(t,iso,st)); return; }
+const start=t.date||"";
+const v=await askScope("ยกเลิก “"+t.title+"”",[
+{v:"this",l:"เฉพาะรอบนี้ ("+lab+")",s:"รอบอื่นๆ ยังอยู่ตามปกติ"},
+{v:"following",l:"รอบนี้และรอบต่อจากนี้ทั้งหมด",s:"รอบก่อนหน้าไม่เปลี่ยน · จบการเกิดซ้ำตั้งแต่ "+lab},
+{v:"all",l:"ทุกรอบ (ยกเลิกทั้งงาน)",s:"ทุกรอบกลายเป็นยกเลิก"}]);
+if(!v)return;
+if(v==="this")cardSave(occPatch(t,iso,STATUS_CANCEL));
+else if(v==="all")cardSave({status:STATUS_CANCEL});
+else{
+if(start&&iso<=start)cardSave({status:STATUS_CANCEL});
+else cardSave({rrule:{...rr(t),until:occPrevDay(iso)}});
+}
 }
 el("vc-body").onclick=e=>{
 const b=e.target.closest("button"); if(!b||!cardItem)return;
-if(b.dataset.vqst){ cardSave({status:b.dataset.vqst}); }
-else if(b.dataset.vqocc){ const done=[...(cardItem.done||[])]; if(!done.includes(b.dataset.vqocc))done.push(b.dataset.vqocc); cardSave({done}); }
+if(b.dataset.vqst){ if(rr(cardItem))cardOccStatus(b.dataset.vqst); else cardSave({status:b.dataset.vqst}); }
+else if(b.dataset.vqocc){ cardSave(occPatch(cardItem,b.dataset.vqocc,STATUS_DONE)); }
+else if(b.dataset.vqnav){ const dir=+b.dataset.vqnav, cur=cardOcc?isoDate(cardOcc):new Date();
+const base=new Date(cur.getFullYear(),cur.getMonth()-4,1), l=occList(cardItem,base,9);
+const nx=dir<0?l.filter(d=>d<cur).pop():l.find(d=>d>cur);
+if(nx)openCard(cardItem,isoOf(nx)); else setFoot("ไม่มีรอบที่"+(dir<0?"ก่อนหน้า":"ถัดไป")+"แล้วค่ะ"); }
 };
 
 // ===== การ์ดดู: Index / กฎหมาย / รายการเงิน =====

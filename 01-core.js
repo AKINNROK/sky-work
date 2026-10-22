@@ -1,4 +1,4 @@
-const APP_VERSION="14.9.10"; const APP_DATE="15 ต.ค. 2026";
+const APP_VERSION="14.9.11"; const APP_DATE="22 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -190,6 +190,7 @@ function isLastWeek(d){ return d.getDate()+7>new Date(d.getFullYear(),d.getMonth
 function occursOn(t,d){
 const R2=rr(t);
 if(R2&&occSkip(t,d))return false;
+if(R2&&R2.until&&isoOf(d)>R2.until)return false;
 if(R2){
 const start=t.date?new Date(t.date):null;
 if(start&&d<new Date(start.getFullYear(),start.getMonth(),start.getDate()))return false;
@@ -279,7 +280,37 @@ const isLawItem=t=>isLawTrain(t);
 const lawSrc=t=>{const c=crsOf(crsCodeOf(t))||crsByName((t||{}).title);
 return (c&&(c.law===true||c.law===false))?"หลักสูตร":"ประเภทงาน";};
 const isoOf=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-const occDone=(t,d)=>(((t&&t.done)||[]).includes(isoOf(d)));
+// ===== สถานะรายรอบ (แบบ Google Calendar) =====
+// งานที่เกิดซ้ำ: แต่ละวันมีสถานะของตัวเอง เก็บใน t.ov[วันที่]={status} (เสร็จสิ้นเก็บใน t.done[] เหมือนเดิม)
+// ถ้าไม่ได้ตั้งเฉพาะวัน ใช้สถานะรวมของซีรีส์ (t.status) · ยกเลิกทั้งซีรีส์ = t.status ยกเลิก · "รอบนี้และต่อจากนี้" = rrule.until
+const isoDate=iso=>{const [y,m,d]=String(iso).split("-").map(Number); return new Date(y,(m||1)-1,d||1);};
+const serDefault=t=>{const s=normSt(t.status); return s===STATUS_CANCEL?STATUS_CANCEL:(s==="กำลังดำเนินการ"?s:"รอดำเนินการ");};
+function occStat(t,d){
+if(!rr(t))return normSt(t.status);
+const iso=isoOf(d), o=(t.ov||{})[iso];
+if(o&&o.status)return normSt(o.status);
+if((t.done||[]).includes(iso))return STATUS_DONE;
+return serDefault(t);
+}
+const occDone=(t,d)=>rr(t)?occStat(t,d)===STATUS_DONE:(((t&&t.done)||[]).includes(isoOf(d)));
+const occCancel=(t,d)=>rr(t)&&occStat(t,d)===STATUS_CANCEL;
+// สีของจุดในวันนั้น: ปิดแล้ว=เขียว · ยกเลิก=เทา · ยังเปิดและเลยวัน=แดง · อื่นๆตามสถานะ
+function occColor(t,d){
+const st=occStat(t,d); if(st===STATUS_DONE)return sColor(st); if(st===STATUS_CANCEL)return sColor(st);
+const today=new Date(); today.setHours(0,0,0,0);
+return d<today?"var(--over)":sColor(st);
+}
+// แพตช์ข้อมูลเมื่อเปลี่ยนสถานะ "เฉพาะรอบนี้"
+function occPatch(t,iso,status){
+const ov={...(t.ov||{})}; const done=(t.done||[]).filter(x=>x!==iso);
+delete ov[iso];
+if(status===STATUS_DONE)done.push(iso);
+else if(status!==serDefault(t)||t.status===STATUS_CANCEL)ov[iso]={status};
+const p={ov,done};
+if(t.status===STATUS_CANCEL&&status!==STATUS_CANCEL){ p.status="รอดำเนินการ"; if(status==="รอดำเนินการ")delete ov[iso]; }
+return p;
+}
+function occPrevDay(iso){ const d=isoDate(iso); d.setDate(d.getDate()-1); return isoOf(d); }
 // งดรอบนี้ (ไม่จัดสัปดาห์นี้) — ไม่กระทบรอบอื่น
 const occSkip=(t,d)=>(((t&&t.skip)||[]).includes(isoOf(d)));
 function occList(t,from,months){
@@ -292,7 +323,7 @@ function nextOpenOcc(t){
 const today=new Date(); today.setHours(0,0,0,0);
 const st=t.date?new Date(t.date):today;
 const from=new Date(Math.min(st.getTime(),today.getTime()));
-const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d));
+const list=occList(t,new Date(from.getFullYear(),from.getMonth(),1),18).filter(d=>!occDone(t,d)&&!occSkip(t,d)&&!occCancel(t,d));
 const past=list.filter(d=>d<today);
 return past.length?past[0]:(list.find(d=>d>=today)||null);
 }

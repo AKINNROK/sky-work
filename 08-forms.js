@@ -44,6 +44,7 @@ el("wrap-wd").hidden=!(f==="week"||f==="monthnth");
 el("wrap-nth").hidden=(f!=="monthnth");
 el("wrap-md").hidden=(f!=="monthday");
 el("wrap-recur").hidden=(f!=="none");
+el("wrap-until").hidden=(f==="none");
 const dl=el("f-date").parentElement.querySelector("label");
 if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เริ่มต้น";
 }
@@ -135,7 +136,7 @@ const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
 el("f-wd").innerHTML=DOW.map((d,i)=>`<label><input type="checkbox" class="wd" value="${i}"${(RU.weekdays||[]).includes(i)?" checked":""}>${d}.</label>`).join("");
 el("f-nth").innerHTML=NTH.map(([v,l])=>`<label><input type="checkbox" class="nth" value="${v}"${(RU.nth||[]).includes(v)?" checked":""}>${l}</label>`).join("");
-el("f-md").value=RU.monthday||"";
+el("f-md").value=RU.monthday||""; el("f-until").value=RU.until||"";
 syncFreq();
 el("f-meet").checked=genMode?false:(formCtx?formCtx==="meet":isMeet(t||{}));
 el("f-time").value=t?.time||""; el("f-place").value=t?.place||"";
@@ -296,7 +297,7 @@ el("f-occs").innerHTML=show.map(d=>{const iso=isoOf(d), sk=occSkipDraft.includes
 return `<label class="occ${d<=today?"":" fut"}${sk?" skip":""}">
 <input type="checkbox" class="oc" value="${iso}"${occDone(t,d)?" checked":""}${sk?" disabled":""}>
 <span>${d.getDate()} ${MTH[d.getMonth()]} ${d.getFullYear()+543-2500}</span>
-<i>${sk?"งดรอบนี้":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
+<i>${sk?"งดรอบนี้":occCancel(t,d)?"ยกเลิกแล้ว":(d<today?"ผ่านมาแล้ว":d.getTime()===today.getTime()?"วันนี้":"ยังไม่ถึง")}</i>
 <button type="button" class="skipbtn${sk?" on":""}" data-skip="${iso}" title="${sk?"กลับมาจัดตามปกติ":"งดรอบนี้ (ไม่จัด)"}">${sk?"↺ จัดตามเดิม":"งด"}</button></label>`;}).join("")
 ||`<div class="hint" style="margin:0">ยังไม่มีรอบให้แสดง</div>`;
 el("occAll").onclick=ev=>{ev.preventDefault();occShowAll=!occShowAll;paintOccs(t);};
@@ -387,7 +388,7 @@ rrule:(()=>{const f=el("f-freq").value; if(f==="none")return null;
 return {freq:f,
 weekdays:[...el("f-wd").querySelectorAll("input:checked")].map(i=>+i.value),
 nth:[...el("f-nth").querySelectorAll("input:checked")].map(i=>+i.value),
-monthday:+el("f-md").value||null};})(),
+monthday:+el("f-md").value||null, ...(el("f-until").value?{until:el("f-until").value}:{})};})(),
 gl1:el("f-gl1").value, b1:+el("f-b1").value||0,
 gl2:el("f-gl2").value, b2:+el("f-b2").value||0,
 actual:+el("f-actual").value||0, code:el("f-code").value.trim(), course:el("f-course").value,
@@ -410,6 +411,7 @@ why:el("f-why").value.trim(), inv:el("f-inv").value.trim(), whr:el("f-whr").valu
 tag:el("f-tag").value.trim(), color:"",
 months:[...el("f-months").querySelectorAll("input:checked")].map(i=>+i.value),
 skip:(el("wrap-occ").hidden?(editing?.skip||[]):occSkipDraft.slice()),
+ov:(()=>{const ov={...(editing?.ov||{})}; if(!el("wrap-occ").hidden)el("f-occs").querySelectorAll(".oc:checked").forEach(i=>{delete ov[i.value];}); return ov;})(),
 done:(()=>{const box=el("f-occs"); if(el("wrap-occ").hidden)return editing?.done||[];
 const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
@@ -900,13 +902,19 @@ el("vc-pills").innerHTML=o.pills||""; el("vc-body").innerHTML=o.body||"";
 el("vc-del").style.display=o.del?"":"none";
 if(!el("cardlg").open)el("cardlg").showModal();
 }
-function openCard(t){
+let cardOcc="";   // วันที่ (รอบ) ที่การ์ดกำลังพูดถึง — ใช้กับงานที่เกิดซ้ำ
+function openCard(t,occIso){
 if(!t)return;
 cardItem=t;
 const kind=kindOfItem(t)||(isTrain(t)?"train":isMeet(t)?"meet":"");
 const V=cV,R_=cR,sec=cS;
-const S=occState(t);
-const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):""));
+let S=occState(t);
+// งานเกิดซ้ำ: การ์ดแสดง "รอบวันที่..." พร้อมสถานะของรอบนั้นโดยเฉพาะ
+let O=null; cardOcc="";
+if(rr(t)){ if(occIso&&occursOn(t,isoDate(occIso)))O=isoDate(occIso); else if(S.d)O=S.d; else{ const l=occList(t,new Date(new Date().getFullYear(),new Date().getMonth()-1,1),6); O=l.find(d=>d>=new Date(new Date().setHours(0,0,0,0)))||l[l.length-1]||null; }
+if(O){ cardOcc=isoOf(O); const st=occStat(t,O), od=O<new Date(new Date().setHours(0,0,0,0))&&isOpenStatus(st);
+S={label:od?"ค้างรอบนี้":st,cls:od?"s-over":sCls(st),recur:true,d:O,st}; } }
+const _kind=KINDLAB[kind]||"งาน", _date=(t.code?t.code+" · ":"")+(O?"รอบวันที่ "+O.getDate()+" "+MTH[O.getMonth()]+" "+(O.getFullYear()+543)+" · "+rruleText(t):(t.date?fmtDate(t.date)+" "+(new Date(t.date).getFullYear()+543):(rr(t)?rruleText(t):"")));
 const _pills=`<span class="pill ${S.cls}">${esc(S.label)}</span>`+(quadOf(t)?` <b class="qtag q-${quadOf(t)}">${quadOf(t).slice(1)} ${esc(quadInfo(quadOf(t))[1])}</b>`:"");
 const main=R_("บริษัท",t.company?cLabel(t.company):"")+R_("กลุ่มงาน",t.track?gLabel(t.track):"")
 +R_("ประเภท",t.type)+R_("ป้ายกำกับ",t.tag)+R_("รหัสอ้างอิง",t.code);
@@ -936,11 +944,12 @@ const k5=isTrain(t)?"train":isMeet(t)?"meet":"task", L5=W5LAB[k5];
 const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("Where · สถานที่ / ระบบ / ลิงก์",t.whr,true):"")+R_(L5[4],t.how,true));
 const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";
 const _o=rr(t)?S.d:null, _isoO=_o?isoOf(_o):"";
-const quick=`<div class="vsec vquick"><h4>สถานะ</h4><div class="vq-row">
-${rr(t)&&_o?`<button type="button" class="btn vq-big ok" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`
+const curSt=_o?S.st:normSt(t.status);
+const quick=`<div class="vsec vquick"><h4>${_o?`สถานะ · รอบวันที่ ${_o.getDate()} ${MTH[_o.getMonth()]}`:"สถานะ"}${_o?`<span class="vq-nav"><button type="button" data-vqnav="-1" title="รอบก่อนหน้า">${svg('<path d="M15 6l-6 6 6 6"/>',14)}</button><button type="button" data-vqnav="1" title="รอบถัดไป">${svg('<path d="M9 6l6 6-6 6"/>',14)}</button></span>`:""}</h4><div class="vq-row">
+${rr(t)&&_o?(curSt!==STATUS_DONE&&curSt!==STATUS_CANCEL?`<button type="button" class="btn vq-big ok" data-vqocc="${_isoO}">${svg(ICON.check,15)} ปิดรอบ ${_o.getDate()} ${MTH[_o.getMonth()]}</button>`:"")
 :(!rr(t)&&t.status!==STATUS_DONE?`<button type="button" class="btn vq-big ok" data-vqst="${STATUS_DONE}">${svg(ICON.check,15)} เสร็จแล้ว</button>`:"")}
-<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq ${sCls(x)}${x===t.status?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
-${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">ปุ่มดำ = ปิดเฉพาะรอบที่ถึงกำหนด · ปุ่มเล็ก = สถานะรวมของงาน</div>`:""}</div>`;
+<div class="vq-chips">${STATUS.map(x=>`<button type="button" class="vq ${sCls(x)}${x===curSt?" on":""}" data-vqst="${x}">${esc(x)}</button>`).join("")}</div></div>
+${rr(t)?`<div class="hint" style="margin:6px 0 0;font-size:11.5px">${t.status===STATUS_CANCEL?"ยกเลิกทั้งซีรีส์อยู่ — เลือกสถานะอื่นเพื่อเปิดงานนี้กลับมา · ":""}สถานะมีผลเฉพาะรอบวันที่ ${_o?_o.getDate()+" "+MTH[_o.getMonth()]:"—"} รอบอื่นไม่กระทบ · ตอนกด “ยกเลิก” เลือกได้ว่าจะยกเลิกแค่รอบนี้ หรือรอบนี้เป็นต้นไป หรือทุกรอบ</div>`:""}</div>`;
 cardShow({kind:_kind,date:_date,title:t.title,color:({"s-done":"var(--ok)","s-over":"var(--over)","s-run":"var(--run)","s-cancel":"var(--ink-3)"})[S.cls]||"var(--wait)",pills:_pills,body:quick+sec("รายละเอียด",when+main)+meet+train+proj+act+money+w5+note,
 edit:()=>open_(t),del:async()=>{
 if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
@@ -952,15 +961,49 @@ el("vc-del").onclick=()=>{const k=cardCtx; el("cardlg").close(); if(k&&k.del)k.d
 async function cardSave(patch){
 const t=cardItem; if(!t)return;
 const {_id,...rest}=t;
+const occKeep=cardOcc;
 try{ await saveItem({...rest,...patch},_id); }
 catch(err){ const x=explainErr(err); tell("<b>"+esc(x.title)+"</b>"); return; }
 const f=items.find(x=>x._id===_id)||{...t,...patch,_id};
-openCard(f);
+openCard(f,occKeep);
+}
+// ถามขอบเขตตอนยกเลิกงานที่เกิดซ้ำ (เหมือน Google Calendar: รอบนี้ / รอบนี้และต่อจากนี้ / ทุกรอบ)
+function askScope(title,opts){
+el("sc-title").textContent=title;
+el("sc-opts").innerHTML=opts.map((o,i)=>`<label class="scopeopt"><input type="radio" name="scopev" value="${esc(o.v)}"${i===0?" checked":""}><span><b>${esc(o.l)}</b>${o.s?`<small>${esc(o.s)}</small>`:""}</span></label>`).join("");
+el("scopedlg").showModal();
+return new Promise(r=>{ scopeResolve=r; });
+}
+let scopeResolve=null;
+el("sc-ok").onclick=()=>{ const v=(el("sc-opts").querySelector("input:checked")||{}).value||null; el("scopedlg").close(); const r=scopeResolve; scopeResolve=null; r&&r(v); };
+el("sc-no").onclick=()=>{ el("scopedlg").close(); const r=scopeResolve; scopeResolve=null; r&&r(null); };
+el("scopedlg").addEventListener("cancel",()=>{ const r=scopeResolve; scopeResolve=null; r&&r(null); });
+async function cardOccStatus(st){
+const t=cardItem; if(!t)return;
+const iso=cardOcc; if(!iso){ cardSave({status:st}); return; }
+const dl=isoDate(iso), lab=dl.getDate()+" "+MTH[dl.getMonth()]+" "+(dl.getFullYear()+543);
+if(st!==STATUS_CANCEL){ cardSave(occPatch(t,iso,st)); return; }
+const start=t.date||"";
+const v=await askScope("ยกเลิก “"+t.title+"”",[
+{v:"this",l:"เฉพาะรอบนี้ ("+lab+")",s:"รอบอื่นๆ ยังอยู่ตามปกติ"},
+{v:"following",l:"รอบนี้และรอบต่อจากนี้ทั้งหมด",s:"รอบก่อนหน้าไม่เปลี่ยน · จบการเกิดซ้ำตั้งแต่ "+lab},
+{v:"all",l:"ทุกรอบ (ยกเลิกทั้งงาน)",s:"ทุกรอบกลายเป็นยกเลิก"}]);
+if(!v)return;
+if(v==="this")cardSave(occPatch(t,iso,STATUS_CANCEL));
+else if(v==="all")cardSave({status:STATUS_CANCEL});
+else{
+if(start&&iso<=start)cardSave({status:STATUS_CANCEL});
+else cardSave({rrule:{...rr(t),until:occPrevDay(iso)}});
+}
 }
 el("vc-body").onclick=e=>{
 const b=e.target.closest("button"); if(!b||!cardItem)return;
-if(b.dataset.vqst){ cardSave({status:b.dataset.vqst}); }
-else if(b.dataset.vqocc){ const done=[...(cardItem.done||[])]; if(!done.includes(b.dataset.vqocc))done.push(b.dataset.vqocc); cardSave({done}); }
+if(b.dataset.vqst){ if(rr(cardItem))cardOccStatus(b.dataset.vqst); else cardSave({status:b.dataset.vqst}); }
+else if(b.dataset.vqocc){ cardSave(occPatch(cardItem,b.dataset.vqocc,STATUS_DONE)); }
+else if(b.dataset.vqnav){ const dir=+b.dataset.vqnav, cur=cardOcc?isoDate(cardOcc):new Date();
+const base=new Date(cur.getFullYear(),cur.getMonth()-4,1), l=occList(cardItem,base,9);
+const nx=dir<0?l.filter(d=>d<cur).pop():l.find(d=>d>cur);
+if(nx)openCard(cardItem,isoOf(nx)); else setFoot("ไม่มีรอบที่"+(dir<0?"ก่อนหน้า":"ถัดไป")+"แล้วค่ะ"); }
 };
 
 // ===== การ์ดดู: Index / กฎหมาย / รายการเงิน =====
