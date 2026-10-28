@@ -516,6 +516,44 @@ tr.dragging,.qlk.dragging{opacity:.4}tr.dropat td{box-shadow:inset 0 2px 0 var(-
 .scopeopt:has(input:checked){box-shadow:inset 0 0 0 2px var(--accent)}
 .vq-nav{float:right;display:inline-flex;gap:4px}.vq-nav button{border:0;background:var(--paper);border-radius:8px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;color:var(--ink-2)}.vq-nav button:hover{color:var(--accent)}
 .okbtn.on{background:var(--ok);color:#fff}
+.inkdlg{padding:0;border:0;margin:0;max-width:none;max-height:none;width:100vw;height:100vh;height:100dvh;background:var(--paper);color:var(--ink);overflow:hidden;border-radius:0}
+.inkdlg[open]{display:flex;flex-direction:column}.inkdlg::backdrop{background:#000}
+.ink-top{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--card);box-shadow:0 1px 0 var(--line);flex:none;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.ink-top::-webkit-scrollbar{display:none}
+@media (min-width:760px){.ink-top{flex-wrap:wrap;overflow:visible}}
+.ink-top>*{flex:none}.ink-sp{flex:1!important;min-width:4px}.ink-sep{width:1px;height:26px;background:var(--line);margin:0 4px}.ink-grp{display:inline-flex;align-items:center;gap:4px}
+.ink-title{border:0;background:var(--paper);border-radius:999px;padding:9px 14px;font:inherit;font-weight:600;width:min(210px,28vw);min-width:120px;color:var(--ink)}
+.ink-save{font-size:12px;color:var(--ink-3);white-space:nowrap;min-width:78px}.ink-save.ok{color:var(--ok)}.ink-save.bad{color:var(--over);cursor:pointer;text-decoration:underline}.ink-save.busy{color:var(--run)}
+.ink-b{width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:var(--ink-2);display:grid;place-items:center;cursor:pointer;touch-action:manipulation}.ink-b:hover{background:var(--paper)}.ink-b.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}.ink-b:disabled{opacity:.3;cursor:default}
+.ink-t{border:0;border-radius:999px;background:var(--paper);color:var(--ink-2);padding:9px 13px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap;touch-action:manipulation}.ink-t:hover{color:var(--accent)}.ink-t.pri{background:var(--accent);color:#fff}
+.ink-c{width:26px;height:26px;border-radius:50%;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}.ink-c.on{box-shadow:0 0 0 2.5px var(--accent)}
+.ink-s{width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);display:grid;place-items:center;cursor:pointer}.ink-s i{display:block;border-radius:50%;background:currentColor}.ink-s.on{background:var(--accent-soft);color:var(--accent)}
+.ink-stage{position:relative;flex:1;min-height:0;background:#8d8f93;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.ink-pg{position:absolute;box-shadow:0 4px 24px rgba(0,0,0,.35);background:#fff}.ink-pg canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}#ink-over{pointer-events:none}
+.ink-load{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35);color:#fff;font-weight:600}
+.ink-pages{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--card);box-shadow:0 -1px 0 var(--line);flex:none;overflow-x:auto;padding-bottom:max(6px,env(safe-area-inset-bottom))}
+.ink-pn{border:0;min-width:36px;height:34px;border-radius:10px;background:var(--paper);color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;padding:0 10px;flex:none}.ink-pn.on{background:var(--accent);color:#fff}.ink-pn.add{color:var(--accent);background:var(--accent-soft)}.ink-pinfo{margin-left:auto;font-size:12px;color:var(--ink-3);white-space:nowrap;padding-left:8px}
+.ink-pop{position:fixed;z-index:20;background:var(--card);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.28);padding:10px;min-width:210px;max-width:min(300px,92vw)}
+.ink-ph{font-size:12px;color:var(--ink-3);margin:4px 4px 6px;font-weight:600}.ink-row{display:flex;flex-wrap:wrap;gap:6px}
+.ink-opt{border:0;border-radius:10px;background:var(--paper);color:var(--ink-2);padding:8px 11px;font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}.ink-opt.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}.ink-opt i{width:14px;height:14px;border-radius:4px;box-shadow:0 0 0 1px var(--line)}
+.ink-mi{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 12px;border-radius:10px;font:inherit;color:var(--ink);cursor:pointer}.ink-mi:hover{background:var(--paper)}.ink-mi.danger{color:var(--over)}.ink-mi:disabled{opacity:.35}
+.ink-exp{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}.ink-expc{background:var(--card);border-radius:20px;padding:20px;width:min(360px,100%);box-shadow:0 12px 48px rgba(0,0,0,.4)}
+
+.tgdlg{width:min(860px,96vw)}.tg-wrap{padding:16px 22px;max-height:66vh;overflow-y:auto}.tg-sec{font-family:var(--head);font-weight:500;font-size:14px;color:var(--ink-2);margin:14px 0 8px}.tg-sec:first-child{margin-top:0}
+.tg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.tg-c{position:relative;text-align:left;background:var(--paper);border:2px solid transparent;border-radius:14px;padding:8px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:3px}
+.tg-c img{width:100%;aspect-ratio:1000/1414;object-fit:cover;object-position:top;border-radius:8px;background:#fff;box-shadow:0 0 0 1px var(--line)}
+.tg-c b{font-weight:600;font-size:13.5px}.tg-c small{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+.tg-c.on{border-color:var(--accent);background:var(--card);box-shadow:var(--sh-m)}
+.tg-board{display:grid;place-items:center;aspect-ratio:1000/1414;border-radius:8px;background:repeating-linear-gradient(0deg,transparent 0 19px,var(--line) 19px 20px),repeating-linear-gradient(90deg,transparent 0 19px,var(--line) 19px 20px),#fff;font-size:44px;color:var(--accent)}
+.tg-opt{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px;padding:12px 14px;background:var(--paper);border-radius:14px;position:sticky;bottom:0}
+.tg-opt label{display:flex;gap:6px;align-items:center;font-size:13.5px}.tg-opt select,.tg-opt input[type=date]{background:var(--card);border:0;border-radius:10px;padding:8px 10px;font:inherit}.tg-opt input[type=checkbox]{width:auto}
+.fbar{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
+.fchip{display:inline-flex;align-items:center;gap:7px;border:0;background:var(--paper);color:var(--ink-2);border-radius:999px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer}
+.fchip i{width:10px;height:10px;border-radius:50%;display:inline-block}.fchip b{font-size:11.5px;background:var(--card);border-radius:999px;padding:1px 8px;color:var(--ink-3)}
+.fchip.on{background:var(--accent);color:#fff}.fchip.on b{background:rgba(255,255,255,.25);color:#fff}.fchip.add{background:none;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--accent)}
+.fchip.over{outline:3px solid var(--accent-2);outline-offset:2px}.notecard.dragging{opacity:.45}
+.flrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.flrow i{width:12px;height:12px;border-radius:50%;flex:none}.flrow .nm{flex:1;min-width:0}.flc{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.ink-th{width:100%;border-radius:8px;box-shadow:0 0 0 1px var(--line);background:#fff;display:block;max-height:240px;object-fit:cover;object-position:top}
 .ixuse{font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.5}
 .ixuse b{color:var(--ink-2);font-weight:600}
 .gapchips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}.gapchips b{font-size:11px;padding:2px 9px;border-radius:999px;background:var(--over-soft);color:var(--over);font-weight:600}
@@ -820,6 +858,41 @@ svg [data-tip]{outline:none}
 <div class="dlg-h" id="sc-title">ยกเลิกงาน</div>
 <div class="dlg-b"><div class="f wide" id="sc-opts"></div></div>
 <div class="dlg-f"><button type="button" class="btn ghost" id="sc-no">กลับ</button><button type="button" class="btn" id="sc-ok">ตกลง</button></div></form></dialog>
+<dialog id="inktpl" class="tgdlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h" id="tg-h">สมุดใหม่</div>
+<div class="tg-wrap" id="tg-body"></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="tg-cancel">ยกเลิก</button><button type="button" class="btn" id="tg-ok">สร้างสมุด</button></div></form></dialog>
+<dialog id="fldlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h">จัดการโฟลเดอร์ Note</div>
+<div class="dlg-b" style="display:block"><div id="fl-list"></div><div class="hint">แก้ชื่อได้ทันที · ลบโฟลเดอร์ไม่ลบบันทึกข้างใน</div></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="fl-new">＋ โฟลเดอร์ใหม่</button><button type="button" class="btn" id="fl-close">เสร็จ</button></div></form></dialog>
+<dialog id="inkdlg" class="inkdlg" aria-label="สมุดเขียนมือ">
+<div class="ink-top">
+<button type="button" class="ink-b" id="ink-close" title="ปิดสมุด (บันทึกให้อัตโนมัติ)" aria-label="ปิดสมุด"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+<input id="ink-title" class="ink-title" placeholder="ชื่อสมุด" aria-label="ชื่อสมุด" autocomplete="off">
+<span id="ink-save" class="ink-save" role="status"></span>
+<span class="ink-sp"></span>
+<button type="button" class="ink-b" id="ink-undo" title="ย้อนกลับ" aria-label="ย้อนกลับ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+<button type="button" class="ink-b" id="ink-redo" title="ทำซ้ำ" aria-label="ทำซ้ำ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+<span class="ink-sep"></span>
+<span id="ink-tools" class="ink-grp"></span>
+<span class="ink-sep"></span>
+<span id="ink-colors" class="ink-grp"></span><span id="ink-sizes" class="ink-grp"></span>
+<button type="button" class="ink-t" id="ink-seldel" hidden>ลบที่เลือก</button>
+<span class="ink-sep"></span>
+<button type="button" class="ink-t" id="ink-finger">นิ้ว: อัตโนมัติ</button>
+<button type="button" class="ink-t" id="ink-tpl">กระดาษ</button>
+<button type="button" class="ink-b" id="ink-zout" title="ซูมออก" aria-label="ซูมออก"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
+<button type="button" class="ink-b" id="ink-zfit" title="พอดีหน้า" aria-label="พอดีหน้า"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+<button type="button" class="ink-b" id="ink-zin" title="ซูมเข้า" aria-label="ซูมเข้า"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+<button type="button" class="ink-t pri" id="ink-exp-b">ส่งออก / Drive</button>
+<button type="button" class="ink-b" id="ink-more" title="เพิ่มเติม" aria-label="เพิ่มเติม"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+</div>
+<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
+<div id="ink-pages" class="ink-pages"></div>
+<div id="ink-pop" class="ink-pop" hidden></div>
+<div id="ink-exp" class="ink-exp" hidden></div>
+</dialog>
 <dialog id="nvdlg" class="nvdlg"><div class="nvbar"></div>
 <div class="nvh"><span class="tag" id="nvk"></span><span id="nvd" class="nvdate"></span><span style="flex:1"></span>
 <button type="button" class="aipb" id="nvedit" title="แก้ไข" aria-label="แก้ไข"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button></div>
@@ -843,6 +916,7 @@ svg [data-tip]{outline:none}
 <div class="f wide"><label for="n-title">หัวข้อ</label><input id="n-title" placeholder="เช่น สรุป One HR Meeting ก.ย. 69"></div>
 <div class="f"><label for="n-kind">ประเภท</label><select id="n-kind"></select></div>
 <div class="f"><label for="n-date">วันที่</label><input id="n-date" type="date"></div>
+<div class="f"><label for="n-folder">โฟลเดอร์</label><select id="n-folder"></select></div>
 <div class="f"><label for="n-tag">ป้ายกำกับ</label><input id="n-tag" list="ntaglist" placeholder="เช่น อัตรากำลัง"><datalist id="ntaglist"></datalist></div>
 <div class="f"><label>สี</label><div class="swrow" id="n-colors"></div></div>
 <div class="f wide"><label>เนื้อหา</label>
@@ -980,4 +1054,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.9.11"></script></body></html>
+<script src="app.js?v=14.11.0"></script></body></html>

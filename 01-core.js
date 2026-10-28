@@ -1,4 +1,4 @@
-const APP_VERSION="14.10.0"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.11.0"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -591,6 +591,7 @@ sub("meta/tags",d=>{if(Array.isArray(d.list))tagList=d.list;});
 sub("meta/courses",d=>{if(Array.isArray(d.list))courses=d.list;});
 sub("meta/skills",d=>{if(Array.isArray(d.list))skillList=d.list;});
 sub("meta/modes",d=>{if(Array.isArray(d.list))modeList=d.list;});
+sub("meta/nfolders",d=>{if(Array.isArray(d.list))noteFolders=d.list;});
 sub("meta/idxcats",d=>{if(Array.isArray(d.list))idxCats=d.list;});
 sub("meta/tpls",d=>{ if(Array.isArray(d.list))tpls=d.list; });
 sub("meta/pushsubs",d=>{ if(Array.isArray(d.list)){ pushSubs=d.list; pushHere(); } });

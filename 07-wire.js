@@ -47,7 +47,9 @@ el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
 const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdxCard(x);});
-el("addInk")&&(el("addInk").onclick=()=>inkNew());
+el("addInk")&&(el("addInk").onclick=()=>inkGallery("new"));
+el("addBoard")&&(el("addBoard").onclick=()=>inkNew({mode:"board"}));
+noteFolderWire();
 document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=e=>{
 const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
 if(x.kind===INKKIND){ inkOpen(x); return; }
@@ -524,6 +526,7 @@ if(Array.isArray(M.courses)){courses=M.courses; await saveMeta("courses",courses
 if(Array.isArray(M.skills)){skillList=M.skills; await saveMeta("skills",skillList);}
 if(Array.isArray(M.modes)){modeList=M.modes; await saveMeta("modes",modeList);}
 if(Array.isArray(M.idxcats)){idxCats=M.idxcats; await saveMeta("idxcats",idxCats);}
+if(Array.isArray(M.nfolders)){noteFolders=M.nfolders; await saveMeta("nfolders",noteFolders);}
 if(Array.isArray(M.tpls)){tpls=M.tpls; await saveMeta("tpls",tpls);}
 if(M.hr){hrdata=Object.assign(hrdata,M.hr); await saveHR();}
 }catch(e){fail++;}

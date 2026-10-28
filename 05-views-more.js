@@ -615,13 +615,14 @@ const NOTEKIND=["บันทึกการประชุม","โน้ต","
 const NOTEKIND_ALL=()=>[...NOTEKIND,INKKIND];
 function noteView(){
 const fk=R.noteKind||"", q=(R.noteQ||"").toLowerCase();
-const list=notes.filter(n=>(!fk||n.kind===fk)&&(!q||((n.title||"")+" "+ntPlain(n)+" "+(n.tag||"")).toLowerCase().includes(q)))
+const list=notes.filter(n=>(!fk||n.kind===fk)&&noteFolderFilter(n)&&(!q||((n.title||"")+" "+ntPlain(n)+" "+(n.tag||"")).toLowerCase().includes(q)))
 .sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||((b.date||"")<(a.date||"")?-1:1));
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
 const cnt=k=>notes.filter(n=>n.kind===k).length;
 return header("บันทึก & ไอเดีย","บันทึกการประชุม โน้ตประจำวัน และไอเดียที่ยังไม่ได้ทำ",false)+
 `<div class="head" style="margin-top:-6px"><div></div>
-<span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="addInk" title="สมุดเขียนมือ ใช้ Apple Pencil วาด/เขียนได้ ส่งออก PDF ลง Google Drive">${svg('<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>',18)}<span>สมุดเขียนมือ</span></button>
+<span style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost" id="addBoard" title="กระดานกว้างไม่จำกัด เขียน/วาดได้อิสระ เลื่อนและซูมได้">${svg('<circle cx="12" cy="12" r="9"/><path d="M8 12c0-2 1.5-3 2.7-3 1.8 0 2.3 3 4.3 3 1.2 0 2-.8 2-2"/>',18)}<span>กระดานกว้าง</span></button>
+<button class="btn ghost" id="addInk" title="สมุดเขียนมือ ใช้ Apple Pencil วาด/เขียนได้ ส่งออก PDF ลง Google Drive">${svg('<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>',18)}<span>สมุดเขียนมือ</span></button>
 <button class="btn addbtn" id="addNote">${svg('<path d="M12 5v14M5 12h14"/>',18)}<span>เขียนบันทึก</span></button></span></div>
 <div class="dash">
 <div class="card hero span2"${tipAttr("บันทึกทั้งหมด · "+notes.length+" รายการ",...NOTEKIND.map(k=>k+"|"+cnt(k)+" รายการ"),"ปักหมุด|"+notes.filter(n=>n.pin).length)}><div class="lab">บันทึกทั้งหมด</div><div class="big">${notes.length}</div>
@@ -631,13 +632,15 @@ return header("บันทึก & ไอเดีย","บันทึกก�
 <div class="card stat"${tipAttr("บันทึกล่าสุด",tipList(notes.slice().sort((a,b)=>(b.date||"")<(a.date||"")?-1:1),n=>(n.date||"—")+" · "+(n.title||"(ไม่มีชื่อ)"),5))}><div class="k"><span class="ic">${svg(ICON.clock,16)}</span> บันทึกล่าสุด</div>
 <div class="v" style="font-size:17px">${notes.length?esc((notes.slice().sort((a,b)=>(b.date||"")<(a.date||"")?-1:1)[0].date||"—")):"—"}</div><div class="d">วันที่ล่าสุด</div></div>
 <div class="card span4">
+${noteFolderBar()}
 <div class="toolbar" style="margin-bottom:6px">
 <input type="search" id="nt-q" placeholder="ค้นหาในบันทึก" value="${esc(R.noteQ||"")}">
 <select id="nt-kind">${opt([["","ทุกประเภท"],...NOTEKIND_ALL().map(x=>[x,x])],fk)}</select></div>
 <div class="notegrid">${list.map(n=>`<div class="notecard" data-nt="${n._id}" style="border-left:5px solid ${n.color||"var(--accent-2)"}">
 <div class="nh"><span class="tag${n.kind==="ไอเดีย"||n.kind===INKKIND?" sky":""}">${esc(n.kind||"โน้ต")}</span>
-${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}
+${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}${noteFolderTag(n)}
 <span style="margin-left:auto;font-size:12px;color:var(--ink-3)">${esc(n.date||"")}</span>
+<button class="ntedit" data-ntmv="${n._id}" title="ย้ายไปโฟลเดอร์" aria-label="ย้ายไปโฟลเดอร์">${svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',14)}</button>
 <button class="ntedit" data-ntedit="${n._id}" title="แก้ไข" aria-label="แก้ไข">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',14)}</button></div>
 <div class="nt1">${esc(n.title||"(ไม่มีหัวข้อ)")}</div>
 <div class="nb">${n.kind===INKKIND?(n.thumb?`<img class="ink-th" src="${esc(n.thumb)}" alt="ตัวอย่างหน้าแรก"><div class="t-note" style="margin-top:6px">${n.pages||1} หน้า · แตะเพื่อเปิดเขียนต่อ</div>`:`<div class="t-note">สมุดเปล่า · ${n.pages||1} หน้า</div>`):(()=>{const t=ntPlain(n); return esc(t.slice(0,180))+(t.length>180?"…":"");})()}</div>
