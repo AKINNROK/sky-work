@@ -528,7 +528,7 @@ tr.dragging,.qlk.dragging{opacity:.4}tr.dropat td{box-shadow:inset 0 2px 0 var(-
 .ink-c{width:26px;height:26px;border-radius:50%;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}.ink-c.on{box-shadow:0 0 0 2.5px var(--accent)}
 .ink-s{width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);display:grid;place-items:center;cursor:pointer}.ink-s i{display:block;border-radius:50%;background:currentColor}.ink-s.on{background:var(--accent-soft);color:var(--accent)}
 .ink-stage{position:relative;flex:1;min-height:0;background:#8d8f93;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.ink-pg{position:absolute;box-shadow:0 4px 24px rgba(0,0,0,.35);background:#fff}.ink-pg canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}#ink-over{pointer-events:none}
+.ink-pg{position:absolute;background:#fff;isolation:isolate}.ink-pg::before{content:"";position:absolute;left:0;top:0;right:0;bottom:0;z-index:-1;box-shadow:var(--sh,0 4px 24px rgba(0,0,0,.35));pointer-events:none;will-change:transform}.ink-pg canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}#ink-over,#ink-pred{pointer-events:none}
 .ink-load{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35);color:#fff;font-weight:600}
 .ink-pages{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--card);box-shadow:0 -1px 0 var(--line);flex:none;overflow-x:auto;padding-bottom:max(6px,env(safe-area-inset-bottom))}
 .ink-pn{border:0;min-width:36px;height:34px;border-radius:10px;background:var(--paper);color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;padding:0 10px;flex:none}.ink-pn.on{background:var(--accent);color:#fff}.ink-pn.add{color:var(--accent);background:var(--accent-soft)}.ink-pinfo{margin-left:auto;font-size:12px;color:var(--ink-3);white-space:nowrap;padding-left:8px}
@@ -665,7 +665,7 @@ svg [data-tip]{outline:none}
 <main>
 <div class="mtop" id="brandBtnM" role="button" tabindex="0" title="แตะเพื่อรีเฟรชแอปและโหลดเวอร์ชันล่าสุด">
 <img class="logo" src="logo.png" alt="Sky Work">
-<div><b>Sky Work</b><span id="mfoot">กำลังโหลด…</span></div>
+<div><b>Sky Work <small id="mver" style="font-weight:500;opacity:.7;font-size:11.5px"></small></b><span id="mfoot">กำลังโหลด…</span></div>
 </div>
 <div id="view"></div>
 </main>
@@ -893,7 +893,7 @@ svg [data-tip]{outline:none}
 <button type="button" class="ink-t pri" id="ink-exp-b">ส่งออก / Drive</button>
 <button type="button" class="ink-b" id="ink-more" title="เพิ่มเติม" aria-label="เพิ่มเติม"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
 </div>
-<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
+<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas><canvas id="ink-pred"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
 <div id="ink-pages" class="ink-pages"></div>
 <div id="ink-pop" class="ink-pop" hidden></div>
 <div id="ink-exp" class="ink-exp" hidden></div>
@@ -1065,4 +1065,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.13.1"></script></body></html>
+<script src="app.js?v=14.13.2"></script></body></html>

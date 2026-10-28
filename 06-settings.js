@@ -379,7 +379,14 @@ return `<div class="card"><h2>สำรองข้อมูล & กู้ค�
 • ถ้ามีคอลัมน์ <b>สารบัญ</b> ระบบจะนำเข้าไปที่เมนู “Index Online” ให้เอง
 </div></div>`;
 }
+async function verCheck(){
+const box=el("verchk"); if(!box)return;
+try{ const r=await fetch("sw.js?v="+Date.now(),{cache:"no-store"}); const t=await r.text(); const m=t.match(/skywork-([\d.]+)/); if(!m){ box.textContent=""; return; }
+const same=m[1]===APP_VERSION; box.innerHTML=same?`<span style="color:var(--ok);font-weight:600">✓ เป็นเวอร์ชันล่าสุดแล้ว</span> (เซิร์ฟเวอร์ v${esc(m[1])})`:`<span style="color:var(--over);font-weight:600">มีเวอร์ชันใหม่ v${esc(m[1])}</span> — กด “รีเฟรชเป็นเวอร์ชันล่าสุด” ได้เลยค่ะ`; }
+catch(e){ box.textContent="ตรวจเวอร์ชันบนเซิร์ฟเวอร์ไม่ได้ (ออฟไลน์?)"; }
+}
 function setConnect(){
+setTimeout(()=>{ verCheck(); const b=el("verRefresh"); if(b)b.onclick=hardRefresh; },60);
 const ua=navigator.userAgent;
 const isMobile=/iPhone|iPad|iPod|Android/i.test(ua);
 const dev=isMobile?(/iPad/i.test(ua)?"แท็บเล็ต / iPad":"มือถือ"):"โน้ตบุ๊ก / คอมพิวเตอร์";
@@ -387,6 +394,12 @@ const os=/iPhone|iPad|iPod/i.test(ua)?"iOS":/Android/i.test(ua)?"Android":/Mac/i
 const on=!!DB;
 return `<div class="banner ${on?"ok":"bad"}">${svg(on?ICON.check:ICON.bell,19)}
 ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ · ข้อมูลซิงก์อัตโนมัติทุกเครื่อง":"ยังเชื่อมต่อฐานข้อมูลไม่ได้ · ตอนนี้แก้ไขข้อมูลไม่ได้"}</div>
+<div class="card verbox" style="margin-bottom:14px"><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+<div><div class="k" style="color:var(--ink-3);font-size:13px">เวอร์ชันแอปที่เครื่องนี้ใช้อยู่</div>
+<div style="font-family:var(--head);font-size:30px;font-weight:600;line-height:1.2">v${APP_VERSION}</div>
+<div class="t-note">อัปเดต ${APP_DATE} · ${dev}</div>
+<div id="verchk" class="t-note" style="margin-top:6px">กำลังตรวจเวอร์ชันล่าสุดบนเซิร์ฟเวอร์…</div></div>
+<button class="btn" id="verRefresh">รีเฟรชเป็นเวอร์ชันล่าสุด</button></div></div>
 <div id="health"></div>
 <div class="dash">
 <div class="card stat"${tipAttr("เครื่องที่ใช้อยู่ · "+dev,"ระบบ|"+os,"หน้าจอ|"+innerWidth+"×"+innerHeight)}><div class="k"><span class="ic">${svg(isMobile?ICON.phone:ICON.laptop,16)}</span> เครื่องที่ใช้อยู่</div>

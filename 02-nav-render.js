@@ -157,7 +157,7 @@ const curHL=()=>{try{return localStorage.getItem("sw-hl")||"p";}catch(e){return 
 function setHL(v){ try{localStorage.setItem("sw-hl",v);}catch(e){} document.documentElement.setAttribute("data-hl",v); applyTheme(); }
 function setTb(hide){ document.documentElement.classList.toggle("tbh",!!hide); try{localStorage.setItem("sw-tbh",hide?"1":"0");}catch(e){} }
 function renderNav(){
-const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION;
+const bs=el("brandsub"); if(bs)bs.textContent="เวอร์ชัน "+APP_VERSION; const mv=el("mver"); if(mv)mv.textContent="v"+APP_VERSION;
 el("nav").innerHTML=VIEWS.map(([k,l])=>`<button data-v="${k}" aria-current="${k===view}">${svg(ICON[k==="cal"?"cal":k])}<span>${l}</span></button>`).join("");
 el("tabbar").innerHTML=TABS.map(k=>{const l=TABLABEL[k]||VIEWS.find(v=>v[0]===k)[1];
 return `<button data-v="${k}" aria-current="${k===view}" title="${esc(VIEWS.find(v=>v[0]===k)[1])}">${svg(ICON[k],19)}<span>${l}</span></button>`;}).join("")
