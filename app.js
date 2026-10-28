@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.2"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.5"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2840,7 +2840,7 @@ const rx=(bcx+dx+ox)*k, ry=(b[1]+dy+oy-pad-34*inkPx())*k; ctx.beginPath(); ctx.m
 ctx.beginPath(); ctx.arc(rx,ry,hr*.5,.4,5.4); ctx.strokeStyle="#fff"; ctx.lineWidth=Math.max(1.5,1.6*k); ctx.stroke(); ctx.restore();
 }
 function inkDown(e){
-ink.rc=null; const t=e.pointerType;
+ink.rc=null; const t=e.pointerType; { const a=document.activeElement; if(a&&a!==document.body&&a.blur&&a.id!=="ink-stage")a.blur(); }
 if((t==="pen"||t==="mouse")&&ink.drag&&ink.drag.mode==="draw"){ if(inkDiag.on)inkDiag.overlap++; inkUp({pointerId:ink.drag.id,pointerType:t,type:"pointerup",timeStamp:0}); }
 if(t==="pen"){ ink.penSeen=true; ink.penDown=true; ink.ptrs.forEach((v,id)=>{ if(v.type==="touch")ink.ptrs.delete(id); }); if(ink.drag&&ink.drag.mode==="pan"||ink.drag&&ink.drag.mode==="pinch")ink.drag=null; }
 if(t==="touch"&&(ink.penDown||Date.now()-ink.penUpAt<280))return;      // กันฝ่ามือ
@@ -2995,6 +2995,7 @@ inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เล�
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="clear">${ink.board?"ล้างกระดานทั้งหมด":"ล้างหน้านี้"}</button>
 ${ink.board?"":`<button type="button" class="ink-mi danger" data-imore="delpage" ${ink.pages.length<2?"disabled":""}>ลบหน้านี้</button>`}
+<button type="button" class="ink-mi" data-imore="scrib">เขียนแล้วเส้นหาย / ตามไม่ทัน? (วิธีแก้บน iPad)</button>
 <button type="button" class="ink-mi" data-imore="lead">ปลายเส้นล่วงหน้า (ลดความหน่วง): ${(INK_LEADS.find(x=>x[0]===ink.lead)||INK_LEADS[0])[1]}</button>
 <button type="button" class="ink-mi" data-imore="diag">${inkDiag.on?"หยุดวัด + ดูผล":"วัดความลื่น (ทดสอบเขียน)"}</button>
 <button type="button" class="ink-mi danger" data-imore="delnote">ลบ${ink.board?"กระดาน":"สมุดทั้งเล่ม"}</button>`,a);
@@ -3056,7 +3057,7 @@ if(ink.board&&!fresh)ink.z=1;
 // ซูมทั้งหน้าเป็น 100% ระหว่างเขียน (กันพิกัดปากกาเพี้ยนจากซูมของแอป)
 ink.zoomBak=document.documentElement.style.zoom||""; document.documentElement.style.zoom="1"; document.documentElement.style.setProperty("--zf",1);
 el("inkdlg").classList.toggle("board",ink.board); document.body.classList.add("ink-on");
-el("ink-title").value=n.title||""; el("ink-load").hidden=false; inkStatus(fresh?"สมุดใหม่":"กำลังโหลด…","");
+el("ink-title").value=n.title||""; el("ink-title").readOnly=true; try{ if(document.activeElement&&document.activeElement!==document.body)document.activeElement.blur(); }catch(e){} el("ink-load").hidden=false; inkStatus(fresh?"สมุดใหม่":"กำลังโหลด…","");
 const dlg=el("inkdlg"); if(!dlg.open)dlg.showModal();
 const ids=(n.pageIds&&n.pageIds.length)?n.pageIds:[inkUid()];
 let rows={};
@@ -3168,6 +3169,8 @@ el("ink-more").onclick=e=>{ e.stopPropagation(); inkMoreMenu(e.currentTarget); }
 el("ink-exp-b").onclick=e=>{ e.stopPropagation(); inkExportMenu(e.currentTarget); };
 el("ink-save").onclick=()=>{ if(ink.saveErr)inkSave(); };
 el("ink-title").oninput=()=>{ if(ink.note){ ink.metaDirty=true; inkDirty(); } };
+// ช่องชื่อสมุดเป็นแบบอ่านอย่างเดียวระหว่างเขียน — กัน Scribble ของ iPad มองว่าทั้งหน้าเป็นที่เขียนข้อความ แล้วแย่งรับเส้นปากกา; แตะที่ชื่อเพื่อแก้ไข
+(function(){ const tt=el("ink-title"); tt.addEventListener("click",()=>{ if(tt.readOnly){ tt.blur(); tt.readOnly=false; tt.focus(); } }); tt.addEventListener("blur",()=>{ tt.readOnly=true; }); tt.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); tt.blur(); } }); })();
 el("inkdlg").addEventListener("click",async e=>{
 const b=e.target.closest("button"); if(!b){ if(!e.target.closest("#ink-pop"))inkClosePop(); return; }
 if(b.dataset.itool){ ink.tool=b.dataset.itool; if(ink.tool!=="lasso")ink.sel=null; inkOverClear(); inkDrawSel(); inkToolbar(); }
@@ -3178,6 +3181,7 @@ else if(b.dataset.itpl||b.dataset.ipaper){ const d=b.dataset.itpl?{tpl:b.dataset
 else if(b.dataset.iexp){ inkExport(b.dataset.iexp); }
 else if(b.dataset.imore){ const m=b.dataset.imore; inkClosePop();
 if(m==="diag"){ if(!inkDiag.on){ inkDiagStart(); inkStatus("กำลังวัด… เขียนตามปกติ แล้วกด ⋯ › หยุดวัด","busy"); } else{ const r=inkDiagReport(); inkStatus("วัดเสร็จแล้ว","ok"); tell(`<b>ผลวัดความลื่น</b><div class="hint" style="margin:6px 0">กดคัดลอกแล้วส่งให้ทีมดูได้เลยค่ะ</div><textarea id="diagtx" readonly style="width:100%;height:210px;font:12px/1.6 ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;padding:8px;box-sizing:border-box">${esc(r)}</textarea><button type="button" class="btn" id="diagcp" style="width:100%;margin-top:8px">คัดลอกผล</button>`); setTimeout(()=>{ const b=el("diagcp"); if(b)b.onclick=async()=>{ try{ await navigator.clipboard.writeText(r); b.textContent="คัดลอกแล้ว ✓"; }catch(er){ el("diagtx").select(); b.textContent="เลือกข้อความแล้ว กดคัดลอกเอง"; } }; },50); } }
+else if(m==="scrib"){ tell(`<b>เขียนเร็วแล้วบางเส้นหาย?</b><div style="font-size:13.5px;margin-top:10px;line-height:1.85">สาเหตุที่พบบ่อยบน iPad คือ <b>Scribble</b> (ฟีเจอร์แปลงลายมือของ iPadOS) ที่แย่งรับเส้นไปก่อนที่ Safari จะส่งให้แอป เส้นที่ดูคล้ายตัวอักษรจึงถูกกลืนหาย<br><br><b>วิธีแก้:</b> ไปที่ <b>การตั้งค่า › Apple Pencil › Scribble</b> แล้วปิด จากนั้นกลับมาเขียนใหม่<br><br>ลองเทียบกับหน้าทดสอบเปล่า: <b>/pentest.html</b> (ถ้าหน้านั้นก็เส้นหายเหมือนกัน แปลว่าเป็นที่ระบบ ไม่ใช่แอป)</div>`); }
 else if(m==="lead"){ const i=INK_LEADS.findIndex(x=>x[0]===ink.lead); ink.lead=INK_LEADS[(i+1)%INK_LEADS.length][0]; try{ localStorage.setItem("sw-ink-lead",String(ink.lead)); }catch(er){} inkPredClear(true); inkStatus("ปลายเส้นล่วงหน้า: "+INK_LEADS.find(x=>x[0]===ink.lead)[1],"ok"); }
 else if(m==="pin"){ try{ await DB.collection("note").doc(ink.note._id).set({pin:!inkLive().pin},{merge:true}); }catch(er){} }
 else if(m==="addpage")inkAddPage();
@@ -4154,9 +4158,14 @@ return `<div class="card"><h2>สำรองข้อมูล & กู้ค�
 }
 async function verCheck(){
 const box=el("verchk"); if(!box)return;
-try{ const r=await fetch("sw.js?v="+Date.now(),{cache:"no-store"}); const t=await r.text(); const m=t.match(/skywork-([\d.]+)/); if(!m){ box.textContent=""; return; }
-const same=m[1]===APP_VERSION; box.innerHTML=same?`<span style="color:var(--ok);font-weight:600">✓ เป็นเวอร์ชันล่าสุดแล้ว</span> (เซิร์ฟเวอร์ v${esc(m[1])})`:`<span style="color:var(--over);font-weight:600">มีเวอร์ชันใหม่ v${esc(m[1])}</span> — กด “รีเฟรชเป็นเวอร์ชันล่าสุด” ได้เลยค่ะ`; }
-catch(e){ box.textContent="ตรวจเวอร์ชันบนเซิร์ฟเวอร์ไม่ได้ (ออฟไลน์?)"; }
+try{
+ const r=await fetch("sw.js?v="+Date.now(),{cache:"no-store"}); const t=await r.text(); const m=t.match(/skywork-([\d.]+)/); if(!m){ box.textContent=""; return; }
+ // อ่านเลขเวอร์ชันจากไฟล์ app.js จริงบนเซิร์ฟเวอร์ (เฉพาะส่วนหัว) — กันกรณีอัปโหลดขึ้น GitHub ไม่ครบ (sw.js ใหม่ แต่ app.js ยังเก่า)
+ let av=""; try{ const ra=await fetch("app.js?c="+Date.now(),{cache:"no-store"}); const rd=ra.body&&ra.body.getReader?ra.body.getReader():null; let txt=""; if(rd){ const {value}=await rd.read(); try{ rd.cancel(); }catch(e){} txt=new TextDecoder().decode(value||new Uint8Array()); } else txt=(await ra.text()).slice(0,2000); const mv=txt.match(/APP_VERSION="([\d.]+)"/); av=mv?mv[1]:""; }catch(e){}
+ if(av&&av!==m[1]){ box.innerHTML=`<span style="color:var(--over);font-weight:600">อัปโหลดขึ้น GitHub ไม่ครบ</span> — ไฟล์ <b>app.js</b> บนเซิร์ฟเวอร์ยังเป็น v${esc(av)} แต่ sw.js เป็น v${esc(m[1])}<br><span style="font-size:12.5px">ให้อัปไฟล์ <b>app.js</b> และ <b>index.html</b> (ที่อยู่ชั้นนอกสุดของซิป) ขึ้น GitHub ซ้ำอีกครั้ง รอ Vercel ขึ้น Ready แล้วค่อยรีเฟรช</span>`; return; }
+ const sv=av||m[1], same=sv===APP_VERSION;
+ box.innerHTML=same?`<span style="color:var(--ok);font-weight:600">✓ เป็นเวอร์ชันล่าสุดแล้ว</span> (เซิร์ฟเวอร์ v${esc(sv)})`:`<span style="color:var(--over);font-weight:600">มีเวอร์ชันใหม่ v${esc(sv)}</span> — กด “รีเฟรชเป็นเวอร์ชันล่าสุด” ได้เลยค่ะ`;
+}catch(e){ box.textContent="ตรวจเวอร์ชันบนเซิร์ฟเวอร์ไม่ได้ (ออฟไลน์?)"; }
 }
 function setConnect(){
 setTimeout(()=>{ verCheck(); const b=el("verRefresh"); if(b)b.onclick=hardRefresh; },60);

@@ -381,9 +381,14 @@ return `<div class="card"><h2>สำรองข้อมูล & กู้ค�
 }
 async function verCheck(){
 const box=el("verchk"); if(!box)return;
-try{ const r=await fetch("sw.js?v="+Date.now(),{cache:"no-store"}); const t=await r.text(); const m=t.match(/skywork-([\d.]+)/); if(!m){ box.textContent=""; return; }
-const same=m[1]===APP_VERSION; box.innerHTML=same?`<span style="color:var(--ok);font-weight:600">✓ เป็นเวอร์ชันล่าสุดแล้ว</span> (เซิร์ฟเวอร์ v${esc(m[1])})`:`<span style="color:var(--over);font-weight:600">มีเวอร์ชันใหม่ v${esc(m[1])}</span> — กด “รีเฟรชเป็นเวอร์ชันล่าสุด” ได้เลยค่ะ`; }
-catch(e){ box.textContent="ตรวจเวอร์ชันบนเซิร์ฟเวอร์ไม่ได้ (ออฟไลน์?)"; }
+try{
+ const r=await fetch("sw.js?v="+Date.now(),{cache:"no-store"}); const t=await r.text(); const m=t.match(/skywork-([\d.]+)/); if(!m){ box.textContent=""; return; }
+ // อ่านเลขเวอร์ชันจากไฟล์ app.js จริงบนเซิร์ฟเวอร์ (เฉพาะส่วนหัว) — กันกรณีอัปโหลดขึ้น GitHub ไม่ครบ (sw.js ใหม่ แต่ app.js ยังเก่า)
+ let av=""; try{ const ra=await fetch("app.js?c="+Date.now(),{cache:"no-store"}); const rd=ra.body&&ra.body.getReader?ra.body.getReader():null; let txt=""; if(rd){ const {value}=await rd.read(); try{ rd.cancel(); }catch(e){} txt=new TextDecoder().decode(value||new Uint8Array()); } else txt=(await ra.text()).slice(0,2000); const mv=txt.match(/APP_VERSION="([\d.]+)"/); av=mv?mv[1]:""; }catch(e){}
+ if(av&&av!==m[1]){ box.innerHTML=`<span style="color:var(--over);font-weight:600">อัปโหลดขึ้น GitHub ไม่ครบ</span> — ไฟล์ <b>app.js</b> บนเซิร์ฟเวอร์ยังเป็น v${esc(av)} แต่ sw.js เป็น v${esc(m[1])}<br><span style="font-size:12.5px">ให้อัปไฟล์ <b>app.js</b> และ <b>index.html</b> (ที่อยู่ชั้นนอกสุดของซิป) ขึ้น GitHub ซ้ำอีกครั้ง รอ Vercel ขึ้น Ready แล้วค่อยรีเฟรช</span>`; return; }
+ const sv=av||m[1], same=sv===APP_VERSION;
+ box.innerHTML=same?`<span style="color:var(--ok);font-weight:600">✓ เป็นเวอร์ชันล่าสุดแล้ว</span> (เซิร์ฟเวอร์ v${esc(sv)})`:`<span style="color:var(--over);font-weight:600">มีเวอร์ชันใหม่ v${esc(sv)}</span> — กด “รีเฟรชเป็นเวอร์ชันล่าสุด” ได้เลยค่ะ`;
+}catch(e){ box.textContent="ตรวจเวอร์ชันบนเซิร์ฟเวอร์ไม่ได้ (ออฟไลน์?)"; }
 }
 function setConnect(){
 setTimeout(()=>{ verCheck(); const b=el("verRefresh"); if(b)b.onclick=hardRefresh; },60);
