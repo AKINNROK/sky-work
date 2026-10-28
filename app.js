@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.13.5"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.0"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -601,7 +601,7 @@ return bad.length;
 }catch(e){ return 0; }
 }
 async function loadAll(){
-const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).neq("kind","ink");
+const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).neq("kind","ink").neq("kind","nimg");
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
@@ -611,7 +611,7 @@ emit("items");emit("ledger");emit("legal");emit("index");emit("note");[...cache.
 function liveSync(){
 SB.channel("rows-"+uid).on("postgres_changes",{event:"*",schema:"public",table:"rows",filter:"uid=eq."+uid},p=>{
 const r=p.new&&p.new.id?p.new:p.old;
-if(!r||r.kind==="ink")return;
+if(!r||r.kind==="ink"||r.kind==="nimg")return;
 if(p.eventType==="DELETE")cache[r.kind]?.delete(r.id); else cache[r.kind]?.set(r.id,r.data);
 r.kind==="meta"?emitMeta(r.id):emit(r.kind);
 render();
@@ -2552,7 +2552,9 @@ if(dl){ const names=idxCatNames(), c=names[+dl.dataset.ixcd]; const k=idx.filter
   for(const x of idx.filter(x=>(x.group||"").trim()===c)){ try{ await DB.collection("index").doc(x._id).set({group:""},{merge:true}); }catch(err){} } render(); }
  openIxCats(); } });
 // ---- เนื้อหาบันทึกแบบจัดรูปแบบ (fmt:"h" = HTML ที่ผ่านตัวกรอง; ไม่มี fmt = ข้อความล้วนแบบเดิม)
-const NT_OK={B:1,STRONG:1,I:1,EM:1,U:1,S:1,H2:1,H3:1,UL:1,OL:1,LI:1,P:1,DIV:1,BR:1,SPAN:1,BLOCKQUOTE:1,HR:1,A:1};
+const NT_OK={B:1,STRONG:1,I:1,EM:1,U:1,S:1,H2:1,H3:1,UL:1,OL:1,LI:1,P:1,DIV:1,BR:1,SPAN:1,BLOCKQUOTE:1,HR:1,A:1,TABLE:1,TBODY:1,THEAD:1,TR:1,TD:1,TH:1,IMG:1};
+const NT_BG=new Set(["y","g","b","r","p","o","x"]);
+function ntRgb(c){ c=String(c||"").trim().toLowerCase(); if(/^#[0-9a-f]{6}$/.test(c))return c; const m=c.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/); return m?"#"+[m[1],m[2],m[3]].map(v=>Math.min(255,+v).toString(16).padStart(2,"0")).join(""):""; }
 function ntClean(html){
 const d=document.createElement("div"); d.innerHTML=String(html||"");
 d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.remove());
@@ -2560,16 +2562,38 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(n.nodeType===3)return;
  if(n.nodeType!==1){ n.remove(); return; }
  if(!NT_OK[n.tagName]){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
- if(n.tagName==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+ const T=n.tagName;
+ if(T==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
   if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); walk(n); return; }
   while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
- const keep=n.tagName==="SPAN"&&n.classList.contains("lt")?"lt":"";
- [...n.attributes].forEach(at=>n.removeAttribute(at.name)); if(keep)n.className=keep;
- else if(n.tagName==="SPAN"){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
+ if(T==="IMG"){ const nid=n.getAttribute("data-nid")||"", src=n.getAttribute("src")||"", w=n.getAttribute("data-w")||"";
+  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+  if(/^nimg-[a-z0-9]{6,24}$/.test(nid))n.setAttribute("data-nid",nid);
+  else if(src.length<900000&&/^data:image\/(jpeg|png|webp|gif);base64,[a-z0-9+\/=]+$/i.test(src))n.setAttribute("src",src);
+  else{ n.remove(); return; }
+  if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
+ const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
+ let col="",bg="",dc="",di="",dbg="";
+ if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
+ if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
+ if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
+ if((T==="TD"||T==="TH")&&NT_BG.has(n.getAttribute("data-bg")||""))dbg=n.getAttribute("data-bg");
+ [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+ if(cls)n.className=cls;
+ if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg);
+ if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
 }
-const ntPlain=(n,withUrl)=>{ if(!n)return""; if(n.fmt!=="h")return n.body||""; const d=document.createElement("div"); d.innerHTML=ntClean(n.body||"").replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n"); if(withUrl)d.querySelectorAll("a[href]").forEach(a=>{ const h=a.getAttribute("href"); if(a.textContent.trim()!==h)a.textContent=a.textContent+" ("+h+")"; }); return (d.textContent||"").replace(/\n{3,}/g,"\n\n").trim(); };
+const ntPlain=(n,withUrl)=>{ if(!n)return""; if(n.fmt!=="h")return n.body||"";
+const d0=document.createElement("div"); d0.innerHTML=ntClean(n.body||"");
+d0.querySelectorAll("table").forEach(t=>{ const p=document.createElement("p"); p.textContent=[...t.rows].map(r=>[...r.cells].map(c=>c.textContent.replace(/\s+/g," ").trim()).join(" | ")).join("\n"); t.replaceWith(p); });
+d0.querySelectorAll("ul.ck>li").forEach(li=>li.insertBefore(document.createTextNode(li.getAttribute("data-c")==="1"?"☑ ":"☐ "),li.firstChild));
+d0.querySelectorAll("img").forEach(i=>i.replaceWith(document.createTextNode("[รูป]")));
+const d=document.createElement("div"); d.innerHTML=d0.innerHTML.replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n");
+if(withUrl)d.querySelectorAll("a[href]").forEach(a=>{ const h=a.getAttribute("href"); if(a.textContent.trim()!==h)a.textContent=a.textContent+" ("+h+")"; });
+return (d.textContent||"").replace(/\n{3,}/g,"\n\n").trim(); };
 const ntHtml=n=>n&&n.fmt==="h"?ntClean(n.body||""):esc((n&&n.body)||"").replace(/\n/g,"<br>");
 const NOTEKIND=["บันทึกการประชุม","โน้ต","ไอเดีย"];
 const NOTEKIND_ALL=()=>[...NOTEKIND,INKKIND];
@@ -2666,7 +2690,7 @@ if(n===1){ ctx.beginPath(); ctx.arc(X(0),Y(0),Math.max(.8,s.w*k/2),0,6.283); ctx
 else if(s.v&&s.t!=="h"){
 // รวมช่วงที่ความหนาใกล้เคียงกันเป็นเส้นเดียว (วาดเร็วขึ้นหลายเท่า หน้าตาเหมือนเดิม)
 const qs=Math.max(.2,s.w*k*.1); let run=-1, qw=0, lx=X(0), ly=Y(0);
-for(let i=1;i<n;i++){ if(i<n-1&&Math.abs(X(i)-lx)+Math.abs(Y(i)-ly)<1.6)continue; const pr=(p[i*3+2]+p[(i-1)*3+2])/2, lw=Math.max(.6,s.w*(0.4+pr*1.25)*k), q=Math.round(lw/qs)*qs;
+for(let i=1;i<n;i++){ if(i<n-1&&Math.abs(X(i)-lx)+Math.abs(Y(i)-ly)<1.6)continue; const pr=(p[i*3+2]+p[(i-1)*3+2])/2, lw=Math.max(1,s.w*inkPF(pr)*k), q=Math.round(lw/qs)*qs;
 if(run<0){ ctx.lineWidth=q; ctx.beginPath(); ctx.moveTo(lx,ly); qw=q; run=i; }
 else if(q!==qw){ ctx.stroke(); ctx.lineWidth=q; ctx.beginPath(); ctx.moveTo(lx,ly); qw=q; }
 ctx.lineTo(X(i),Y(i)); lx=X(i); ly=Y(i); }
@@ -2709,11 +2733,13 @@ inkRenderTo(ctx,ink.k,pg.strokes,ink.drag&&ink.drag.hide,inkOpt());
 }
 let inkRaf=0;
 function inkRedrawSoon(){ if(inkRaf)return; inkRaf=requestAnimationFrame(()=>{ inkRaf=0; if(!ink.note)return; inkRedraw(); inkDrawSel(); }); }
+// ความกว้างเส้นตามแรงกด: มีพื้นขั้นต่ำ ให้ช่วงแตะลงที่แรงกดยังเบาไม่บางจนมองไม่เห็น
+function inkPF(pr){ return .62+.7*Math.pow(Math.max(0,Math.min(1,pr)),.6); }
 function inkOverClear(){ const c=el("ink-over"); c.getContext("2d").clearRect(0,0,c.width,c.height); inkPredClear(true); }
 function inkPredClear(all){ const c=el("ink-pred"); if(!c)return; const r=ink.predR; if(!r&&!all)return; const x=c.getContext("2d"); if(all||!r)x.clearRect(0,0,c.width,c.height); else x.clearRect(r[0],r[1],r[2]-r[0],r[3]-r[1]); ink.predR=null; }
 // วาดปลายเส้นล่วงหน้าเล็กน้อย ให้ปลายปากกาตามทันปลาย Pencil (ลบทิ้งทุกครั้งที่มีจุดจริงมาใหม่)
 const INK_LEADS=[[0,"ปิด"],[16,"น้อย"],[30,"ปกติ"],[48,"มาก"]];
-ink.lead=(()=>{ try{ const v=localStorage.getItem("sw-ink-lead"); return v==null?30:+v; }catch(e){ return 30; } })();
+ink.lead=(()=>{ try{ const v=localStorage.getItem("sw-ink-lead"); return v==null?0:+v; }catch(e){ return 0; } })();
 function inkPredict(e,pen){
 const d=ink.drag; if(!d||d.mode!=="draw"||!d.inc||!ink.lead)return; const c=el("ink-pred"); if(!c)return;
 inkPredClear(); clearTimeout(ink.predT); ink.predT=setTimeout(()=>inkPredClear(),70); const sk=d.s, p=sk.p, n=Math.floor(p.length/3); if(n<2)return;
@@ -2723,7 +2749,7 @@ if(h.length>=2){ const a=h[Math.max(0,h.length-4)], z=h[h.length-1], dt=z[2]-a[2
 if(dt>1){ const rest=Math.max(0,ink.lead-span); let vx=(z[0]-a[0])/dt, vy=(z[1]-a[1])/dt; const sp=Math.hypot(vx,vy), mx=40*inkPx();
 let len=sp*rest*.8; if(len>mx)len=mx; if(sp>0&&len>.3){ const sx=pts.length?pts[pts.length-1][0]:bx, sy=pts.length?pts[pts.length-1][1]:by; pts.push([sx+vx/sp*len,sy+vy/sp*len]); } } }
 if(!pts.length)return;
-const ctx=c.getContext("2d"), [ox,oy]=inkO(), k=ink.k, pr=p[n*3-1], lw=Math.max(.6,sk.w*(pen?(.4+pr*1.25):1)*k);
+const ctx=c.getContext("2d"), [ox,oy]=inkO(), k=ink.k, pr=p[n*3-1], lw=Math.max(1,sk.w*(pen?inkPF(pr):1)*k);
 ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle=sk.c; ctx.lineWidth=lw; ctx.beginPath(); ctx.moveTo((bx+ox)*k,(by+oy)*k);
 let x0=(bx+ox)*k,y0=(by+oy)*k,x1=x0,y1=y0; pts.forEach(q=>{ const X=(q[0]+ox)*k, Y=(q[1]+oy)*k; ctx.lineTo(X,Y); x0=Math.min(x0,X); x1=Math.max(x1,X); y0=Math.min(y0,Y); y1=Math.max(y1,Y); }); ctx.stroke(); ctx.restore();
 const g=lw+3; ink.predR=[Math.max(0,Math.floor(x0-g)),Math.max(0,Math.floor(y0-g)),Math.min(c.width,Math.ceil(x1+g)),Math.min(c.height,Math.ceil(y1+g))];
@@ -2888,8 +2914,8 @@ const d=ink.drag, c=el("ink-over"), ctx=c.getContext("2d"), [ox,oy]=inkO(), k=in
 if(d.inc&&sk.t==="p"){
 // ปากกาธรรมดา: ต่อเส้นเฉพาะช่วงใหม่ (ไม่ล้าง/วาดซ้ำทั้งเส้น)
 const pen=d.ptype==="pen"; ctx.save(); ctx.lineCap="round"; ctx.strokeStyle=sk.c; ctx.fillStyle=sk.c;
-if(!d.li){ ctx.beginPath(); ctx.arc((p[0]+ox)*k,(p[1]+oy)*k,Math.max(.3,sk.w*(pen?(0.4+p[2]*1.25):1)*k/2),0,6.283); ctx.fill(); }
-for(let i=Math.max(1,d.li||1);i<n;i++){ const pr=(p[i*3+2]+p[i*3-1])/2; ctx.lineWidth=Math.max(.6,sk.w*(pen?(0.4+pr*1.25):1)*k); ctx.beginPath(); ctx.moveTo((p[i*3-3]+ox)*k,(p[i*3-2]+oy)*k); ctx.lineTo((p[i*3]+ox)*k,(p[i*3+1]+oy)*k); ctx.stroke(); }
+if(!d.li){ ctx.beginPath(); ctx.arc((p[0]+ox)*k,(p[1]+oy)*k,Math.max(.3,sk.w*(pen?inkPF(p[2]):1)*k/2),0,6.283); ctx.fill(); }
+for(let i=Math.max(1,d.li||1);i<n;i++){ const pr=(p[i*3+2]+p[i*3-1])/2; ctx.lineWidth=Math.max(1,sk.w*(pen?inkPF(pr):1)*k); ctx.beginPath(); ctx.moveTo((p[i*3-3]+ox)*k,(p[i*3-2]+oy)*k); ctx.lineTo((p[i*3]+ox)*k,(p[i*3+1]+oy)*k); ctx.stroke(); }
 d.li=n; ctx.restore(); return; }
 // หัวปากกา/รูปทรงอื่น: ล้างเฉพาะกรอบของเส้น แล้ววาดใหม่
 let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(let i=0;i<n;i++){ const x=p[i*3],y=p[i*3+1]; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
@@ -2967,7 +2993,7 @@ inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เล�
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="clear">${ink.board?"ล้างกระดานทั้งหมด":"ล้างหน้านี้"}</button>
 ${ink.board?"":`<button type="button" class="ink-mi danger" data-imore="delpage" ${ink.pages.length<2?"disabled":""}>ลบหน้านี้</button>`}
-<button type="button" class="ink-mi" data-imore="lead">ปลายเส้นล่วงหน้า (ลดความหน่วง): ${(INK_LEADS.find(x=>x[0]===ink.lead)||INK_LEADS[2])[1]}</button>
+<button type="button" class="ink-mi" data-imore="lead">ปลายเส้นล่วงหน้า (ลดความหน่วง): ${(INK_LEADS.find(x=>x[0]===ink.lead)||INK_LEADS[0])[1]}</button>
 <button type="button" class="ink-mi" data-imore="diag">${inkDiag.on?"หยุดวัด + ดูผล":"วัดความลื่น (ทดสอบเขียน)"}</button>
 <button type="button" class="ink-mi danger" data-imore="delnote">ลบ${ink.board?"กระดาน":"สมุดทั้งเล่ม"}</button>`,a);
 }
@@ -3109,13 +3135,13 @@ function inkDiagTimed(key,fn){ return e=>{ if(!inkDiag.on)return fn(e); const t=
 function inkDiagReport(){
 inkDiag.on=0; try{ inkDiag.po&&inkDiag.po.disconnect(); }catch(er){}
 const st=a=>{ if(!a.length)return "ไม่มีข้อมูล"; const s=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0); return `n=${a.length} · เฉลี่ย ${(sum/a.length).toFixed(1)} · p95 ${s[Math.floor(s.length*.95)].toFixed(1)} · สูงสุด ${s[s.length-1].toFixed(1)} ms`; };
-const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base");
+const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base"), SS=(ink.pages[ink.cur]?ink.pages[ink.cur].strokes:[]).filter(q=>q.t==="p");
 return ["Sky Work v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
 "หน้าจอ: "+innerWidth+"x"+innerHeight+" dpr "+(window.devicePixelRatio||1)+" · แคนวาส "+c.width+"x"+c.height+" · "+(ink.board?"กระดาน":"สมุด")+(window.PointerEvent&&PointerEvent.prototype.getCoalescedEvents?" · coalesced":" · no-coalesced")+(PointerEvent.prototype.getPredictedEvents?" · predicted":" · no-predicted"),
 "ปากกาแตะลง (pointerdown): "+st(inkDiag.hd),"ปากกาลาก (pointermove): "+st(inkDiag.hm),"ปากกายก (pointerup+วาดเก็บ): "+st(inkDiag.hu),
 "อีเวนต์รอคิวก่อนถูกประมวลผล: "+st(inkDiag.lag),"ช่วงห่างระหว่างเฟรมขณะเขียน: "+st(inkDiag.gaps)+" · เฟรมช้า(>24ms) "+slow+" ครั้ง",
 "Long task (>50ms): "+inkDiag.long+" ครั้ง · นานสุด "+inkDiag.longMax.toFixed(0)+" ms",
-"อีเวนต์ดิบที่ iPad ส่งมา: "+(Object.keys(inkDiag.ev).sort().map(k=>k+"="+inkDiag.ev[k]).join(" · ")||"-"),"ปากกาแตะลงแต่ไม่เกิดเส้น: "+inkDiag.nodraw+" ครั้ง · แตะลงซ้อนก่อนเส้นเก่าจบ: "+inkDiag.overlap+" ครั้ง","ระยะห่างยกปากกา→แตะลงใหม่ (ms): "+st(inkDiag.ugap),"ลายเส้นในหน้า: "+(ink.pages[ink.cur]?ink.pages[ink.cur].strokes.length:0)+" เส้น"].join("\n");
+"อีเวนต์ดิบที่ iPad ส่งมา: "+(Object.keys(inkDiag.ev).sort().map(k=>k+"="+inkDiag.ev[k]).join(" · ")||"-"),"ปากกาแตะลงแต่ไม่เกิดเส้น: "+inkDiag.nodraw+" ครั้ง · แตะลงซ้อนก่อนเส้นเก่าจบ: "+inkDiag.overlap+" ครั้ง","ระยะห่างยกปากกา→แตะลงใหม่ (ms): "+st(inkDiag.ugap),"ลายเส้นในหน้า: "+SS.length+" เส้น · แรงกดจุดแรก<0.15: "+SS.filter(q=>q.p[2]<.15).length+" เส้น · เส้นสั้น(≤3 จุด): "+SS.filter(q=>q.p.length<=9).length+" เส้น","ระยะจุดแรก→จุดสอง (หน่วยหน้ากระดาษ): "+st(SS.map(q=>q.p.length>=6?Math.hypot(q.p[3]-q.p[0],q.p[4]-q.p[1]):0))].join("\n");
 }
 // ---------- ผูกปุ่ม ----------
 (function inkWire(){
@@ -5560,7 +5586,7 @@ function viewNote(n){
 viewingNote=n;
 el("nvk").textContent=n.kind||"โน้ต"; el("nvd").textContent=n.date||"";
 el("nvt").textContent=n.title||"(ไม่มีหัวข้อ)";
-el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>';
+el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>'; ntHydrate(el("nvb"));
 el("nvtag").textContent=n.tag?"#"+n.tag:"";
 el("nvpin").textContent=n.pin?"เลิกปักหมุด":"ปักหมุด";
 el("nvdlg").querySelector(".nvbar").style.background=n.color||"var(--accent-2)";
@@ -5575,7 +5601,7 @@ let n2tNote=null, n2tRows=[];
 function n2tExtract(n){
 const d=document.createElement("div"); d.innerHTML=ntHtml(n);
 let lines=[...d.querySelectorAll("li")].map(x=>(x.textContent||"").trim());
-if(!lines.length)lines=ntPlain(n,true).split(/\n+/).map(s2=>s2.replace(/^[\s\-–•*·\d.)]+/,"").trim());
+if(!lines.length)lines=ntPlain(n,true).split(/\n+/).map(s2=>s2.replace(/^[\s\-–•*·☐☑\d.)]+/,"").trim());
 return [...new Set(lines.filter(s2=>s2.length>=3))].slice(0,30);
 }
 function openNote2Task(n){
@@ -5647,6 +5673,7 @@ document.querySelectorAll("#ntool [data-ne]").forEach(b=>{ const k=b.dataset.ne;
  else if(k==="ul")v=on("insertUnorderedList"); else if(k==="ol")v=on("insertOrderedList");
  else if(k==="h2")v=blk==="h2"; else if(k==="h3")v=blk==="h3"; else if(k==="link")v=!!neLinkAt(); else if(k==="light"){ let n=getSelection().anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.classList&&n.classList.contains("lt")){v=true;break;} n=n.parentNode; } }
  b.classList.toggle("on",v); });
+if(typeof neExtraState==="function")neExtraState();
 }
 el("ntool").addEventListener("mousedown",e=>{ if(e.target.closest("[data-ne]"))e.preventDefault(); });
 el("ntool").addEventListener("click",e=>{ const b=e.target.closest("[data-ne]"); if(!b)return; const k=b.dataset.ne;
@@ -5679,7 +5706,6 @@ neState(); };
 el("lk-url").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); el("lk-ok").click(); } });
 NE().addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("a"); if(a&&NE().contains(a)){ e.preventDefault(); if(e.ctrlKey||e.metaKey)window.open(a.href,"_blank","noopener"); else neLink(a); } });
 NE().addEventListener("keyup",neState); NE().addEventListener("mouseup",neState);
-NE().addEventListener("paste",e=>{ e.preventDefault(); const t=(e.clipboardData||window.clipboardData).getData("text/plain"); document.execCommand("insertText",false,t); });
 function openNote(n){
 editingNote=n;
 el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
@@ -5687,7 +5713,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):"";
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll();
 el("n-pin").checked=!!n?.pin;
 el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
@@ -6184,6 +6210,251 @@ foldSet(sec,open);
 el("dlg").addEventListener("input",e=>{ const s=e.target.closest&&e.target.closest(".fsec"); if(s&&s.classList.contains("fold"))foldPaint(s); });
 el("foldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,false));
 el("unfoldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,true));
+// ===== เขียนบันทึก: To-do ติ๊กได้ · ย่อหน้า · สีตัวอักษร · แนบรูป · ตารางแบบ Excel =====
+// (ใช้ร่วมกับตัวกรอง ntClean ใน 05-views-more.js — ถ้าเพิ่มรูปแบบใหม่ต้องอนุญาตที่ตัวกรองด้วย)
+const NE_COLS=["#dc2626","#ea580c","#ca8a04","#16a34a","#0d9488","#2563eb","#7c3aed","#db2777","#6b7280"];
+const NE_HIL=["#fef08a","#bbf7d0","#bfdbfe","#fecaca","#e9d5ff","#fed7aa","#e5e7eb"];
+const NE_BG={y:"#fef9c3",g:"#dcfce7",b:"#dbeafe",r:"#fee2e2",p:"#f3e8ff",o:"#ffedd5",x:"#e5e7eb"};
+let neRange=null, neScope="cell", neImgSel=null;
+
+// ---------- ตัวช่วยเรื่อง selection ----------
+function neIn(tags){ const s=getSelection(); let n=s.anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&tags.indexOf(n.tagName)>=0)return n; n=n.parentNode; } return null; }
+const neCell=()=>neIn(["TD","TH"]);
+const neLi=()=>neIn(["LI"]);
+function neSave(){ const s=getSelection(); if(s.rangeCount&&NE().contains(s.getRangeAt(0).commonAncestorContainer))neRange=s.getRangeAt(0).cloneRange(); }
+function neRestore(){
+NE().focus(); const s=getSelection();
+if(!neRange||!NE().contains(neRange.commonAncestorContainer)){ neRange=document.createRange(); neRange.selectNodeContents(NE()); neRange.collapse(false); }
+s.removeAllRanges(); s.addRange(neRange);
+}
+function neFocusCell(c,end){ const r=document.createRange(); r.selectNodeContents(c); r.collapse(!end); const s=getSelection(); s.removeAllRanges(); s.addRange(r); try{ c.scrollIntoView({block:"nearest"}); }catch(e){} }
+
+// ---------- เมนูลอย (สี / ตาราง / สีช่อง) ----------
+function nePopEl(){
+let p=el("nepop"); if(p)return p;
+p=document.createElement("div"); p.id="nepop"; p.className="nepop"; p.hidden=true; el("ndlg").appendChild(p);
+p.addEventListener("mousedown",e=>{ if(!e.target.closest("input"))e.preventDefault(); });
+p.addEventListener("click",nePopClick); return p;
+}
+function nePopShow(html,anchor,key){
+const p=nePopEl(); if(!p.hidden&&p.dataset.for===key){ p.hidden=true; return; }
+p.innerHTML=html; p.hidden=false; p.dataset.for=key;
+const r=anchor.getBoundingClientRect();
+p.style.top=Math.max(8,Math.min(innerHeight-p.offsetHeight-8,r.bottom+6))+"px"; p.style.left=Math.max(8,Math.min(innerWidth-p.offsetWidth-8,r.left))+"px";
+}
+function neHideAll(){ const p=el("nepop"); if(p)p.hidden=true; neImgDeselect(); }
+document.addEventListener("pointerdown",e=>{
+const p=el("nepop"); if(p&&!p.hidden&&!e.target.closest("#nepop,[data-ne],[data-nt]"))p.hidden=true;
+const b=el("neimgbar"); if(b&&!b.hidden&&!e.target.closest("#neimgbar,#n-body img"))neImgDeselect();
+},true);
+el("ndlg").addEventListener("close",neHideAll);
+el("ndlg").addEventListener("scroll",()=>{ const p=el("nepop"); if(p)p.hidden=true; neImgPos(); },true);
+
+const neColorHtml=()=>`<div class="nepl">สีตัวอักษร</div><div class="nesw">${NE_COLS.map(c=>`<button type="button" data-cc="fore:${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="fore:">ค่าเริ่มต้น</button></div>
+<div class="nepl">ไฮไลต์พื้นหลัง</div><div class="nesw">${NE_HIL.map(c=>`<button type="button" data-cc="hil:${c}" style="background:${c}" aria-label="ไฮไลต์ ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="hil:">ไม่มี</button></div>`;
+const neTableHtml=()=>`<div class="nepl">แทรกตาราง</div><div class="nrow"><label>แถว <input type="number" id="net-r" min="1" max="50" value="3"></label><label>คอลัมน์ <input type="number" id="net-c" min="1" max="12" value="3"></label></div>
+<label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="net-h" checked> แถวแรกเป็นหัวตาราง</label><button type="button" class="go" data-tmake="1">สร้างตาราง</button>`;
+const neCellBgHtml=()=>`<div class="nepl">ใส่สีให้</div><div class="nesw">${[["cell","ช่องนี้"],["row","ทั้งแถว"],["col","ทั้งคอลัมน์"]].map(([k,l])=>`<button type="button" class="nex${neScope===k?" on":""}" data-scope="${k}">${l}</button>`).join("")}</div>
+<div class="nepl">สี</div><div class="nesw">${Object.keys(NE_BG).map(k=>`<button type="button" data-cbg="${k}" style="background:${NE_BG[k]}" aria-label="สีช่อง"></button>`).join("")}<button type="button" class="nex" data-cbg="">ไม่มีสี</button></div>`;
+function nePopClick(e){
+const b=e.target.closest("button"); if(!b)return;
+if(b.dataset.cc!=null){ const [k,v]=b.dataset.cc.split(":"); el("nepop").hidden=true; neColor(k,v); }
+else if(b.dataset.tmake){ const r=Math.max(1,Math.min(50,+el("net-r").value||3)), c=Math.max(1,Math.min(12,+el("net-c").value||3)); el("nepop").hidden=true; neInsertTable(Array.from({length:r},()=>Array(c).fill("")),el("net-h").checked); }
+else if(b.dataset.scope){ neScope=b.dataset.scope; el("nepop").innerHTML=neCellBgHtml(); }
+else if(b.dataset.cbg!=null){ neCellBg(b.dataset.cbg); el("nepop").hidden=true; }
+}
+
+// ---------- สีตัวอักษร / ไฮไลต์ ----------
+function neColor(kind,hex){
+neRestore();
+if(!hex){ neClearColor(kind==="fore"?"color":"backgroundColor"); neSave(); neState(); return; }
+document.execCommand("styleWithCSS",false,true);
+if(kind==="fore")document.execCommand("foreColor",false,hex);
+else{ document.execCommand("hiliteColor",false,hex); document.execCommand("foreColor",false,"#1f2937"); }
+document.execCommand("styleWithCSS",false,false); neSave(); neState();
+}
+function neClearColor(prop){
+const s=getSelection(); if(!s.rangeCount)return; const r=s.getRangeAt(0);
+NE().querySelectorAll("span[style]").forEach(sp=>{ if(!r.intersectsNode(sp))return;
+ const hadBg=!!sp.style.backgroundColor; sp.style[prop]=""; if(prop==="backgroundColor"&&hadBg)sp.style.color="";
+ if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
+}
+
+// ---------- ช่องติ๊ก (To-do) ----------
+function neCheck(){
+NE().focus(); let li=neLi();
+if(li&&li.parentNode.tagName==="UL"){ const ul=li.parentNode;
+ if(ul.classList.contains("ck")){ ul.classList.remove("ck"); ul.querySelectorAll(":scope>li").forEach(l=>l.removeAttribute("data-c")); } else ul.classList.add("ck"); }
+else{ document.execCommand("insertUnorderedList"); li=neLi(); if(li&&li.parentNode.tagName==="UL")li.parentNode.classList.add("ck"); }
+neState();
+}
+function neCkHit(e){
+const li=e.target.closest&&e.target.closest("li"); if(!li||e.target!==li)return null;
+const ul=li.parentNode; if(!ul||!ul.classList||!ul.classList.contains("ck"))return null;
+return e.clientX>li.getBoundingClientRect().left+28?null:li;
+}
+function neCkToggle(li){ if(li.getAttribute("data-c")==="1")li.removeAttribute("data-c"); else li.setAttribute("data-c","1"); }
+async function ntCkSave(){
+const n=viewingNote; if(!n||n.fmt!=="h")return; const body=ntClean(el("nvb").innerHTML); n.body=body;
+try{ await DB.collection("note").doc(n._id).set({body},{merge:true}); }catch(e){}
+}
+el("nvb").addEventListener("click",e=>{ const li=neCkHit(e); if(!li)return; neCkToggle(li); ntCkSave(); });
+
+// ---------- ย่อหน้า ----------
+function neBlocks(){
+const s=getSelection(); if(!s.rangeCount)return []; const r=s.getRangeAt(0);
+return [...NE().querySelectorAll("p,div,h2,h3,blockquote")].filter(b=>!b.querySelector("p,div,h2,h3,blockquote,table,ul,ol")&&!b.closest("li")&&r.intersectsNode(b));
+}
+function neIndent(dir){
+NE().focus();
+if(neLi()){ document.execCommand(dir>0?"indent":"outdent"); NE().querySelectorAll("ul.ck ul").forEach(u=>u.classList.add("ck")); neState(); return; }
+let bl=neBlocks();
+if(!bl.length&&!neCell()){ document.execCommand("formatBlock",false,"p"); bl=neBlocks(); }
+bl.forEach(b=>{ const v=Math.max(0,Math.min(6,(+b.getAttribute("data-i")||0)+dir)); if(v)b.setAttribute("data-i",v); else b.removeAttribute("data-i"); });
+neState();
+}
+
+// ---------- ตาราง ----------
+function neInsertTable(rows,head){
+neRestore(); const cur=neCell(), li=neLi(); let after=null;
+if(cur)after=cur.closest("table"); else if(li){ after=li.closest("ul,ol"); while(after.parentNode&&after.parentNode.closest&&after.parentNode.closest("li"))after=after.parentNode.closest("ul,ol"); }
+
+const n=Math.max(...rows.map(r=>r.length));
+const html=`<table class="nt" id="ne-new"><tbody>${rows.map((r,i)=>"<tr>"+Array.from({length:n},(_,j)=>{ const t=head&&i===0?"th":"td"; const v=r[j]; return `<${t}>${v?esc(v):"<br>"}</${t}>`; }).join("")+"</tr>").join("")}</tbody></table><p><br></p>`;
+if(after){ const w=document.createElement("div"); w.innerHTML=html; after.after(w.querySelector("table"),w.querySelector("p"));
+ if(li&&!li.textContent.trim()&&!li.querySelector("img,table")){ const ul=li.parentNode; li.remove(); if(ul&&!ul.children.length)ul.remove(); } }
+else document.execCommand("insertHTML",false,html);
+const t=el("ne-new"); if(t){ t.removeAttribute("id"); neFocusCell(t.rows[0].cells[0]); }
+neState();
+}
+function neTbOp(op){
+const c=neCell(); if(!c)return; const tr=c.parentNode, tb=c.closest("table"), rows=[...tb.rows], ci=c.cellIndex;
+const mk=t=>{ const x=document.createElement(t); x.innerHTML="<br>"; return x; };
+if(op==="rowa"||op==="rowb"){ const nr=document.createElement("tr"); for(let i=0;i<tr.cells.length;i++)nr.appendChild(mk("td")); if(op==="rowa")tr.before(nr); else tr.after(nr); }
+else if(op==="rowd"){ if(rows.length<=1)tb.remove(); else{ const nx=tr.nextElementSibling||tr.previousElementSibling; tr.remove(); neFocusCell(nx.cells[Math.min(ci,nx.cells.length-1)]); } }
+else if(op==="cola"||op==="colb"){ rows.forEach(r=>{ const x=r.cells[ci], n=mk(x&&x.tagName==="TH"?"th":"td"); if(x){ if(op==="cola")x.before(n); else x.after(n); } else r.appendChild(n); }); }
+else if(op==="cold"){ if(tr.cells.length<=1)tb.remove(); else{ const keep=c.nextElementSibling||c.previousElementSibling; rows.forEach(r=>{ if(r.cells[ci])r.cells[ci].remove(); }); neFocusCell(keep); } }
+else if(op==="head"){ const r0=rows[0], toTh=r0.cells[0].tagName!=="TH"; [...r0.cells].forEach(x=>{ const n=document.createElement(toTh?"th":"td"); n.innerHTML=x.innerHTML; if(x.getAttribute("data-bg"))n.setAttribute("data-bg",x.getAttribute("data-bg")); x.replaceWith(n); }); }
+else if(op==="tdel"){ tb.remove(); NE().focus(); }
+neExtraState();
+}
+function neCellBg(k){
+const c=neCell(); if(!c)return; let cs=[c]; const tb=c.closest("table");
+if(neScope==="row")cs=[...c.parentNode.cells]; else if(neScope==="col")cs=[...tb.rows].map(r=>r.cells[c.cellIndex]).filter(Boolean);
+cs.forEach(x=>{ if(k)x.setAttribute("data-bg",k); else x.removeAttribute("data-bg"); });
+}
+function neCellMove(c,dir){
+const tb=c.closest("table"), all=[...tb.querySelectorAll("th,td")], i=all.indexOf(c)+dir;
+if(i<0)return;
+if(i>=all.length){ const tr=c.parentNode; neTbOp("rowb"); const nx=tr.nextElementSibling; if(nx)neFocusCell(nx.cells[0]); return; }
+neFocusCell(all[i]);
+}
+function neCellDown(c){
+const tr=c.parentNode, ci=c.cellIndex; let nx=tr.nextElementSibling;
+if(!nx){ neTbOp("rowb"); nx=tr.nextElementSibling; }
+if(nx)neFocusCell(nx.cells[Math.min(ci,nx.cells.length-1)]);
+}
+function neFillTable(c,rows){
+const tb=c.closest("table"), r0=[...tb.rows].indexOf(c.parentNode), c0=c.cellIndex;
+rows.forEach((row,i)=>{
+ while(tb.rows.length<=r0+i){ const nr=tb.insertRow(-1); for(let k=0;k<tb.rows[0].cells.length;k++){ const x=document.createElement("td"); x.innerHTML="<br>"; nr.appendChild(x); } }
+ row.forEach((v,j)=>{ const need=c0+j+1; [...tb.rows].forEach(r=>{ while(r.cells.length<need){ const x=document.createElement("td"); x.innerHTML="<br>"; r.appendChild(x); } }); tb.rows[r0+i].cells[c0+j].textContent=v; }); });
+neFocusCell(c,true);
+}
+function neParseTSV(t){ t=String(t||"").replace(/\r\n?/g,"\n").replace(/\n+$/,""); if(t.indexOf("\t")<0)return null; return t.split("\n").map(l=>l.split("\t").map(x=>x.replace(/^"([\s\S]*)"$/,"$1").trim())); }
+el("netbar").addEventListener("mousedown",e=>{ if(e.target.closest("button"))e.preventDefault(); });
+el("netbar").addEventListener("click",e=>{ const b=e.target.closest("[data-nt]"); if(!b)return; const op=b.dataset.nt; if(op==="bg"){ nePopShow(neCellBgHtml(),b,"cellbg"); return; } neTbOp(op); });
+
+// ---------- รูปภาพ ----------
+const NIMG=new Map();
+async function nimgGet(id){
+if(NIMG.has(id))return NIMG.get(id); if(!SB)return "";
+try{ const {data,error}=await SB.from("rows").select("id,data").eq("uid",uid).eq("id",id); if(error)throw error; const d=(data&&data[0]&&data[0].data&&data[0].data.d)||""; if(d)NIMG.set(id,d); return d; }catch(e){ return ""; }
+}
+function ntHydrate(root){
+if(!root)return; root.querySelectorAll("img[data-nid]").forEach(async im=>{ if(im.getAttribute("src"))return;
+ im.alt="กำลังโหลดรูป…"; const d=await nimgGet(im.getAttribute("data-nid")); if(d&&im.isConnected){ im.src=d; im.alt=""; } else if(!d)im.alt="(โหลดรูปไม่ได้)"; });
+}
+function neImgScale(file,maxSide,q){
+return new Promise((res,rej)=>{ const u=URL.createObjectURL(file), im=new Image();
+ im.onload=()=>{ const w=im.naturalWidth, h=im.naturalHeight, c=document.createElement("canvas"); let sc=Math.min(1,maxSide/Math.max(w,h));
+  const draw=()=>{ c.width=Math.max(1,Math.round(w*sc)); c.height=Math.max(1,Math.round(h*sc)); const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,c.width,c.height); x.drawImage(im,0,0,c.width,c.height); return c.toDataURL("image/jpeg",q); };
+  let out=draw(), t=0; while(out.length>650000&&t<4){ sc*=.8; q=Math.max(.6,q-.05); out=draw(); t++; }
+  URL.revokeObjectURL(u); res(out); };
+ im.onerror=()=>{ URL.revokeObjectURL(u); rej(new Error("อ่านรูปไม่ได้")); }; im.src=u; });
+}
+function neInsertNode(node,tail){
+neRestore(); const s=getSelection(); let r=s.getRangeAt(0); r.deleteContents(); r.insertNode(node);
+let last=node; if(tail){ const t=document.createTextNode(" "); node.after(t); last=t; }
+r=document.createRange(); r.setStartAfter(last); r.collapse(true); s.removeAllRanges(); s.addRange(r); neRange=r.cloneRange();
+}
+async function neImgInsert(file){
+if(!file||!/^image\//.test(file.type))return;
+let url; try{ url=await neImgScale(file,1280,.82); }catch(e){ tell("<b>อ่านรูปนี้ไม่ได้ค่ะ</b>"); return; }
+const id="nimg-"+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); let ok=false;
+if(SB&&uid){ try{ const {error}=await SB.from("rows").upsert({id,uid,kind:"nimg",data:{d:url},updated_at:new Date().toISOString()}); ok=!error; }catch(e){} }
+NIMG.set(id,url);
+const im=document.createElement("img"); im.src=url; if(ok)im.setAttribute("data-nid",id); im.setAttribute("data-w","50"); im.alt="";
+neInsertNode(im,true);
+}
+async function neImgMany(files){ setFoot("กำลังแนบรูป…"); for(const f of files)await neImgInsert(f); setFoot("แนบรูปแล้ว — กดที่รูปเพื่อปรับขนาด/ลบ"); }
+function neImgPos(){ const b=el("neimgbar"); if(!b||b.hidden||!neImgSel)return; const r=neImgSel.getBoundingClientRect(); b.style.top=Math.max(8,r.top-48)+"px"; b.style.left=Math.max(8,Math.min(innerWidth-b.offsetWidth-8,r.left))+"px"; }
+function neImgDeselect(){ if(neImgSel)neImgSel.classList.remove("nesel"); neImgSel=null; const b=el("neimgbar"); if(b)b.hidden=true; }
+function neImgSelect(im){
+neImgDeselect(); neImgSel=im; im.classList.add("nesel"); let b=el("neimgbar");
+if(!b){ b=document.createElement("div"); b.id="neimgbar"; b.className="nepop neimgbar";
+ b.innerHTML='<button type="button" data-iw="33">เล็ก</button><button type="button" data-iw="50">กลาง</button><button type="button" data-iw="100">ใหญ่</button><button type="button" data-iw="del" class="danger">ลบรูป</button>';
+ el("ndlg").appendChild(b); b.addEventListener("mousedown",e=>e.preventDefault());
+ b.addEventListener("click",e=>{ const x=e.target.closest("button"); if(!x||!neImgSel)return; if(x.dataset.iw==="del"){ neImgSel.remove(); neImgDeselect(); } else{ neImgSel.setAttribute("data-w",x.dataset.iw); neImgPos(); } }); }
+b.hidden=false; neImgPos();
+}
+el("ne-file").addEventListener("change",e=>{ const fs=[...e.target.files]; e.target.value=""; if(fs.length)neImgMany(fs); });
+
+// ---------- ผูกปุ่ม / คีย์ลัด ----------
+el("ntool").addEventListener("click",e=>{
+const b=e.target.closest("[data-ne]"); if(!b)return; const k=b.dataset.ne;
+if(k==="ck")neCheck(); else if(k==="indent")neIndent(1); else if(k==="outdent")neIndent(-1);
+else if(k==="color"){ neSave(); nePopShow(neColorHtml(),b,"color"); }
+else if(k==="table"){ neSave(); nePopShow(neTableHtml(),b,"table"); }
+else if(k==="img"){ neSave(); el("ne-file").click(); }
+else if(k==="clear"){ NE().querySelectorAll("span[style]").forEach(sp=>{ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); }); }
+});
+NE().addEventListener("click",e=>{
+const t=e.target;
+if(t.tagName==="IMG"){ neImgSelect(t); return; } neImgDeselect();
+const li=neCkHit(e); if(li)neCkToggle(li);
+});
+NE().addEventListener("keydown",e=>{
+if(e.isComposing||e.keyCode===229)return;
+if(e.key==="Tab"){ e.preventDefault(); const c=neCell(); if(c)neCellMove(c,e.shiftKey?-1:1); else neIndent(e.shiftKey?-1:1); return; }
+if(e.key==="Enter"&&!e.shiftKey&&!e.ctrlKey&&!e.metaKey){ const c=neCell(); if(c){ e.preventDefault(); neCellDown(c); } }
+else if(e.key==="Enter"&&e.shiftKey){ const c=neCell(); if(c){ e.preventDefault(); document.execCommand("insertLineBreak"); } }
+});
+NE().addEventListener("input",e=>{
+if(e.inputType==="insertParagraph"){ const li=neLi(); if(li&&li.getAttribute("data-c")==="1"&&li.parentNode.classList&&li.parentNode.classList.contains("ck"))li.removeAttribute("data-c"); }
+});
+NE().addEventListener("scroll",neImgPos);
+NE().addEventListener("paste",e=>{
+const cd=e.clipboardData||window.clipboardData; if(!cd)return;
+const files=[...(cd.files||[])].filter(f=>/^image\//.test(f.type));
+if(files.length){ e.preventDefault(); neSave(); neImgMany(files); return; }
+e.preventDefault(); const t=cd.getData("text/plain"), rows=neParseTSV(t);
+if(rows&&(rows.length>1||rows[0].length>1)){ const c=neCell(); if(c)neFillTable(c,rows); else{ neSave(); neInsertTable(rows,false); } return; }
+document.execCommand("insertText",false,t);
+});
+NE().addEventListener("drop",e=>{
+const fs=[...((e.dataTransfer&&e.dataTransfer.files)||[])].filter(f=>/^image\//.test(f.type)); if(!fs.length)return;
+e.preventDefault(); const r=document.caretRangeFromPoint&&document.caretRangeFromPoint(e.clientX,e.clientY); if(r&&NE().contains(r.commonAncestorContainer))neRange=r; neImgMany(fs);
+});
+NE().addEventListener("dragover",e=>{ if(e.dataTransfer&&[...e.dataTransfer.types].indexOf("Files")>=0)e.preventDefault(); });
+
+// ---------- สถานะแถบเครื่องมือ ----------
+function neExtraState(){
+const c=neCell(), bar=el("netbar"); bar.hidden=!c;
+if(c){ const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar.querySelector('[data-nt="head"]'); if(hb)hb.classList.toggle("on",th); }
+const li=neLi(), cb=document.querySelector('#ntool [data-ne="ck"]'); if(cb)cb.classList.toggle("on",!!(li&&li.parentNode.classList&&li.parentNode.classList.contains("ck")));
+}
+document.addEventListener("selectionchange",()=>{ if(el("ndlg").open&&document.activeElement===NE())neExtraState(); });
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

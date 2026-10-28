@@ -39,7 +39,7 @@ if(n===1){ ctx.beginPath(); ctx.arc(X(0),Y(0),Math.max(.8,s.w*k/2),0,6.283); ctx
 else if(s.v&&s.t!=="h"){
 // รวมช่วงที่ความหนาใกล้เคียงกันเป็นเส้นเดียว (วาดเร็วขึ้นหลายเท่า หน้าตาเหมือนเดิม)
 const qs=Math.max(.2,s.w*k*.1); let run=-1, qw=0, lx=X(0), ly=Y(0);
-for(let i=1;i<n;i++){ if(i<n-1&&Math.abs(X(i)-lx)+Math.abs(Y(i)-ly)<1.6)continue; const pr=(p[i*3+2]+p[(i-1)*3+2])/2, lw=Math.max(.6,s.w*(0.4+pr*1.25)*k), q=Math.round(lw/qs)*qs;
+for(let i=1;i<n;i++){ if(i<n-1&&Math.abs(X(i)-lx)+Math.abs(Y(i)-ly)<1.6)continue; const pr=(p[i*3+2]+p[(i-1)*3+2])/2, lw=Math.max(1,s.w*inkPF(pr)*k), q=Math.round(lw/qs)*qs;
 if(run<0){ ctx.lineWidth=q; ctx.beginPath(); ctx.moveTo(lx,ly); qw=q; run=i; }
 else if(q!==qw){ ctx.stroke(); ctx.lineWidth=q; ctx.beginPath(); ctx.moveTo(lx,ly); qw=q; }
 ctx.lineTo(X(i),Y(i)); lx=X(i); ly=Y(i); }
@@ -82,11 +82,13 @@ inkRenderTo(ctx,ink.k,pg.strokes,ink.drag&&ink.drag.hide,inkOpt());
 }
 let inkRaf=0;
 function inkRedrawSoon(){ if(inkRaf)return; inkRaf=requestAnimationFrame(()=>{ inkRaf=0; if(!ink.note)return; inkRedraw(); inkDrawSel(); }); }
+// ความกว้างเส้นตามแรงกด: มีพื้นขั้นต่ำ ให้ช่วงแตะลงที่แรงกดยังเบาไม่บางจนมองไม่เห็น
+function inkPF(pr){ return .62+.7*Math.pow(Math.max(0,Math.min(1,pr)),.6); }
 function inkOverClear(){ const c=el("ink-over"); c.getContext("2d").clearRect(0,0,c.width,c.height); inkPredClear(true); }
 function inkPredClear(all){ const c=el("ink-pred"); if(!c)return; const r=ink.predR; if(!r&&!all)return; const x=c.getContext("2d"); if(all||!r)x.clearRect(0,0,c.width,c.height); else x.clearRect(r[0],r[1],r[2]-r[0],r[3]-r[1]); ink.predR=null; }
 // วาดปลายเส้นล่วงหน้าเล็กน้อย ให้ปลายปากกาตามทันปลาย Pencil (ลบทิ้งทุกครั้งที่มีจุดจริงมาใหม่)
 const INK_LEADS=[[0,"ปิด"],[16,"น้อย"],[30,"ปกติ"],[48,"มาก"]];
-ink.lead=(()=>{ try{ const v=localStorage.getItem("sw-ink-lead"); return v==null?30:+v; }catch(e){ return 30; } })();
+ink.lead=(()=>{ try{ const v=localStorage.getItem("sw-ink-lead"); return v==null?0:+v; }catch(e){ return 0; } })();
 function inkPredict(e,pen){
 const d=ink.drag; if(!d||d.mode!=="draw"||!d.inc||!ink.lead)return; const c=el("ink-pred"); if(!c)return;
 inkPredClear(); clearTimeout(ink.predT); ink.predT=setTimeout(()=>inkPredClear(),70); const sk=d.s, p=sk.p, n=Math.floor(p.length/3); if(n<2)return;
@@ -96,7 +98,7 @@ if(h.length>=2){ const a=h[Math.max(0,h.length-4)], z=h[h.length-1], dt=z[2]-a[2
 if(dt>1){ const rest=Math.max(0,ink.lead-span); let vx=(z[0]-a[0])/dt, vy=(z[1]-a[1])/dt; const sp=Math.hypot(vx,vy), mx=40*inkPx();
 let len=sp*rest*.8; if(len>mx)len=mx; if(sp>0&&len>.3){ const sx=pts.length?pts[pts.length-1][0]:bx, sy=pts.length?pts[pts.length-1][1]:by; pts.push([sx+vx/sp*len,sy+vy/sp*len]); } } }
 if(!pts.length)return;
-const ctx=c.getContext("2d"), [ox,oy]=inkO(), k=ink.k, pr=p[n*3-1], lw=Math.max(.6,sk.w*(pen?(.4+pr*1.25):1)*k);
+const ctx=c.getContext("2d"), [ox,oy]=inkO(), k=ink.k, pr=p[n*3-1], lw=Math.max(1,sk.w*(pen?inkPF(pr):1)*k);
 ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle=sk.c; ctx.lineWidth=lw; ctx.beginPath(); ctx.moveTo((bx+ox)*k,(by+oy)*k);
 let x0=(bx+ox)*k,y0=(by+oy)*k,x1=x0,y1=y0; pts.forEach(q=>{ const X=(q[0]+ox)*k, Y=(q[1]+oy)*k; ctx.lineTo(X,Y); x0=Math.min(x0,X); x1=Math.max(x1,X); y0=Math.min(y0,Y); y1=Math.max(y1,Y); }); ctx.stroke(); ctx.restore();
 const g=lw+3; ink.predR=[Math.max(0,Math.floor(x0-g)),Math.max(0,Math.floor(y0-g)),Math.min(c.width,Math.ceil(x1+g)),Math.min(c.height,Math.ceil(y1+g))];
@@ -261,8 +263,8 @@ const d=ink.drag, c=el("ink-over"), ctx=c.getContext("2d"), [ox,oy]=inkO(), k=in
 if(d.inc&&sk.t==="p"){
 // ปากกาธรรมดา: ต่อเส้นเฉพาะช่วงใหม่ (ไม่ล้าง/วาดซ้ำทั้งเส้น)
 const pen=d.ptype==="pen"; ctx.save(); ctx.lineCap="round"; ctx.strokeStyle=sk.c; ctx.fillStyle=sk.c;
-if(!d.li){ ctx.beginPath(); ctx.arc((p[0]+ox)*k,(p[1]+oy)*k,Math.max(.3,sk.w*(pen?(0.4+p[2]*1.25):1)*k/2),0,6.283); ctx.fill(); }
-for(let i=Math.max(1,d.li||1);i<n;i++){ const pr=(p[i*3+2]+p[i*3-1])/2; ctx.lineWidth=Math.max(.6,sk.w*(pen?(0.4+pr*1.25):1)*k); ctx.beginPath(); ctx.moveTo((p[i*3-3]+ox)*k,(p[i*3-2]+oy)*k); ctx.lineTo((p[i*3]+ox)*k,(p[i*3+1]+oy)*k); ctx.stroke(); }
+if(!d.li){ ctx.beginPath(); ctx.arc((p[0]+ox)*k,(p[1]+oy)*k,Math.max(.3,sk.w*(pen?inkPF(p[2]):1)*k/2),0,6.283); ctx.fill(); }
+for(let i=Math.max(1,d.li||1);i<n;i++){ const pr=(p[i*3+2]+p[i*3-1])/2; ctx.lineWidth=Math.max(1,sk.w*(pen?inkPF(pr):1)*k); ctx.beginPath(); ctx.moveTo((p[i*3-3]+ox)*k,(p[i*3-2]+oy)*k); ctx.lineTo((p[i*3]+ox)*k,(p[i*3+1]+oy)*k); ctx.stroke(); }
 d.li=n; ctx.restore(); return; }
 // หัวปากกา/รูปทรงอื่น: ล้างเฉพาะกรอบของเส้น แล้ววาดใหม่
 let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; for(let i=0;i<n;i++){ const x=p[i*3],y=p[i*3+1]; if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
@@ -340,7 +342,7 @@ inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เล�
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="clear">${ink.board?"ล้างกระดานทั้งหมด":"ล้างหน้านี้"}</button>
 ${ink.board?"":`<button type="button" class="ink-mi danger" data-imore="delpage" ${ink.pages.length<2?"disabled":""}>ลบหน้านี้</button>`}
-<button type="button" class="ink-mi" data-imore="lead">ปลายเส้นล่วงหน้า (ลดความหน่วง): ${(INK_LEADS.find(x=>x[0]===ink.lead)||INK_LEADS[2])[1]}</button>
+<button type="button" class="ink-mi" data-imore="lead">ปลายเส้นล่วงหน้า (ลดความหน่วง): ${(INK_LEADS.find(x=>x[0]===ink.lead)||INK_LEADS[0])[1]}</button>
 <button type="button" class="ink-mi" data-imore="diag">${inkDiag.on?"หยุดวัด + ดูผล":"วัดความลื่น (ทดสอบเขียน)"}</button>
 <button type="button" class="ink-mi danger" data-imore="delnote">ลบ${ink.board?"กระดาน":"สมุดทั้งเล่ม"}</button>`,a);
 }
@@ -482,13 +484,13 @@ function inkDiagTimed(key,fn){ return e=>{ if(!inkDiag.on)return fn(e); const t=
 function inkDiagReport(){
 inkDiag.on=0; try{ inkDiag.po&&inkDiag.po.disconnect(); }catch(er){}
 const st=a=>{ if(!a.length)return "ไม่มีข้อมูล"; const s=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0); return `n=${a.length} · เฉลี่ย ${(sum/a.length).toFixed(1)} · p95 ${s[Math.floor(s.length*.95)].toFixed(1)} · สูงสุด ${s[s.length-1].toFixed(1)} ms`; };
-const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base");
+const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base"), SS=(ink.pages[ink.cur]?ink.pages[ink.cur].strokes:[]).filter(q=>q.t==="p");
 return ["Sky Work v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
 "หน้าจอ: "+innerWidth+"x"+innerHeight+" dpr "+(window.devicePixelRatio||1)+" · แคนวาส "+c.width+"x"+c.height+" · "+(ink.board?"กระดาน":"สมุด")+(window.PointerEvent&&PointerEvent.prototype.getCoalescedEvents?" · coalesced":" · no-coalesced")+(PointerEvent.prototype.getPredictedEvents?" · predicted":" · no-predicted"),
 "ปากกาแตะลง (pointerdown): "+st(inkDiag.hd),"ปากกาลาก (pointermove): "+st(inkDiag.hm),"ปากกายก (pointerup+วาดเก็บ): "+st(inkDiag.hu),
 "อีเวนต์รอคิวก่อนถูกประมวลผล: "+st(inkDiag.lag),"ช่วงห่างระหว่างเฟรมขณะเขียน: "+st(inkDiag.gaps)+" · เฟรมช้า(>24ms) "+slow+" ครั้ง",
 "Long task (>50ms): "+inkDiag.long+" ครั้ง · นานสุด "+inkDiag.longMax.toFixed(0)+" ms",
-"อีเวนต์ดิบที่ iPad ส่งมา: "+(Object.keys(inkDiag.ev).sort().map(k=>k+"="+inkDiag.ev[k]).join(" · ")||"-"),"ปากกาแตะลงแต่ไม่เกิดเส้น: "+inkDiag.nodraw+" ครั้ง · แตะลงซ้อนก่อนเส้นเก่าจบ: "+inkDiag.overlap+" ครั้ง","ระยะห่างยกปากกา→แตะลงใหม่ (ms): "+st(inkDiag.ugap),"ลายเส้นในหน้า: "+(ink.pages[ink.cur]?ink.pages[ink.cur].strokes.length:0)+" เส้น"].join("\n");
+"อีเวนต์ดิบที่ iPad ส่งมา: "+(Object.keys(inkDiag.ev).sort().map(k=>k+"="+inkDiag.ev[k]).join(" · ")||"-"),"ปากกาแตะลงแต่ไม่เกิดเส้น: "+inkDiag.nodraw+" ครั้ง · แตะลงซ้อนก่อนเส้นเก่าจบ: "+inkDiag.overlap+" ครั้ง","ระยะห่างยกปากกา→แตะลงใหม่ (ms): "+st(inkDiag.ugap),"ลายเส้นในหน้า: "+SS.length+" เส้น · แรงกดจุดแรก<0.15: "+SS.filter(q=>q.p[2]<.15).length+" เส้น · เส้นสั้น(≤3 จุด): "+SS.filter(q=>q.p.length<=9).length+" เส้น","ระยะจุดแรก→จุดสอง (หน่วยหน้ากระดาษ): "+st(SS.map(q=>q.p.length>=6?Math.hypot(q.p[3]-q.p[0],q.p[4]-q.p[1]):0))].join("\n");
 }
 // ---------- ผูกปุ่ม ----------
 (function inkWire(){

@@ -1,4 +1,4 @@
-const APP_VERSION="14.13.5"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.0"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -555,7 +555,7 @@ return bad.length;
 }catch(e){ return 0; }
 }
 async function loadAll(){
-const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).neq("kind","ink");
+const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).neq("kind","ink").neq("kind","nimg");
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
@@ -565,7 +565,7 @@ emit("items");emit("ledger");emit("legal");emit("index");emit("note");[...cache.
 function liveSync(){
 SB.channel("rows-"+uid).on("postgres_changes",{event:"*",schema:"public",table:"rows",filter:"uid=eq."+uid},p=>{
 const r=p.new&&p.new.id?p.new:p.old;
-if(!r||r.kind==="ink")return;
+if(!r||r.kind==="ink"||r.kind==="nimg")return;
 if(p.eventType==="DELETE")cache[r.kind]?.delete(r.id); else cache[r.kind]?.set(r.id,r.data);
 r.kind==="meta"?emitMeta(r.id):emit(r.kind);
 render();

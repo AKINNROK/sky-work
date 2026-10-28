@@ -496,7 +496,7 @@ function viewNote(n){
 viewingNote=n;
 el("nvk").textContent=n.kind||"โน้ต"; el("nvd").textContent=n.date||"";
 el("nvt").textContent=n.title||"(ไม่มีหัวข้อ)";
-el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>';
+el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>'; ntHydrate(el("nvb"));
 el("nvtag").textContent=n.tag?"#"+n.tag:"";
 el("nvpin").textContent=n.pin?"เลิกปักหมุด":"ปักหมุด";
 el("nvdlg").querySelector(".nvbar").style.background=n.color||"var(--accent-2)";
@@ -511,7 +511,7 @@ let n2tNote=null, n2tRows=[];
 function n2tExtract(n){
 const d=document.createElement("div"); d.innerHTML=ntHtml(n);
 let lines=[...d.querySelectorAll("li")].map(x=>(x.textContent||"").trim());
-if(!lines.length)lines=ntPlain(n,true).split(/\n+/).map(s2=>s2.replace(/^[\s\-–•*·\d.)]+/,"").trim());
+if(!lines.length)lines=ntPlain(n,true).split(/\n+/).map(s2=>s2.replace(/^[\s\-–•*·☐☑\d.)]+/,"").trim());
 return [...new Set(lines.filter(s2=>s2.length>=3))].slice(0,30);
 }
 function openNote2Task(n){
@@ -583,6 +583,7 @@ document.querySelectorAll("#ntool [data-ne]").forEach(b=>{ const k=b.dataset.ne;
  else if(k==="ul")v=on("insertUnorderedList"); else if(k==="ol")v=on("insertOrderedList");
  else if(k==="h2")v=blk==="h2"; else if(k==="h3")v=blk==="h3"; else if(k==="link")v=!!neLinkAt(); else if(k==="light"){ let n=getSelection().anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.classList&&n.classList.contains("lt")){v=true;break;} n=n.parentNode; } }
  b.classList.toggle("on",v); });
+if(typeof neExtraState==="function")neExtraState();
 }
 el("ntool").addEventListener("mousedown",e=>{ if(e.target.closest("[data-ne]"))e.preventDefault(); });
 el("ntool").addEventListener("click",e=>{ const b=e.target.closest("[data-ne]"); if(!b)return; const k=b.dataset.ne;
@@ -615,7 +616,6 @@ neState(); };
 el("lk-url").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); el("lk-ok").click(); } });
 NE().addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("a"); if(a&&NE().contains(a)){ e.preventDefault(); if(e.ctrlKey||e.metaKey)window.open(a.href,"_blank","noopener"); else neLink(a); } });
 NE().addEventListener("keyup",neState); NE().addEventListener("mouseup",neState);
-NE().addEventListener("paste",e=>{ e.preventDefault(); const t=(e.clipboardData||window.clipboardData).getData("text/plain"); document.execCommand("insertText",false,t); });
 function openNote(n){
 editingNote=n;
 el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
@@ -623,7 +623,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):"";
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll();
 el("n-pin").checked=!!n?.pin;
 el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");

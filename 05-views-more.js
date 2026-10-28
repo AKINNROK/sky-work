@@ -595,7 +595,9 @@ if(dl){ const names=idxCatNames(), c=names[+dl.dataset.ixcd]; const k=idx.filter
   for(const x of idx.filter(x=>(x.group||"").trim()===c)){ try{ await DB.collection("index").doc(x._id).set({group:""},{merge:true}); }catch(err){} } render(); }
  openIxCats(); } });
 // ---- เนื้อหาบันทึกแบบจัดรูปแบบ (fmt:"h" = HTML ที่ผ่านตัวกรอง; ไม่มี fmt = ข้อความล้วนแบบเดิม)
-const NT_OK={B:1,STRONG:1,I:1,EM:1,U:1,S:1,H2:1,H3:1,UL:1,OL:1,LI:1,P:1,DIV:1,BR:1,SPAN:1,BLOCKQUOTE:1,HR:1,A:1};
+const NT_OK={B:1,STRONG:1,I:1,EM:1,U:1,S:1,H2:1,H3:1,UL:1,OL:1,LI:1,P:1,DIV:1,BR:1,SPAN:1,BLOCKQUOTE:1,HR:1,A:1,TABLE:1,TBODY:1,THEAD:1,TR:1,TD:1,TH:1,IMG:1};
+const NT_BG=new Set(["y","g","b","r","p","o","x"]);
+function ntRgb(c){ c=String(c||"").trim().toLowerCase(); if(/^#[0-9a-f]{6}$/.test(c))return c; const m=c.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/); return m?"#"+[m[1],m[2],m[3]].map(v=>Math.min(255,+v).toString(16).padStart(2,"0")).join(""):""; }
 function ntClean(html){
 const d=document.createElement("div"); d.innerHTML=String(html||"");
 d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.remove());
@@ -603,16 +605,38 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(n.nodeType===3)return;
  if(n.nodeType!==1){ n.remove(); return; }
  if(!NT_OK[n.tagName]){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
- if(n.tagName==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+ const T=n.tagName;
+ if(T==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
   if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); walk(n); return; }
   while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
- const keep=n.tagName==="SPAN"&&n.classList.contains("lt")?"lt":"";
- [...n.attributes].forEach(at=>n.removeAttribute(at.name)); if(keep)n.className=keep;
- else if(n.tagName==="SPAN"){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
+ if(T==="IMG"){ const nid=n.getAttribute("data-nid")||"", src=n.getAttribute("src")||"", w=n.getAttribute("data-w")||"";
+  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+  if(/^nimg-[a-z0-9]{6,24}$/.test(nid))n.setAttribute("data-nid",nid);
+  else if(src.length<900000&&/^data:image\/(jpeg|png|webp|gif);base64,[a-z0-9+\/=]+$/i.test(src))n.setAttribute("src",src);
+  else{ n.remove(); return; }
+  if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
+ const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
+ let col="",bg="",dc="",di="",dbg="";
+ if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
+ if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
+ if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
+ if((T==="TD"||T==="TH")&&NT_BG.has(n.getAttribute("data-bg")||""))dbg=n.getAttribute("data-bg");
+ [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+ if(cls)n.className=cls;
+ if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg);
+ if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
 }
-const ntPlain=(n,withUrl)=>{ if(!n)return""; if(n.fmt!=="h")return n.body||""; const d=document.createElement("div"); d.innerHTML=ntClean(n.body||"").replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n"); if(withUrl)d.querySelectorAll("a[href]").forEach(a=>{ const h=a.getAttribute("href"); if(a.textContent.trim()!==h)a.textContent=a.textContent+" ("+h+")"; }); return (d.textContent||"").replace(/\n{3,}/g,"\n\n").trim(); };
+const ntPlain=(n,withUrl)=>{ if(!n)return""; if(n.fmt!=="h")return n.body||"";
+const d0=document.createElement("div"); d0.innerHTML=ntClean(n.body||"");
+d0.querySelectorAll("table").forEach(t=>{ const p=document.createElement("p"); p.textContent=[...t.rows].map(r=>[...r.cells].map(c=>c.textContent.replace(/\s+/g," ").trim()).join(" | ")).join("\n"); t.replaceWith(p); });
+d0.querySelectorAll("ul.ck>li").forEach(li=>li.insertBefore(document.createTextNode(li.getAttribute("data-c")==="1"?"☑ ":"☐ "),li.firstChild));
+d0.querySelectorAll("img").forEach(i=>i.replaceWith(document.createTextNode("[รูป]")));
+const d=document.createElement("div"); d.innerHTML=d0.innerHTML.replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n");
+if(withUrl)d.querySelectorAll("a[href]").forEach(a=>{ const h=a.getAttribute("href"); if(a.textContent.trim()!==h)a.textContent=a.textContent+" ("+h+")"; });
+return (d.textContent||"").replace(/\n{3,}/g,"\n\n").trim(); };
 const ntHtml=n=>n&&n.fmt==="h"?ntClean(n.body||""):esc((n&&n.body)||"").replace(/\n/g,"<br>");
 const NOTEKIND=["บันทึกการประชุม","โน้ต","ไอเดีย"];
 const NOTEKIND_ALL=()=>[...NOTEKIND,INKKIND];
