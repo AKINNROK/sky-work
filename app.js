@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.5"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.6"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2840,7 +2840,7 @@ const rx=(bcx+dx+ox)*k, ry=(b[1]+dy+oy-pad-34*inkPx())*k; ctx.beginPath(); ctx.m
 ctx.beginPath(); ctx.arc(rx,ry,hr*.5,.4,5.4); ctx.strokeStyle="#fff"; ctx.lineWidth=Math.max(1.5,1.6*k); ctx.stroke(); ctx.restore();
 }
 function inkDown(e){
-ink.rc=null; const t=e.pointerType; { const a=document.activeElement; if(a&&a!==document.body&&a.blur&&a.id!=="ink-stage")a.blur(); }
+ink.rc=null; const t=e.pointerType; try{ const gs=getSelection(); if(gs&&gs.rangeCount&&!gs.isCollapsed)gs.removeAllRanges(); }catch(er){} { const a=document.activeElement; if(a&&a!==document.body&&a.blur&&a.id!=="ink-stage")a.blur(); }
 if((t==="pen"||t==="mouse")&&ink.drag&&ink.drag.mode==="draw"){ if(inkDiag.on)inkDiag.overlap++; inkUp({pointerId:ink.drag.id,pointerType:t,type:"pointerup",timeStamp:0}); }
 if(t==="pen"){ ink.penSeen=true; ink.penDown=true; ink.ptrs.forEach((v,id)=>{ if(v.type==="touch")ink.ptrs.delete(id); }); if(ink.drag&&ink.drag.mode==="pan"||ink.drag&&ink.drag.mode==="pinch")ink.drag=null; }
 if(t==="touch"&&(ink.penDown||Date.now()-ink.penUpAt<280))return;      // กันฝ่ามือ
@@ -3156,6 +3156,8 @@ st.addEventListener("wheel",e=>{ e.preventDefault(); if(e.ctrlKey||e.metaKey){ i
 window.addEventListener("resize",()=>{ if(ink.note)inkApply(); });
 el("ink-close").onclick=inkClose;
 el("inkdlg").addEventListener("close",()=>document.body.classList.remove("ink-on"));
+// ห้ามเลือกข้อความในหน้าเขียน: ปากกาแตะซ้ำเร็วๆ ถูกตีความเป็น "แตะสองครั้งเพื่อเลือกคำ" ทำให้เส้นหายและหน้ากระโดด
+el("inkdlg").addEventListener("selectstart",e=>{ const t=e.target&&e.target.nodeType===3?e.target.parentNode:e.target; if(!t||!t.closest||!t.closest("input"))e.preventDefault(); });
 el("inkdlg").addEventListener("cancel",e=>{ e.preventDefault(); if(!el("ink-exp").hidden){ el("ink-exp").hidden=true; return; } if(!el("ink-pop").hidden){ inkClosePop(); return; } inkClose(); });
 el("ink-undo").onclick=()=>inkUndo(false); el("ink-redo").onclick=()=>inkUndo(true);
 el("ink-selshape").onclick=()=>inkSelToShape();

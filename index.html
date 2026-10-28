@@ -534,6 +534,7 @@ tr.dragging,.qlk.dragging{opacity:.4}tr.dropat td{box-shadow:inset 0 2px 0 var(-
 .vq-nav{float:right;display:inline-flex;gap:4px}.vq-nav button{border:0;background:var(--paper);border-radius:8px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;color:var(--ink-2)}.vq-nav button:hover{color:var(--accent)}
 .okbtn.on{background:var(--ok);color:#fff}
 .inkdlg{padding:0;border:0;margin:0;max-width:none;max-height:none;width:100vw;height:100vh;height:100dvh;background:var(--paper);color:var(--ink);overflow:hidden;border-radius:0}
+.inkdlg,.inkdlg *{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}.inkdlg input{-webkit-user-select:text;user-select:text}
 .inkdlg[open]{display:flex;flex-direction:column}.inkdlg::backdrop{background:#000;backdrop-filter:none;-webkit-backdrop-filter:none}body.ink-on>*:not(dialog):not(script){visibility:hidden}
 .ink-top{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--card);box-shadow:0 1px 0 var(--line);flex:none;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.ink-top::-webkit-scrollbar{display:none}
 @media (min-width:760px){.ink-top{flex-wrap:wrap;overflow:visible}}
@@ -1087,4 +1088,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.5"></script></body></html>
+<script src="app.js?v=14.14.6"></script></body></html>
