@@ -15,7 +15,7 @@ const inkUid=()=>"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,
 const inkPage=()=>ink.pages[ink.cur];
 const inkO=()=>ink.board?[-ink.vx,-ink.vy]:[0,0];                 // ชดเชยตำแหน่งมุมมอง (กระดานกว้าง)
 const inkBBs=new WeakMap();
-function inkBB(s){ let b=inkBBs.get(s); if(!b){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const p=(s.t==="s"&&s.r)?inkShapeFlat(s):s.p,pad=(s.t==="s"?Math.max(s.w,16):(s.b&&s.b!=="pen"?s.w*1.6:s.w/2))+1; for(let j=0;j<p.length;j+=3){ if(p[j]<x0)x0=p[j]; if(p[j]>x1)x1=p[j]; if(p[j+1]<y0)y0=p[j+1]; if(p[j+1]>y1)y1=p[j+1]; } b=[x0-pad,y0-pad,x1+pad,y1+pad]; inkBBs.set(s,b);} return b; }
+function inkBB(s){ let b=inkBBs.get(s); if(b&&b.n!==s.p.length)b=null; if(!b){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; const p=(s.t==="s"&&s.r)?inkShapeFlat(s):s.p,pad=(s.t==="s"?Math.max(s.w,16):(s.b&&s.b!=="pen"?s.w*1.6:s.w/2))+1; for(let j=0;j<p.length;j+=3){ if(p[j]<x0)x0=p[j]; if(p[j]>x1)x1=p[j]; if(p[j+1]<y0)y0=p[j+1]; if(p[j+1]>y1)y1=p[j+1]; } b=[x0-pad,y0-pad,x1+pad,y1+pad]; b.n=s.p.length; inkBBs.set(s,b);} return b; }
 function inkAllBox(){ let b=null; ink.pages.forEach(pg=>pg.strokes.forEach(s=>{ const q=inkBB(s); b=b?[Math.min(b[0],q[0]),Math.min(b[1],q[1]),Math.max(b[2],q[2]),Math.max(b[3],q[3])]:q.slice(); })); return b; }
 const inkLive=()=>(ink.note&&(notes.find(n=>n._id===ink.note._id)||ink.note))||{};
 

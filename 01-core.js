@@ -1,4 +1,4 @@
-const APP_VERSION="14.14.7"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.9"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -493,7 +493,7 @@ return `<g><rect class="chartcol" x="${i*bw}" y="0" width="${bw}" height="138"${
 <text x="${i*bw+bw*.5}" y="136" text-anchor="middle" font-size="9.5" fill="${i===hi?"var(--accent)":"var(--ink-3)"}" font-family="Sarabun,sans-serif" pointer-events="none">${l}</text></g>`;}).join("")}
 </svg>`;
 }
-const CFG_BAKED={url:"",key:""};
+const CFG_BAKED={url:"https://bakdblnqllcoltbgbwpe.supabase.co",key:"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJha2RibG5xbGxjb2x0Ymdid3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1MTEwMjAsImV4cCI6MjEwNDA4NzAyMH0.gUz4M0BW1c62dnwGwmFNLbGNKOXUVs--TFuvD7TSsLQ"};
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{},dsd:{},subsidy:{pct:70,rate:200}};
