@@ -202,6 +202,7 @@ view=v; renderNav(); render(); window.scrollTo({top:0,behavior:"smooth"});
 }
 const jump=(v,payload)=>`data-go="${esc(JSON.stringify({v,...payload||{}}))}"`;
 function render(){
+if(typeof ink!=="undefined"&&ink.note&&document.body.classList.contains("ink-on")){ return; }       // กำลังเขียนสมุด: ไม่วาดหน้าแอปข้างหลังซ้ำ (จะวาดใหม่ตอนปิดสมุด)
 LISTBOX={};
 if(LOADING){ el("view").innerHTML=`<div class="head"><div><h1>กำลังโหลดข้อมูล…</h1><div class="sub">กำลังดึงข้อมูลล่าสุดจากระบบ · ${syncChip()}</div></div></div>
 <div class="dash"><div class="card hero span2 sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div>

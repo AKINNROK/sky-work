@@ -563,7 +563,7 @@ el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skywork-index",
 idx.map(x=>[x.title,x.group,x.owner,x.url,x.status,x.detail,x.note])));
 el("expNote")&&(el("expNote").onclick=()=>exportCSV("skywork-notes",
 ["หัวข้อ","ประเภท","วันที่","ป้ายกำกับ","เนื้อหา"],
-notes.map(n=>[n.title,n.kind,n.date,n.tag,ntPlain(n)])));
+notes.map(n=>[n.title,n.kind,n.date,n.tag,ntPlain(n,true)])));
 el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
 ["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
 legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));

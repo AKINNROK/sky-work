@@ -511,7 +511,7 @@ let n2tNote=null, n2tRows=[];
 function n2tExtract(n){
 const d=document.createElement("div"); d.innerHTML=ntHtml(n);
 let lines=[...d.querySelectorAll("li")].map(x=>(x.textContent||"").trim());
-if(!lines.length)lines=ntPlain(n).split(/\n+/).map(s2=>s2.replace(/^[\s\-–•*·\d.)]+/,"").trim());
+if(!lines.length)lines=ntPlain(n,true).split(/\n+/).map(s2=>s2.replace(/^[\s\-–•*·\d.)]+/,"").trim());
 return [...new Set(lines.filter(s2=>s2.length>=3))].slice(0,30);
 }
 function openNote2Task(n){
@@ -542,7 +542,7 @@ b.disabled=true; const old=b.textContent; b.textContent="AI กำลังอ�
 try{
 const list=n2tRows.map((r,i)=>i+": "+r.t).join("\n");
 const txt=await aiAskText(W5_SYS+"\nงานนี้คือแยกบันทึกเป็นงานย่อย: ให้เติมเฉพาะสิ่งที่เขียนไว้ในบันทึกหรืออนุมานได้ชัดเจน owner ใส่ได้เฉพาะชื่อที่ปรากฏในบันทึก date ใส่ได้เฉพาะเมื่อบันทึกระบุวัน (YYYY-MM-DD, คำนวณจากวันนี้) quad เป็น q1|q2|q3|q4 หรือ \"\"","วันนี้: "+isoOf(new Date()),
-"บันทึก: "+(n2tNote.title||"")+"\n"+ntPlain(n2tNote).slice(0,6000)+"\n\nรายการงานที่แยกได้:\n"+list+'\n\nตอบ JSON เป็นอาร์เรย์: [{"i":0,"why":"","inv":"","whr":"","how":"","owner":"","date":"","quad":""}]');
+"บันทึก: "+(n2tNote.title||"")+"\n"+ntPlain(n2tNote,true).slice(0,6000)+"\n\nรายการงานที่แยกได้:\n"+list+'\n\nตอบ JSON เป็นอาร์เรย์: [{"i":0,"why":"","inv":"","whr":"","how":"","owner":"","date":"","quad":""}]');
 const arr=aiJsonOf(txt); if(!Array.isArray(arr))throw new Error("อ่านคำตอบ AI ไม่ได้ ลองกดอีกครั้ง");
 let n=0; arr.forEach(o=>{ const r=n2tRows[+o.i]; if(!r)return; let ch=false;
 ["why","inv","whr","how","owner"].forEach(k=>{ const v=w5Txt(o[k]); const f=k==="owner"?"o":k; if(v&&!w5Txt(r[f])){ r[f]=v.slice(0,500); ch=true; } });
@@ -581,15 +581,39 @@ const blk=(document.queryCommandValue("formatBlock")||"").toLowerCase().replace(
 document.querySelectorAll("#ntool [data-ne]").forEach(b=>{ const k=b.dataset.ne; let v=false;
  if(k==="bold")v=on("bold"); else if(k==="italic")v=on("italic"); else if(k==="underline")v=on("underline"); else if(k==="strike")v=on("strikeThrough");
  else if(k==="ul")v=on("insertUnorderedList"); else if(k==="ol")v=on("insertOrderedList");
- else if(k==="h2")v=blk==="h2"; else if(k==="h3")v=blk==="h3"; else if(k==="light"){ let n=getSelection().anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.classList&&n.classList.contains("lt")){v=true;break;} n=n.parentNode; } }
+ else if(k==="h2")v=blk==="h2"; else if(k==="h3")v=blk==="h3"; else if(k==="link")v=!!neLinkAt(); else if(k==="light"){ let n=getSelection().anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.classList&&n.classList.contains("lt")){v=true;break;} n=n.parentNode; } }
  b.classList.toggle("on",v); });
 }
 el("ntool").addEventListener("mousedown",e=>{ if(e.target.closest("[data-ne]"))e.preventDefault(); });
 el("ntool").addEventListener("click",e=>{ const b=e.target.closest("[data-ne]"); if(!b)return; const k=b.dataset.ne;
  if(k==="bold")neCmd("bold"); else if(k==="italic")neCmd("italic"); else if(k==="underline")neCmd("underline"); else if(k==="strike")neCmd("strikeThrough");
- else if(k==="light")neLight(); else if(k==="h2")neBlock("h2"); else if(k==="h3")neBlock("h3");
+ else if(k==="link")neLink(); else if(k==="light")neLight(); else if(k==="h2")neBlock("h2"); else if(k==="h3")neBlock("h3");
  else if(k==="ul")neCmd("insertUnorderedList"); else if(k==="ol")neCmd("insertOrderedList"); else if(k==="hr")neCmd("insertHorizontalRule");
  else if(k==="clear"){ neCmd("removeFormat"); document.execCommand("formatBlock",false,"p"); NE().querySelectorAll(".lt").forEach(n=>{while(n.firstChild)n.parentNode.insertBefore(n.firstChild,n);n.remove();}); } });
+let lkRange=null, lkEl=null;
+function neLinkAt(){ const s=getSelection(); let n=s.anchorNode; while(n&&n!==NE()){ if(n.nodeType===1&&n.tagName==="A")return n; n=n.parentNode; } return null; }
+function neLink(a){
+NE().focus(); const s=getSelection(); lkRange=(s.rangeCount&&NE().contains(s.getRangeAt(0).commonAncestorContainer))?s.getRangeAt(0).cloneRange():null;
+lkEl=a||neLinkAt(); const txt=lkEl?lkEl.textContent:(lkRange&&!lkRange.collapsed?lkRange.toString():"");
+el("lk-text").value=txt; el("lk-url").value=lkEl?(lkEl.getAttribute("href")||""):"";
+el("lk-rm").style.display=lkEl?"":"none"; el("lk-open").style.display=lkEl?"":"none"; el("lkdlgh").textContent=lkEl?"แก้ไขลิงก์":"แนบลิงก์";
+el("lkdlg").showModal(); setTimeout(()=>el("lk-url").focus(),30);
+}
+function lkFix(u){ u=(u||"").trim(); if(!u)return ""; if(/^(https?:\/\/|mailto:|tel:)/i.test(u))return u; return /^[\w.+-]+@[\w-]+\.[\w.-]+$/.test(u)?"mailto:"+u:"https://"+u.replace(/^\/+/,""); }
+el("lk-cancel").onclick=()=>el("lkdlg").close();
+el("lk-open").onclick=()=>{ const u=lkFix(el("lk-url").value); if(u)window.open(u,"_blank","noopener"); };
+el("lk-rm").onclick=()=>{ el("lkdlg").close(); if(lkEl&&NE().contains(lkEl)){ while(lkEl.firstChild)lkEl.parentNode.insertBefore(lkEl.firstChild,lkEl); lkEl.remove(); } NE().focus(); neState(); };
+el("lk-ok").onclick=()=>{
+const u=lkFix(el("lk-url").value); if(!u){ el("lk-url").focus(); return; }
+const t=el("lk-text").value.trim()||u.replace(/^(https?:\/\/|mailto:|tel:)/i,"");
+el("lkdlg").close(); NE().focus(); const s=getSelection(); s.removeAllRanges(); if(lkRange)s.addRange(lkRange);
+if(lkEl&&NE().contains(lkEl)){ lkEl.setAttribute("href",u); lkEl.textContent=t; }
+else{ const a=document.createElement("a"); a.href=u; a.textContent=t; const sp=document.createTextNode("\u00A0");
+ if(lkRange){ lkRange.deleteContents(); lkRange.insertNode(sp); lkRange.insertNode(a); } else{ NE().appendChild(a); NE().appendChild(sp); }
+ const r=document.createRange(); r.setStartAfter(sp); r.collapse(true); s.removeAllRanges(); s.addRange(r); }
+neState(); };
+el("lk-url").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); el("lk-ok").click(); } });
+NE().addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("a"); if(a&&NE().contains(a)){ e.preventDefault(); if(e.ctrlKey||e.metaKey)window.open(a.href,"_blank","noopener"); else neLink(a); } });
 NE().addEventListener("keyup",neState); NE().addEventListener("mouseup",neState);
 NE().addEventListener("paste",e=>{ e.preventDefault(); const t=(e.clipboardData||window.clipboardData).getData("text/plain"); document.execCommand("insertText",false,t); });
 function openNote(n){
