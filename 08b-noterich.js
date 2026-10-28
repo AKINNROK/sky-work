@@ -44,11 +44,21 @@ const neTableHtml=()=>`<div class="nepl">แทรกตาราง</div><div c
 <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="net-h" checked> แถวแรกเป็นหัวตาราง</label><button type="button" class="go" data-tmake="1">สร้างตาราง</button>`;
 const neCellBgHtml=()=>`<div class="nepl">ใส่สีให้</div><div class="nesw">${[["cell","ช่องนี้"],["row","ทั้งแถว"],["col","ทั้งคอลัมน์"]].map(([k,l])=>`<button type="button" class="nex${neScope===k?" on":""}" data-scope="${k}">${l}</button>`).join("")}</div>
 <div class="nepl">สี</div><div class="nesw">${Object.keys(NE_BG).map(k=>`<button type="button" data-cbg="${k}" style="background:${NE_BG[k]}" aria-label="สีช่อง"></button>`).join("")}<button type="button" class="nex" data-cbg="">ไม่มีสี</button></div>`;
+const neScopeHtml=()=>[["cell","ช่องนี้"],["row","ทั้งแถว"],["col","ทั้งคอลัมน์"]].map(([k,l])=>`<button type="button" class="nex${neScope===k?" on":""}" data-scope="${k}" data-from="align">${l}</button>`).join("");
+const neAlignHtml=()=>{ const c=neCell(), tb=c&&c.closest("table"), ta=tb&&tb.getAttribute("data-ta")||"";
+return `<div class="nepl">จัดข้อความในช่อง — ใช้กับ</div><div class="nesw">${neScopeHtml()}</div>
+<div class="nesw" style="margin-top:6px">${[["l","ชิดซ้าย"],["c","กึ่งกลาง"],["r","ชิดขวา"],["","ค่าเริ่มต้น"]].map(([k,l])=>`<button type="button" class="nex" data-tal="${k}">${l}</button>`).join("")}</div>
+<div class="nepl">ตำแหน่งตารางในหน้า</div><div class="nesw">${[["","เต็มความกว้าง"],["l","ชิดซ้าย"],["c","กึ่งกลาง"],["r","ชิดขวา"]].map(([k,l])=>`<button type="button" class="nex${ta===k?" on":""}" data-tpos="${k}">${l}</button>`).join("")}</div>`; };
+function neCellsByScope(c){ const tb=c.closest("table"); if(neScope==="row")return [...c.parentNode.cells]; if(neScope==="col")return [...tb.rows].map(r=>r.cells[c.cellIndex]).filter(Boolean); return [c]; }
+function neCellAlign(k){ const c=neCell(); if(!c)return; neCellsByScope(c).forEach(x=>{ if(k)x.setAttribute("data-a",k); else x.removeAttribute("data-a"); }); }
+function neTablePos(k){ const c=neCell(); if(!c)return; const tb=c.closest("table"); if(k)tb.setAttribute("data-ta",k); else tb.removeAttribute("data-ta"); }
 function nePopClick(e){
 const b=e.target.closest("button"); if(!b)return;
 if(b.dataset.cc!=null){ const [k,v]=b.dataset.cc.split(":"); el("nepop").hidden=true; neColor(k,v); }
 else if(b.dataset.tmake){ const r=Math.max(1,Math.min(50,+el("net-r").value||3)), c=Math.max(1,Math.min(12,+el("net-c").value||3)); el("nepop").hidden=true; neInsertTable(Array.from({length:r},()=>Array(c).fill("")),el("net-h").checked); }
-else if(b.dataset.scope){ neScope=b.dataset.scope; el("nepop").innerHTML=neCellBgHtml(); }
+else if(b.dataset.scope){ neScope=b.dataset.scope; el("nepop").innerHTML=b.dataset.from==="align"?neAlignHtml():neCellBgHtml(); }
+else if(b.dataset.tal!=null){ neCellAlign(b.dataset.tal); el("nepop").hidden=true; }
+else if(b.dataset.tpos!=null){ neTablePos(b.dataset.tpos); el("nepop").hidden=true; }
 else if(b.dataset.cbg!=null){ neCellBg(b.dataset.cbg); el("nepop").hidden=true; }
 }
 
@@ -118,11 +128,11 @@ neState();
 function neTbOp(op){
 const c=neCell(); if(!c)return; const tr=c.parentNode, tb=c.closest("table"), rows=[...tb.rows], ci=c.cellIndex;
 const mk=t=>{ const x=document.createElement(t); x.innerHTML="<br>"; return x; };
-if(op==="rowa"||op==="rowb"){ const nr=document.createElement("tr"); for(let i=0;i<tr.cells.length;i++)nr.appendChild(mk("td")); if(op==="rowa")tr.before(nr); else tr.after(nr); }
+if(op==="rowa"||op==="rowb"){ const nr=document.createElement("tr"); for(let i=0;i<tr.cells.length;i++){ const x=mk("td"), a=tr.cells[i].getAttribute("data-a"); if(a)x.setAttribute("data-a",a); nr.appendChild(x); } if(op==="rowa")tr.before(nr); else tr.after(nr); }
 else if(op==="rowd"){ if(rows.length<=1)tb.remove(); else{ const nx=tr.nextElementSibling||tr.previousElementSibling; tr.remove(); neFocusCell(nx.cells[Math.min(ci,nx.cells.length-1)]); } }
-else if(op==="cola"||op==="colb"){ rows.forEach(r=>{ const x=r.cells[ci], n=mk(x&&x.tagName==="TH"?"th":"td"); if(x){ if(op==="cola")x.before(n); else x.after(n); } else r.appendChild(n); }); }
+else if(op==="cola"||op==="colb"){ rows.forEach(r=>{ const x=r.cells[ci], n=mk(x&&x.tagName==="TH"?"th":"td"); if(x&&x.getAttribute("data-a"))n.setAttribute("data-a",x.getAttribute("data-a")); if(x){ if(op==="cola")x.before(n); else x.after(n); } else r.appendChild(n); }); }
 else if(op==="cold"){ if(tr.cells.length<=1)tb.remove(); else{ const keep=c.nextElementSibling||c.previousElementSibling; rows.forEach(r=>{ if(r.cells[ci])r.cells[ci].remove(); }); neFocusCell(keep); } }
-else if(op==="head"){ const r0=rows[0], toTh=r0.cells[0].tagName!=="TH"; [...r0.cells].forEach(x=>{ const n=document.createElement(toTh?"th":"td"); n.innerHTML=x.innerHTML; if(x.getAttribute("data-bg"))n.setAttribute("data-bg",x.getAttribute("data-bg")); x.replaceWith(n); }); }
+else if(op==="head"){ const r0=rows[0], toTh=r0.cells[0].tagName!=="TH"; [...r0.cells].forEach(x=>{ const n=document.createElement(toTh?"th":"td"); n.innerHTML=x.innerHTML; ["data-bg","data-a"].forEach(a=>{ if(x.getAttribute(a))n.setAttribute(a,x.getAttribute(a)); }); x.replaceWith(n); }); }
 else if(op==="tdel"){ tb.remove(); NE().focus(); }
 neExtraState();
 }
@@ -151,7 +161,7 @@ neFocusCell(c,true);
 }
 function neParseTSV(t){ t=String(t||"").replace(/\r\n?/g,"\n").replace(/\n+$/,""); if(t.indexOf("\t")<0)return null; return t.split("\n").map(l=>l.split("\t").map(x=>x.replace(/^"([\s\S]*)"$/,"$1").trim())); }
 el("netbar").addEventListener("mousedown",e=>{ if(e.target.closest("button"))e.preventDefault(); });
-el("netbar").addEventListener("click",e=>{ const b=e.target.closest("[data-nt]"); if(!b)return; const op=b.dataset.nt; if(op==="bg"){ nePopShow(neCellBgHtml(),b,"cellbg"); return; } neTbOp(op); });
+el("netbar").addEventListener("click",e=>{ const b=e.target.closest("[data-nt]"); if(!b)return; const op=b.dataset.nt; if(op==="bg"){ nePopShow(neCellBgHtml(),b,"cellbg"); return; } if(op==="align"){ nePopShow(neAlignHtml(),b,"align"); return; } neTbOp(op); });
 
 // ---------- รูปภาพ ----------
 const NIMG=new Map();
