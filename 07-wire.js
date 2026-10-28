@@ -47,8 +47,10 @@ el("addNote")&&(el("addNote").onclick=()=>openNote(null));
 document.querySelectorAll("[data-ix]").forEach(n=>n.onclick=e=>{
 if(e.target.closest("[data-stop]"))return;
 const x=idx.find(v=>v._id===n.dataset.ix); if(x)openIdxCard(x);});
+el("addInk")&&(el("addInk").onclick=()=>inkNew());
 document.querySelectorAll("[data-nt]").forEach(n=>n.onclick=e=>{
 const x=notes.find(v=>v._id===n.dataset.nt); if(!x)return;
+if(x.kind===INKKIND){ inkOpen(x); return; }
 if(e.target.closest("[data-ntedit]")){ openNote(x); return; }
 viewNote(x);});
 el("ix-q")&&(el("ix-q").oninput=e=>{const v=e.target.value,p=e.target.selectionStart;R.idxQ=v;render();const m=el("ix-q"); if(m){m.focus();m.setSelectionRange(p,p);}});
