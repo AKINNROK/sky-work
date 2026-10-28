@@ -623,7 +623,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll();
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
 el("n-pin").checked=!!n?.pin;
 el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
@@ -641,6 +641,8 @@ el("nsave").onclick=async()=>{
 const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
 tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
 if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
+if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
+ if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
 el("ndlg").close();
 try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }

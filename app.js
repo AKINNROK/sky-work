@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.1"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.2"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -5715,7 +5715,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll();
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
 el("n-pin").checked=!!n?.pin;
 el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
@@ -5733,6 +5733,8 @@ el("nsave").onclick=async()=>{
 const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
 tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
 if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
+if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
+ if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
 el("ndlg").close();
 try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
@@ -6467,6 +6469,71 @@ if(c){ const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar
 const li=neLi(), cb=document.querySelector('#ntool [data-ne="ck"]'); if(cb)cb.classList.toggle("on",!!(li&&li.parentNode.classList&&li.parentNode.classList.contains("ck")));
 }
 document.addEventListener("selectionchange",()=>{ if(el("ndlg").open&&document.activeElement===NE())neExtraState(); });
+
+// ===== ย้อนกลับ / ทำซ้ำ (ประวัติของตัวแก้ไขเอง — ครอบคลุมทั้งพิมพ์ ตาราง รูป ช่องติ๊ก ย่อหน้า สี) =====
+const neH={s:[],i:-1,t:0,pend:0,busy:0};
+function neSer(){ return NE().innerHTML.replace(/<img\b[^>]*>/g,t=>(/data-nid=/.test(t)?t.replace(/\ssrc="[^"]*"/,""):t).replace(/\sclass="nesel"/,"")); }
+function neOffsets(){
+const s=getSelection(); if(!s.rangeCount||!NE().contains(s.anchorNode))return null; const r=s.getRangeAt(0);
+const pre=(n,o)=>{ const q=document.createRange(); q.selectNodeContents(NE()); q.setEnd(n,o); return q.toString().length; };
+try{ return [pre(r.startContainer,r.startOffset),pre(r.endContainer,r.endOffset)]; }catch(e){ return null; }
+}
+function neSetOffsets(o){
+if(!o)return; const w=document.createTreeWalker(NE(),NodeFilter.SHOW_TEXT); let pos=0,a=null,b=null,n;
+while((n=w.nextNode())){ const l=n.nodeValue.length; if(a==null&&pos+l>=o[0])a=[n,o[0]-pos]; if(b==null&&pos+l>=o[1]){ b=[n,o[1]-pos]; break; } pos+=l; }
+if(!a)return; if(!b)b=a; try{ const r=document.createRange(); r.setStart(a[0],a[1]); r.setEnd(b[0],b[1]); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){}
+}
+function neHistUi(){
+const u=document.querySelector('#ntool [data-ne="undo"]'), r=document.querySelector('#ntool [data-ne="redo"]');
+if(u)u.disabled=neH.i<=0; if(r)r.disabled=neH.i>=neH.s.length-1;
+}
+function neSnap(){
+clearTimeout(neH.t); neH.pend=0; const h=neSer();
+if(neH.i>=0&&neH.s[neH.i].h===h){ neHistUi(); return; }
+neH.s.length=neH.i+1; neH.s.push({h,c:neOffsets()});
+let tot=neH.s.reduce((a,x)=>a+x.h.length,0); while(neH.s.length>2&&(neH.s.length>150||tot>6e6)){ tot-=neH.s.shift().h.length; }
+neH.i=neH.s.length-1; neHistUi();
+}
+function neFlush(){ if(neH.pend)neSnap(); }
+function neHistReset(){ clearTimeout(neH.t); neH.s=[]; neH.i=-1; neH.pend=0; neSnap(); }
+function neGo(d){
+neFlush(); const k=neH.i+d; if(k<0||k>=neH.s.length)return;
+neH.i=k; const st=neH.s[k]; neH.busy=1; neHideAll();
+NE().innerHTML=st.h; ntHydrate(NE()); NE().focus(); neSetOffsets(st.c); neH.busy=0; neHistUi(); neState();
+}
+const neUndo=()=>neGo(-1), neRedo=()=>neGo(1);
+// ครอบการแก้ไขที่ทำเองกับ DOM (ไม่มี input event) ให้บันทึกสถานะก่อน/หลัง
+function neOp(fn){ return function(...a){ neFlush(); const r=fn.apply(this,a); neSnap(); return r; }; }
+neTbOp=neOp(neTbOp); neCellBg=neOp(neCellBg); neCellAlign=neOp(neCellAlign); neTablePos=neOp(neTablePos);
+neCheck=neOp(neCheck); neIndent=neOp(neIndent); neInsertTable=neOp(neInsertTable); neFillTable=neOp(neFillTable);
+neInsertNode=neOp(neInsertNode); neColor=neOp(neColor); neCkToggle=neOp(neCkToggle);
+el("ntool").addEventListener("click",e=>{ const b=e.target.closest("[data-ne]"); if(!b)return; if(b.dataset.ne==="undo")neUndo(); else if(b.dataset.ne==="redo")neRedo(); else if(b.dataset.ne==="hist"){ neSave(); neHistPop(b); } });
+NE().addEventListener("input",()=>{ if(neH.busy)return; neH.pend=1; clearTimeout(neH.t); neH.t=setTimeout(neSnap,500); });
+NE().addEventListener("beforeinput",e=>{
+if(e.inputType==="historyUndo"){ e.preventDefault(); neUndo(); return; }
+if(e.inputType==="historyRedo"){ e.preventDefault(); neRedo(); return; }
+if(neH.pend&&!/^(insertText|insertCompositionText|deleteContentBackward|deleteContentForward)$/.test(e.inputType))neFlush();
+});
+NE().addEventListener("keydown",e=>{
+if(!(e.ctrlKey||e.metaKey)||e.altKey)return; const k=e.key.toLowerCase();
+if(k==="z"){ e.preventDefault(); if(e.shiftKey)neRedo(); else neUndo(); } else if(k==="y"){ e.preventDefault(); neRedo(); }
+},true);
+// รูป: ปรับขนาด/ลบ ให้เข้าประวัติด้วย
+el("ndlg").addEventListener("click",e=>{ if(e.target.closest("#neimgbar button"))setTimeout(neSnap,0); },true);
+
+// ===== ประวัติการบันทึก (กู้เวอร์ชันที่บันทึกไว้ก่อนหน้า) =====
+function neHistPop(anchor){
+const h=(editingNote&&editingNote.hist)||[];
+const fmt=iso=>{ try{ return new Date(iso).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); }catch(e){ return iso; } };
+const html=`<div class="nepl">เวอร์ชันที่บันทึกไว้ก่อนหน้า (ล่าสุด ${h.length}/8)</div>`+(h.length?`<div class="nehist">${h.map((v,i)=>`<button type="button" data-hv="${i}"><b>${esc(fmt(v.at))}</b><span>${esc(ntPlain({fmt:v.f,body:v.b}).replace(/\s+/g," ").slice(0,70)||"(ว่าง)")}</span></button>`).join("")}</div><div class="hint" style="margin:8px 0 0;font-size:12px">ระบบเก็บให้ทุกครั้งที่กด “บันทึก” — กดเลือกเพื่อกู้มาแทนเนื้อหาตอนนี้ (ย้อนกลับได้ด้วยปุ่ม ↶)</div>`:`<div class="hint" style="margin:6px 0 0">ยังไม่มีเวอร์ชันเก่า — จะเริ่มเก็บตั้งแต่การบันทึกครั้งถัดไป</div>`);
+nePopShow(html,anchor,"hist");
+}
+el("ndlg").addEventListener("click",async e=>{
+const b=e.target.closest("[data-hv]"); if(!b||!editingNote)return; const v=(editingNote.hist||[])[+b.dataset.hv]; if(!v)return;
+el("nepop").hidden=true;
+if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
+neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
+});
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

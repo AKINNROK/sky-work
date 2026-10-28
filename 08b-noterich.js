@@ -253,3 +253,68 @@ if(c){ const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar
 const li=neLi(), cb=document.querySelector('#ntool [data-ne="ck"]'); if(cb)cb.classList.toggle("on",!!(li&&li.parentNode.classList&&li.parentNode.classList.contains("ck")));
 }
 document.addEventListener("selectionchange",()=>{ if(el("ndlg").open&&document.activeElement===NE())neExtraState(); });
+
+// ===== ย้อนกลับ / ทำซ้ำ (ประวัติของตัวแก้ไขเอง — ครอบคลุมทั้งพิมพ์ ตาราง รูป ช่องติ๊ก ย่อหน้า สี) =====
+const neH={s:[],i:-1,t:0,pend:0,busy:0};
+function neSer(){ return NE().innerHTML.replace(/<img\b[^>]*>/g,t=>(/data-nid=/.test(t)?t.replace(/\ssrc="[^"]*"/,""):t).replace(/\sclass="nesel"/,"")); }
+function neOffsets(){
+const s=getSelection(); if(!s.rangeCount||!NE().contains(s.anchorNode))return null; const r=s.getRangeAt(0);
+const pre=(n,o)=>{ const q=document.createRange(); q.selectNodeContents(NE()); q.setEnd(n,o); return q.toString().length; };
+try{ return [pre(r.startContainer,r.startOffset),pre(r.endContainer,r.endOffset)]; }catch(e){ return null; }
+}
+function neSetOffsets(o){
+if(!o)return; const w=document.createTreeWalker(NE(),NodeFilter.SHOW_TEXT); let pos=0,a=null,b=null,n;
+while((n=w.nextNode())){ const l=n.nodeValue.length; if(a==null&&pos+l>=o[0])a=[n,o[0]-pos]; if(b==null&&pos+l>=o[1]){ b=[n,o[1]-pos]; break; } pos+=l; }
+if(!a)return; if(!b)b=a; try{ const r=document.createRange(); r.setStart(a[0],a[1]); r.setEnd(b[0],b[1]); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){}
+}
+function neHistUi(){
+const u=document.querySelector('#ntool [data-ne="undo"]'), r=document.querySelector('#ntool [data-ne="redo"]');
+if(u)u.disabled=neH.i<=0; if(r)r.disabled=neH.i>=neH.s.length-1;
+}
+function neSnap(){
+clearTimeout(neH.t); neH.pend=0; const h=neSer();
+if(neH.i>=0&&neH.s[neH.i].h===h){ neHistUi(); return; }
+neH.s.length=neH.i+1; neH.s.push({h,c:neOffsets()});
+let tot=neH.s.reduce((a,x)=>a+x.h.length,0); while(neH.s.length>2&&(neH.s.length>150||tot>6e6)){ tot-=neH.s.shift().h.length; }
+neH.i=neH.s.length-1; neHistUi();
+}
+function neFlush(){ if(neH.pend)neSnap(); }
+function neHistReset(){ clearTimeout(neH.t); neH.s=[]; neH.i=-1; neH.pend=0; neSnap(); }
+function neGo(d){
+neFlush(); const k=neH.i+d; if(k<0||k>=neH.s.length)return;
+neH.i=k; const st=neH.s[k]; neH.busy=1; neHideAll();
+NE().innerHTML=st.h; ntHydrate(NE()); NE().focus(); neSetOffsets(st.c); neH.busy=0; neHistUi(); neState();
+}
+const neUndo=()=>neGo(-1), neRedo=()=>neGo(1);
+// ครอบการแก้ไขที่ทำเองกับ DOM (ไม่มี input event) ให้บันทึกสถานะก่อน/หลัง
+function neOp(fn){ return function(...a){ neFlush(); const r=fn.apply(this,a); neSnap(); return r; }; }
+neTbOp=neOp(neTbOp); neCellBg=neOp(neCellBg); neCellAlign=neOp(neCellAlign); neTablePos=neOp(neTablePos);
+neCheck=neOp(neCheck); neIndent=neOp(neIndent); neInsertTable=neOp(neInsertTable); neFillTable=neOp(neFillTable);
+neInsertNode=neOp(neInsertNode); neColor=neOp(neColor); neCkToggle=neOp(neCkToggle);
+el("ntool").addEventListener("click",e=>{ const b=e.target.closest("[data-ne]"); if(!b)return; if(b.dataset.ne==="undo")neUndo(); else if(b.dataset.ne==="redo")neRedo(); else if(b.dataset.ne==="hist"){ neSave(); neHistPop(b); } });
+NE().addEventListener("input",()=>{ if(neH.busy)return; neH.pend=1; clearTimeout(neH.t); neH.t=setTimeout(neSnap,500); });
+NE().addEventListener("beforeinput",e=>{
+if(e.inputType==="historyUndo"){ e.preventDefault(); neUndo(); return; }
+if(e.inputType==="historyRedo"){ e.preventDefault(); neRedo(); return; }
+if(neH.pend&&!/^(insertText|insertCompositionText|deleteContentBackward|deleteContentForward)$/.test(e.inputType))neFlush();
+});
+NE().addEventListener("keydown",e=>{
+if(!(e.ctrlKey||e.metaKey)||e.altKey)return; const k=e.key.toLowerCase();
+if(k==="z"){ e.preventDefault(); if(e.shiftKey)neRedo(); else neUndo(); } else if(k==="y"){ e.preventDefault(); neRedo(); }
+},true);
+// รูป: ปรับขนาด/ลบ ให้เข้าประวัติด้วย
+el("ndlg").addEventListener("click",e=>{ if(e.target.closest("#neimgbar button"))setTimeout(neSnap,0); },true);
+
+// ===== ประวัติการบันทึก (กู้เวอร์ชันที่บันทึกไว้ก่อนหน้า) =====
+function neHistPop(anchor){
+const h=(editingNote&&editingNote.hist)||[];
+const fmt=iso=>{ try{ return new Date(iso).toLocaleString("th-TH",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}); }catch(e){ return iso; } };
+const html=`<div class="nepl">เวอร์ชันที่บันทึกไว้ก่อนหน้า (ล่าสุด ${h.length}/8)</div>`+(h.length?`<div class="nehist">${h.map((v,i)=>`<button type="button" data-hv="${i}"><b>${esc(fmt(v.at))}</b><span>${esc(ntPlain({fmt:v.f,body:v.b}).replace(/\s+/g," ").slice(0,70)||"(ว่าง)")}</span></button>`).join("")}</div><div class="hint" style="margin:8px 0 0;font-size:12px">ระบบเก็บให้ทุกครั้งที่กด “บันทึก” — กดเลือกเพื่อกู้มาแทนเนื้อหาตอนนี้ (ย้อนกลับได้ด้วยปุ่ม ↶)</div>`:`<div class="hint" style="margin:6px 0 0">ยังไม่มีเวอร์ชันเก่า — จะเริ่มเก็บตั้งแต่การบันทึกครั้งถัดไป</div>`);
+nePopShow(html,anchor,"hist");
+}
+el("ndlg").addEventListener("click",async e=>{
+const b=e.target.closest("[data-hv]"); if(!b||!editingNote)return; const v=(editingNote.hist||[])[+b.dataset.hv]; if(!v)return;
+el("nepop").hidden=true;
+if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
+neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
+});
