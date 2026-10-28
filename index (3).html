@@ -446,7 +446,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .nrich[contenteditable]:empty:before{content:attr(data-ph);color:var(--ink-3)}
 .nrich h2{font-family:var(--head);font-size:21px;font-weight:600;margin:.9em 0 .3em}.nrich h3{font-family:var(--head);font-size:17px;font-weight:600;margin:.8em 0 .25em}
 .nrich ul,.nrich ol{margin:.3em 0;padding-left:1.5em}.nrich li{margin:.15em 0}.nrich p,.nrich div{margin:0}
-.nrich .lt{font-weight:300;opacity:.85}.nrich hr{border:0;border-top:1px solid var(--line);margin:.9em 0}.nrich blockquote{margin:.4em 0;padding-left:12px;border-left:3px solid var(--line)}
+.nrich a{color:var(--accent);text-decoration:underline;text-underline-offset:2px;word-break:break-all;cursor:pointer}.nrich .lt{font-weight:300;opacity:.85}.nrich hr{border:0;border-top:1px solid var(--line);margin:.9em 0}.nrich blockquote{margin:.4em 0;padding-left:12px;border-left:3px solid var(--line)}
 .nvdlg{width:min(760px,94vw);padding:0;overflow:hidden;position:relative}
 .nvbar{height:7px;background:var(--accent-2)}
 .nvh{display:flex;align-items:center;gap:8px;padding:14px 22px 0}.nvdate{font-size:12.5px;color:var(--ink-3)}
@@ -517,7 +517,7 @@ tr.dragging,.qlk.dragging{opacity:.4}tr.dropat td{box-shadow:inset 0 2px 0 var(-
 .vq-nav{float:right;display:inline-flex;gap:4px}.vq-nav button{border:0;background:var(--paper);border-radius:8px;width:26px;height:26px;display:grid;place-items:center;cursor:pointer;color:var(--ink-2)}.vq-nav button:hover{color:var(--accent)}
 .okbtn.on{background:var(--ok);color:#fff}
 .inkdlg{padding:0;border:0;margin:0;max-width:none;max-height:none;width:100vw;height:100vh;height:100dvh;background:var(--paper);color:var(--ink);overflow:hidden;border-radius:0}
-.inkdlg[open]{display:flex;flex-direction:column}.inkdlg::backdrop{background:#000}
+.inkdlg[open]{display:flex;flex-direction:column}.inkdlg::backdrop{background:#000;backdrop-filter:none;-webkit-backdrop-filter:none}body.ink-on>*:not(dialog):not(script){visibility:hidden}
 .ink-top{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--card);box-shadow:0 1px 0 var(--line);flex:none;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.ink-top::-webkit-scrollbar{display:none}
 @media (min-width:760px){.ink-top{flex-wrap:wrap;overflow:visible}}
 .ink-top>*{flex:none}.ink-sp{flex:1!important;min-width:4px}.ink-sep{width:1px;height:26px;background:var(--line);margin:0 4px}.ink-grp{display:inline-flex;align-items:center;gap:4px}
@@ -528,7 +528,7 @@ tr.dragging,.qlk.dragging{opacity:.4}tr.dropat td{box-shadow:inset 0 2px 0 var(-
 .ink-c{width:26px;height:26px;border-radius:50%;border:2px solid var(--card);box-shadow:0 0 0 1px var(--line);cursor:pointer;padding:0}.ink-c.on{box-shadow:0 0 0 2.5px var(--accent)}
 .ink-s{width:34px;height:34px;border:0;border-radius:10px;background:transparent;color:var(--ink-2);display:grid;place-items:center;cursor:pointer}.ink-s i{display:block;border-radius:50%;background:currentColor}.ink-s.on{background:var(--accent-soft);color:var(--accent)}
 .ink-stage{position:relative;flex:1;min-height:0;background:#8d8f93;overflow:hidden;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.ink-pg{position:absolute;box-shadow:0 4px 24px rgba(0,0,0,.35);background:#fff}.ink-pg canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}#ink-over{pointer-events:none}
+.ink-pg{position:absolute;background:#fff;isolation:isolate}.ink-pg::before{content:"";position:absolute;left:0;top:0;right:0;bottom:0;z-index:-1;box-shadow:var(--sh,0 4px 24px rgba(0,0,0,.35));pointer-events:none;will-change:transform}.ink-pg canvas{position:absolute;left:0;top:0;width:100%;height:100%;touch-action:none}#ink-over,#ink-pred{pointer-events:none}
 .ink-load{position:absolute;inset:0;display:grid;place-items:center;background:rgba(0,0,0,.35);color:#fff;font-weight:600}
 .ink-pages{display:flex;align-items:center;gap:6px;padding:6px 10px;background:var(--card);box-shadow:0 -1px 0 var(--line);flex:none;overflow-x:auto;padding-bottom:max(6px,env(safe-area-inset-bottom))}
 .ink-pn{border:0;min-width:36px;height:34px;border-radius:10px;background:var(--paper);color:var(--ink-2);font:inherit;font-size:13px;cursor:pointer;padding:0 10px;flex:none}.ink-pn.on{background:var(--accent);color:#fff}.ink-pn.add{color:var(--accent);background:var(--accent-soft)}.ink-pinfo{margin-left:auto;font-size:12px;color:var(--ink-3);white-space:nowrap;padding-left:8px}
@@ -537,6 +537,27 @@ tr.dragging,.qlk.dragging{opacity:.4}tr.dropat td{box-shadow:inset 0 2px 0 var(-
 .ink-opt{border:0;border-radius:10px;background:var(--paper);color:var(--ink-2);padding:8px 11px;font:inherit;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}.ink-opt.on{background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}.ink-opt i{width:14px;height:14px;border-radius:4px;box-shadow:0 0 0 1px var(--line)}
 .ink-mi{display:block;width:100%;text-align:left;border:0;background:none;padding:11px 12px;border-radius:10px;font:inherit;color:var(--ink);cursor:pointer}.ink-mi:hover{background:var(--paper)}.ink-mi.danger{color:var(--over)}.ink-mi:disabled{opacity:.35}
 .ink-exp{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.45);display:grid;place-items:center;padding:16px}.ink-expc{background:var(--card);border-radius:20px;padding:20px;width:min(360px,100%);box-shadow:0 12px 48px rgba(0,0,0,.4)}
+
+.tgdlg{width:min(860px,96vw)}.tg-wrap{padding:16px 22px;max-height:66vh;overflow-y:auto}.tg-sec{font-family:var(--head);font-weight:500;font-size:14px;color:var(--ink-2);margin:14px 0 8px}.tg-sec:first-child{margin-top:0}
+.tg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.tg-c{position:relative;text-align:left;background:var(--paper);border:2px solid transparent;border-radius:14px;padding:8px;cursor:pointer;font:inherit;color:inherit;display:flex;flex-direction:column;gap:3px}
+.tg-c img{width:100%;aspect-ratio:1000/1414;object-fit:cover;object-position:top;border-radius:8px;background:#fff;box-shadow:0 0 0 1px var(--line)}
+.tg-c b{font-weight:600;font-size:13.5px}.tg-c small{font-size:11.5px;color:var(--ink-3);line-height:1.4}
+.tg-c.on{border-color:var(--accent);background:var(--card);box-shadow:var(--sh-m)}
+.tg-board{display:grid;place-items:center;aspect-ratio:1000/1414;border-radius:8px;background:repeating-linear-gradient(0deg,transparent 0 19px,var(--line) 19px 20px),repeating-linear-gradient(90deg,transparent 0 19px,var(--line) 19px 20px),#fff;font-size:44px;color:var(--accent)}
+.tg-opt{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:16px;padding:12px 14px;background:var(--paper);border-radius:14px;position:sticky;bottom:0}
+.tg-opt label{display:flex;gap:6px;align-items:center;font-size:13.5px}.tg-opt select,.tg-opt input[type=date]{background:var(--card);border:0;border-radius:10px;padding:8px 10px;font:inherit}.tg-opt input[type=checkbox]{width:auto}
+.fbar{display:flex;gap:8px;flex-wrap:wrap;margin:2px 0 12px}
+.fchip{display:inline-flex;align-items:center;gap:7px;border:0;background:var(--paper);color:var(--ink-2);border-radius:999px;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer}
+.fchip i{width:10px;height:10px;border-radius:50%;display:inline-block}.fchip b{font-size:11.5px;background:var(--card);border-radius:999px;padding:1px 8px;color:var(--ink-3)}
+.fchip.on{background:var(--accent);color:#fff}.fchip.on b{background:rgba(255,255,255,.25);color:#fff}.fchip.add{background:none;box-shadow:inset 0 0 0 1.5px var(--line);color:var(--accent)}
+.fchip.over{outline:3px solid var(--accent-2);outline-offset:2px}.notecard.dragging{opacity:.45}
+.flrow{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}.flrow i{width:12px;height:12px;border-radius:50%;flex:none}.flrow .nm{flex:1;min-width:0}.flc{font-size:12px;color:var(--ink-3);white-space:nowrap}
+.ink-bb{white-space:nowrap}.ink-szw{display:inline-flex;align-items:center;gap:8px;padding:0 6px}.ink-szd{display:inline-block;border-radius:50%;background:currentColor;flex:none;min-width:3px}
+.ink-szw input[type=range],.ink-wide{accent-color:var(--accent-2);height:24px}.ink-szw input[type=range]{width:120px}.ink-wide{width:100%;display:block}.ink-szw b{min-width:28px;font-size:12.5px;font-weight:600}
+.ink-pop{max-width:calc(100vw - 16px);overflow-x:hidden}.ink-bgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:min(320px,calc(100vw - 56px))}.ink-bgrid.sh{grid-template-columns:repeat(3,1fr)}
+.ink-bc{border:2px solid transparent;background:var(--paper);border-radius:12px;padding:5px;cursor:pointer;font:inherit;color:var(--ink);display:flex;flex-direction:column;gap:2px;align-items:center}
+.ink-bc canvas{width:100%;height:auto;border-radius:7px;background:#fff;display:block}.ink-bc span{font-size:12px;line-height:1.3}.ink-bc.on{border-color:var(--accent);background:var(--card)}
 .ink-th{width:100%;border-radius:8px;box-shadow:0 0 0 1px var(--line);background:#fff;display:block;max-height:240px;object-fit:cover;object-position:top}
 .ixuse{font-size:12px;color:var(--ink-3);margin-top:2px;line-height:1.5}
 .ixuse b{color:var(--ink-2);font-weight:600}
@@ -644,7 +665,7 @@ svg [data-tip]{outline:none}
 <main>
 <div class="mtop" id="brandBtnM" role="button" tabindex="0" title="แตะเพื่อรีเฟรชแอปและโหลดเวอร์ชันล่าสุด">
 <img class="logo" src="logo.png" alt="Sky Work">
-<div><b>Sky Work</b><span id="mfoot">กำลังโหลด…</span></div>
+<div><b>Sky Work <small id="mver" style="font-weight:500;opacity:.7;font-size:11.5px"></small></b><span id="mfoot">กำลังโหลด…</span></div>
 </div>
 <div id="view"></div>
 </main>
@@ -842,6 +863,14 @@ svg [data-tip]{outline:none}
 <div class="dlg-h" id="sc-title">ยกเลิกงาน</div>
 <div class="dlg-b"><div class="f wide" id="sc-opts"></div></div>
 <div class="dlg-f"><button type="button" class="btn ghost" id="sc-no">กลับ</button><button type="button" class="btn" id="sc-ok">ตกลง</button></div></form></dialog>
+<dialog id="inktpl" class="tgdlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h" id="tg-h">สมุดใหม่</div>
+<div class="tg-wrap" id="tg-body"></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="tg-cancel">ยกเลิก</button><button type="button" class="btn" id="tg-ok">สร้างสมุด</button></div></form></dialog>
+<dialog id="fldlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h">จัดการโฟลเดอร์ Note</div>
+<div class="dlg-b" style="display:block"><div id="fl-list"></div><div class="hint">แก้ชื่อได้ทันที · ลบโฟลเดอร์ไม่ลบบันทึกข้างใน</div></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="fl-new">＋ โฟลเดอร์ใหม่</button><button type="button" class="btn" id="fl-close">เสร็จ</button></div></form></dialog>
 <dialog id="inkdlg" class="inkdlg" aria-label="สมุดเขียนมือ">
 <div class="ink-top">
 <button type="button" class="ink-b" id="ink-close" title="ปิดสมุด (บันทึกให้อัตโนมัติ)" aria-label="ปิดสมุด"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
@@ -854,7 +883,7 @@ svg [data-tip]{outline:none}
 <span id="ink-tools" class="ink-grp"></span>
 <span class="ink-sep"></span>
 <span id="ink-colors" class="ink-grp"></span><span id="ink-sizes" class="ink-grp"></span>
-<button type="button" class="ink-t" id="ink-seldel" hidden>ลบที่เลือก</button>
+<button type="button" class="ink-t" id="ink-selshape" hidden title="แปลงเส้นที่เลือกเป็นรูปทรงเป๊ะ (เส้นตรง วงกลม/วงรี สี่เหลี่ยม สามเหลี่ยม)">✨ จัดรูปทรง</button><button type="button" class="ink-t" id="ink-seldel" hidden>ลบที่เลือก</button>
 <span class="ink-sep"></span>
 <button type="button" class="ink-t" id="ink-finger">นิ้ว: อัตโนมัติ</button>
 <button type="button" class="ink-t" id="ink-tpl">กระดาษ</button>
@@ -864,7 +893,7 @@ svg [data-tip]{outline:none}
 <button type="button" class="ink-t pri" id="ink-exp-b">ส่งออก / Drive</button>
 <button type="button" class="ink-b" id="ink-more" title="เพิ่มเติม" aria-label="เพิ่มเติม"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
 </div>
-<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
+<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas><canvas id="ink-pred"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
 <div id="ink-pages" class="ink-pages"></div>
 <div id="ink-pop" class="ink-pop" hidden></div>
 <div id="ink-exp" class="ink-exp" hidden></div>
@@ -886,12 +915,18 @@ svg [data-tip]{outline:none}
 <div class="n2trows" id="n2trows"></div></div>
 <div class="dlg-f"><button type="button" class="btn ghost" id="n2tall">เลือก/ไม่เลือกทั้งหมด</button><button type="button" class="btn ghost" id="n2tai" style="margin-right:auto">✨ AI เติม 5W1H</button>
 <button type="button" class="btn ghost" id="n2tcancel">ยกเลิก</button><button type="button" class="btn" id="n2tgo">สร้างงาน</button></div></form></dialog>
+<dialog id="lkdlg"><form method="dialog" onsubmit="return false">
+<div class="dlg-h" id="lkdlgh">แนบลิงก์</div>
+<div class="dlg-b" style="grid-template-columns:1fr"><div class="f"><label for="lk-text">ข้อความที่แสดง <span style="font-weight:400;color:var(--ink-3)">(เว้นว่าง = แสดงเป็นลิงก์)</span></label><input id="lk-text" placeholder="เช่น ไฟล์สรุปประชุม" autocomplete="off"></div>
+<div class="f"><label for="lk-url">ลิงก์ (URL)</label><input id="lk-url" placeholder="https://drive.google.com/..." inputmode="url" autocomplete="off" autocapitalize="off"></div></div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="lk-rm" style="margin-right:auto">เอาลิงก์ออก</button><button type="button" class="btn ghost" id="lk-open">เปิดลิงก์</button><button type="button" class="btn ghost" id="lk-cancel">ยกเลิก</button><button type="button" class="btn" id="lk-ok">ตกลง</button></div></form></dialog>
 <dialog id="ndlg" class="ndlgw"><form method="dialog" onsubmit="return false">
 <div class="dlg-h" id="ndlgh">เขียนบันทึกใหม่</div>
 <div class="dlg-b">
 <div class="f wide"><label for="n-title">หัวข้อ</label><input id="n-title" placeholder="เช่น สรุป One HR Meeting ก.ย. 69"></div>
 <div class="f"><label for="n-kind">ประเภท</label><select id="n-kind"></select></div>
 <div class="f"><label for="n-date">วันที่</label><input id="n-date" type="date"></div>
+<div class="f"><label for="n-folder">โฟลเดอร์</label><select id="n-folder"></select></div>
 <div class="f"><label for="n-tag">ป้ายกำกับ</label><input id="n-tag" list="ntaglist" placeholder="เช่น อัตรากำลัง"><datalist id="ntaglist"></datalist></div>
 <div class="f"><label>สี</label><div class="swrow" id="n-colors"></div></div>
 <div class="f wide"><label>เนื้อหา</label>
@@ -899,6 +934,7 @@ svg [data-tip]{outline:none}
 <button type="button" data-ne="h2" title="หัวข้อใหญ่">H1</button><button type="button" data-ne="h3" title="หัวข้อย่อย">H2</button><span class="sep"></span>
 <button type="button" data-ne="bold" title="ตัวหนา (Ctrl+B)"><b>B</b></button><button type="button" data-ne="italic" title="ตัวเอียง (Ctrl+I)"><i>I</i></button><button type="button" data-ne="underline" title="ขีดเส้นใต้ (Ctrl+U)"><u>U</u></button><button type="button" data-ne="strike" title="ขีดฆ่า"><s>S</s></button><button type="button" data-ne="light" title="ตัวบาง (เลือกข้อความก่อน)" style="font-weight:300">บาง</button><span class="sep"></span>
 <button type="button" data-ne="ul" title="บูเลต">• รายการ</button><button type="button" data-ne="ol" title="เลขข้อ">1. เลขข้อ</button><button type="button" data-ne="hr" title="เส้นคั่น">—</button><span class="sep"></span>
+<button type="button" data-ne="link" title="แนบลิงก์ (เลือกข้อความก่อนจะใส่ลิงก์ให้ข้อความนั้น)">🔗 ลิงก์</button><span class="sep"></span>
 <button type="button" data-ne="clear" title="ล้างรูปแบบ">ล้างรูปแบบ</button></div>
 <div id="n-body" class="nrich" contenteditable="true" role="textbox" aria-multiline="true" data-ph="พิมพ์เนื้อหาที่นี่ — เลือกข้อความแล้วกดปุ่มด้านบนเพื่อจัดรูปแบบ"></div></div>
 <div class="f wide"><div class="flagrow" style="grid-template-columns:1fr">
@@ -1029,4 +1065,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.10.0"></script></body></html>
+<script src="app.js?v=14.13.3"></script></body></html>

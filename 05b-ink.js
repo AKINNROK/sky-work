@@ -85,12 +85,17 @@ function inkRedrawSoon(){ if(inkRaf)return; inkRaf=requestAnimationFrame(()=>{ i
 function inkOverClear(){ const c=el("ink-over"); c.getContext("2d").clearRect(0,0,c.width,c.height); inkPredClear(true); }
 function inkPredClear(all){ const c=el("ink-pred"); if(!c)return; const r=ink.predR; if(!r&&!all)return; const x=c.getContext("2d"); if(all||!r)x.clearRect(0,0,c.width,c.height); else x.clearRect(r[0],r[1],r[2]-r[0],r[3]-r[1]); ink.predR=null; }
 // วาดปลายเส้นล่วงหน้าเล็กน้อย ให้ปลายปากกาตามทันปลาย Pencil (ลบทิ้งทุกครั้งที่มีจุดจริงมาใหม่)
+const INK_LEADS=[[0,"ปิด"],[16,"น้อย"],[30,"ปกติ"],[48,"มาก"]];
+ink.lead=(()=>{ try{ const v=localStorage.getItem("sw-ink-lead"); return v==null?30:+v; }catch(e){ return 30; } })();
 function inkPredict(e,pen){
-const d=ink.drag; if(!d||d.mode!=="draw"||!d.inc)return; const c=el("ink-pred"); if(!c)return;
+const d=ink.drag; if(!d||d.mode!=="draw"||!d.inc||!ink.lead)return; const c=el("ink-pred"); if(!c)return;
 inkPredClear(); clearTimeout(ink.predT); ink.predT=setTimeout(()=>inkPredClear(),70); const sk=d.s, p=sk.p, n=Math.floor(p.length/3); if(n<2)return;
-let pts=[]; if(e&&e.getPredictedEvents){ try{ pts=e.getPredictedEvents().slice(0,3).map(inkToPage); }catch(er){ pts=[]; } }
-const bx=p[n*3-3], by=p[n*3-2];
-if(!pts.length){ const dx=bx-p[n*3-6], dy=by-p[n*3-5], l=Math.hypot(dx,dy); if(l<.4)return; const len=Math.min(l*2.5,14*inkPx()); pts=[[bx+dx/l*len,by+dy/l*len]]; }
+let pts=[], span=0; if(e&&e.getPredictedEvents){ try{ const pe=e.getPredictedEvents().slice(0,4); pts=pe.map(inkToPage); if(pe.length)span=Math.max(0,pe[pe.length-1].timeStamp-e.timeStamp); }catch(er){ pts=[]; } }
+const bx=p[n*3-3], by=p[n*3-2], h=d.hist||[];
+if(h.length>=2){ const a=h[Math.max(0,h.length-4)], z=h[h.length-1], dt=z[2]-a[2];
+if(dt>1){ const rest=Math.max(0,ink.lead-span); let vx=(z[0]-a[0])/dt, vy=(z[1]-a[1])/dt; const sp=Math.hypot(vx,vy), mx=40*inkPx();
+let len=sp*rest*.8; if(len>mx)len=mx; if(sp>0&&len>.3){ const sx=pts.length?pts[pts.length-1][0]:bx, sy=pts.length?pts[pts.length-1][1]:by; pts.push([sx+vx/sp*len,sy+vy/sp*len]); } } }
+if(!pts.length)return;
 const ctx=c.getContext("2d"), [ox,oy]=inkO(), k=ink.k, pr=p[n*3-1], lw=Math.max(.6,sk.w*(pen?(.4+pr*1.25):1)*k);
 ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle=sk.c; ctx.lineWidth=lw; ctx.beginPath(); ctx.moveTo((bx+ox)*k,(by+oy)*k);
 let x0=(bx+ox)*k,y0=(by+oy)*k,x1=x0,y1=y0; pts.forEach(q=>{ const X=(q[0]+ox)*k, Y=(q[1]+oy)*k; ctx.lineTo(X,Y); x0=Math.min(x0,X); x1=Math.max(x1,X); y0=Math.min(y0,Y); y1=Math.max(y1,Y); }); ctx.stroke(); ctx.restore();
@@ -220,7 +225,7 @@ const [x,y]=inkToPage(ev);
 if(d.mode==="draw"&&d.snap){ if(d.s.sh==="line"){ d.s.p[3]=+x.toFixed(1); d.s.p[4]=+y.toFixed(1); inkShapeConstrain(d.s,1); } continue; }
 if(d.mode==="draw"&&d.s.t==="s"){ d.s.p[3]=+x.toFixed(1); d.s.p[4]=+y.toFixed(1); inkShapeConstrain(d.s); continue; }
 if(d.mode==="draw"){ const p=d.s.p, lx=p[p.length-3], ly=p[p.length-2]; if(Math.hypot(x-lx,y-ly)<0.7)continue;
-const pr=e.pointerType==="pen"?(ev.pressure||e.pressure||.5):.5; p.push(+x.toFixed(1),+y.toFixed(1),+pr.toFixed(2)); d.pmin=Math.min(d.pmin,pr); d.pmax=Math.max(d.pmax,pr); }
+const pr=e.pointerType==="pen"?(ev.pressure||e.pressure||.5):.5; (d.hist||(d.hist=[])).push([x,y,ev.timeStamp]); if(d.hist.length>6)d.hist.shift(); p.push(+x.toFixed(1),+y.toFixed(1),+pr.toFixed(2)); d.pmin=Math.min(d.pmin,pr); d.pmax=Math.max(d.pmax,pr); }
 else if(d.mode==="erase"){ inkEraseAt(x,y); }
 else if(d.mode==="lasso"){ d.poly.push([x,y]); }
 else if(d.mode==="move"){ d.dx=x-d.sx; d.dy=y-d.sy; }
@@ -333,6 +338,7 @@ inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เล�
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="clear">${ink.board?"ล้างกระดานทั้งหมด":"ล้างหน้านี้"}</button>
 ${ink.board?"":`<button type="button" class="ink-mi danger" data-imore="delpage" ${ink.pages.length<2?"disabled":""}>ลบหน้านี้</button>`}
+<button type="button" class="ink-mi" data-imore="lead">ปลายเส้นล่วงหน้า (ลดความหน่วง): ${(INK_LEADS.find(x=>x[0]===ink.lead)||INK_LEADS[2])[1]}</button>
 <button type="button" class="ink-mi" data-imore="diag">${inkDiag.on?"หยุดวัด + ดูผล":"วัดความลื่น (ทดสอบเขียน)"}</button>
 <button type="button" class="ink-mi danger" data-imore="delnote">ลบ${ink.board?"กระดาน":"สมุดทั้งเล่ม"}</button>`,a);
 }
@@ -514,6 +520,7 @@ else if(b.dataset.itpl||b.dataset.ipaper){ const d=b.dataset.itpl?{tpl:b.dataset
 else if(b.dataset.iexp){ inkExport(b.dataset.iexp); }
 else if(b.dataset.imore){ const m=b.dataset.imore; inkClosePop();
 if(m==="diag"){ if(!inkDiag.on){ inkDiagStart(); inkStatus("กำลังวัด… เขียนตามปกติ แล้วกด ⋯ › หยุดวัด","busy"); } else{ const r=inkDiagReport(); inkStatus("วัดเสร็จแล้ว","ok"); tell(`<b>ผลวัดความลื่น</b><div class="hint" style="margin:6px 0">กดคัดลอกแล้วส่งให้ทีมดูได้เลยค่ะ</div><textarea id="diagtx" readonly style="width:100%;height:210px;font:12px/1.6 ui-monospace,monospace;border:1px solid var(--line);border-radius:10px;padding:8px;box-sizing:border-box">${esc(r)}</textarea><button type="button" class="btn" id="diagcp" style="width:100%;margin-top:8px">คัดลอกผล</button>`); setTimeout(()=>{ const b=el("diagcp"); if(b)b.onclick=async()=>{ try{ await navigator.clipboard.writeText(r); b.textContent="คัดลอกแล้ว ✓"; }catch(er){ el("diagtx").select(); b.textContent="เลือกข้อความแล้ว กดคัดลอกเอง"; } }; },50); } }
+else if(m==="lead"){ const i=INK_LEADS.findIndex(x=>x[0]===ink.lead); ink.lead=INK_LEADS[(i+1)%INK_LEADS.length][0]; try{ localStorage.setItem("sw-ink-lead",String(ink.lead)); }catch(er){} inkPredClear(true); inkStatus("ปลายเส้นล่วงหน้า: "+INK_LEADS.find(x=>x[0]===ink.lead)[1],"ok"); }
 else if(m==="pin"){ try{ await DB.collection("note").doc(ink.note._id).set({pin:!inkLive().pin},{merge:true}); }catch(er){} }
 else if(m==="addpage")inkAddPage();
 else if(m==="folder"){ pickFolder(inkLive().folder||"").then(async v=>{ if(v===null)return; try{ await DB.collection("note").doc(ink.note._id).set({folder:v},{merge:true}); Object.assign(ink.note,{folder:v}); setFoot(v?"ย้ายไปโฟลเดอร์ “"+folderName(v)+"” แล้ว":"เอาออกจากโฟลเดอร์แล้ว"); }catch(er){} }); }
