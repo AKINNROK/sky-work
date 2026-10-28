@@ -891,7 +891,7 @@ svg [data-tip]{outline:none}
 <dialog id="inkdlg" class="inkdlg" aria-label="สมุดเขียนมือ">
 <div class="ink-top">
 <button type="button" class="ink-b" id="ink-close" title="ปิดสมุด (บันทึกให้อัตโนมัติ)" aria-label="ปิดสมุด"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-<input id="ink-title" class="ink-title" placeholder="ชื่อสมุด" aria-label="ชื่อสมุด" autocomplete="off">
+<input id="ink-title" class="ink-title" placeholder="ชื่อสมุด" aria-label="ชื่อสมุด" autocomplete="off" autocorrect="off" spellcheck="false" readonly>
 <span id="ink-save" class="ink-save" role="status"></span>
 <span class="ink-sp"></span>
 <button type="button" class="ink-b" id="ink-undo" title="ย้อนกลับ" aria-label="ย้อนกลับ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
@@ -1087,4 +1087,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.2"></script></body></html>
+<script src="app.js?v=14.14.4"></script></body></html>
