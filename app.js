@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.6"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.7"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -3152,6 +3152,8 @@ const st=el("ink-stage"); if(!st)return;
 st.addEventListener("pointerdown",inkDiagTimed("hd",inkDown)); st.addEventListener("pointermove",inkDiagTimed("hm",inkMove));
 st.addEventListener("pointerup",inkDiagTimed("hu",inkUp)); st.addEventListener("pointercancel",inkUp);
 st.addEventListener("contextmenu",e=>e.preventDefault());
+// กัน gesture ของ iPadOS (เลือกคำ/Scribble) แย่งปากการะหว่างเขียนเร็วๆ — เฉพาะ touch ที่เป็น stylus นิ้วยังเลื่อน/แตะปกติ
+["touchstart","touchmove"].forEach(n=>st.addEventListener(n,e=>{ const t=e.touches&&e.touches[0]; if(t&&t.touchType==="stylus"&&e.cancelable)e.preventDefault(); },{passive:false}));
 st.addEventListener("wheel",e=>{ e.preventDefault(); if(e.ctrlKey||e.metaKey){ inkZoomAt(Math.max(.75,Math.min(1.33,Math.exp(-e.deltaY*.01))),e.clientX,e.clientY); } else{ inkPanBy(-e.deltaX,-e.deltaY); } },{passive:false});
 window.addEventListener("resize",()=>{ if(ink.note)inkApply(); });
 el("ink-close").onclick=inkClose;

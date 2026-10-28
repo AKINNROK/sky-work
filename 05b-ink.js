@@ -499,6 +499,8 @@ const st=el("ink-stage"); if(!st)return;
 st.addEventListener("pointerdown",inkDiagTimed("hd",inkDown)); st.addEventListener("pointermove",inkDiagTimed("hm",inkMove));
 st.addEventListener("pointerup",inkDiagTimed("hu",inkUp)); st.addEventListener("pointercancel",inkUp);
 st.addEventListener("contextmenu",e=>e.preventDefault());
+// กัน gesture ของ iPadOS (เลือกคำ/Scribble) แย่งปากการะหว่างเขียนเร็วๆ — เฉพาะ touch ที่เป็น stylus นิ้วยังเลื่อน/แตะปกติ
+["touchstart","touchmove"].forEach(n=>st.addEventListener(n,e=>{ const t=e.touches&&e.touches[0]; if(t&&t.touchType==="stylus"&&e.cancelable)e.preventDefault(); },{passive:false}));
 st.addEventListener("wheel",e=>{ e.preventDefault(); if(e.ctrlKey||e.metaKey){ inkZoomAt(Math.max(.75,Math.min(1.33,Math.exp(-e.deltaY*.01))),e.clientX,e.clientY); } else{ inkPanBy(-e.deltaX,-e.deltaY); } },{passive:false});
 window.addEventListener("resize",()=>{ if(ink.note)inkApply(); });
 el("ink-close").onclick=inkClose;
