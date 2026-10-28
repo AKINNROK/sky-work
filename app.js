@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.13.4"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.13.5"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2813,6 +2813,7 @@ ctx.beginPath(); ctx.arc(rx,ry,hr*.5,.4,5.4); ctx.strokeStyle="#fff"; ctx.lineWi
 }
 function inkDown(e){
 ink.rc=null; const t=e.pointerType;
+if((t==="pen"||t==="mouse")&&ink.drag&&ink.drag.mode==="draw"){ if(inkDiag.on)inkDiag.overlap++; inkUp({pointerId:ink.drag.id,pointerType:t,type:"pointerup",timeStamp:0}); }
 if(t==="pen"){ ink.penSeen=true; ink.penDown=true; ink.ptrs.forEach((v,id)=>{ if(v.type==="touch")ink.ptrs.delete(id); }); if(ink.drag&&ink.drag.mode==="pan"||ink.drag&&ink.drag.mode==="pinch")ink.drag=null; }
 if(t==="touch"&&(ink.penDown||Date.now()-ink.penUpAt<280))return;      // กันฝ่ามือ
 if(t==="mouse"&&e.button!==0&&e.button!==1)return;
@@ -2829,10 +2830,10 @@ if(ink.tool==="lasso"){
 if(ink.sel){ const b=ink.sel.box,pad=8; if(Math.hypot(x-(b[0]+b[2])/2,y-(b[1]-6-34*inkPx()))<=20*inkPx()){ ink.drag={mode:"rot",id:e.pointerId,th:0,cx:(b[0]+b[2])/2,cy:(b[1]+b[3])/2,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return; }
 if(Math.hypot(x-(b[2]+6),y-(b[3]+6))<=20*inkPx()){ ink.drag={mode:"scale",id:e.pointerId,x0:b[0],y0:b[1],f:1,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return; } if(x>=b[0]-pad&&x<=b[2]+pad&&y>=b[1]-pad&&y<=b[3]+pad){ ink.drag={mode:"move",id:e.pointerId,sx:x,sy:y,dx:0,dy:0,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return; } ink.sel=null; inkToolbar(); }
 ink.drag={mode:"lasso",id:e.pointerId,poly:[[x,y]]}; inkOverClear(); return; }
-if(ink.tool==="shape"){ const s={t:"s",sh:ink.shape,c:ink.color.pen,w:ink.size.shape,p:[+x.toFixed(1),+y.toFixed(1),0,+x.toFixed(1),+y.toFixed(1),0]}; if(ink.alpha<1)s.a=ink.alpha; if(ink.fill)s.f=ink.fill; if(ink.dash)s.d=1; ink.drag={mode:"draw",id:e.pointerId,s,pmin:0,pmax:0}; inkLiveStroke(); return; }
+if(ink.tool==="shape"){ const s={t:"s",sh:ink.shape,c:ink.color.pen,w:ink.size.shape,p:[+x.toFixed(1),+y.toFixed(1),0,+x.toFixed(1),+y.toFixed(1),0]}; if(ink.alpha<1)s.a=ink.alpha; if(ink.fill)s.f=ink.fill; if(ink.dash)s.d=1; ink.drag={mode:"draw",id:e.pointerId,s,pmin:0,pmax:0,t0:e.timeStamp}; inkLiveStroke(); return; }
 const ns={t:ink.tool==="hl"?"h":"p",c:ink.color[ink.tool==="hl"?"hl":"pen"],w:inkSize(),v:0,p:[+x.toFixed(1),+y.toFixed(1),+pr.toFixed(2)]};
 if(ink.tool==="pen"){ if(ink.brush!=="pen")ns.b=ink.brush; if(ink.alpha<1)ns.a=ink.alpha; }
-ink.drag={mode:"draw",id:e.pointerId,s:ns,pmin:pr,pmax:pr,ptype:t,inc:ink.tool==="pen"&&!ns.b&&!ns.a};
+ink.drag={mode:"draw",id:e.pointerId,t0:e.timeStamp,s:ns,pmin:pr,pmax:pr,ptype:t,inc:ink.tool==="pen"&&!ns.b&&!ns.a};
 inkLiveStroke();
 }
 function inkMove(e){
@@ -2869,8 +2870,9 @@ if(e.pointerType==="pen"){ ink.penDown=false; ink.penUpAt=Date.now(); }
 const d=ink.drag; if(!d)return; clearTimeout(d.holdT);
 if(d.mode==="pinch"){ if([...ink.ptrs.values()].filter(q=>q.type==="touch").length<2){ ink.drag=null; ink.pinch=null; } return; }
 if(e.pointerId!==d.id)return;
+if(e.timeStamp&&d.t0&&e.timeStamp<d.t0-2)return;                // pointerup เก่าของเส้นก่อนหน้า มาช้ากว่า pointerdown ของเส้นใหม่
 ink.drag=null;
-if(e.type==="pointercancel"){ inkOverClear(); inkRedraw(); inkDrawSel(); return; }
+if(e.type==="pointercancel"&&!(d.mode==="draw"&&d.s.p.length>=6)){ inkOverClear(); inkRedraw(); inkDrawSel(); return; }   // เส้นที่วาดไปแล้ว ถูกยกเลิกกลางคัน → เก็บไว้ ไม่ทิ้ง
 if(d.mode==="draw"&&d.s.t==="s"){ inkShapeFinish(d.s); inkCommitAppend(d.s); }
 else if(d.mode==="rot"){ if(Math.abs(d.th)>.01){ const idx=ink.sel.idx, pg=inkPage(); const next=pg.strokes.map((s,i)=>idx.has(i)?inkRotated(s,d.cx,d.cy,d.th):s); ink.sel={idx,box:inkBBox(next,idx)}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
 else if(d.mode==="scale"){ if(Math.abs(d.f-1)>.01){ const idx=ink.sel.idx, pg=inkPage(), b=ink.sel.box; const next=pg.strokes.map((s,i)=>idx.has(i)?inkScaled(s,b[0],b[1],d.f):s); ink.sel={idx,box:[b[0],b[1],b[0]+(b[2]-b[0])*d.f,b[1]+(b[3]-b[1])*d.f]}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
@@ -3098,11 +3100,12 @@ if(canShare)el("ink-share").onclick=async()=>{ try{ await navigator.share({files
 // ---------- วัดความลื่น (ไว้ส่งผลให้ทีมช่วยตรวจ) ----------
 const inkDiag={on:0};
 function inkDiagStart(){
-Object.assign(inkDiag,{on:1,lag:[],hd:[],hm:[],hu:[],gaps:[],last:0,long:0,longMax:0,t0:performance.now()});
+Object.assign(inkDiag,{on:1,lag:[],hd:[],hm:[],hu:[],gaps:[],ugap:[],last:0,long:0,longMax:0,t0:performance.now(),ev:{},overlap:0,nodraw:0,dots:0,lastUp:0});
+if(!inkDiag.wired){ inkDiag.wired=1; const st=el("ink-stage"); ["pointerdown","pointerup","pointercancel","gotpointercapture","lostpointercapture","pointerleave"].forEach(n=>st.addEventListener(n,e=>{ if(!inkDiag.on)return; const k=n.replace("pointer","p").replace("capture","cap")+":"+e.pointerType; inkDiag.ev[k]=(inkDiag.ev[k]||0)+1; if(e.pointerType==="pen"){ if(n==="pointerup")inkDiag.lastUp=e.timeStamp; else if(n==="pointerdown"&&inkDiag.lastUp)inkDiag.ugap.push(e.timeStamp-inkDiag.lastUp); } },true)); st.addEventListener("touchstart",e=>{ if(inkDiag.on)inkDiag.ev.touchstart=(inkDiag.ev.touchstart||0)+1; },{capture:true,passive:true}); }
 try{ inkDiag.po=new PerformanceObserver(l=>l.getEntries().forEach(x=>{ inkDiag.long++; inkDiag.longMax=Math.max(inkDiag.longMax,x.duration); })); inkDiag.po.observe({entryTypes:["longtask"]}); }catch(er){}
 const f=t=>{ if(!inkDiag.on)return; const w=ink.drag&&ink.drag.mode==="draw"; if(w&&inkDiag.last)inkDiag.gaps.push(t-inkDiag.last); inkDiag.last=w?t:0; requestAnimationFrame(f); }; requestAnimationFrame(f);
 }
-function inkDiagTimed(key,fn){ return e=>{ if(!inkDiag.on)return fn(e); const t=performance.now(); if(e.pointerType==="pen"||e.pointerType==="mouse")inkDiag.lag.push(t-e.timeStamp); fn(e); inkDiag[key].push(performance.now()-t); }; }
+function inkDiagTimed(key,fn){ return e=>{ if(!inkDiag.on)return fn(e); const t=performance.now(); if(e.pointerType==="pen"||e.pointerType==="mouse")inkDiag.lag.push(t-e.timeStamp); fn(e); inkDiag[key].push(performance.now()-t); if(key==="hd"&&e.pointerType==="pen"&&!(ink.drag&&ink.drag.mode==="draw"))inkDiag.nodraw++; }; }
 function inkDiagReport(){
 inkDiag.on=0; try{ inkDiag.po&&inkDiag.po.disconnect(); }catch(er){}
 const st=a=>{ if(!a.length)return "ไม่มีข้อมูล"; const s=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0); return `n=${a.length} · เฉลี่ย ${(sum/a.length).toFixed(1)} · p95 ${s[Math.floor(s.length*.95)].toFixed(1)} · สูงสุด ${s[s.length-1].toFixed(1)} ms`; };
@@ -3112,7 +3115,7 @@ return ["Sky Work v"+APP_VERSION+" · วัดความลื่น "+Math.r
 "ปากกาแตะลง (pointerdown): "+st(inkDiag.hd),"ปากกาลาก (pointermove): "+st(inkDiag.hm),"ปากกายก (pointerup+วาดเก็บ): "+st(inkDiag.hu),
 "อีเวนต์รอคิวก่อนถูกประมวลผล: "+st(inkDiag.lag),"ช่วงห่างระหว่างเฟรมขณะเขียน: "+st(inkDiag.gaps)+" · เฟรมช้า(>24ms) "+slow+" ครั้ง",
 "Long task (>50ms): "+inkDiag.long+" ครั้ง · นานสุด "+inkDiag.longMax.toFixed(0)+" ms",
-"ลายเส้นในหน้า: "+(ink.pages[ink.cur]?ink.pages[ink.cur].strokes.length:0)+" เส้น"].join("\n");
+"อีเวนต์ดิบที่ iPad ส่งมา: "+(Object.keys(inkDiag.ev).sort().map(k=>k+"="+inkDiag.ev[k]).join(" · ")||"-"),"ปากกาแตะลงแต่ไม่เกิดเส้น: "+inkDiag.nodraw+" ครั้ง · แตะลงซ้อนก่อนเส้นเก่าจบ: "+inkDiag.overlap+" ครั้ง","ระยะห่างยกปากกา→แตะลงใหม่ (ms): "+st(inkDiag.ugap),"ลายเส้นในหน้า: "+(ink.pages[ink.cur]?ink.pages[ink.cur].strokes.length:0)+" เส้น"].join("\n");
 }
 // ---------- ผูกปุ่ม ----------
 (function inkWire(){
