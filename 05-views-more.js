@@ -673,7 +673,7 @@ ${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}${noteFolderTag(
 <button class="ntedit" data-ntmv="${n._id}" title="ย้ายไปโฟลเดอร์" aria-label="ย้ายไปโฟลเดอร์">${svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',14)}</button>
 <button class="ntedit" data-ntedit="${n._id}" title="แก้ไข" aria-label="แก้ไข">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',14)}</button></div>
 <div class="nt1">${esc(n.title||"(ไม่มีหัวข้อ)")}</div>
-<div class="nb">${n.kind===INKKIND?(n.thumb?`<img class="ink-th" src="${esc(n.thumb)}" alt="ตัวอย่างหน้าแรก"><div class="t-note" style="margin-top:6px">${n.pages||1} หน้า · แตะเพื่อเปิดเขียนต่อ</div>`:`<div class="t-note">สมุดเปล่า · ${n.pages||1} หน้า</div>`):(()=>{const t=ntPlain(n); return esc(t.slice(0,180))+(t.length>180?"…":"");})()}</div>
+<div class="nb">${n.kind===INKKIND?(n.thumb?`${n.cover?`<div class="inkcv" style="--cv:${esc(n.cover)}">`:""}<img class="ink-th" src="${esc(n.thumb)}" alt="ตัวอย่างหน้าแรก">${n.cover?"</div>":""}<div class="t-note" style="margin-top:6px">${n.pages||1} หน้า · แตะเพื่อเปิดเขียนต่อ</div>`:`<div class="t-note">สมุดเปล่า · ${n.pages||1} หน้า</div>`):(()=>{const t=ntPlain(n); return esc(t.slice(0,180))+(t.length>180?"…":"");})()}</div>
 ${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</div>`).join("")
 ||`<div class="empty">ยังไม่มีบันทึก — กด “เขียนบันทึก”</div>`}</div></div>
 </div>`;
