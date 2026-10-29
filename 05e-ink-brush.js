@@ -5,11 +5,11 @@ const INK_BRUSHES=[
 {k:"pen",n:"ปากกา",w:3.5},{k:"calli",n:"คอแร้ง",w:9},{k:"pencil",n:"ดินสอ",w:4.5},{k:"crayon",n:"สีเทียน",w:11},{k:"brush",n:"พู่กัน",w:12},
 {k:"air",n:"แอร์บรัช (ฟุ้ง)",w:26},{k:"spray",n:"สเปรย์พ่น",w:24},{k:"blur",n:"เบลอ",w:16},{k:"water",n:"สีน้ำ",w:26},{k:"sketch",n:"สเก็ต",w:4}];
 const INK_SHAPES=[["line","เส้นตรง"],["arrow","ลูกศร"],["darrow","ลูกศรสองหัว"],["rect","สี่เหลี่ยม"],["rrect","สี่เหลี่ยมมน"],["ellipse","วงกลม/วงรี"],["triangle","สามเหลี่ยม"],["diamond","ข้าวหลามตัด"],["pentagon","ห้าเหลี่ยม"],["hexagon","หกเหลี่ยม"],["star","ดาว"],["heart","หัวใจ"],["plus","กากบาท"]];
-Object.assign(ink,{snap:1,brush:"pen",size:{pen:3.5,hl:18,eraser:18,shape:3.5},alpha:1,shape:"rect",fill:0,dash:0,lock:0});
-function inkSetSave(){ try{ localStorage.setItem("sw-ink-set",JSON.stringify({brush:ink.brush,size:ink.size,alpha:ink.alpha,shape:ink.shape,fill:ink.fill,dash:ink.dash,lock:ink.lock,snap:ink.snap,color:ink.color})); }catch(e){} }
+Object.assign(ink,{ersPart:1,snap:1,brush:"pen",size:{pen:3.5,hl:18,eraser:18,shape:3.5},alpha:1,shape:"rect",fill:0,dash:0,lock:0});
+function inkSetSave(){ try{ localStorage.setItem("sw-ink-set",JSON.stringify({brush:ink.brush,size:ink.size,alpha:ink.alpha,shape:ink.shape,fill:ink.fill,dash:ink.dash,lock:ink.lock,snap:ink.snap,ep:ink.ersPart,color:ink.color})); }catch(e){} }
 (function(){ try{ const o=JSON.parse(localStorage.getItem("sw-ink-set")||"null"); if(!o)return;
 if(INK_BRUSHES.some(b=>b.k===o.brush))ink.brush=o.brush; if(o.size)["pen","hl","eraser","shape"].forEach(k=>{ if(+o.size[k]>0)ink.size[k]=+o.size[k]; });
-if(o.alpha>=.1&&o.alpha<=1)ink.alpha=+o.alpha; if(INK_SHAPES.some(s=>s[0]===o.shape))ink.shape=o.shape; ink.fill=[0,1,2].includes(o.fill)?o.fill:0; ink.dash=o.dash?1:0; ink.lock=o.lock?1:0; ink.snap=o.snap===0?0:1;
+if(o.alpha>=.1&&o.alpha<=1)ink.alpha=+o.alpha; if(INK_SHAPES.some(s=>s[0]===o.shape))ink.shape=o.shape; ink.fill=[0,1,2].includes(o.fill)?o.fill:0; ink.dash=o.dash?1:0; ink.lock=o.lock?1:0; ink.snap=o.snap===0?0:1; ink.ersPart=o.ep===0?0:1;
 if(o.color){ if(INK_PEN.includes(o.color.pen))ink.color.pen=o.color.pen; if(INK_HL.includes(o.color.hl))ink.color.hl=o.color.hl; } }catch(e){} })();
 
 // ---------- เครื่องมือช่วย ----------
@@ -168,6 +168,7 @@ const t=ink.tool; if(!["pen","shape","hl","eraser"].includes(t))return "";
 const key=inkSizeKey(), v=ink.size[key], rg={pen:[1,60],shape:[1,40],hl:[4,70],eraser:[4,90]}[key]; let h="";
 if(t==="pen"){ const b=INK_BRUSHES.find(x=>x.k===ink.brush)||INK_BRUSHES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-brushb" title="เปลี่ยนหัวปากกา (ดินสอ พู่กัน สเปรย์ ฯลฯ)">🖌 ${esc(b.n)} ▾</button>`; }
 if(t==="shape"){ const b=INK_SHAPES.find(x=>x[0]===ink.shape)||INK_SHAPES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-shapeb" title="เลือกรูปทรง">◇ ${esc(b[1])} ▾</button>`; }
+if(t==="eraser")h+=`<button type="button" class="ink-opt ink-bb" id="ink-ersm" title="สลับโหมดยางลบ: ลบเป็นจุดแบบ Photoshop / ลบทั้งเส้น">${ink.ersPart?"◔ ลบเป็นจุด":"▭ ลบทั้งเส้น"} ⇄</button>`;
 h+=`<span class="ink-szw" title="ปรับขนาด"><i class="ink-szd" id="ink-szd" style="${inkDotStyle(v)}"></i><input type="range" id="ink-sz" min="${rg[0]}" max="${rg[1]}" step="0.5" value="${v}" aria-label="ขนาดเส้น"><b id="ink-szv">${v}</b></span>`;
 return h;
 }
@@ -197,6 +198,7 @@ dlg.addEventListener("click",e=>{
 const b=e.target.closest("button"); if(!b)return;
 if(b.id==="ink-brushb"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-ibrush]")){ inkClosePop(); return; } e.stopPropagation(); inkBrushMenu(b); return; }
 if(b.id==="ink-shapeb"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-ishape]")){ inkClosePop(); return; } e.stopPropagation(); inkShapeMenu(b); return; }
+if(b.id==="ink-ersm"){ ink.ersPart=ink.ersPart?0:1; inkSetSave(); inkToolbar(); return; }
 if(b.dataset.ibrush){ ink.brush=b.dataset.ibrush; ink.size.pen=(INK_BRUSHES.find(x=>x.k===ink.brush)||{}).w||3.5; inkSetSave(); inkClosePop(); inkToolbar(); return; }
 if(b.dataset.isnap){ ink.snap=ink.snap?0:1; inkSetSave(); inkBrushMenu(el("ink-brushb")||b); return; }
 if(b.dataset.ishape){ ink.shape=b.dataset.ishape; inkSetSave(); inkClosePop(); inkToolbar(); return; }

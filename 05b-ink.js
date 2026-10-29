@@ -169,22 +169,35 @@ if(n===1)return Math.hypot(p[0]-x,p[1]-y)<=rr;
 for(let i=1;i<n;i++)if(inkSegDist(x,y,p[(i-1)*3],p[(i-1)*3+1],p[i*3],p[i*3+1])<=rr)return true; return false; }
 function inkInPoly(poly,x,y){ let c=false; for(let i=0,j=poly.length-1;i<poly.length;j=i++){ const a=poly[i],b=poly[j]; if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])c=!c; } return c; }
 function inkBBox(strokes,idxs){ let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9; idxs.forEach(i=>{const s=strokes[i],p=(s.t==="s"&&s.r)?inkShapeFlat(s):s.p,pad=s.w/2; for(let j=0;j<p.length;j+=3){ x0=Math.min(x0,p[j]-pad);x1=Math.max(x1,p[j]+pad);y0=Math.min(y0,p[j+1]-pad);y1=Math.max(y1,p[j+1]+pad);} }); return [x0,y0,x1,y1]; }
-function inkScaled(s,ax,ay,f){ return {...s,p:s.p.map((v,j)=>j%3===0?ax+(v-ax)*f:j%3===1?ay+(v-ay)*f:v)}; }
+function inkScaled(s,ax,ay,f,fy){ const fx=f; fy=fy==null?f:fy;
+ if(s.t==="s"&&s.r&&s.sh!=="line"&&s.sh!=="arrow"&&s.sh!=="darrow"&&fx!==fy){ // รูปที่หมุนอยู่: ยืดตามแกนของรูป (ประมาณ)
+  const p=s.p, mx=(p[0]+p[3])/2, my=(p[1]+p[4])/2, cx=ax+(mx-ax)*fx, cy=ay+(my-ay)*fy, co=Math.cos(s.r), si=Math.sin(s.r);
+  const hw=Math.abs(p[3]-p[0])/2*Math.hypot(fx*co,fy*si), hh=Math.abs(p[4]-p[1])/2*Math.hypot(fx*si,fy*co), sx=p[3]>=p[0]?1:-1, sy=p[4]>=p[1]?1:-1;
+  return {...s,p:[+(cx-sx*hw).toFixed(1),+(cy-sy*hh).toFixed(1),0,+(cx+sx*hw).toFixed(1),+(cy+sy*hh).toFixed(1),0]}; }
+ return {...s,p:s.p.map((v,j)=>j%3===0?+(ax+(v-ax)*fx).toFixed(1):j%3===1?+(ay+(v-ay)*fy).toFixed(1):v)}; }
 function inkDrawSel(){
 const c=el("ink-over"); if(!c||!ink.sel){ return; }
-const ctx=c.getContext("2d"), k=ink.k, d=ink.drag, [ox,oy]=inkO(), pg=inkPage(); let b=ink.sel.box, dx=0, dy=0, f=1;
-if(d&&d.mode==="move"){ dx=d.dx; dy=d.dy; } else if(d&&d.mode==="scale"){ f=d.f; }
+const ctx=c.getContext("2d"), k=ink.k, d=ink.drag, [ox,oy]=inkO(), pg=inkPage(); let b=ink.sel.box, dx=0, dy=0, f=1, fy=1;
+if(d&&d.mode==="move"){ dx=d.dx; dy=d.dy; } else if(d&&d.mode==="scale"){ f=d.fx; fy=d.fy; }
 const bcx=(b[0]+b[2])/2, bcy=(b[1]+b[3])/2;
 if(d&&d.mode==="rot"&&d.th)ink.sel.idx.forEach(i=>inkStroke(ctx,inkRotated(pg.strokes[i],bcx,bcy,d.th),k,ox,oy));
 ctx.clearRect(0,0,c.width,c.height);
 if(dx||dy)ink.sel.idx.forEach(i=>inkStroke(ctx,pg.strokes[i],k,dx+ox,dy+oy));
-if(f!==1){ ink.sel.idx.forEach(i=>inkStroke(ctx,inkScaled(pg.strokes[i],b[0],b[1],f),k,ox,oy)); b=[b[0],b[1],b[0]+(b[2]-b[0])*f,b[1]+(b[3]-b[1])*f]; }
+if(f!==1||fy!==1){ ink.sel.idx.forEach(i=>inkStroke(ctx,inkScaled(pg.strokes[i],b[0],b[1],f,fy),k,ox,oy)); b=[b[0],b[1],b[0]+(b[2]-b[0])*f,b[1]+(b[3]-b[1])*fy]; }
 ctx.save(); ctx.setLineDash([8*k,6*k]); ctx.strokeStyle="#2563eb"; ctx.lineWidth=Math.max(1.5,1.6*k);
 const pad=6; ctx.strokeRect((b[0]+dx+ox-pad)*k,(b[1]+dy+oy-pad)*k,(b[2]-b[0]+pad*2)*k,(b[3]-b[1]+pad*2)*k);
 ctx.setLineDash([]); ctx.fillStyle="#fff"; ctx.lineWidth=Math.max(2,2*k); const hx=(b[2]+dx+ox+pad)*k, hy=(b[3]+dy+oy+pad)*k, hr=Math.max(6*k,8*inkPx()*k);
 ctx.beginPath(); ctx.arc(hx,hy,hr,0,6.283); ctx.fill(); ctx.stroke();
+const sq=hr*.8, mxh=(b[0]+b[2])/2+dx+ox, myh=(b[1]+b[3])/2+dy+oy; ctx.beginPath(); ctx.rect(hx-sq,myh*k-sq,sq*2,sq*2); ctx.rect(mxh*k-sq,hy-sq,sq*2,sq*2); ctx.fill(); ctx.stroke();
 const rx=(bcx+dx+ox)*k, ry=(b[1]+dy+oy-pad-34*inkPx())*k; ctx.beginPath(); ctx.moveTo(rx,(b[1]+dy+oy-pad)*k); ctx.lineTo(rx,ry); ctx.stroke(); ctx.beginPath(); ctx.arc(rx,ry,hr,0,6.283); ctx.fillStyle="#2563eb"; ctx.fill(); ctx.strokeStyle="#fff"; ctx.stroke();
 ctx.beginPath(); ctx.arc(rx,ry,hr*.5,.4,5.4); ctx.strokeStyle="#fff"; ctx.lineWidth=Math.max(1.5,1.6*k); ctx.stroke(); ctx.restore();
+}
+function inkSelDown(e,x,y){
+const b=ink.sel.box,pad=8;
+if(Math.hypot(x-(b[0]+b[2])/2,y-(b[1]-6-34*inkPx()))<=20*inkPx()){ ink.drag={mode:"rot",id:e.pointerId,th:0,cx:(b[0]+b[2])/2,cy:(b[1]+b[3])/2,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return true; }
+if(Math.hypot(x-(b[2]+6),y-(b[3]+6))<=20*inkPx()){ ink.drag={mode:"scale",axis:"xy",id:e.pointerId,x0:b[0],y0:b[1],fx:1,fy:1,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return true; }
+if(Math.hypot(x-(b[2]+6),y-(b[1]+b[3])/2)<=18*inkPx()){ ink.drag={mode:"scale",axis:"x",id:e.pointerId,x0:b[0],y0:b[1],fx:1,fy:1,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return true; }
+if(Math.hypot(x-(b[0]+b[2])/2,y-(b[3]+6))<=18*inkPx()){ ink.drag={mode:"scale",axis:"y",id:e.pointerId,x0:b[0],y0:b[1],fx:1,fy:1,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return true; } if(x>=b[0]-pad&&x<=b[2]+pad&&y>=b[1]-pad&&y<=b[3]+pad){ ink.drag={mode:"move",id:e.pointerId,sx:x,sy:y,dx:0,dy:0,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return true; } ink.sel=null; inkToolbar(); inkOverClear(); inkRedraw(); return false;
 }
 function inkDown(e){
 ink.rc=null; const t=e.pointerType; try{ const gs=getSelection(); if(gs&&gs.rangeCount&&!gs.isCollapsed)gs.removeAllRanges(); }catch(er){} { const a=document.activeElement; if(a&&a!==document.body&&a.blur&&a.id!=="ink-stage")a.blur(); }
@@ -200,12 +213,13 @@ const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="to
 if(!canDraw){ ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 inkClosePop();
 const [x,y]=inkToPage(e), pr=t==="pen"?(e.pressure||.5):.5;
-if(ink.tool==="eraser"){ ink.drag={mode:"erase",id:e.pointerId,del:new Set(),x,y}; inkEraseAt(x,y); return; }
+if(ink.tool==="eraser"){ ink.drag={mode:"erase",id:e.pointerId,del:new Set(),x,y,part:ink.ersPart?1:0,cur:inkPage().strokes,ch:0}; inkEraseAt(x,y); return; }
 if(ink.tool==="lasso"){
-if(ink.sel){ const b=ink.sel.box,pad=8; if(Math.hypot(x-(b[0]+b[2])/2,y-(b[1]-6-34*inkPx()))<=20*inkPx()){ ink.drag={mode:"rot",id:e.pointerId,th:0,cx:(b[0]+b[2])/2,cy:(b[1]+b[3])/2,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return; }
-if(Math.hypot(x-(b[2]+6),y-(b[3]+6))<=20*inkPx()){ ink.drag={mode:"scale",id:e.pointerId,x0:b[0],y0:b[1],f:1,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return; } if(x>=b[0]-pad&&x<=b[2]+pad&&y>=b[1]-pad&&y<=b[3]+pad){ ink.drag={mode:"move",id:e.pointerId,sx:x,sy:y,dx:0,dy:0,hide:ink.sel.idx}; inkRedraw(); inkDrawSel(); return; } ink.sel=null; inkToolbar(); }
+if(ink.sel&&inkSelDown(e,x,y))return;
+{ const pg0=inkPage(); let hi=-1; for(let q=pg0.strokes.length-1;q>=0;q--){ if(inkHit(pg0.strokes[q],x,y,10*inkPx())){ hi=q; break; } }
+ if(hi>=0){ const idx=new Set([hi]); ink.sel={idx,box:inkBBox(pg0.strokes,idx)}; inkToolbar(); ink.drag={mode:"move",id:e.pointerId,sx:x,sy:y,dx:0,dy:0,hide:idx}; inkRedraw(); inkDrawSel(); return; } }
 ink.drag={mode:"lasso",id:e.pointerId,poly:[[x,y]]}; inkOverClear(); return; }
-if(ink.tool==="shape"){ const s={t:"s",sh:ink.shape,c:ink.color.pen,w:ink.size.shape,p:[+x.toFixed(1),+y.toFixed(1),0,+x.toFixed(1),+y.toFixed(1),0]}; if(ink.alpha<1)s.a=ink.alpha; if(ink.fill)s.f=ink.fill; if(ink.dash)s.d=1; ink.drag={mode:"draw",id:e.pointerId,s,pmin:0,pmax:0,t0:e.timeStamp}; inkLiveStroke(); return; }
+if(ink.tool==="shape"){ if(ink.sel&&inkSelDown(e,x,y))return; const s={t:"s",sh:ink.shape,c:ink.color.pen,w:ink.size.shape,p:[+x.toFixed(1),+y.toFixed(1),0,+x.toFixed(1),+y.toFixed(1),0]}; if(ink.alpha<1)s.a=ink.alpha; if(ink.fill)s.f=ink.fill; if(ink.dash)s.d=1; ink.drag={mode:"draw",id:e.pointerId,s,pmin:0,pmax:0,t0:e.timeStamp}; inkLiveStroke(); return; }
 const ns={t:ink.tool==="hl"?"h":"p",c:ink.color[ink.tool==="hl"?"hl":"pen"],w:inkSize(),v:0,p:[+x.toFixed(1),+y.toFixed(1),+pr.toFixed(2)]};
 if(ink.tool==="pen"){ if(ink.brush!=="pen")ns.b=ink.brush; if(ink.alpha<1)ns.a=ink.alpha; }
 ink.drag={mode:"draw",id:e.pointerId,t0:e.timeStamp,s:ns,pmin:pr,pmax:pr,ptype:t,inc:ink.tool==="pen"&&!ns.b&&!ns.a};
@@ -233,7 +247,7 @@ else if(d.mode==="erase"){ inkEraseAt(x,y); }
 else if(d.mode==="lasso"){ d.poly.push([x,y]); }
 else if(d.mode==="move"){ d.dx=x-d.sx; d.dy=y-d.sy; }
 else if(d.mode==="rot"){ let th=Math.atan2(x-d.cx,d.cy-y); const g=Math.round(th/(Math.PI/12))*(Math.PI/12); if(Math.abs(th-g)<.06)th=g; d.th=th; }
-else if(d.mode==="scale"){ const b=ink.sel.box, bw=b[2]-b[0], bh=b[3]-b[1], dd=bw*bw+bh*bh||1; d.f=Math.max(.05,Math.min(20,((x-d.x0)*bw+(y-d.y0)*bh)/dd)); }
+else if(d.mode==="scale"){ const b=ink.sel.box, bw=b[2]-b[0]||1, bh=b[3]-b[1]||1, cl=v=>Math.max(.05,Math.min(20,v)); if(d.axis==="x"){ d.fx=cl((x-d.x0)/bw); d.fy=1; } else if(d.axis==="y"){ d.fy=cl((y-d.y0)/bh); d.fx=1; } else{ const dd=bw*bw+bh*bh||1, f=cl(((x-d.x0)*bw+(y-d.y0)*bh)/dd); d.fx=d.fy=f; } }
 }
 if(d.mode==="draw"){ inkLiveStroke(); inkPredict(e,d.ptype==="pen"); inkHoldArm(e); }
 else if(d.mode==="lasso")inkLiveLasso();
@@ -248,11 +262,11 @@ if(e.pointerId!==d.id)return;
 if(e.timeStamp&&d.t0&&e.timeStamp<d.t0-2)return;                // pointerup เก่าของเส้นก่อนหน้า มาช้ากว่า pointerdown ของเส้นใหม่
 ink.drag=null;
 if(e.type==="pointercancel"&&!(d.mode==="draw"&&d.s.p.length>=6)){ inkOverClear(); inkRedraw(); inkDrawSel(); return; }   // เส้นที่วาดไปแล้ว ถูกยกเลิกกลางคัน → เก็บไว้ ไม่ทิ้ง
-if(d.mode==="draw"&&d.s.t==="s"){ inkShapeFinish(d.s); inkCommitAppend(d.s); }
+if(d.mode==="draw"&&d.s.t==="s"){ inkShapeFinish(d.s); inkCommitAppend(d.s); { const pg1=inkPage(), li=pg1.strokes.length-1; if(li>=0&&pg1.strokes[li]===d.s){ const idx=new Set([li]); ink.sel={idx,box:inkBBox(pg1.strokes,idx)}; inkDrawSel(); inkToolbar(); } } }
 else if(d.mode==="rot"){ if(Math.abs(d.th)>.01){ const idx=ink.sel.idx, pg=inkPage(); const next=pg.strokes.map((s,i)=>idx.has(i)?inkRotated(s,d.cx,d.cy,d.th):s); ink.sel={idx,box:inkBBox(next,idx)}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
-else if(d.mode==="scale"){ if(Math.abs(d.f-1)>.01){ const idx=ink.sel.idx, pg=inkPage(), b=ink.sel.box; const next=pg.strokes.map((s,i)=>idx.has(i)?inkScaled(s,b[0],b[1],d.f):s); ink.sel={idx,box:[b[0],b[1],b[0]+(b[2]-b[0])*d.f,b[1]+(b[3]-b[1])*d.f]}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
+else if(d.mode==="scale"){ if(Math.abs(d.fx-1)>.01||Math.abs(d.fy-1)>.01){ const idx=ink.sel.idx, pg=inkPage(), b=ink.sel.box; const next=pg.strokes.map((s,i)=>idx.has(i)?inkScaled(s,b[0],b[1],d.fx,d.fy):s); ink.sel={idx,box:[b[0],b[1],b[0]+(b[2]-b[0])*d.fx,b[1]+(b[3]-b[1])*d.fy]}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
 else if(d.mode==="draw"){ const s=d.s; s.v=(d.pmax-d.pmin>0.12&&e.pointerType==="pen")?1:0; inkCommitAppend(s,!!(d.inc&&!d.snap&&!ink.sel&&d.li>=Math.floor(s.p.length/3))); }
-else if(d.mode==="erase"){ if(d.del.size){ inkCommit(inkPage().strokes.filter((_,i)=>!d.del.has(i))); } else{ inkOverClear(); inkRedraw(); } }
+else if(d.mode==="erase"){ if(d.part){ if(d.ch)inkCommit(d.cur); else{ inkOverClear(); inkRedraw(); } } else if(d.del.size){ inkCommit(inkPage().strokes.filter((_,i)=>!d.del.has(i))); } else{ inkOverClear(); inkRedraw(); } }
 else if(d.mode==="lasso"){ inkLassoDone(d.poly); }
 else if(d.mode==="move"){ if(Math.abs(d.dx)+Math.abs(d.dy)>1){ const idx=ink.sel.idx, pg=inkPage();
 const next=pg.strokes.map((s,i)=>idx.has(i)?{...s,p:s.p.map((v,j)=>+(v+(j%3===0?d.dx:j%3===1?d.dy:0)).toFixed(1))}:s);
@@ -283,8 +297,24 @@ if(poly.length<=6){ const [tx,ty]=poly[0]; for(let i=pg.strokes.length-1;i>=0;i-
 else pg.strokes.forEach((s,i)=>{ if(s.t==="s"){ const q=inkBB(s); if(inkInPoly(poly,(q[0]+q[2])/2,(q[1]+q[3])/2))idx.add(i); return; } const n=s.p.length/3; let inn=0; for(let j=0;j<n;j++)if(inkInPoly(poly,s.p[j*3],s.p[j*3+1]))inn++; if(inn/n>=.5)idx.add(i); });
 ink.sel=idx.size?{idx,box:inkBBox(pg.strokes,idx)}:null; inkDrawSel(); inkToolbar();
 }
+// ลบเป็นจุด (แบบยางลบใน Photoshop): ตัดเส้นเป็นท่อน ลบเฉพาะช่วงที่ถูกยางลบทับ
+function inkSplitErase(s,x,y,r){
+ let src=s;
+ if(s.t==="s"){ const g=inkShapePolys(s,40); const out=[]; g.lines.forEach(L=>{ if(L.length<2)return; const p=[]; L.forEach(q=>p.push(q[0],q[1],1)); out.push({t:"p",c:s.c,w:s.w,p,...(s.a!=null?{a:s.a}:{})}); }); const res=[]; out.forEach(o=>{ if(inkHit(o,x,y,r)){ const q=inkSplitErase(o,x,y,r); (q||[]).forEach(v=>res.push(v)); } else res.push(o); }); return res; }
+ const p=s.p, n=Math.floor(p.length/3), rr=r+s.w/2, step=Math.max(1.5,rr/2.5), pts=[];
+ for(let i=0;i<n;i++){ const X=p[i*3],Y=p[i*3+1],P=p[i*3+2]; if(i>0){ const ax=p[i*3-3],ay=p[i*3-2],ap=p[i*3-1], len=Math.hypot(X-ax,Y-ay);
+  if(len>step&&inkSegDist(x,y,ax,ay,X,Y)<=rr+2){ const m=Math.ceil(len/step); for(let j=1;j<m;j++){ const t=j/m; pts.push([ax+(X-ax)*t,ay+(Y-ay)*t,ap+(P-ap)*t]); } } }
+  pts.push([X,Y,P]); }
+ const res=[]; let cur=[]; const flush=()=>{ if(cur.length>=2){ const q=[]; cur.forEach(v=>q.push(+v[0].toFixed(1),+v[1].toFixed(1),+(+v[2]).toFixed(2))); res.push({...src,p:q}); } cur=[]; };
+ pts.forEach(v=>{ if(Math.hypot(v[0]-x,v[1]-y)<=rr)flush(); else cur.push(v); }); flush();
+ return res;
+}
 function inkEraseAt(x,y){
 const d=ink.drag, pg=inkPage(), r=inkSize(); let ch=false;
+if(d.part){ const out=[]; d.cur.forEach(s=>{ if(inkHit(s,x,y,r)){ ch=true; inkSplitErase(s,x,y,r).forEach(v=>out.push(v)); } else out.push(s); });
+ if(ch){ d.cur=out; d.ch=1; const c=el("ink-base"); inkRenderTo(c.getContext("2d"),ink.k,d.cur,null,inkOpt()); }
+ const o=el("ink-over"), ctx=o.getContext("2d"), k=ink.k, [ox,oy]=inkO(); ctx.clearRect(0,0,o.width,o.height);
+ ctx.save(); ctx.strokeStyle="rgba(80,80,80,.7)"; ctx.fillStyle="rgba(255,255,255,.35)"; ctx.lineWidth=Math.max(1,1.3*k); ctx.beginPath(); ctx.arc((x+ox)*k,(y+oy)*k,r*k,0,6.283); ctx.fill(); ctx.stroke(); ctx.restore(); return; }
 pg.strokes.forEach((s,i)=>{ if(!d.del.has(i)&&inkHit(s,x,y,r)){ d.del.add(i); ch=true; } });
 if(ch){ const c=el("ink-base"); inkRenderTo(c.getContext("2d"),ink.k,pg.strokes,d.del,inkOpt()); }
 const o=el("ink-over"), ctx=o.getContext("2d"), k=ink.k, [ox,oy]=inkO(); ctx.clearRect(0,0,o.width,o.height);

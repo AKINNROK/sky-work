@@ -504,14 +504,25 @@ el("nvdlg").showModal();
 }
 el("nvclose").onclick=()=>el("nvdlg").close();
 // พิมพ์ / บันทึกเป็น PDF — วาดเนื้อหาลง iframe ที่ซ่อนไว้ แล้วสั่งพิมพ์ (เลือก "บันทึกเป็น PDF" ในหน้าต่างพิมพ์ได้)
-el("nvprint").onclick=()=>{ const n=viewingNote; if(!n)return;
+function nvPrintMenu(btn){
+let m=el("nvpm"); if(m){ m.remove(); return; }
+m=document.createElement("div"); m.id="nvpm"; const r=btn.getBoundingClientRect(), z=parseFloat(getComputedStyle(document.documentElement).zoom)||1;
+m.style.cssText="position:fixed;z-index:70;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:8px;display:flex;flex-direction:column;gap:4px;min-width:170px;top:"+(r.bottom+6)+"px;right:"+Math.max(8,innerWidth-r.right)+"px";
+const hasTb=/<table/i.test(el("nvb").innerHTML), last=(()=>{ try{ return localStorage.getItem("sw-print-o"); }catch(e){ return null; } })();
+m.innerHTML=`<div style="font-size:12px;color:var(--ink-3);padding:2px 8px">พิมพ์ / บันทึกเป็น PDF</div>`+[["p","แนวตั้ง"],["l","แนวนอน"]].map(([k,t])=>`<button type="button" class="btn ghost sm" data-po="${k}" style="justify-content:flex-start">${(last||(hasTb?"l":"p"))===k?"✓ ":""}${t}</button>`).join("");
+(el("nvdlg")).appendChild(m);
+m.onclick=e=>{ const b=e.target.closest("[data-po]"); if(!b)return; try{ localStorage.setItem("sw-print-o",b.dataset.po); }catch(er){} m.remove(); nvDoPrint(b.dataset.po); };
+setTimeout(()=>{ const off=e=>{ if(!m.contains(e.target)){ m.remove(); document.removeEventListener("pointerdown",off,true); } }; document.addEventListener("pointerdown",off,true); },0);
+}
+el("nvprint").onclick=e=>{ if(viewingNote)nvPrintMenu(e.currentTarget); };
+function nvDoPrint(orient){ const n=viewingNote; if(!n)return;
 const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n"), hasTb=/<table/i.test(el("nvb").innerHTML);
 const f=document.createElement("iframe"); f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden"; document.body.appendChild(f);
 const d=f.contentDocument; d.open();
-d.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(n.title||"บันทึก")}</title><style>${css}</style><style>@page{size:A4 ${hasTb?"landscape":"portrait"};margin:12mm}html,body{background:#fff!important;height:auto!important;overflow:visible!important;color:#111}body{padding:0;margin:0;display:block}.pp-h{font-size:12px;color:#667;margin-bottom:4px}.pp-t{font-size:22px;font-weight:700;margin:0 0 10px}.nrich.view{max-height:none!important;overflow:visible!important;padding:0!important;font-size:14px}.nrich table{page-break-inside:auto}.nrich tr{page-break-inside:avoid}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><div class="pp-h">${esc(n.kind||"โน้ต")} · ${esc(n.date||"")}${n.tag?" · #"+esc(n.tag):""}</div><h1 class="pp-t">${esc(n.title||"(ไม่มีหัวข้อ)")}</h1><div class="nrich view">${el("nvb").innerHTML}</div></body></html>`);
+d.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(n.title||"บันทึก")}</title><style>${css}</style><style>@page{size:A4 ${orient==="l"?"landscape":"portrait"};margin:12mm}html,body{background:#fff!important;height:auto!important;overflow:visible!important;color:#111}body{padding:0;margin:0;display:block}.pp-h{font-size:12px;color:#667;margin-bottom:4px}.pp-t{font-size:22px;font-weight:700;margin:0 0 10px}.nrich.view{max-height:none!important;overflow:visible!important;padding:0!important;font-size:14px}.nrich table{page-break-inside:auto}.nrich tr{page-break-inside:avoid}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><div class="pp-h">${esc(n.kind||"โน้ต")} · ${esc(n.date||"")}${n.tag?" · #"+esc(n.tag):""}</div><h1 class="pp-t">${esc(n.title||"(ไม่มีหัวข้อ)")}</h1><div class="nrich view">${el("nvb").innerHTML}</div></body></html>`);
 d.close();
 const go=()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ window.print(); } setTimeout(()=>f.remove(),60000); };
-setTimeout(go,400); };
+setTimeout(go,400); }
 el("nvtask").onclick=()=>{ const n=viewingNote; if(n){ el("nvdlg").close(); openNote2Task(n); } };
 el("nvedit").onclick=()=>{ const n=viewingNote; el("nvdlg").close(); if(n)openNote(n,true); };
 el("nvpin").onclick=async()=>{ const n=viewingNote; if(!n)return; el("nvdlg").close(); try{ await DB.collection("note").doc(n._id).set({pin:!n.pin},{merge:true}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); } };
