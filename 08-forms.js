@@ -457,7 +457,7 @@ const t=editing; el("dlg").close();
 if(!await ask("ย้าย “"+esc(t.title)+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ"))return;
 await softDel("items",t);
 };
-let editingIdx=null, editingNote=null;
+let editingIdx=null, editingNote=null, noteBack=false;
 function openIdx(x){
 editingIdx=x;
 el("idlgh").textContent=x?"แก้ไขรายการ Index":"เพิ่มรายการ Index";
@@ -503,8 +503,17 @@ el("nvdlg").querySelector(".nvbar").style.background=n.color||"var(--accent-2)";
 el("nvdlg").showModal();
 }
 el("nvclose").onclick=()=>el("nvdlg").close();
+// พิมพ์ / บันทึกเป็น PDF — วาดเนื้อหาลง iframe ที่ซ่อนไว้ แล้วสั่งพิมพ์ (เลือก "บันทึกเป็น PDF" ในหน้าต่างพิมพ์ได้)
+el("nvprint").onclick=()=>{ const n=viewingNote; if(!n)return;
+const css=[...document.querySelectorAll("style")].map(x=>x.textContent).join("\n"), hasTb=/<table/i.test(el("nvb").innerHTML);
+const f=document.createElement("iframe"); f.style.cssText="position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden"; document.body.appendChild(f);
+const d=f.contentDocument; d.open();
+d.write(`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>${esc(n.title||"บันทึก")}</title><style>${css}</style><style>@page{size:A4 ${hasTb?"landscape":"portrait"};margin:12mm}html,body{background:#fff!important;height:auto!important;overflow:visible!important;color:#111}body{padding:0;margin:0;display:block}.pp-h{font-size:12px;color:#667;margin-bottom:4px}.pp-t{font-size:22px;font-weight:700;margin:0 0 10px}.nrich.view{max-height:none!important;overflow:visible!important;padding:0!important;font-size:14px}.nrich table{page-break-inside:auto}.nrich tr{page-break-inside:avoid}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}</style></head><body><div class="pp-h">${esc(n.kind||"โน้ต")} · ${esc(n.date||"")}${n.tag?" · #"+esc(n.tag):""}</div><h1 class="pp-t">${esc(n.title||"(ไม่มีหัวข้อ)")}</h1><div class="nrich view">${el("nvb").innerHTML}</div></body></html>`);
+d.close();
+const go=()=>{ try{ f.contentWindow.focus(); f.contentWindow.print(); }catch(e){ window.print(); } setTimeout(()=>f.remove(),60000); };
+setTimeout(go,400); };
 el("nvtask").onclick=()=>{ const n=viewingNote; if(n){ el("nvdlg").close(); openNote2Task(n); } };
-el("nvedit").onclick=()=>{ const n=viewingNote; el("nvdlg").close(); if(n)openNote(n); };
+el("nvedit").onclick=()=>{ const n=viewingNote; el("nvdlg").close(); if(n)openNote(n,true); };
 el("nvpin").onclick=async()=>{ const n=viewingNote; if(!n)return; el("nvdlg").close(); try{ await DB.collection("note").doc(n._id).set({pin:!n.pin},{merge:true}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); } };
 // ---- แปลงบันทึก → งานใน Matrix
 let n2tNote=null, n2tRows=[];
@@ -616,8 +625,8 @@ neState(); };
 el("lk-url").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); el("lk-ok").click(); } });
 NE().addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("a"); if(a&&NE().contains(a)){ e.preventDefault(); if(e.ctrlKey||e.metaKey)window.open(a.href,"_blank","noopener"); else neLink(a); } });
 NE().addEventListener("keyup",neState); NE().addEventListener("mouseup",neState);
-function openNote(n){
-editingNote=n;
+function openNote(n,fromView){
+editingNote=n; noteBack=!!(n&&fromView);
 el("ndlgh").textContent=n?"แก้ไขบันทึก":"เขียนบันทึกใหม่";
 el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
@@ -636,15 +645,15 @@ el("n-colors").dataset.val=n?.color||"";
 el("ntaglist").innerHTML=[...new Set(notes.map(v=>(v.tag||"").trim()).filter(Boolean))].map(g=>`<option value="${esc(g)}">`).join("");
 el("ndlg").showModal(); neState();
 }
-el("ncancel").onclick=()=>el("ndlg").close();
+el("ncancel").onclick=()=>{ const n=editingNote, back=noteBack; el("ndlg").close(); if(back&&n)viewNote(n); };
 el("nsave").onclick=async()=>{
 const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
 tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
 if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
 if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
  if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
-el("ndlg").close();
-try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
+const back=noteBack&&editingNote, prevN=editingNote; el("ndlg").close();
+try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); if(back)viewNote({...prevN,...d,_id:prevN._id}); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("ndel").onclick=async()=>{ if(!editingNote)return; const n=editingNote; el("ndlg").close();

@@ -394,7 +394,7 @@ const pgs=board?[null]:((spec.pages&&spec.pages.length)?spec.pages:[null]);
 const ids=pgs.map(()=>inkUid()), ptpl={}; pgs.forEach((t,i)=>{ if(t)ptpl[ids[i]]=t; });
 const folder=spec.folder!==undefined?spec.folder:((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
 const doc={title:spec.title||"",kind:INKKIND,mode:board?"board":"page",date:new Date().toISOString().slice(0,10),tag:"",color:"",pin:false,fmt:"h",body:"",pages:ids.length,pageIds:ids,ptpl,
-tpl:spec.tpl||(board?"dots":"lines"),paper:spec.paper||"#ffffff",thumb:"",folder};
+tpl:spec.tpl||(board?"grid":"lines"),paper:spec.paper||"#ffffff",thumb:"",folder};
 try{ const r=await DB.collection("note").add(doc); inkOpen({...doc,_id:r.id},true); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 }
