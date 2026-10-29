@@ -133,6 +133,8 @@ else if(op==="rowd"){ if(rows.length<=1)tb.remove(); else{ const nx=tr.nextEleme
 else if(op==="cola"||op==="colb"){ rows.forEach(r=>{ const x=r.cells[ci], n=mk(x&&x.tagName==="TH"?"th":"td"); if(x&&x.getAttribute("data-a"))n.setAttribute("data-a",x.getAttribute("data-a")); if(x){ if(op==="cola")x.before(n); else x.after(n); } else r.appendChild(n); }); }
 else if(op==="cold"){ if(tr.cells.length<=1)tb.remove(); else{ const keep=c.nextElementSibling||c.previousElementSibling; rows.forEach(r=>{ if(r.cells[ci])r.cells[ci].remove(); }); neFocusCell(keep); } }
 else if(op==="head"){ const r0=rows[0], toTh=r0.cells[0].tagName!=="TH"; [...r0.cells].forEach(x=>{ const n=document.createElement(toTh?"th":"td"); n.innerHTML=x.innerHTML; ["data-bg","data-a"].forEach(a=>{ if(x.getAttribute(a))n.setAttribute(a,x.getAttribute(a)); }); x.replaceWith(n); }); }
+else if(op==="hide"){ const vis=rows[0]?[...rows[0].cells].filter(x=>!x.hasAttribute("data-h")).length:0; if(vis<=1){ if(typeof tell==="function")tell("ต้องเหลืออย่างน้อย 1 คอลัมน์ที่แสดงอยู่ค่ะ"); return; } rows.forEach(r=>{ if(r.cells[ci])r.cells[ci].setAttribute("data-h","1"); }); const cs=[...tr.cells], nx=cs.slice(ci+1).find(x=>!x.hasAttribute("data-h"))||cs.slice(0,ci).reverse().find(x=>!x.hasAttribute("data-h")); if(nx)neFocusCell(nx); }
+else if(op==="show"){ tb.querySelectorAll("[data-h]").forEach(x=>x.removeAttribute("data-h")); }
 else if(op==="tdel"){ tb.remove(); NE().focus(); }
 neExtraState();
 }
@@ -249,7 +251,7 @@ NE().addEventListener("dragover",e=>{ if(e.dataTransfer&&[...e.dataTransfer.type
 // ---------- สถานะแถบเครื่องมือ ----------
 function neExtraState(){
 const c=neCell(), bar=el("netbar"); bar.hidden=!c;
-if(c){ const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar.querySelector('[data-nt="head"]'); if(hb)hb.classList.toggle("on",th); }
+if(c){ const nh=c.closest("table").rows[0]?[...c.closest("table").rows[0].cells].filter(x=>x.hasAttribute("data-h")).length:0, sb=bar.querySelector('[data-nt="show"]'); if(sb){ sb.hidden=!nh; sb.textContent="แสดงที่ซ่อน ("+nh+")"; } const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar.querySelector('[data-nt="head"]'); if(hb)hb.classList.toggle("on",th); }
 const li=neLi(), cb=document.querySelector('#ntool [data-ne="ck"]'); if(cb)cb.classList.toggle("on",!!(li&&li.parentNode.classList&&li.parentNode.classList.contains("ck")));
 }
 document.addEventListener("selectionchange",()=>{ if(el("ndlg").open&&document.activeElement===NE())neExtraState(); });

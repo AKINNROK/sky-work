@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.11"; const APP_DATE="28 ต.ค. 2026";
+const APP_VERSION="14.14.12"; const APP_DATE="28 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2573,24 +2573,25 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
   else{ n.remove(); return; }
   if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
- let col="",bg="",dc="",di="",dbg="",da="",dta="";
+ let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="";
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
  if((T==="TD"||T==="TH")&&NT_BG.has(n.getAttribute("data-bg")||""))dbg=n.getAttribute("data-bg");
  if((T==="TD"||T==="TH")&&/^[lcr]$/.test(n.getAttribute("data-a")||""))da=n.getAttribute("data-a");
  if(T==="TABLE"&&/^[lcr]$/.test(n.getAttribute("data-ta")||""))dta=n.getAttribute("data-ta");
+ if((T==="TD"||T==="TH")&&n.getAttribute("data-h")==="1")dh="1";
  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
  if(cls)n.className=cls;
  if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
- if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta);
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh);
  if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
 }
 const ntPlain=(n,withUrl)=>{ if(!n)return""; if(n.fmt!=="h")return n.body||"";
 const d0=document.createElement("div"); d0.innerHTML=ntClean(n.body||"");
-d0.querySelectorAll("table").forEach(t=>{ const p=document.createElement("p"); p.textContent=[...t.rows].map(r=>[...r.cells].map(c=>c.textContent.replace(/\s+/g," ").trim()).join(" | ")).join("\n"); t.replaceWith(p); });
+d0.querySelectorAll("table").forEach(t=>{ const p=document.createElement("p"); p.textContent=[...t.rows].map(r=>[...r.cells].filter(c=>!c.hasAttribute("data-h")).map(c=>c.textContent.replace(/\s+/g," ").trim()).join(" | ")).join("\n"); t.replaceWith(p); });
 d0.querySelectorAll("ul.ck>li").forEach(li=>li.insertBefore(document.createTextNode(li.getAttribute("data-c")==="1"?"☑ ":"☐ "),li.firstChild));
 d0.querySelectorAll("img").forEach(i=>i.replaceWith(document.createTextNode("[รูป]")));
 const d=document.createElement("div"); d.innerHTML=d0.innerHTML.replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n");
@@ -5758,7 +5759,8 @@ if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
 if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
  if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
 const back=noteBack&&editingNote, prevN=editingNote; el("ndlg").close();
-try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); if(back)viewNote({...prevN,...d,_id:prevN._id}); }
+if(back)viewNote({...prevN,...d,_id:prevN._id}); // โชว์การ์ดทันที (ไม่รอเซิร์ฟเวอร์) แล้วบันทึกเบื้องหลัง
+try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("ndel").onclick=async()=>{ if(!editingNote)return; const n=editingNote; el("ndlg").close();
@@ -6371,6 +6373,8 @@ else if(op==="rowd"){ if(rows.length<=1)tb.remove(); else{ const nx=tr.nextEleme
 else if(op==="cola"||op==="colb"){ rows.forEach(r=>{ const x=r.cells[ci], n=mk(x&&x.tagName==="TH"?"th":"td"); if(x&&x.getAttribute("data-a"))n.setAttribute("data-a",x.getAttribute("data-a")); if(x){ if(op==="cola")x.before(n); else x.after(n); } else r.appendChild(n); }); }
 else if(op==="cold"){ if(tr.cells.length<=1)tb.remove(); else{ const keep=c.nextElementSibling||c.previousElementSibling; rows.forEach(r=>{ if(r.cells[ci])r.cells[ci].remove(); }); neFocusCell(keep); } }
 else if(op==="head"){ const r0=rows[0], toTh=r0.cells[0].tagName!=="TH"; [...r0.cells].forEach(x=>{ const n=document.createElement(toTh?"th":"td"); n.innerHTML=x.innerHTML; ["data-bg","data-a"].forEach(a=>{ if(x.getAttribute(a))n.setAttribute(a,x.getAttribute(a)); }); x.replaceWith(n); }); }
+else if(op==="hide"){ const vis=rows[0]?[...rows[0].cells].filter(x=>!x.hasAttribute("data-h")).length:0; if(vis<=1){ if(typeof tell==="function")tell("ต้องเหลืออย่างน้อย 1 คอลัมน์ที่แสดงอยู่ค่ะ"); return; } rows.forEach(r=>{ if(r.cells[ci])r.cells[ci].setAttribute("data-h","1"); }); const cs=[...tr.cells], nx=cs.slice(ci+1).find(x=>!x.hasAttribute("data-h"))||cs.slice(0,ci).reverse().find(x=>!x.hasAttribute("data-h")); if(nx)neFocusCell(nx); }
+else if(op==="show"){ tb.querySelectorAll("[data-h]").forEach(x=>x.removeAttribute("data-h")); }
 else if(op==="tdel"){ tb.remove(); NE().focus(); }
 neExtraState();
 }
@@ -6487,7 +6491,7 @@ NE().addEventListener("dragover",e=>{ if(e.dataTransfer&&[...e.dataTransfer.type
 // ---------- สถานะแถบเครื่องมือ ----------
 function neExtraState(){
 const c=neCell(), bar=el("netbar"); bar.hidden=!c;
-if(c){ const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar.querySelector('[data-nt="head"]'); if(hb)hb.classList.toggle("on",th); }
+if(c){ const nh=c.closest("table").rows[0]?[...c.closest("table").rows[0].cells].filter(x=>x.hasAttribute("data-h")).length:0, sb=bar.querySelector('[data-nt="show"]'); if(sb){ sb.hidden=!nh; sb.textContent="แสดงที่ซ่อน ("+nh+")"; } const th=c.closest("table").rows[0].cells[0].tagName==="TH"; const hb=bar.querySelector('[data-nt="head"]'); if(hb)hb.classList.toggle("on",th); }
 const li=neLi(), cb=document.querySelector('#ntool [data-ne="ck"]'); if(cb)cb.classList.toggle("on",!!(li&&li.parentNode.classList&&li.parentNode.classList.contains("ck")));
 }
 document.addEventListener("selectionchange",()=>{ if(el("ndlg").open&&document.activeElement===NE())neExtraState(); });

@@ -653,7 +653,8 @@ if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
 if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
  if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
 const back=noteBack&&editingNote, prevN=editingNote; el("ndlg").close();
-try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); if(back)viewNote({...prevN,...d,_id:prevN._id}); }
+if(back)viewNote({...prevN,...d,_id:prevN._id}); // โชว์การ์ดทันที (ไม่รอเซิร์ฟเวอร์) แล้วบันทึกเบื้องหลัง
+try{ editingNote? await DB.collection("note").doc(editingNote._id).set(d) : await DB.collection("note").add(d); }
 catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); }
 };
 el("ndel").onclick=async()=>{ if(!editingNote)return; const n=editingNote; el("ndlg").close();

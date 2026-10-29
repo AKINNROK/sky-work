@@ -616,24 +616,25 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
   else{ n.remove(); return; }
   if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
- let col="",bg="",dc="",di="",dbg="",da="",dta="";
+ let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="";
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
  if((T==="TD"||T==="TH")&&NT_BG.has(n.getAttribute("data-bg")||""))dbg=n.getAttribute("data-bg");
  if((T==="TD"||T==="TH")&&/^[lcr]$/.test(n.getAttribute("data-a")||""))da=n.getAttribute("data-a");
  if(T==="TABLE"&&/^[lcr]$/.test(n.getAttribute("data-ta")||""))dta=n.getAttribute("data-ta");
+ if((T==="TD"||T==="TH")&&n.getAttribute("data-h")==="1")dh="1";
  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
  if(cls)n.className=cls;
  if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
- if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta);
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh);
  if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
 }
 const ntPlain=(n,withUrl)=>{ if(!n)return""; if(n.fmt!=="h")return n.body||"";
 const d0=document.createElement("div"); d0.innerHTML=ntClean(n.body||"");
-d0.querySelectorAll("table").forEach(t=>{ const p=document.createElement("p"); p.textContent=[...t.rows].map(r=>[...r.cells].map(c=>c.textContent.replace(/\s+/g," ").trim()).join(" | ")).join("\n"); t.replaceWith(p); });
+d0.querySelectorAll("table").forEach(t=>{ const p=document.createElement("p"); p.textContent=[...t.rows].map(r=>[...r.cells].filter(c=>!c.hasAttribute("data-h")).map(c=>c.textContent.replace(/\s+/g," ").trim()).join(" | ")).join("\n"); t.replaceWith(p); });
 d0.querySelectorAll("ul.ck>li").forEach(li=>li.insertBefore(document.createTextNode(li.getAttribute("data-c")==="1"?"☑ ":"☐ "),li.firstChild));
 d0.querySelectorAll("img").forEach(i=>i.replaceWith(document.createTextNode("[รูป]")));
 const d=document.createElement("div"); d.innerHTML=d0.innerHTML.replace(/<\/(p|div|li|h2|h3|blockquote)>|<br\s*\/?>/gi,"$&\n");
