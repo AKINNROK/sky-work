@@ -222,7 +222,8 @@ if(touchCount>=2){ ink.drag={mode:"pinch"}; inkOverClear(); inkDrawSel(); ink.pi
 const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||ink.tool==="laser")));
 if(!canDraw){ ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 inkClosePop();
-const [x,y]=inkToPage(e), pr=t==="pen"?(e.pressure||.5):.5; ink.lastPt=[x,y];
+const [x,y]=(typeof inkGdDown==="function"?inkGdDown(e,inkToPage(e)):inkToPage(e)), pr=t==="pen"?(e.pressure||.5):.5; ink.lastPt=[x,y];
+if(ink.tool==="move"){ if(inkMoveDown(e,x,y))return; ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 if(ink.tool==="eraser"){ ink.drag={mode:"erase",id:e.pointerId,del:new Set(),x,y,part:ink.ersPart?1:0,cur:inkPage().strokes,ch:0}; inkEraseAt(x,y); return; }
 if(ink.tool==="lasso"){
 if(ink.sel&&inkSelDown(e,x,y,true))return;
@@ -253,7 +254,7 @@ if(e.pointerId!==d.id)return;
 if(d.mode==="pan"){ if(ink.board){ ink.vx=d.vx-(e.clientX-d.x)/ink.z; ink.vy=d.vy-(e.clientY-d.y)/ink.z; } else{ ink.tx=d.tx+(e.clientX-d.x); ink.ty=d.ty+(e.clientY-d.y); } inkApply(); return; }
 const evs=(e.getCoalescedEvents&&e.getCoalescedEvents())||[]; const list=evs.length?evs:[e];
 for(const ev of list){
-const [x,y]=inkToPage(ev);
+const [x,y]=(typeof inkGdMove==="function"?inkGdMove(inkToPage(ev),d):inkToPage(ev));
 if(d.mode==="draw"&&d.snap){ if(d.s.sh==="line"){ d.s.p[3]=+x.toFixed(1); d.s.p[4]=+y.toFixed(1); inkShapeConstrain(d.s,1); } continue; }
 if(d.mode==="draw"&&d.s.t==="s"){ d.s.p[3]=+x.toFixed(1); d.s.p[4]=+y.toFixed(1); inkShapeConstrain(d.s,ev.shiftKey||e.shiftKey||ink.shift); continue; }
 if(d.mode==="draw"&&d.s.t==="t"&&d.s.m==="line"){ let X=x,Y=y; const x0=d.x0,y0=d.y0, dx=X-x0, dy=Y-y0; if(Math.hypot(dx,dy)>1){ let a=Math.atan2(dy,dx); const st=Math.PI/12, g=Math.round(a/st)*st; if(ev.shiftKey||e.shiftKey||ink.shift||Math.abs(a-g)<.05){ const L=Math.hypot(dx,dy); X=x0+Math.cos(g)*L; Y=y0+Math.sin(g)*L; } } d.s.p=[d.s.p[0],d.s.p[1],.5,+X.toFixed(1),+Y.toFixed(1),.5]; continue; }
@@ -289,7 +290,7 @@ else if(d.mode==="laser"){ ink.laserDown=false; if(!d.moved&&ink.pres)inkLinkTap
 else if(d.mode==="pan"){ if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<6&&(ink.tool==="hand"||ink.pres))inkLinkTap(e); return; }
 else if(d.mode==="erase"){ if(d.part){ if(d.ch)inkCommit(d.cur); else{ inkOverClear(); inkRedraw(); } } else if(d.del.size){ inkCommit(inkPage().strokes.filter((_,i)=>!d.del.has(i))); } else{ inkOverClear(); inkRedraw(); } }
 else if(d.mode==="lasso"){ inkLassoDone(d.poly,d.lk); }
-else if(d.mode==="move"){ if(Math.abs(d.dx)+Math.abs(d.dy)>1){ const idx=ink.sel.idx, pg=inkPage();
+else if(d.mode==="move"){ if(d.dup&&Math.abs(d.dx)+Math.abs(d.dy)>1){ inkMoveDup(d); return; } if(Math.abs(d.dx)+Math.abs(d.dy)>1){ const idx=ink.sel.idx, pg=inkPage();
 const next=pg.strokes.map((s,i)=>idx.has(i)?{...s,p:s.p.map((v,j)=>+(v+(j%3===0?d.dx:j%3===1?d.dy:0)).toFixed(1))}:s);
 const b=ink.sel.box; ink.sel={idx,box:[b[0]+d.dx,b[1]+d.dy,b[2]+d.dx,b[3]+d.dy]}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
 }
@@ -344,8 +345,8 @@ ctx.save(); ctx.strokeStyle="rgba(80,80,80,.7)"; ctx.fillStyle="rgba(255,255,255
 }
 
 // ---------- แถบเครื่องมือ ----------
-const INK_TOOLS=[["pen","ปากกา",'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>'],["shape","รูปทรง",'<rect x="3.5" y="4" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>'],["hl","ไฮไลต์",'<path d="M9 4l11 11-5 5L4 9z"/><path d="M4 20h6"/>'],["eraser","ยางลบ",'<path d="M7 20h12M4.5 14.5L13 6l5 5-8.5 8.5H6z"/>'],["text","ข้อความ",'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],["lasso","เลือก/ย้าย",'<path d="M12 4c5 0 8 2 8 5s-3 5-8 5-8-2-8-5 3-5 8-5z" stroke-dasharray="3 3"/><path d="M9 14c-1 3 0 5 3 6"/>'],["laser","เลเซอร์พอยน์เตอร์",'<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'],["tape","เทป (ปิดบัง/ไฮไลต์)",'<path d="M4 9l11-4 5 5-4 11H6z" fill="none"/><path d="M8 12l5 5M10.5 9.5l5 5"/>'],["sticky","โน้ตแปะ",'<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>'],["hand","เลื่อนหน้า",'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v7c0 4-2 7-6 7-3 0-4-2-6-5l-1-2a1.5 1.5 0 0 1 2.5-1.5L8 14"/>']];
-const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>']];
+const INK_TOOLS=[["pen","ปากกา",'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>'],["shape","รูปทรง",'<rect x="3.5" y="4" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>'],["hl","ไฮไลต์",'<path d="M9 4l11 11-5 5L4 9z"/><path d="M4 20h6"/>'],["eraser","ยางลบ",'<path d="M7 20h12M4.5 14.5L13 6l5 5-8.5 8.5H6z"/>'],["text","ข้อความ",'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],["lasso","เลือก/ย้าย",'<path d="M12 4c5 0 8 2 8 5s-3 5-8 5-8-2-8-5 3-5 8-5z" stroke-dasharray="3 3"/><path d="M9 14c-1 3 0 5 3 6"/>'],["move","เคลื่อนย้าย (V) — แตะ/ลากวัตถุใดก็ได้เพื่อย้าย ไม่ต้องลาสโซ่ · Alt = ทำสำเนา · ลูกศร = ขยับทีละนิด",'<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>'],["laser","เลเซอร์พอยน์เตอร์",'<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'],["tape","เทป (ปิดบัง/ไฮไลต์)",'<path d="M4 9l11-4 5 5-4 11H6z" fill="none"/><path d="M8 12l5 5M10.5 9.5l5 5"/>'],["sticky","โน้ตแปะ",'<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>'],["hand","เลื่อนหน้า",'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v7c0 4-2 7-6 7-3 0-4-2-6-5l-1-2a1.5 1.5 0 0 1 2.5-1.5L8 14"/>']];
+const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'],["calc","เครื่องคิดเลข (+ − × ÷ %) · ใส่ผลลงหน้า · พิมพ์ 1+1= ได้ผลทันที",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/>'],["ruler","ไม้บรรทัด / เส้นไกด์ (ลากจากขอบบน/ซ้ายมาวางทาบ ลากกลับเพื่อลบ)",'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>'],["ai","ผู้ช่วย AI — ถามหาเครื่องมือ / ให้สอนใช้งานหน้านี้",'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>'],["act","สรุปประชุม → แตกเป็นงาน (AI) — สรุป มติ และสร้างรายการงานจากสิ่งที่เขียนในหน้านี้",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h5M8.5 16.5l1.5 1.5 3-3.5"/>']];
 function inkToolbar(){
 const tb=el("ink-tools");
 tb.innerHTML=INK_TOOLS.map(([k,l,p])=>`<button type="button" class="ink-b${ink.tool===k?" on":""}" data-itool="${k}" title="${l}" aria-label="${l}" aria-pressed="${ink.tool===k}">${svg(p,20)}</button>`).join("")+INK_ACTS.map(([k,l,p])=>`<button type="button" class="ink-b${k==="mic"&&ink.voiceOn?" on":""}" data-iact="${k}" title="${l}" aria-label="${l}">${svg(p,20)}</button>`).join("");
@@ -435,7 +436,7 @@ const {error}=await SB.from("rows").upsert({id:"ink-"+p.id,uid,kind:"ink",data:p
 if(error)throw error; p.dirty=false; }
 const nt=inkLive();
 const ptpl={}; ink.pages.forEach(p=>{ if(p.tpl)ptpl[p.id]=p.tpl; });
-const d={pages:ink.pages.length,pageIds:ink.pages.map(p=>p.id),ptpl,bm:ink.bm||[],...((final||!nt.thumb)?{thumb:inkThumb()}:{}),updated:new Date().toISOString(),title:(el("ink-title").value||"").trim()||nt.title||("สมุดเขียนมือ "+fmtDate(new Date().toISOString().slice(0,10)))};
+const d={pages:ink.pages.length,pageIds:ink.pages.map(p=>p.id),ptpl,bm:ink.bm||[],gd:(typeof inkGdMap==="function"?inkGdMap():{}),...((final||!nt.thumb)?{thumb:inkThumb()}:{}),updated:new Date().toISOString(),title:(el("ink-title").value||"").trim()||nt.title||("สมุดเขียนมือ "+fmtDate(new Date().toISOString().slice(0,10)))};
 await DB.collection("note").doc(ink.note._id).set(d,{merge:true});
 ink.metaDirty=false; inkStatus("บันทึกแล้ว ✓","ok");
 }catch(err){ ink.saveErr=true; inkStatus("บันทึกไม่สำเร็จ · แตะเพื่อลองใหม่","bad"); lastErr=err; }
@@ -467,7 +468,7 @@ const ids=(n.pageIds&&n.pageIds.length)?n.pageIds:[inkUid()];
 let rows={};
 if(!fresh&&SB){ try{ const {data,error}=await SB.from("rows").select("id,data").eq("uid",uid).eq("kind","ink").in("id",ids.map(i=>"ink-"+i)); if(error)throw error; (data||[]).forEach(r=>rows[r.id]=r.data); }
 catch(e){ el("ink-load").hidden=true; inkStatus("โหลดไม่สำเร็จ","bad"); tell("<b>โหลดลายเส้นไม่สำเร็จ</b><div style=\"font-size:13px;margin-top:8px\">ตรวจอินเทอร์เน็ตแล้วเปิดสมุดใหม่อีกครั้งค่ะ — ข้อมูลเดิมยังอยู่ ไม่หาย</div>"); ink.note=null; el("inkdlg").close(); document.documentElement.style.zoom=ink.zoomBak; document.body.classList.remove("ink-on"); return; } }
-ink.pages=ids.map(i=>({id:i,strokes:((rows["ink-"+i]||{}).strokes)||[],dirty:false,tpl:(n.ptpl&&n.ptpl[i])||null}));
+ink.pages=ids.map(i=>({id:i,strokes:((rows["ink-"+i]||{}).strokes)||[],dirty:false,tpl:(n.ptpl&&n.ptpl[i])||null,gd:((n.gd&&n.gd[i])||[]).filter(g=>g&&(g.o==="v"||g.o==="h")&&isFinite(g.v)).map(g=>({o:g.o,v:+g.v}))}));
 if(ink.board&&ink.pages[0].strokes.length){ const b=inkAllBox(); const st=el("ink-stage"); ink.vx=b[0]-60; ink.vy=b[1]-60; ink.z=Math.max(.2,Math.min(1,Math.min(st.clientWidth/(b[2]-b[0]+120),st.clientHeight/(b[3]-b[1]+120)))); }
 el("ink-load").hidden=true; inkStatus(fresh?"สมุดใหม่":"บันทึกแล้ว ✓",fresh?"":"ok"); inkImgLoadAll();
 inkToolbar(); inkApply(); setTimeout(()=>{ inkApply(); inkResize(); },30);
@@ -581,7 +582,7 @@ el("ink-title").oninput=()=>{ if(ink.note){ ink.metaDirty=true; inkDirty(); } };
 (function(){ const tt=el("ink-title"); tt.addEventListener("click",()=>{ if(tt.readOnly){ tt.blur(); tt.readOnly=false; tt.focus(); } }); tt.addEventListener("blur",()=>{ tt.readOnly=true; }); tt.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); tt.blur(); } }); })();
 el("inkdlg").addEventListener("click",async e=>{
 const b=e.target.closest("button"); if(!b){ if(!e.target.closest("#ink-pop"))inkClosePop(); return; }
-if(b.dataset.itool){ const pt=ink.tool; ink.tool=b.dataset.itool; if(pt!==ink.tool)ink.sel=null; inkOverClear(); inkDrawSel(); inkToolbar(); }
+if(b.dataset.itool){ const pt=ink.tool; ink.tool=b.dataset.itool; if(pt!==ink.tool&&!(["lasso","move"].includes(pt)&&["lasso","move"].includes(ink.tool)))ink.sel=null; inkOverClear(); inkDrawSel(); inkToolbar(); }
 else if(b.dataset.icolor){ ink.color[inkColKey()]=b.dataset.icolor; inkSetSave(); inkToolbar(); if(ink.pres&&typeof inkPresBar==="function")inkPresBar(); }
 else if(b.dataset.iact){ inkAct(b.dataset.iact,b); }
 else if(b.dataset.ipage){ inkGo(+b.dataset.ipage); }

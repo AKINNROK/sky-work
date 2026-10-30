@@ -35,11 +35,18 @@ module.exports = async (req, res) => {
     .map(m => ({ role: m.role, content: m.content.slice(0, 6000) }));
   if (!messages.length || messages[messages.length - 1].role !== "user") return res.status(400).json({ error: "bad_request", message: "ไม่มีคำถาม" });
 
+  // แนบรูป (ใช้อ่านลายมือ → ข้อความ): images = [{media:"image/jpeg"|"image/png", data:<base64>}] ไม่เกิน 3 รูป / ~5MB
+  const imgs = (Array.isArray(b.images) ? b.images : []).slice(0, 3).filter(i => i && /^image\/(jpeg|png|webp)$/.test(i.media) && typeof i.data === "string" && /^[A-Za-z0-9+\/=]+$/.test(i.data) && i.data.length < 5000000);
+  if (imgs.length) {
+    const last = messages[messages.length - 1];
+    last.content = imgs.map(i => ({ type: "image", source: { type: "base64", media_type: i.media, data: i.data } })).concat([{ type: "text", text: last.content }]);
+  }
+  const maxTok = Math.min(4000, Math.max(300, parseInt(b.max_tokens) || 1500));
   try {
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model, max_tokens: 1500, system: system + "\n\n[ข้อมูลในระบบ]\n" + context, messages })
+      body: JSON.stringify({ model, max_tokens: maxTok, system: context ? system + "\n\n[ข้อมูลในระบบ]\n" + context : system, messages })
     });
     const j = await r.json().catch(() => ({}));
     if (!r.ok) {

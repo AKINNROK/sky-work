@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.27"; const APP_DATE="30 ต.ค. 2026";
+const APP_VERSION="14.14.28"; const APP_DATE="30 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -3005,7 +3005,7 @@ ctx.save(); ctx.strokeStyle="rgba(80,80,80,.7)"; ctx.fillStyle="rgba(255,255,255
 
 // ---------- แถบเครื่องมือ ----------
 const INK_TOOLS=[["pen","ปากกา",'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>'],["shape","รูปทรง",'<rect x="3.5" y="4" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>'],["hl","ไฮไลต์",'<path d="M9 4l11 11-5 5L4 9z"/><path d="M4 20h6"/>'],["eraser","ยางลบ",'<path d="M7 20h12M4.5 14.5L13 6l5 5-8.5 8.5H6z"/>'],["text","ข้อความ",'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],["lasso","เลือก/ย้าย",'<path d="M12 4c5 0 8 2 8 5s-3 5-8 5-8-2-8-5 3-5 8-5z" stroke-dasharray="3 3"/><path d="M9 14c-1 3 0 5 3 6"/>'],["move","เคลื่อนย้าย (V) — แตะ/ลากวัตถุใดก็ได้เพื่อย้าย ไม่ต้องลาสโซ่ · Alt = ทำสำเนา · ลูกศร = ขยับทีละนิด",'<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>'],["laser","เลเซอร์พอยน์เตอร์",'<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'],["tape","เทป (ปิดบัง/ไฮไลต์)",'<path d="M4 9l11-4 5 5-4 11H6z" fill="none"/><path d="M8 12l5 5M10.5 9.5l5 5"/>'],["sticky","โน้ตแปะ",'<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>'],["hand","เลื่อนหน้า",'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v7c0 4-2 7-6 7-3 0-4-2-6-5l-1-2a1.5 1.5 0 0 1 2.5-1.5L8 14"/>']];
-const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'],["calc","เครื่องคิดเลข (+ − × ÷ %) · ใส่ผลลงหน้า · พิมพ์ 1+1= ได้ผลทันที",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/>'],["ruler","ไม้บรรทัด / เส้นไกด์ (ลากจากขอบบน/ซ้ายมาวางทาบ ลากกลับเพื่อลบ)",'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>'],["ai","ผู้ช่วย AI — ถามหาเครื่องมือ / ให้สอนใช้งานหน้านี้",'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>']];
+const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'],["calc","เครื่องคิดเลข (+ − × ÷ %) · ใส่ผลลงหน้า · พิมพ์ 1+1= ได้ผลทันที",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/>'],["ruler","ไม้บรรทัด / เส้นไกด์ (ลากจากขอบบน/ซ้ายมาวางทาบ ลากกลับเพื่อลบ)",'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>'],["ai","ผู้ช่วย AI — ถามหาเครื่องมือ / ให้สอนใช้งานหน้านี้",'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>'],["act","สรุปประชุม → แตกเป็นงาน (AI) — สรุป มติ และสร้างรายการงานจากสิ่งที่เขียนในหน้านี้",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 8h8M8 12h5M8.5 16.5l1.5 1.5 3-3.5"/>']];
 function inkToolbar(){
 const tb=el("ink-tools");
 tb.innerHTML=INK_TOOLS.map(([k,l,p])=>`<button type="button" class="ink-b${ink.tool===k?" on":""}" data-itool="${k}" title="${l}" aria-label="${l}" aria-pressed="${ink.tool===k}">${svg(p,20)}</button>`).join("")+INK_ACTS.map(([k,l,p])=>`<button type="button" class="ink-b${k==="mic"&&ink.voiceOn?" on":""}" data-iact="${k}" title="${l}" aria-label="${l}">${svg(p,20)}</button>`).join("");
@@ -4164,7 +4164,7 @@ document.addEventListener("paste",e=>{ if(!ink.note||!el("inkdlg").open||ink.ta)
  el("ink-imgf").addEventListener("change",e=>{ const fs=[...e.target.files]; e.target.value=""; if(fs.length)inkImgAdd(fs); }); })();
 
 // ---------- ปุ่มลัดบนแถบเครื่องมือ (รูป / ไมค์) ----------
-function inkAct(k,btn){ if(k==="stk"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-istk]")){ inkClosePop(); return; } inkStkMenu(btn); return; } if(k==="img"){ el("ink-imgf").click(); } else if(k==="mic"&&typeof inkVoiceToggle==="function"){ inkVoiceToggle(); } else if(k==="calc"&&typeof calcOpenInk==="function"){ calcOpenInk(); } else if(k==="ruler"&&typeof inkRulMenu==="function"){ inkRulMenu(btn); } else if(k==="ai"&&typeof hlpToggle==="function"){ inkClosePop(); hlpToggle(el("inkdlg")); } }
+function inkAct(k,btn){ if(k==="stk"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-istk]")){ inkClosePop(); return; } inkStkMenu(btn); return; } if(k==="img"){ el("ink-imgf").click(); } else if(k==="mic"&&typeof inkVoiceToggle==="function"){ inkVoiceToggle(); } else if(k==="calc"&&typeof calcOpenInk==="function"){ calcOpenInk(); } else if(k==="ruler"&&typeof inkRulMenu==="function"){ inkRulMenu(btn); } else if(k==="act"&&typeof actRun==="function"){ inkClosePop(); actRun("ink"); } else if(k==="ai"&&typeof hlpToggle==="function"){ inkClosePop(); hlpToggle(el("inkdlg")); } }
 
 // ---------- ล็อก · ลำดับชั้น ----------
 function inkLockToggle(){ if(!ink.sel)return; const pg=inkPage(), idx=ink.sel.idx, all=[...idx].every(i=>pg.strokes[i]&&pg.strokes[i].lk);
@@ -4831,6 +4831,7 @@ const HLP_INK=[
  ["mic","พิมพ์ตามเสียงพูด",'[data-iact="mic"]',"กดแล้วพูด ข้อความจะเติมเป็นกล่องข้อความบนหน้า · สลับไทย/EN ที่แถบเสียง · iPad แบบไอคอนหน้าจอโฮมอาจใช้ไม่ได้ → ใช้ไมค์บนคีย์บอร์ดแทน","ไมค์ เสียง พูด พิมพ์ตามเสียง บันทึกเสียง"],
  ["calc","เครื่องคิดเลข",'[data-iact="calc"]',"เครื่องคิดเลขลอย + − × ÷ % ( ) · ใส่ผลลัพธ์ลงหน้า · ถ้าเลือกกล่องตัวเลขไว้ จะมีปุ่มรวม/เฉลี่ย · พิมพ์ในกล่องข้อความ 1200+350*2= ได้ผลต่อท้ายทันที","เครื่องคิดเลข คำนวณ บวก ลบ คูณ หาร เปอร์เซ็นต์ สูตร"],
  ["ruler","ไม้บรรทัด/เส้นไกด์",'[data-iact="ruler"]',"เมนูไม้บรรทัด: ซ่อน/แสดง ปิดเปิดแม่เหล็ก ลบไกด์ทั้งหมด · ลากจากขอบบน (แนวนอน) หรือขอบซ้าย (แนวตั้ง) เพื่อวางเส้นไกด์ · ลากจุดสามเหลี่ยมกลับไปที่ไม้บรรทัดเพื่อลบ","ไม้บรรทัด ไกด์ เส้นช่วย เส้นทาบ ruler guide ตรง"],
+ ["act","สรุปประชุม→งาน",'[data-iact="act"]',"AI อ่านสิ่งที่เขียน/พิมพ์ในหน้านี้ (รวมลายมือถ้ามี · ลาสโซ่เลือกเฉพาะส่วนได้) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Work ได้เลย · ไม่สร้างเองถ้าไม่ได้กดยืนยัน","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม เลขา สร้างงาน"],
  ["ai","ผู้ช่วย AI",'[data-iact="ai"]',"ปุ่มนี้เอง — ถามหาเครื่องมือหรือให้สอนใช้งานได้","ช่วย ผู้ช่วย ai สอน ถาม"],
  ["undo","ย้อนกลับ",'#ink-undo',"ย้อนการกระทำล่าสุด (Ctrl+Z)","ย้อน undo ยกเลิก"],
  ["redo","ทำซ้ำ",'#ink-redo',"ทำซ้ำสิ่งที่ย้อนไป (Ctrl+Shift+Z)","ทำซ้ำ redo"],
@@ -4856,6 +4857,7 @@ const HLP_INK=[
  ["seldel","ลบที่เลือก",'#ink-seldel',"ลบของที่เลือก (หรือกด Delete)","ลบที่เลือก ลบ delete"]
 ];
 const HLP_NOTE=[
+ ["act","สรุป→งาน",'[data-ne="act"]',"AI อ่านบันทึกนี้ (หรือเฉพาะข้อความที่เลือก) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Work ได้เลย · แทรกสรุปกลับลงบันทึกได้","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม สร้างงาน"],
  ["ai","ผู้ช่วย AI",'[data-ne="ai"]',"ปุ่มนี้เอง — ถามหาเครื่องมือหรือให้สอนใช้งานได้","ช่วย ผู้ช่วย ai สอน ถาม"],
  ["undo","ย้อนกลับ / ทำซ้ำ",'[data-ne="undo"]',"ย้อน (Ctrl+Z) / ทำซ้ำ (Ctrl+Shift+Z)","ย้อน undo redo ทำซ้ำ"],
  ["h2","หัวข้อใหญ่/ย่อย",'[data-ne="h2"]',"H2 = หัวข้อใหญ่ · H3 = หัวข้อย่อย (เลือกบรรทัดนั้นก่อน)","หัวข้อ heading ใหญ่ ย่อย"],
@@ -5034,6 +5036,80 @@ document.addEventListener("keydown",e=>{
 (function(){ const sz=el("ink-sizes"); if(sz)sz.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
  if(b.id==="ink-mva"){ e.stopPropagation(); ink.mvAuto=!ink.mvAuto; inkMoveSave(); inkToolbar(); } else if(b.id==="ink-mvd"){ e.stopPropagation(); ink.mvDup=ink.mvDup?0:1; inkToolbar(); } },true); })();
 (function(){ const f=inkToolbar; inkToolbar=function(){ const r=f.apply(this,arguments); const s=el("ink-stage"); if(s)s.style.cursor=ink.tool==="move"?"move":""; return r; }; })();
+// ===== สรุปประชุม → แตกเป็นงาน (AI) — กระดานกว้าง · สมุดเขียนมือ · เขียนบันทึก =====
+// AI อ่านข้อความ (และลายมือในรูป ถ้ามี) → สรุป · มติ · รายการงาน (ใคร/ทำอะไร/เมื่อไร) → ผู้ใช้ติ๊ก/แก้ แล้วกดสร้างงานจริงใน Sky Work
+// ใช้ /api/ai เดิม และ aiRun({type:"add_task"}) เดิม (มีตัวตรวจสอบข้อมูลอยู่แล้ว) — AI ไม่เขียนข้อมูลเอง ต้องกดยืนยันทุกครั้ง
+const ACT_SYS=(today,wd)=>`คุณคือผู้ช่วยเลขาประชุมของ HR (LeKise Group) งาน: อ่านบันทึกประชุม/โน้ต (อาจมีรูปลายมือแนบ) แล้วสรุปเป็น JSON เท่านั้น
+วันนี้คือ ${today} (วัน${wd}) — ใช้แปลงวันที่แบบสัมพัทธ์ เช่น “ศุกร์นี้” “สัปดาห์หน้า” “สิ้นเดือน” เป็น YYYY-MM-DD
+รูปแบบคำตอบ (ห้ามมีข้อความอื่นนอก JSON):
+{"title":"ชื่อเรื่อง/หัวข้อประชุม สั้นๆ","summary":"สรุป 2-4 ประโยค","decisions":["มติ/ข้อตกลง"],"tasks":[{"title":"งานที่ต้องทำ (ขึ้นต้นด้วยกริยา กระชับ)","owner":"ชื่อผู้รับผิดชอบ หรือ \\"\\"","date":"YYYY-MM-DD หรือ \\"\\"","why":"เหตุผล/บริบทสั้นๆ หรือ \\"\\""}]}
+กติกา: ใช้เฉพาะข้อมูลที่มีในบันทึก ห้ามแต่งงานหรือชื่อคนเพิ่ม · owner ใส่เฉพาะเมื่อมีระบุชื่อชัดเจน ไม่ชัดให้เว้นว่าง · date ใส่เฉพาะเมื่อมีกำหนดหรือพอเทียบได้ ไม่ชัดเว้นว่าง · รวมงานซ้ำเป็นข้อเดียว · ไม่เกิน 15 งาน · ภาษาไทย · ถ้าไม่มีงานให้ tasks เป็น []`;
+const actToday=()=>{ const d=new Date(), p=n=>String(n).padStart(2,"0"); return {iso:d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()),wd:["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"][d.getDay()]}; };
+const ACT={ctx:null,data:null,src:null};
+function actOv(host){ let o=el("act-ov"); if(!o){ o=document.createElement("div"); o.id="act-ov"; o.className="ink-ocr act-ov"; host.appendChild(o); o.addEventListener("pointerdown",e=>e.stopPropagation()); o.addEventListener("click",e=>{ if(e.target===o&&o.dataset.st!=="load")actClose(); }); } return o; }
+function actClose(){ const o=el("act-ov"); if(o)o.remove(); }
+function actMsg(host,html){ const o=actOv(host); o.dataset.st="msg"; o.innerHTML=`<div class="ocr-box">${html}<button type="button" class="btn ghost" data-ac="x" style="width:100%;margin-top:14px">ปิด</button></div>`; o.querySelector("[data-ac=x]").onclick=actClose; }
+// ---------- รวบรวมเนื้อหา ----------
+function actFromNote(){ const NEe=NE(); const sel=getSelection(); let tx=(sel&&!sel.isCollapsed&&NEe.contains(sel.anchorNode))?sel.toString():""; const whole=!tx.trim(); if(whole)tx=NEe.innerText||""; const title=(el("n-title")&&el("n-title").value)||""; return {ctx:"note",text:tx.trim().slice(0,14000),title,whole,img:null}; }
+function actFromInk(){
+ const pg=inkPage(); if(!pg)return null; const S=pg.strokes; const idx=(ink.sel&&ink.sel.idx.size)?ink.sel.idx:null; const pick=idx?[...idx].map(i=>S[i]).filter(Boolean):S;
+ const txs=pick.filter(s=>s.t==="x"&&s.tx).sort((a,b)=>(Math.abs(a.p[1]-b.p[1])<12?a.p[0]-b.p[0]:a.p[1]-b.p[1])).map(s=>s.tx);
+ const hasHand=pick.some(s=>s.t==="p"||s.t==="s"); let img=null;
+ if(hasHand){ try{ const cvs=idx?(inkOcrCanvas(S,idx)||{}).canvas:(ink.board?inkBoardCanvas(1600):inkPageCanvas(pg,1400)); if(cvs)img=cvs.toDataURL("image/jpeg",.82).split(",")[1]; }catch(e){} }
+ return {ctx:"ink",text:txs.join("\n").slice(0,14000),title:(el("ink-title").value||"").trim(),whole:!idx,img,hasHand}; }
+// ---------- เรียก AI ----------
+async function actRun(kind){
+ const src=kind==="note"?actFromNote():actFromInk(); const host=el(kind==="note"?"ndlg":"inkdlg");
+ if(!src||(!src.text&&!src.img)){ actMsg(host,`<b>ยังไม่มีเนื้อหาให้สรุป</b><div class="hint" style="margin:8px 0 0;line-height:1.7">${kind==="note"?"พิมพ์บันทึกประชุมก่อน (หรือเลือกข้อความที่ต้องการ) แล้วกดอีกครั้งค่ะ":"เขียนหรือพิมพ์บันทึกในหน้านี้ก่อน (หรือลาสโซ่เลือกเฉพาะส่วนที่ต้องการ) แล้วกดอีกครั้งค่ะ"}</div>`); return; }
+ ACT.src=src; actOv(host).dataset.st="load"; actOv(host).innerHTML=`<div class="ocr-box"><div class="ocr-spin"></div><b>กำลังอ่านและสรุปบันทึก…</b><div class="hint" style="margin:6px 0 0">${src.img?"รวมลายมือในรูปด้วย · ":""}ใช้เวลาราว 5–20 วินาที</div></div>`;
+ try{
+  let token=""; try{ const {data:{session}}=await SB.auth.getSession(); token=session?session.access_token:""; }catch(e){}
+  const t=actToday(), ctl=new AbortController(), tm=setTimeout(()=>ctl.abort(),70000);
+  const body={system:ACT_SYS(t.iso,t.wd),context:"",max_tokens:2200,messages:[{role:"user",content:(src.title?"หัวข้อ: "+src.title+"\n":"")+(src.text?"เนื้อหาบันทึก:\n"+src.text:"(ไม่มีข้อความพิมพ์ — อ่านจากรูปลายมือที่แนบ)")+"\n\nสรุปเป็น JSON ตามรูปแบบที่กำหนด"}]};
+  if(src.img)body.images=[{media:"image/jpeg",data:src.img}];
+  const r=await fetch("/api/ai",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify(body)});
+  clearTimeout(tm); const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(r.status===503?"ยังไม่ได้ตั้งค่าระบบ AI ที่ Vercel (ต้องมี ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY)":(j.message||("ผิดพลาด "+r.status)));
+  if(!el("act-ov"))return; const d=aiJsonOf(j.text); if(!d||typeof d!=="object"||Array.isArray(d))throw new Error("AI ตอบกลับในรูปแบบที่อ่านไม่ได้ ลองอีกครั้งค่ะ");
+  const clean=v=>String(v==null?"":v).trim();
+  ACT.data={title:clean(d.title).slice(0,120)||src.title||"สรุปประชุม",summary:clean(d.summary).slice(0,1500),decisions:(Array.isArray(d.decisions)?d.decisions:[]).map(clean).filter(Boolean).slice(0,12),tasks:(Array.isArray(d.tasks)?d.tasks:[]).slice(0,15).map(t=>({title:clean(t&&t.title).slice(0,200),owner:clean(t&&t.owner).slice(0,60),date:/^\d{4}-\d{2}-\d{2}$/.test(clean(t&&t.date))?clean(t.date):"",why:clean(t&&t.why).slice(0,300),on:true})).filter(t=>t.title)};
+  actPaint(host);
+ }catch(e){ actMsg(host,`<b>สรุปไม่สำเร็จ</b><div class="hint" style="margin:8px 0 0;line-height:1.7">${esc(e&&e.name==="AbortError"?"รอนานเกินไป ลองใหม่อีกครั้งค่ะ":(e.message||String(e)))}</div>`); }
+}
+// ---------- หน้าต่างผลลัพธ์ ----------
+function actPaint(host){
+ const D=ACT.data, o=actOv(host); o.dataset.st="ok"; const gs=(typeof groups!=="undefined"?groups:[]);
+ const rows=D.tasks.map((t,i)=>`<div class="act-row"><label class="act-ck"><input type="checkbox" data-ai="${i}" ${t.on?"checked":""} aria-label="เลือกงานที่ ${i+1}"></label><div class="act-f"><input type="text" class="act-t" data-at="${i}" value="${esc(t.title)}" aria-label="ชื่องาน"><div class="act-s"><input type="text" data-ao="${i}" value="${esc(t.owner)}" placeholder="ผู้รับผิดชอบ" aria-label="ผู้รับผิดชอบ"><input type="date" data-ad="${i}" value="${esc(t.date)}" aria-label="กำหนดเสร็จ"></div>${t.why?`<div class="act-w">${esc(t.why)}</div>`:""}</div></div>`).join("");
+ o.innerHTML=`<div class="ocr-box act-box"><b>🧾 ${esc(D.title)}</b>
+ ${D.summary?`<div class="act-sum">${esc(D.summary).replace(/\n/g,"<br>")}</div>`:""}
+ ${D.decisions.length?`<div class="act-h">มติ / ข้อตกลง</div><ul class="act-ul">${D.decisions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+ <div class="act-h">งานที่ต้องทำ ${D.tasks.length?`<small>(ติ๊กเลือก · แก้ไขได้ก่อนสร้าง)</small>`:""}</div>
+ ${rows||`<div class="hint" style="margin:4px 0 8px">ไม่พบรายการงานในบันทึกนี้</div>`}
+ ${D.tasks.length?`<div class="act-grp"><label>หมวดงาน <select id="act-track">${gs.map(g=>`<option value="${esc(g.key)}"${g.key==="ops"?" selected":""}>${esc(g.label||g.key)}</option>`).join("")}</select></label></div>`:""}
+ <div class="ocr-btns">${D.tasks.length?`<button type="button" class="btn" data-ac="mk" id="act-mk">สร้างงาน</button>`:""}<button type="button" class="btn ghost" data-ac="ins">แทรกสรุปลงหน้า</button><button type="button" class="btn ghost" data-ac="cp">คัดลอกสรุป</button><button type="button" class="btn ghost" data-ac="x">ปิด</button></div><div id="act-res" class="hint" style="margin-top:8px"></div></div>`;
+ const cnt=()=>{ const n=D.tasks.filter(t=>t.on&&t.title.trim()).length, b=el("act-mk"); if(b){ b.textContent=n?`สร้างงาน ${n} รายการ`:"ยังไม่ได้เลือกงาน"; b.disabled=!n; } }; cnt();
+ o.addEventListener("input",e=>{ const g=e.target; const k=g.dataset; if(k.at!=null)D.tasks[+k.at].title=g.value; else if(k.ao!=null)D.tasks[+k.ao].owner=g.value; else if(k.ad!=null)D.tasks[+k.ad].date=g.value; cnt(); });
+ o.addEventListener("change",e=>{ const g=e.target; if(g.dataset.ai!=null){ D.tasks[+g.dataset.ai].on=g.checked; cnt(); } });
+ o.onclick=async e=>{ const b=e.target.closest("button"); if(!b)return; const a=b.dataset.ac; if(!a)return; e.stopPropagation();
+  if(a==="x")actClose(); else if(a==="cp"){ try{ await navigator.clipboard.writeText(actText()); b.textContent="คัดลอกแล้ว ✓"; }catch(er){ b.textContent="คัดลอกไม่ได้"; } }
+  else if(a==="ins")actInsert(b); else if(a==="mk")actCreate(b); };
+}
+function actText(){ const D=ACT.data; const L=[D.title]; if(D.summary)L.push("",D.summary); if(D.decisions.length){ L.push("","มติ / ข้อตกลง"); D.decisions.forEach(x=>L.push("• "+x)); } const T=D.tasks.filter(t=>t.title.trim()); if(T.length){ L.push("","งานที่ต้องทำ"); T.forEach(t=>L.push("☐ "+t.title+(t.owner?" — "+t.owner:"")+(t.date?" ("+fmtDate(t.date)+")":""))); } return L.join("\n"); }
+function actInsert(btn){
+ if(ACT.src.ctx==="note"){ const D=ACT.data, h=`<h3>${esc(D.title)}</h3>${D.summary?`<p>${esc(D.summary)}</p>`:""}${D.decisions.length?`<p><b>มติ / ข้อตกลง</b></p><ul>${D.decisions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}${D.tasks.length?`<p><b>งานที่ต้องทำ</b></p><ul class="ck">${D.tasks.filter(t=>t.title.trim()).map(t=>`<li data-c="0">${esc(t.title)}${t.owner?" — "+esc(t.owner):""}${t.date?" ("+esc(fmtDate(t.date))+")":""}</li>`).join("")}</ul>`:""}`;
+  NE().focus(); const r=document.createRange(); r.selectNodeContents(NE()); r.collapse(false); const s=getSelection(); s.removeAllRanges(); s.addRange(r); document.execCommand("insertHTML",false,"<p><br></p>"+h); neSave(); }
+ else{ ink.voiceObj=null; ink.sel=null; inkVoiceText(actText()); }
+ btn.textContent="แทรกแล้ว ✓"; btn.disabled=true; }
+async function actCreate(btn){
+ const D=ACT.data, sel=D.tasks.filter(t=>t.on&&t.title.trim()); if(!sel.length)return; btn.disabled=true; btn.textContent="กำลังสร้าง…";
+ const track=(el("act-track")||{}).value, from=ACT.src.title||D.title; let ok=0, bad=[];
+ for(const t of sel){ try{ await aiRun({type:"add_task",title:t.title.trim(),date:t.date||"",owner:t.owner.trim(),track,why:t.why,note:"จากบันทึกประชุม: "+from}); ok++; }catch(e){ bad.push(t.title.slice(0,30)+" ("+(e.message||"ผิดพลาด")+")"); } }
+ const res=el("act-res"); if(res)res.innerHTML=`<b style="color:var(--done,#1a7f4b)">สร้างงานแล้ว ${ok} รายการ ✓</b> ดูได้ที่หน้างาน/ปฏิทิน`+(bad.length?`<div style="color:var(--over,#c0392b);margin-top:4px">ไม่สำเร็จ ${bad.length}: ${esc(bad.join(" · "))}</div>`:"");
+ btn.textContent=ok?"สร้างแล้ว ✓":"ลองใหม่"; btn.disabled=!!ok; if(ok)try{ tell&&0; }catch(e){}
+}
+// ---------- ปุ่ม ----------
+(function(){ const nt=el("ntool"); if(nt)nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="act"]'); if(b){ e.stopImmediatePropagation(); neSave(); actRun("note"); } },true);
+ ["inkdlg","ndlg"].forEach(id=>{ const d=el(id); if(d)d.addEventListener("close",actClose); }); })();
 // ---------- แจ้งเตือนนอกแอป (Web Push) ----------
 const PUSH={checked:false,ready:false,cron:false,key:"",busy:false,msg:"",here:false,ep:"",gen:null};
 const pushOK=()=>("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
