@@ -189,7 +189,7 @@ else if(a.type==="set_w5"){ const d={}; W5K.forEach(k=>{ if(w5Txt(a[k]))d[k]=w5T
 else if(a.type==="add_task"){
 const track=groups.some(g=>g.key===a.track)?a.track:(groups.find(g=>g.key==="ops")||groups[0]).key;
 const company=companies.some(c=>c.key===a.company)?a.company:"";
-await saveItem({title:String(a.title).trim(),kind:"task",track,type:"",status:"รอดำเนินการ",date:a.date||null,company,owner:String(a.owner||"").trim(),note:String(a.note||"").trim()+(a.note?"\n":"")+"(เพิ่มโดยผู้ช่วย AI)",quad:quadInfo(a.quad)?a.quad:"",why:w5Txt(a.why).slice(0,400),inv:w5Txt(a.inv).slice(0,200),whr:w5Txt(a.whr).slice(0,300),how:w5Txt(a.how).slice(0,600)});}
+await saveItem({title:String(a.title).trim(),kind:"task",track,type:"",status:"รอดำเนินการ",date:a.date||null,company,owner:String(a.owner||"").trim(),note:String(a.note||"").trim()+(a.note?"\n":"")+"(เพิ่มโดยผู้ช่วย AI)",...(/^[A-Za-z0-9_-]{4,60}$/.test(String(a.srcn||""))?{srcn:String(a.srcn)}:{}),quad:quadInfo(a.quad)?a.quad:"",why:w5Txt(a.why).slice(0,400),inv:w5Txt(a.inv).slice(0,200),whr:w5Txt(a.whr).slice(0,300),how:w5Txt(a.how).slice(0,600)});}
 else if(a.type==="add_note")await DB.collection("note").add({title:String(a.title).trim(),kind:"โน้ต",date:null,tag:"AI",body:String(a.body||""),color:"",pin:false});
 }
 const AI_SR=window.SpeechRecognition||window.webkitSpeechRecognition;

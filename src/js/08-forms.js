@@ -130,7 +130,7 @@ const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
 paintTypeOpts(t?.type||(formCtx==="train"?"อบรม":formCtx==="meet"?"ประชุม":""));
 
-el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||""; formStk=(t&&Array.isArray(t.stk)?t.stk.filter(stkValid):[]).slice(0,4); stkPickerPaint();
+el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||""; formStk=(t&&Array.isArray(t.stk)?t.stk.filter(stkValid):[]).slice(0,4); stkPickerPaint(); srcnPaint(t);
 el("f-date").value=t?.date||preDate||""; el("f-recur").value=t?.recurring||"";
 const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
@@ -417,6 +417,7 @@ const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
 return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
+if(editing&&editing.srcn)data.srcn=editing.srcn;
 if(el("f-course").value==="__newcrs__"){
 const nm=(data.title||"").trim();
 if(!nm){el("f-title").focus();return;}
@@ -1143,3 +1144,8 @@ foldSet(sec,open);
 el("dlg").addEventListener("input",e=>{ const s=e.target.closest&&e.target.closest(".fsec"); if(s&&s.classList.contains("fold"))foldPaint(s); });
 el("foldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,false));
 el("unfoldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,true));
+
+// ---- ลิงก์กลับไปบันทึกต้นทาง (งานที่สร้างจาก “สรุปประชุม → งาน”) ----
+function srcnPaint(t){ const b=el("f-srcn"); if(!b)return; const n=t&&t.srcn?(notes||[]).find(x=>x._id===t.srcn):null;
+ if(t&&t.srcn){ b.hidden=false; b.innerHTML=n?`📝 สร้างจากบันทึก <b>${esc(n.title||"(ไม่มีหัวข้อ)")}</b> <button type="button" class="btn sm ghost" id="f-srcn-go">เปิดบันทึกต้นทาง</button>`:`📝 สร้างจากบันทึกประชุม (บันทึกต้นทางถูกลบหรือย้ายแล้ว)`; const g=el("f-srcn-go"); if(g)g.onclick=()=>{ el("dlg").close(); setTimeout(()=>{ if(n.kind===INKKIND&&typeof inkOpen==="function")inkOpen(n); else openNote(n,true); },120); }; }
+ else{ b.hidden=true; b.innerHTML=""; } }

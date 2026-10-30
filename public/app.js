@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.28"; const APP_DATE="30 ต.ค. 2026";
+const APP_VERSION="14.14.29"; const APP_DATE="30 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -602,7 +602,7 @@ return bad.length;
 }catch(e){ return 0; }
 }
 async function loadAll(){
-const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).neq("kind","ink").neq("kind","nimg");
+const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).neq("kind","ink").neq("kind","nimg").neq("kind","inkver");
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
@@ -612,7 +612,7 @@ emit("items");emit("ledger");emit("legal");emit("index");emit("note");[...cache.
 function liveSync(){
 SB.channel("rows-"+uid).on("postgres_changes",{event:"*",schema:"public",table:"rows",filter:"uid=eq."+uid},p=>{
 const r=p.new&&p.new.id?p.new:p.old;
-if(!r||r.kind==="ink"||r.kind==="nimg")return;
+if(!r||r.kind==="ink"||r.kind==="nimg"||r.kind==="inkver")return;
 if(p.eventType==="DELETE")cache[r.kind]?.delete(r.id); else cache[r.kind]?.set(r.id,r.data);
 r.kind==="meta"?emitMeta(r.id):emit(r.kind);
 render();
@@ -1811,7 +1811,7 @@ else if(a.type==="set_w5"){ const d={}; W5K.forEach(k=>{ if(w5Txt(a[k]))d[k]=w5T
 else if(a.type==="add_task"){
 const track=groups.some(g=>g.key===a.track)?a.track:(groups.find(g=>g.key==="ops")||groups[0]).key;
 const company=companies.some(c=>c.key===a.company)?a.company:"";
-await saveItem({title:String(a.title).trim(),kind:"task",track,type:"",status:"รอดำเนินการ",date:a.date||null,company,owner:String(a.owner||"").trim(),note:String(a.note||"").trim()+(a.note?"\n":"")+"(เพิ่มโดยผู้ช่วย AI)",quad:quadInfo(a.quad)?a.quad:"",why:w5Txt(a.why).slice(0,400),inv:w5Txt(a.inv).slice(0,200),whr:w5Txt(a.whr).slice(0,300),how:w5Txt(a.how).slice(0,600)});}
+await saveItem({title:String(a.title).trim(),kind:"task",track,type:"",status:"รอดำเนินการ",date:a.date||null,company,owner:String(a.owner||"").trim(),note:String(a.note||"").trim()+(a.note?"\n":"")+"(เพิ่มโดยผู้ช่วย AI)",...(/^[A-Za-z0-9_-]{4,60}$/.test(String(a.srcn||""))?{srcn:String(a.srcn)}:{}),quad:quadInfo(a.quad)?a.quad:"",why:w5Txt(a.why).slice(0,400),inv:w5Txt(a.inv).slice(0,200),whr:w5Txt(a.whr).slice(0,300),how:w5Txt(a.how).slice(0,600)});}
 else if(a.type==="add_note")await DB.collection("note").add({title:String(a.title).trim(),kind:"โน้ต",date:null,tag:"AI",body:String(a.body||""),color:"",pin:false});
 }
 const AI_SR=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -3056,6 +3056,7 @@ const nt=inkLive();
 inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เลิกปักหมุด":"ปักหมุด"}</button>
 <button type="button" class="ink-mi" data-imore="folder">ย้ายไปโฟลเดอร์…${nt.folder?" (ตอนนี้: "+esc(folderName(nt.folder))+")":""}</button>
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
+<button type="button" class="ink-mi" data-imore="ver">🕘 กู้เวอร์ชันเก่า</button>
 <button type="button" class="ink-mi" data-imore="clear">${ink.board?"ล้างกระดานทั้งหมด":"ล้างหน้านี้"}</button>
 ${ink.board?"":`<button type="button" class="ink-mi danger" data-imore="delpage" ${ink.pages.length<2?"disabled":""}>ลบหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="scrib">เขียนแล้วเส้นหาย / ตามไม่ทัน? (วิธีแก้บน iPad)</button>
@@ -3089,10 +3090,11 @@ try{
 await inkImgFlush();
 const dirty=ink.pages.filter(p=>p.dirty);
 for(const p of dirty){
+if(typeof inkVerBeforeSave==="function")await inkVerBeforeSave(p);
 const payload={noteId:ink.note._id,strokes:p.strokes};
 if(ink.board&&!ink.bigWarn&&p.strokes.reduce((a,s)=>a+s.p.length,0)>600000){ ink.bigWarn=1; tell("<b>กระดานนี้ใหญ่มากแล้ว</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">แนะนำให้เริ่มกระดานใหม่สำหรับงานต่อไป เพื่อให้เปิด/บันทึกได้เร็วค่ะ</div>"); }
 const {error}=await SB.from("rows").upsert({id:"ink-"+p.id,uid,kind:"ink",data:payload,updated_at:new Date().toISOString()});
-if(error)throw error; p.dirty=false; }
+if(error)throw error; p.dirty=false; p.saved=payload.strokes; }
 const nt=inkLive();
 const ptpl={}; ink.pages.forEach(p=>{ if(p.tpl)ptpl[p.id]=p.tpl; });
 const d={pages:ink.pages.length,pageIds:ink.pages.map(p=>p.id),ptpl,bm:ink.bm||[],gd:(typeof inkGdMap==="function"?inkGdMap():{}),...((final||!nt.thumb)?{thumb:inkThumb()}:{}),updated:new Date().toISOString(),title:(el("ink-title").value||"").trim()||nt.title||("สมุดเขียนมือ "+fmtDate(new Date().toISOString().slice(0,10)))};
@@ -3128,6 +3130,7 @@ let rows={};
 if(!fresh&&SB){ try{ const {data,error}=await SB.from("rows").select("id,data").eq("uid",uid).eq("kind","ink").in("id",ids.map(i=>"ink-"+i)); if(error)throw error; (data||[]).forEach(r=>rows[r.id]=r.data); }
 catch(e){ el("ink-load").hidden=true; inkStatus("โหลดไม่สำเร็จ","bad"); tell("<b>โหลดลายเส้นไม่สำเร็จ</b><div style=\"font-size:13px;margin-top:8px\">ตรวจอินเทอร์เน็ตแล้วเปิดสมุดใหม่อีกครั้งค่ะ — ข้อมูลเดิมยังอยู่ ไม่หาย</div>"); ink.note=null; el("inkdlg").close(); document.documentElement.style.zoom=ink.zoomBak; document.body.classList.remove("ink-on"); return; } }
 ink.pages=ids.map(i=>({id:i,strokes:((rows["ink-"+i]||{}).strokes)||[],dirty:false,tpl:(n.ptpl&&n.ptpl[i])||null,gd:((n.gd&&n.gd[i])||[]).filter(g=>g&&(g.o==="v"||g.o==="h")&&isFinite(g.v)).map(g=>({o:g.o,v:+g.v}))}));
+ink.pages.forEach(p=>{ p.saved=p.strokes; }); ink.verLast={};
 if(ink.board&&ink.pages[0].strokes.length){ const b=inkAllBox(); const st=el("ink-stage"); ink.vx=b[0]-60; ink.vy=b[1]-60; ink.z=Math.max(.2,Math.min(1,Math.min(st.clientWidth/(b[2]-b[0]+120),st.clientHeight/(b[3]-b[1]+120)))); }
 el("ink-load").hidden=true; inkStatus(fresh?"สมุดใหม่":"บันทึกแล้ว ✓",fresh?"":"ok"); inkImgLoadAll();
 inkToolbar(); inkApply(); setTimeout(()=>{ inkApply(); inkResize(); },30);
@@ -3256,9 +3259,10 @@ else if(m==="scrib"){ tell(`<b>เขียนเร็วแล้วบาง�
 else if(m==="lead"){ const i=INK_LEADS.findIndex(x=>x[0]===ink.lead); ink.lead=INK_LEADS[(i+1)%INK_LEADS.length][0]; try{ localStorage.setItem("sw-ink-lead",String(ink.lead)); }catch(er){} inkPredClear(true); inkStatus("ปลายเส้นล่วงหน้า: "+INK_LEADS.find(x=>x[0]===ink.lead)[1],"ok"); }
 else if(m==="pin"){ try{ await DB.collection("note").doc(ink.note._id).set({pin:!inkLive().pin},{merge:true}); }catch(er){} }
 else if(m==="addpage")inkAddPage();
+else if(m==="ver"){ if(typeof inkVerOpen==="function")inkVerOpen(); }
 else if(m==="folder"){ pickFolder(inkLive().folder||"").then(async v=>{ if(v===null)return; try{ await DB.collection("note").doc(ink.note._id).set({folder:v},{merge:true}); Object.assign(ink.note,{folder:v}); setFoot(v?"ย้ายไปโฟลเดอร์ “"+folderName(v)+"” แล้ว":"เอาออกจากโฟลเดอร์แล้ว"); }catch(er){} }); }
-else if(m==="clear"){ if(inkPage().strokes.length&&await ask(ink.board?"ล้างกระดานทั้งหมดใช่ไหมคะ? (ย้อนกลับได้ด้วยปุ่มย้อนกลับ)":"ล้างหน้านี้ใช่ไหมคะ? (ย้อนกลับได้ด้วยปุ่มย้อนกลับ)","ล้าง"))inkCommit([]); }
-else if(m==="delpage"){ if(await ask("ลบหน้า "+(ink.cur+1)+" ใช่ไหมคะ? ลายเส้นในหน้านี้จะหายไป","ลบหน้านี้")){ const p=ink.pages.splice(ink.cur,1)[0]; ink.cur=Math.min(ink.cur,ink.pages.length-1); ink.undo=[]; ink.redo=[]; ink.metaDirty=true; try{ await SB.from("rows").delete().eq("uid",uid).eq("id","ink-"+p.id); }catch(er){} inkRedraw(); inkToolbar(); inkDirty(); } }
+else if(m==="clear"){ if(inkPage().strokes.length&&await ask(ink.board?"ล้างกระดานทั้งหมดใช่ไหมคะ? (ย้อนกลับได้ด้วยปุ่มย้อนกลับ)":"ล้างหน้านี้ใช่ไหมคะ? (ย้อนกลับได้ด้วยปุ่มย้อนกลับ)","ล้าง")){ if(typeof inkVerNow==="function")inkVerNow(inkPage(),"clear"); inkCommit([]); } }
+else if(m==="delpage"){ if(await ask("ลบหน้า "+(ink.cur+1)+" ใช่ไหมคะ? ลายเส้นในหน้านี้จะหายไป","ลบหน้านี้")){ if(typeof inkVerNow==="function")inkVerNow(inkPage(),"del"); const p=ink.pages.splice(ink.cur,1)[0]; ink.cur=Math.min(ink.cur,ink.pages.length-1); ink.undo=[]; ink.redo=[]; ink.metaDirty=true; try{ await SB.from("rows").delete().eq("uid",uid).eq("id","ink-"+p.id); }catch(er){} inkRedraw(); inkToolbar(); inkDirty(); } }
 else if(m==="delnote"){ if(await ask("ย้ายสมุด “"+esc(inkLive().title||"ไม่มีชื่อ")+"” ไปถังขยะใช่ไหมคะ?<div style=\"font-size:13px;margin-top:8px;color:var(--ink-3)\">กู้คืนได้ภายใน 30 วันที่ ตั้งค่า › ถังขยะ</div>","ย้ายไปถังขยะ")){ clearTimeout(ink.saveT); const nt=inkLive(); el("inkdlg").close(); document.documentElement.style.zoom=ink.zoomBak||""; document.body.classList.remove("ink-on"); try{ setZoom(curZoom()); }catch(er){} ink.note=null; ink.pages=[]; ink.board=false; try{ await softDel("note",nt); }catch(er){} render(); } } }
 });
 document.addEventListener("visibilitychange",()=>{ if(document.hidden&&ink.note&&ink.pages.some(p=>p.dirty))inkSave(); });
@@ -4842,6 +4846,7 @@ const HLP_INK=[
  ["zfit","พอดีหน้า / ซูม",'#ink-zfit',"− ซูมออก · ⛶ พอดีหน้า · + ซูมเข้า · หรือบีบสองนิ้ว/ Ctrl+ล้อเมาส์","ซูม ขยาย ย่อ พอดี zoom"],
  ["expb","ส่งออก / Drive",'#ink-exp-b',"ส่งออกเป็น PDF หรือ PNG แล้วแชร์/บันทึกลง Google Drive/ดาวน์โหลด (ไม่มีเส้นไกด์ในไฟล์)","ส่งออก export pdf png ดาวน์โหลด drive แชร์ พิมพ์ save บันทึกเป็นไฟล์"],
  ["more","เมนู ⋯ เพิ่มเติม",'#ink-more',"เพิ่มหน้า ล้างหน้า ลบหน้า ปักหมุด ย้ายโฟลเดอร์ ย้ายไปถังขยะ ปรับปลายเส้นล่วงหน้า วัดความลื่น","เพิ่มเติม เพิ่มหน้า ลบหน้า ล้าง ถังขยะ โฟลเดอร์ ปักหมุด ลบสมุด"],
+ ["ver","กู้เวอร์ชันเก่า",'#ink-more',"กด ⋯ › “🕘 กู้เวอร์ชันเก่า”: เลือกเวอร์ชันที่ระบบเก็บให้อัตโนมัติ (ก่อนแก้ในรอบนี้ ทุก ~12 นาที ก่อนล้าง/ลบหน้า) ดูตัวอย่างแล้วกู้กลับได้ · หน้าที่ลบไปก็กู้เป็นหน้าใหม่ได้ · กู้ผิดกด ↶ ย้อนได้","กู้ ย้อนหลัง เวอร์ชัน หาย ลบผิด กู้คืน ย้อนกลับ history backup"],
  ["pages","แถบหน้าด้านล่าง",'#ink-pages',"เปลี่ยนหน้า (ตัวเลข) · ＋หน้าใหม่ · ▦ เทมเพลตของหน้านั้น (เฉพาะสมุด)","หน้า เพิ่มหน้า หน้าใหม่ เปลี่ยนหน้า"],
  ["selfmt","🎨 แต่ง (ที่เลือก)",'#ink-selfmt',"โผล่เมื่อเลือกของ: เปลี่ยนสี ความหนา ขนาดตัวอักษร พื้นโน้ตแปะ รูปทรง","แต่ง เปลี่ยนสี สีตัวอักษร ขนาดตัวอักษร"],
  ["selgrp","จัดกลุ่ม",'#ink-selgrp',"โผล่เมื่อเลือกหลายอย่าง: รวมให้เลือก/ย้ายพร้อมกัน","จัดกลุ่ม group รวม"],
@@ -5050,13 +5055,13 @@ function actOv(host){ let o=el("act-ov"); if(!o){ o=document.createElement("div"
 function actClose(){ const o=el("act-ov"); if(o)o.remove(); }
 function actMsg(host,html){ const o=actOv(host); o.dataset.st="msg"; o.innerHTML=`<div class="ocr-box">${html}<button type="button" class="btn ghost" data-ac="x" style="width:100%;margin-top:14px">ปิด</button></div>`; o.querySelector("[data-ac=x]").onclick=actClose; }
 // ---------- รวบรวมเนื้อหา ----------
-function actFromNote(){ const NEe=NE(); const sel=getSelection(); let tx=(sel&&!sel.isCollapsed&&NEe.contains(sel.anchorNode))?sel.toString():""; const whole=!tx.trim(); if(whole)tx=NEe.innerText||""; const title=(el("n-title")&&el("n-title").value)||""; return {ctx:"note",text:tx.trim().slice(0,14000),title,whole,img:null}; }
+function actFromNote(){ const NEe=NE(); const sel=getSelection(); let tx=(sel&&!sel.isCollapsed&&NEe.contains(sel.anchorNode))?sel.toString():""; const whole=!tx.trim(); if(whole)tx=NEe.innerText||""; const title=(el("n-title")&&el("n-title").value)||""; return {ctx:"note",text:tx.trim().slice(0,14000),title,whole,img:null,noteId:(typeof editingNote!=="undefined"&&editingNote&&editingNote._id)||""}; }
 function actFromInk(){
  const pg=inkPage(); if(!pg)return null; const S=pg.strokes; const idx=(ink.sel&&ink.sel.idx.size)?ink.sel.idx:null; const pick=idx?[...idx].map(i=>S[i]).filter(Boolean):S;
  const txs=pick.filter(s=>s.t==="x"&&s.tx).sort((a,b)=>(Math.abs(a.p[1]-b.p[1])<12?a.p[0]-b.p[0]:a.p[1]-b.p[1])).map(s=>s.tx);
  const hasHand=pick.some(s=>s.t==="p"||s.t==="s"); let img=null;
  if(hasHand){ try{ const cvs=idx?(inkOcrCanvas(S,idx)||{}).canvas:(ink.board?inkBoardCanvas(1600):inkPageCanvas(pg,1400)); if(cvs)img=cvs.toDataURL("image/jpeg",.82).split(",")[1]; }catch(e){} }
- return {ctx:"ink",text:txs.join("\n").slice(0,14000),title:(el("ink-title").value||"").trim(),whole:!idx,img,hasHand}; }
+ return {ctx:"ink",text:txs.join("\n").slice(0,14000),title:(el("ink-title").value||"").trim(),whole:!idx,img,hasHand,noteId:(ink.note&&ink.note._id)||""}; }
 // ---------- เรียก AI ----------
 async function actRun(kind){
  const src=kind==="note"?actFromNote():actFromInk(); const host=el(kind==="note"?"ndlg":"inkdlg");
@@ -5103,13 +5108,73 @@ function actInsert(btn){
 async function actCreate(btn){
  const D=ACT.data, sel=D.tasks.filter(t=>t.on&&t.title.trim()); if(!sel.length)return; btn.disabled=true; btn.textContent="กำลังสร้าง…";
  const track=(el("act-track")||{}).value, from=ACT.src.title||D.title; let ok=0, bad=[];
- for(const t of sel){ try{ await aiRun({type:"add_task",title:t.title.trim(),date:t.date||"",owner:t.owner.trim(),track,why:t.why,note:"จากบันทึกประชุม: "+from}); ok++; }catch(e){ bad.push(t.title.slice(0,30)+" ("+(e.message||"ผิดพลาด")+")"); } }
- const res=el("act-res"); if(res)res.innerHTML=`<b style="color:var(--done,#1a7f4b)">สร้างงานแล้ว ${ok} รายการ ✓</b> ดูได้ที่หน้างาน/ปฏิทิน`+(bad.length?`<div style="color:var(--over,#c0392b);margin-top:4px">ไม่สำเร็จ ${bad.length}: ${esc(bad.join(" · "))}</div>`:"");
+ for(const t of sel){ try{ await aiRun({type:"add_task",title:t.title.trim(),date:t.date||"",owner:t.owner.trim(),track,why:t.why,note:"จากบันทึกประชุม: "+from,srcn:ACT.src.noteId||""}); ok++; }catch(e){ bad.push(t.title.slice(0,30)+" ("+(e.message||"ผิดพลาด")+")"); } }
+ const res=el("act-res"); if(res)res.innerHTML=`<b style="color:var(--done,#1a7f4b)">สร้างงานแล้ว ${ok} รายการ ✓</b> ดูได้ที่หน้างาน/ปฏิทิน`+(bad.length?`<div style="color:var(--over,#c0392b);margin-top:4px">ไม่สำเร็จ ${bad.length}: ${esc(bad.join(" · "))}</div>`:"")+(ACT.src.noteId?"":`<div style="margin-top:4px">💡 บันทึกนี้ยังไม่ได้เก็บ — บันทึกก่อนแล้วสร้างงานใหม่ จะมีลิงก์กลับมาที่บันทึกนี้ได้</div>`);
  btn.textContent=ok?"สร้างแล้ว ✓":"ลองใหม่"; btn.disabled=!!ok; if(ok)try{ tell&&0; }catch(e){}
 }
 // ---------- ปุ่ม ----------
 (function(){ const nt=el("ntool"); if(nt)nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="act"]'); if(b){ e.stopImmediatePropagation(); neSave(); actRun("note"); } },true);
  ["inkdlg","ndlg"].forEach(id=>{ const d=el(id); if(d)d.addEventListener("close",actClose); }); })();
+// ===== กู้เวอร์ชันสมุด/กระดาน =====
+// เก็บ “ภาพถ่ายของหน้า” ลง rows(kind "inkver") อัตโนมัติ: ก่อนแก้ครั้งแรกของรอบเปิดใช้ · ทุก ~12 นาทีที่ยังแก้อยู่ · ก่อนล้างหน้า/ลบหน้า · ก่อนกู้
+// เก็บล่าสุดไม่เกิน 24 ชุดต่อสมุด · กดกู้ที่เมนู ⋯ › “กู้เวอร์ชันเก่า” (กู้แล้วย้อนกลับด้วยปุ่ม ↶ ได้ และมีสำเนา “ก่อนกู้” ให้อีกชั้น)
+const INKVER_MAX=24, INKVER_GAP=12*60*1000, INKVER_BYTES=2600000;
+const INKVER_TAG={start:"ก่อนแก้ในรอบนี้",auto:"บันทึกอัตโนมัติ",clear:"ก่อนล้าง",del:"หน้าที่ลบไป",pre:"ก่อนกู้เวอร์ชัน"};
+const inkVerId=(note,pid,tag,n)=>["inkver",note,pid,Date.now().toString(36),n,tag].join("~");
+async function inkVerPut(pid,strokes,tag){
+ try{ if(!SB||!uid||!ink.note||!Array.isArray(strokes)||!strokes.length)return false;
+  ink.verLast=ink.verLast||{}; if(ink.verLast[pid]===strokes)return false;
+  const json=JSON.stringify(strokes); if(json.length>INKVER_BYTES)return false;
+  const id=inkVerId(ink.note._id,pid,tag,strokes.length);
+  const {error}=await SB.from("rows").upsert({id,uid,kind:"inkver",data:{noteId:ink.note._id,pid,strokes,at:new Date().toISOString(),n:strokes.length,tag},updated_at:new Date().toISOString()});
+  if(error)return false; ink.verLast[pid]=strokes; inkVerPrune(); return true; }catch(e){ return false; } }
+async function inkVerPrune(){
+ try{ const {data}=await SB.from("rows").select("id,updated_at").eq("uid",uid).eq("kind","inkver").like("id","inkver~"+ink.note._id+"~%").order("updated_at",{ascending:false}).limit(200);
+  const extra=(data||[]).slice(INKVER_MAX); for(const r of extra)await SB.from("rows").delete().eq("uid",uid).eq("id",r.id); }catch(e){} }
+// เรียกจาก inkSave ก่อนบันทึกหน้าที่แก้ไข: เก็บสถานะที่อยู่ในฐานข้อมูลตอนนี้ (p.saved)
+async function inkVerBeforeSave(p){
+ const now=Date.now(); if(!p.saved||!p.saved.length)return; if(p.snapAt&&now-p.snapAt<INKVER_GAP)return;
+ const first=!p.snapAt; p.snapAt=now; await inkVerPut(p.id,p.saved,first?"start":"auto"); }
+// ก่อนล้าง/ลบ: เก็บสถานะปัจจุบัน
+function inkVerNow(pg,tag){ if(pg&&pg.strokes&&pg.strokes.length)inkVerPut(pg.id,pg.strokes,tag); }
+async function inkVerPurgeNote(noteId){ try{ const {data}=await SB.from("rows").select("id").eq("uid",uid).eq("kind","inkver").like("id","inkver~"+noteId+"~%").limit(300); for(const r of (data||[]))await SB.from("rows").delete().eq("uid",uid).eq("id",r.id); }catch(e){} }
+// ---------- หน้าต่างเลือกเวอร์ชัน ----------
+function inkVerOv(){ let o=el("ver-ov"); if(!o){ o=document.createElement("div"); o.id="ver-ov"; o.className="ink-ocr"; el("inkdlg").appendChild(o); o.addEventListener("pointerdown",e=>e.stopPropagation()); o.addEventListener("click",e=>{ if(e.target===o)inkVerClose(); }); } return o; }
+function inkVerClose(){ const o=el("ver-ov"); if(o)o.remove(); }
+const inkVerWhen=iso=>{ try{ const d=new Date(iso); return d.toLocaleDateString("th-TH",{day:"numeric",month:"short"})+" "+d.toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"}); }catch(e){ return ""; } };
+async function inkVerOpen(){
+ if(!SB||!ink.note)return; inkClosePop(); await inkSave(true); const o=inkVerOv();
+ o.innerHTML=`<div class="ocr-box"><div class="ocr-spin"></div><b>กำลังโหลดเวอร์ชันที่เก็บไว้…</b></div>`;
+ try{ const {data,error}=await SB.from("rows").select("id,updated_at").eq("uid",uid).eq("kind","inkver").like("id","inkver~"+ink.note._id+"~%").order("updated_at",{ascending:false}).limit(60); if(error)throw error;
+  const have=new Set(ink.pages.map(p=>p.id)), cur=inkPage().id;
+  const L=(data||[]).map(r=>{ const [,,pid,,n,tag]=r.id.split("~"); return {id:r.id,pid,n:+n||0,tag,at:r.updated_at}; }).filter(v=>v.pid===cur||!have.has(v.pid));
+  inkVerList(L); }catch(e){ o.innerHTML=`<div class="ocr-box"><b>โหลดรายการไม่สำเร็จ</b><div class="hint" style="margin:8px 0 12px">${esc(e.message||String(e))}</div><button type="button" class="btn ghost" data-vc="x" style="width:100%">ปิด</button></div>`; o.querySelector("[data-vc=x]").onclick=inkVerClose; } }
+function inkVerList(L){
+ const o=inkVerOv(); const cur=inkPage().id;
+ o.innerHTML=`<div class="ocr-box"><b>🕘 กู้เวอร์ชันเก่า</b><div class="hint" style="margin:4px 0 10px;line-height:1.6">${ink.board?"เวอร์ชันของกระดานนี้":"เวอร์ชันของหน้า "+(ink.cur+1)+" และหน้าที่เคยลบไป"} · ระบบเก็บให้อัตโนมัติ (ล่าสุด ${INKVER_MAX} ชุด) · กู้แล้วกด ↶ ย้อนกลับได้</div>
+ <div class="ver-list">${L.length?L.map((v,i)=>`<button type="button" class="ver-it" data-vi="${i}"><b>${esc(inkVerWhen(v.at))}</b><span>${v.n} ชิ้น · ${esc(INKVER_TAG[v.tag]||"บันทึกอัตโนมัติ")}${v.pid!==cur?" · หน้าที่ลบไป":""}</span></button>`).join(""):`<div class="hint" style="padding:10px 2px;line-height:1.7">ยังไม่มีเวอร์ชันที่เก็บไว้ — ระบบจะเริ่มเก็บเมื่อแก้งานหลังจากนี้ (ครั้งแรกที่บันทึกในรอบเปิดใช้ และทุก ~12 นาที)</div>`}</div>
+ <button type="button" class="btn ghost" data-vc="x" style="width:100%;margin-top:12px">ปิด</button></div>`;
+ o.onclick=e=>{ if(e.target===o){ inkVerClose(); return; } const b=e.target.closest("button"); if(!b)return; e.stopPropagation(); if(b.dataset.vc==="x")inkVerClose(); else if(b.dataset.vi!=null)inkVerPreview(L,+b.dataset.vi); };
+}
+async function inkVerPreview(L,i){
+ const v=L[i], o=inkVerOv(); o.innerHTML=`<div class="ocr-box"><div class="ocr-spin"></div><b>กำลังเปิดตัวอย่าง…</b></div>`;
+ try{ const {data,error}=await SB.from("rows").select("data").eq("uid",uid).eq("id",v.id); if(error)throw error; const S=data&&data[0]&&data[0].data&&data[0].data.strokes; if(!Array.isArray(S))throw new Error("ไม่พบข้อมูลเวอร์ชันนี้");
+  const cv=document.createElement("canvas"); const W=560, H=ink.board?340:Math.round(560*INK_H/INK_W*.62);
+  if(ink.board&&S.length){ const ids=new Set(S.map((_,j)=>j)), bb=inkBBox(S,ids), w=Math.max(80,bb[2]-bb[0]+80), h=Math.max(60,bb[3]-bb[1]+80), k=Math.min(W/w,H/h); cv.width=Math.round(w*k); cv.height=Math.round(h*k); inkRenderTo(cv.getContext("2d"),k,S,null,{board:true,ox:-(bb[0]-40),oy:-(bb[1]-40),w,h,noStk:1}); }
+  else{ const pg=ink.pages.find(p=>p.id===v.pid), k=H/INK_H; cv.width=Math.round(INK_W*k); cv.height=Math.round(INK_H*k); inkRenderTo(cv.getContext("2d"),k,S,null,{tpl:pg&&pg.tpl,noStk:1}); }
+  o.innerHTML=`<div class="ocr-box"><b>${esc(inkVerWhen(v.at))}</b> <span class="hint">· ${S.length} ชิ้น · ${esc(INKVER_TAG[v.tag]||"")}</span><div class="ver-pv"></div>
+  <div class="ocr-btns"><button type="button" class="btn" data-vc="go">กู้เวอร์ชันนี้</button><button type="button" class="btn ghost" data-vc="back">กลับ</button></div><div class="hint" style="margin-top:8px;line-height:1.6">${v.pid===inkPage().id?"งานปัจจุบันของหน้านี้จะถูกแทนที่ (เก็บสำเนา “ก่อนกู้” ไว้ให้ และกด ↶ ย้อนกลับได้)":"จะเพิ่มเป็นหน้าใหม่ต่อจากหน้านี้"}</div></div>`;
+  o.querySelector(".ver-pv").appendChild(cv);
+  o.onclick=e=>{ if(e.target===o){ inkVerClose(); return; } const b=e.target.closest("button"); if(!b)return; e.stopPropagation(); if(b.dataset.vc==="back")inkVerList(L); else if(b.dataset.vc==="go")inkVerRestore(v,S); };
+ }catch(e){ o.innerHTML=`<div class="ocr-box"><b>เปิดตัวอย่างไม่สำเร็จ</b><div class="hint" style="margin:8px 0 12px">${esc(e.message||String(e))}</div><button type="button" class="btn ghost" data-vc="x" style="width:100%">ปิด</button></div>`; o.querySelector("[data-vc=x]").onclick=inkVerClose; } }
+async function inkVerRestore(v,S){
+ const pg=inkPage(); await inkVerPut(pg.id,pg.strokes,"pre");
+ if(v.pid===pg.id){ inkCommit(S.map(s=>s)); }
+ else{ ink.pages.splice(ink.cur+1,0,{id:inkUid(),strokes:S,dirty:true,tpl:null}); ink.cur++; ink.sel=null; ink.metaDirty=true; ink.undo=[]; ink.redo=[]; inkRedraw(); inkOverClear(); inkToolbar(); inkDirty(); }
+ if(typeof inkImgLoadAll==="function")inkImgLoadAll();
+ inkVerClose(); inkStatus("กู้เวอร์ชันแล้ว","ok"); setTimeout(()=>{ if(!ink.saveT)inkStatus("",""); },2400);
+}
+(function(){ const d=el("inkdlg"); if(d)d.addEventListener("close",inkVerClose); })();
 // ---------- แจ้งเตือนนอกแอป (Web Push) ----------
 const PUSH={checked:false,ready:false,cron:false,key:"",busy:false,msg:"",here:false,ep:"",gen:null};
 const pushOK=()=>("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
@@ -6566,7 +6631,7 @@ const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
 paintTypeOpts(t?.type||(formCtx==="train"?"อบรม":formCtx==="meet"?"ประชุม":""));
 
-el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||""; formStk=(t&&Array.isArray(t.stk)?t.stk.filter(stkValid):[]).slice(0,4); stkPickerPaint();
+el("f-title").value=t?.title||""; el("f-owner").value=t?.owner||""; formStk=(t&&Array.isArray(t.stk)?t.stk.filter(stkValid):[]).slice(0,4); stkPickerPaint(); srcnPaint(t);
 el("f-date").value=t?.date||preDate||""; el("f-recur").value=t?.recurring||"";
 const RU=(t&&t.rrule)||{freq:"none",weekdays:[],nth:[1],monthday:""};
 fill("f-freq",FREQ,RU.freq||"none");
@@ -6853,6 +6918,7 @@ const shown=[...box.querySelectorAll(".oc")].map(i=>i.value);
 const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
 return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
+if(editing&&editing.srcn)data.srcn=editing.srcn;
 if(el("f-course").value==="__newcrs__"){
 const nm=(data.title||"").trim();
 if(!nm){el("f-title").focus();return;}
@@ -7579,6 +7645,11 @@ foldSet(sec,open);
 el("dlg").addEventListener("input",e=>{ const s=e.target.closest&&e.target.closest(".fsec"); if(s&&s.classList.contains("fold"))foldPaint(s); });
 el("foldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,false));
 el("unfoldAll").onclick=()=>foldSecs().forEach(s=>foldSet(s,true));
+
+// ---- ลิงก์กลับไปบันทึกต้นทาง (งานที่สร้างจาก “สรุปประชุม → งาน”) ----
+function srcnPaint(t){ const b=el("f-srcn"); if(!b)return; const n=t&&t.srcn?(notes||[]).find(x=>x._id===t.srcn):null;
+ if(t&&t.srcn){ b.hidden=false; b.innerHTML=n?`📝 สร้างจากบันทึก <b>${esc(n.title||"(ไม่มีหัวข้อ)")}</b> <button type="button" class="btn sm ghost" id="f-srcn-go">เปิดบันทึกต้นทาง</button>`:`📝 สร้างจากบันทึกประชุม (บันทึกต้นทางถูกลบหรือย้ายแล้ว)`; const g=el("f-srcn-go"); if(g)g.onclick=()=>{ el("dlg").close(); setTimeout(()=>{ if(n.kind===INKKIND&&typeof inkOpen==="function")inkOpen(n); else openNote(n,true); },120); }; }
+ else{ b.hidden=true; b.innerHTML=""; } }
 // ===== เขียนบันทึก: To-do ติ๊กได้ · ย่อหน้า · สีตัวอักษร · แนบรูป · ตารางแบบ Excel =====
 // (ใช้ร่วมกับตัวกรอง ntClean ใน 05-views-more.js — ถ้าเพิ่มรูปแบบใหม่ต้องอนุญาตที่ตัวกรองด้วย)
 const NE_COLS=["#dc2626","#ea580c","#ca8a04","#16a34a","#0d9488","#2563eb","#7c3aed","#db2777","#6b7280"];

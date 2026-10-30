@@ -740,6 +740,9 @@ table.nt td[data-f],table.nt th[data-f]{background-image:linear-gradient(135deg,
 .act-t{width:100%;font-weight:600}.act-s{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.act-s input[type=text]{flex:1;min-width:110px}.act-s input[type=date]{flex:none}
 .act-w{font-size:12px;opacity:.7;margin-top:4px}.act-grp{margin:10px 0 0;font-size:14px}.act-grp select{font:inherit;padding:6px 8px;border-radius:10px;border:1px solid #b9c3d6;background:transparent;color:inherit}
 .ocr-btns .btn[disabled]{opacity:.55}
+.ver-list{display:flex;flex-direction:column;gap:6px;max-height:46vh;overflow:auto}
+.ver-it{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;border:1px solid rgba(120,140,170,.4);background:transparent;color:inherit;border-radius:12px;padding:10px 12px;font:inherit;font-size:14px;cursor:pointer}.ver-it span{font-size:12.5px;opacity:.75}
+.ver-pv{margin:10px 0;text-align:center;background:#fff;border:1px solid #cbd3e0;border-radius:10px;padding:6px;max-height:48vh;overflow:auto}.ver-pv canvas{max-width:100%;height:auto;display:inline-block}
 .ink-voice{position:fixed;left:50%;bottom:max(76px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#111c;color:#fff;border-radius:18px;padding:10px 14px;display:flex;gap:10px;align-items:center;max-width:min(560px,94vw);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ink-voice i{width:12px;height:12px;border-radius:50%;background:#ef4444;flex:none;animation:vpulse 1s infinite}.ink-voice span{flex:1;min-width:0;font-size:14px;line-height:1.4;max-height:4.2em;overflow:hidden}.ink-voice button{border:0;border-radius:999px;background:#fff2;color:#fff;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
 @keyframes vpulse{50%{opacity:.25}}
@@ -831,7 +834,7 @@ table.nt td[data-f],table.nt th[data-f]{background-image:linear-gradient(135deg,
 <select id="f-course" style="flex:1;min-width:200px"></select></div>
 <div class="hint" id="f-crshint" style="margin-top:6px"></div></div>
 <div class="f wide"><label for="f-title" id="lbl-title">ชื่องาน</label><input id="f-title" required></div>
-<div class="f wide" id="stk-wrap"><label>สติกเกอร์สถานะ <small style="font-weight:400;color:var(--ink-3)">(แตะเพื่อติด/เอาออก · สูงสุด 4)</small></label><div id="f-stk"></div></div>
+<div class="f wide" id="f-srcn" hidden style="font-size:13.5px;line-height:1.8;background:rgba(31,111,128,.1);border-radius:12px;padding:8px 12px"></div><div class="f wide" id="stk-wrap"><label>สติกเกอร์สถานะ <small style="font-weight:400;color:var(--ink-3)">(แตะเพื่อติด/เอาออก · สูงสุด 4)</small></label><div id="f-stk"></div></div>
 <div class="f"><label for="f-company">บริษัท</label><select id="f-company"></select></div>
 <div class="f"><label for="f-track">กลุ่มงาน</label><select id="f-track"></select></div>
 <div class="f"><label for="f-type">ประเภท</label><select id="f-type"></select></div>
@@ -1199,4 +1202,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.28"></script></body></html>
+<script src="app.js?v=14.14.29"></script></body></html>
