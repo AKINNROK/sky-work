@@ -13,8 +13,11 @@ function voiceChip(host){
  return c;
 }
 function voiceSay(t){ if(VOICE.chip){ const v=VOICE.chip.querySelector(".vtx"); if(v)v.textContent=t; } }
+// เบราว์เซอร์บางตัว (เช่น Safari บน iPad) ไม่ส่งผล “สุดท้าย” จนกว่าจะหยุดพูดนาน/กดหยุด → ข้อความค้างแค่บนแถบเสียง
+// จึงเก็บข้อความชั่วคราวไว้ แล้วใส่ลงงานเมื่อเงียบ ~1.4 วินาที / กดหยุด / เปลี่ยนภาษา
+function voiceFlush(){ clearTimeout(VOICE.ft); const t=(VOICE.pending||"").trim(); VOICE.pending=""; const T=VOICE.target; if(t&&T){ try{ T.onText(t); }catch(er){} voiceSay("กำลังฟัง… พูดได้เลย"); return true; } return false; }
 function voiceStop(keepChip){
- VOICE.on=false; const r=VOICE.rec; VOICE.rec=null; if(r){ try{ r.onend=null; r.onresult=null; r.onerror=null; r.abort(); }catch(e){} }
+ voiceFlush(); VOICE.on=false; const r=VOICE.rec; VOICE.rec=null; if(r){ try{ r.onend=null; r.onresult=null; r.onerror=null; r.abort(); }catch(e){} }
  if(!keepChip&&VOICE.chip){ VOICE.chip.remove(); VOICE.chip=null; } const t=VOICE.target; if(!keepChip)VOICE.target=null; if(t&&t.onStop&&!keepChip)t.onStop();
 }
 // target = {host:อีลิเมนต์ dialog ที่จะแสดงแถบ, onText(text), onStop?()}
@@ -24,13 +27,16 @@ function voiceStart(target){
  try{ rec=new SR(); }catch(e){ return false; }
  VOICE.target=target; VOICE.on=true; VOICE.rec=rec; VOICE.err=0; rec.lang=VOICE.lang; rec.continuous=true; rec.interimResults=true; rec.maxAlternatives=1;
  voiceChip(target.host); voiceSay("กำลังฟัง… พูดได้เลย");
- rec.onresult=ev=>{ let interim=""; for(let i=ev.resultIndex;i<ev.results.length;i++){ const r=ev.results[i], t=r[0].transcript; if(r.isFinal){ const x=t.trim(); if(x){ try{ target.onText(x); }catch(er){} } interim=""; } else interim+=t; } voiceSay(interim?("… "+interim):"กำลังฟัง… พูดได้เลย"); };
+ rec.onresult=ev=>{ let interim="", fin=""; for(let i=ev.resultIndex;i<ev.results.length;i++){ const r=ev.results[i], t=r[0].transcript; if(r.isFinal)fin+=t; else interim+=t; }
+  if(fin.trim()){ clearTimeout(VOICE.ft); VOICE.pending=""; try{ target.onText(fin.trim()); }catch(er){} }
+  VOICE.pending=interim; voiceSay(interim?("… "+interim):"กำลังฟัง… พูดได้เลย"); clearTimeout(VOICE.ft);
+  if(interim.trim())VOICE.ft=setTimeout(()=>{ if(VOICE.rec===rec&&voiceFlush()){ try{ rec.abort(); }catch(e){} } },1400); };   // ใส่ข้อความที่ค้าง แล้วเริ่มฟังรอบใหม่ (กันซ้ำ)
  rec.onerror=ev=>{ const er=ev.error;
   if(er==="not-allowed"||er==="service-not-allowed"){ voiceStop(); tell("<b>ยังไม่ได้อนุญาตให้ใช้ไมโครโฟน</b><div class=\"hint\" style=\"margin:8px 0 0\">เปิดสิทธิ์ไมค์ให้เว็บนี้ในการตั้งค่าเบราว์เซอร์ แล้วลองใหม่ค่ะ · หรือใช้ปุ่มไมค์บนคีย์บอร์ดของเครื่องแทนได้</div>"); }
   else if(er==="network"){ voiceStop(); tell("<b>พิมพ์ตามเสียงต้องใช้อินเทอร์เน็ต</b><div class=\"hint\" style=\"margin:8px 0 0\">เบราว์เซอร์ส่งเสียงไปแปลงเป็นข้อความที่เซิร์ฟเวอร์ — ตรวจสัญญาณแล้วลองใหม่ค่ะ</div>"); }
   else if(er==="language-not-supported"){ voiceStop(); tell("<b>เครื่องนี้ไม่รองรับภาษานี้</b>"); }
   else VOICE.err++; };
- rec.onend=()=>{ if(!VOICE.on||VOICE.rec!==rec)return; if(VOICE.err>6){ voiceStop(); return; } setTimeout(()=>{ if(VOICE.on&&VOICE.rec===rec){ try{ rec.start(); }catch(e){} } },200); };   // หยุดเองเมื่อเงียบนาน → เริ่มฟังต่อ
+ rec.onend=()=>{ if(!VOICE.on||VOICE.rec!==rec)return; voiceFlush(); if(VOICE.err>6){ voiceStop(); return; } setTimeout(()=>{ if(VOICE.on&&VOICE.rec===rec){ try{ rec.start(); }catch(e){} } },200); };   // หยุดเองเมื่อเงียบนาน → เริ่มฟังต่อ
  try{ rec.start(); }catch(e){ voiceStop(); return false; }
  return true;
 }
@@ -52,16 +58,17 @@ function inkVoiceText(txt){
  const lp=ink.lastPt, v0=inkToPage({clientX:r.left+40,clientY:r.top+70}), v1=inkToPage({clientX:r.right-60,clientY:r.bottom-60});
  if(lp&&lp[0]>=v0[0]&&lp[0]<=v1[0]&&lp[1]>=v0[1]&&lp[1]<=v1[1]){ x=lp[0]; y=lp[1]; } else{ x=v0[0]; y=v0[1]; }
  const fs=ink.size.text; for(let n=0;n<40;n++){ const hit=S.some(q=>{ const b=inkBB(q); return !(b[2]<x||b[0]>x+fs*8||b[3]<y||b[1]>y+fs*1.5); }); if(!hit)break; y+=fs*1.6; }   // ไม่ซ้อนทับของเดิม
- const o=inkMkText(x,y,txt,fs,ink.color.pen); ink.voiceObj=o; inkCommit([...S,o]);
+ const o=inkMkText(x,y,txt,fs,ink.color.pen); ink.voiceObj=o; inkCommit([...S,o]); { const idx=new Set([S.length]); ink.sel={idx,box:inkBBox(inkPage().strokes,idx)}; inkDrawSel(); inkToolbar(); } inkStatus("เติมข้อความจากเสียงแล้ว","ok");
 }
 // ---------- ตัวแก้ไข “เขียนบันทึก” ----------
-function neVoiceToggle(btn){
+function neVoiceBtns(on){ document.querySelectorAll('#ntool [data-ne="mic"],#ne-micbtn').forEach(b=>b.classList.toggle("on",!!on)); const m=el("ne-micbtn"); if(m)m.textContent=on?"⏹ หยุดฟัง":"🎤 พูดให้พิมพ์"; }
+function neVoiceToggle(){
  if(VOICE.on){ voiceStop(); return; }
- if(!voiceSupported()){ voiceNoSupport(); return; }
+ if(!voiceSupported()){ voiceNoSupport(); setTimeout(()=>{ try{ NE().focus(); }catch(e){} },300); return; }
  neSave(); const host=el("ndlg");
- const ok=voiceStart({host,onText:txt=>{ neRestore(); const sp=/[฀-๿]$/.test(txt)?" ":" "; document.execCommand("insertText",false,txt+sp); neSave(); },onStop:()=>{ if(btn)btn.classList.remove("on"); }});
- if(!ok){ voiceNoSupport(); return; } if(btn)btn.classList.add("on");
+ const ok=voiceStart({host,onText:txt=>{ neRestore(); document.execCommand("insertText",false,txt+" "); neSave(); },onStop:()=>neVoiceBtns(false)});
+ if(!ok){ voiceNoSupport(); return; } neVoiceBtns(true);
 }
-(function(){ const nt=el("ntool"); if(!nt)return; nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="mic"]'); if(b){ e.stopImmediatePropagation(); neVoiceToggle(b); } },true); })();
+(function(){ const nt=el("ntool"); if(nt)nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="mic"]'); if(b){ e.stopImmediatePropagation(); neVoiceToggle(); } },true); const m=el("ne-micbtn"); if(m){ m.addEventListener("mousedown",e=>e.preventDefault()); m.addEventListener("click",()=>{ neSave(); neVoiceToggle(); }); } })();
 // ปิดไมค์เมื่อปิดสมุด/หน้าต่างบันทึก
 ["inkdlg","ndlg"].forEach(id=>{ const d=el(id); if(d)d.addEventListener("close",()=>{ if(VOICE.on)voiceStop(); }); });

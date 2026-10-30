@@ -60,6 +60,7 @@ else if(b.dataset.scope){ neScope=b.dataset.scope; el("nepop").innerHTML=b.datas
 else if(b.dataset.tal!=null){ neCellAlign(b.dataset.tal); el("nepop").hidden=true; }
 else if(b.dataset.tpos!=null){ neTablePos(b.dataset.tpos); el("nepop").hidden=true; }
 else if(b.dataset.cbg!=null){ neCellBg(b.dataset.cbg); el("nepop").hidden=true; }
+else if(b.dataset.stkp){ el("nepop").hidden=true; neStkInsert(b.dataset.stkp); }
 }
 
 // ---------- สีตัวอักษร / ไฮไลต์ ----------
@@ -215,6 +216,7 @@ el("ntool").addEventListener("click",e=>{
 const b=e.target.closest("[data-ne]"); if(!b)return; const k=b.dataset.ne;
 if(k==="ck")neCheck(); else if(k==="indent")neIndent(1); else if(k==="outdent")neIndent(-1);
 else if(k==="color"){ neSave(); nePopShow(neColorHtml(),b,"color"); }
+else if(k==="stk"){ neSave(); nePopShow(neStkHtml(),b,"stk"); }
 else if(k==="table"){ neSave(); nePopShow(neTableHtml(),b,"table"); }
 else if(k==="img"){ neSave(); el("ne-file").click(); }
 else if(k==="clear"){ NE().querySelectorAll("span[style]").forEach(sp=>{ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); }); }

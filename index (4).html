@@ -462,7 +462,7 @@ html[data-hl="p"][data-night="0"] .aifab{background:var(--dk);color:#fff}
 .nrich img{max-width:100%;height:auto;border-radius:6px;vertical-align:middle;cursor:pointer}.nrich img[data-w="33"]{width:33%}.nrich img[data-w="50"]{width:50%}.nrich img[data-w="100"]{width:100%}.nrich img.nesel{outline:3px solid var(--accent);outline-offset:2px}
 .nrich table.nt{border-collapse:collapse;width:100%;margin:.5em 0;table-layout:auto}.nrich .nt td,.nrich .nt th{border:1px solid var(--line);padding:6px 9px;min-width:64px;vertical-align:top;word-break:break-word;text-align:left;line-height:1.6}.nrich .nt th{background:var(--paper);font-weight:600}.nrich .nt td>div,.nrich .nt td>p{margin:0}
 .nrich .nt [data-a="l"]{text-align:left}.nrich .nt [data-a="c"]{text-align:center}.nrich .nt [data-a="r"]{text-align:right}.nrich table.nt[data-ta]{width:auto}.nrich table.nt[data-ta="l"]{margin-right:auto}.nrich table.nt[data-ta="c"]{margin-left:auto;margin-right:auto}.nrich table.nt[data-ta="r"]{margin-left:auto;margin-right:0}
-.nrich .nt [data-bg="y"]{background:#fef9c3;color:#1f2937}.nrich .nt [data-bg="g"]{background:#dcfce7;color:#1f2937}.nrich .nt [data-bg="b"]{background:#dbeafe;color:#1f2937}.nrich .nt [data-bg="r"]{background:#fee2e2;color:#1f2937}.nrich .nt [data-bg="p"]{background:#f3e8ff;color:#1f2937}.nrich .nt [data-bg="o"]{background:#ffedd5;color:#1f2937}.nrich .nt [data-bg="x"]{background:#e5e7eb;color:#1f2937}
+.nrich.view .nt [data-h]{display:none}.nrich:not(.view) .nt [data-h]{opacity:.38;background-image:repeating-linear-gradient(135deg,transparent 0 6px,rgba(120,130,150,.22) 6px 8px)}.nrich .nt [data-bg="y"]{background:#fef9c3;color:#1f2937}.nrich .nt [data-bg="g"]{background:#dcfce7;color:#1f2937}.nrich .nt [data-bg="b"]{background:#dbeafe;color:#1f2937}.nrich .nt [data-bg="r"]{background:#fee2e2;color:#1f2937}.nrich .nt [data-bg="p"]{background:#f3e8ff;color:#1f2937}.nrich .nt [data-bg="o"]{background:#ffedd5;color:#1f2937}.nrich .nt [data-bg="x"]{background:#e5e7eb;color:#1f2937}
 .nepop{position:fixed;z-index:60;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.22);padding:10px 12px;max-width:calc(100vw - 16px)}.nepop[hidden]{display:none}
 .nehist{display:flex;flex-direction:column;gap:4px;max-height:46vh;overflow-y:auto;min-width:min(380px,80vw)}.nehist button{border:0;background:var(--paper);color:var(--ink);border-radius:10px;padding:8px 12px;text-align:left;font:inherit;font-size:13px;cursor:pointer;display:flex;flex-direction:column;gap:2px}.nehist button b{font-size:12px;color:var(--ink-3);font-weight:500}.nehist button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(420px,76vw)}.ntool button:disabled{opacity:.35;cursor:default}
 .nepop .nepl{font-size:12px;color:var(--ink-3);margin:6px 0 4px}.nepop .nepl:first-child{margin-top:0}.nesw{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.nesw button{width:28px;height:28px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}.nesw button.nex{width:auto;border-radius:999px;padding:0 10px;background:var(--paper);color:var(--ink-2);font:inherit;font-size:12px;height:28px}.nesw button.on{border-color:var(--ink)}
@@ -670,6 +670,64 @@ svg [data-tip]{outline:none}
 .bar[data-tip],.prog[data-tip]{cursor:help}
 .glfix{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
 </style>
+<style>/* iPadOS 26 / iPhone: เนื้อหาไม่ลอดใต้แถบสถานะ (ไม่โดนเบลอ) */.shell{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}.side{top:env(safe-area-inset-top,0px);height:calc(100vh/var(--zf,1) - env(safe-area-inset-top,0px))}.inkdlg{padding-top:env(safe-area-inset-top,0px);box-sizing:border-box}</style>
+<style>
+#ink-laser{pointer-events:none}
+.ink-side{position:absolute;z-index:15;left:0;top:var(--inktop,96px);bottom:0;width:min(330px,92vw);background:var(--card);box-shadow:8px 0 30px rgba(0,0,0,.28);display:flex;flex-direction:column}
+.ink-side[hidden]{display:none}
+.ink-stabs{display:flex;gap:6px;padding:10px 10px 6px;flex:none}.ink-stabs button{flex:1;border:0;border-radius:10px;background:var(--paper);color:var(--ink-2);padding:9px 6px;font:inherit;font-size:13px;cursor:pointer}.ink-stabs button.on{background:var(--accent);color:#fff}
+.ink-sbody{flex:1;overflow-y:auto;padding:6px 12px 16px}
+.ink-th2{display:flex;gap:10px;align-items:flex-start;padding:8px;border-radius:12px;cursor:pointer;margin-bottom:6px;background:var(--paper)}.ink-th2.on{box-shadow:inset 0 0 0 2px var(--accent);background:var(--accent-soft)}
+.ink-th2 canvas,.ink-th2 img{width:84px;border-radius:6px;background:#fff;box-shadow:0 0 0 1px var(--line);flex:none}
+.ink-th2 .m{flex:1;min-width:0;font-size:13px;color:var(--ink-2)}.ink-th2 .m b{display:block;color:var(--ink);font-weight:600}
+.ink-th2 .a{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.ink-th2 .a button{border:0;border-radius:8px;background:var(--card);color:var(--ink-2);padding:4px 8px;font:inherit;font-size:12px;cursor:pointer}
+.ink-sr{padding:9px 10px;border-radius:10px;background:var(--paper);margin-bottom:6px;cursor:pointer;font-size:13.5px}.ink-sr small{display:block;color:var(--ink-3);font-size:11.5px}.ink-sr mark{background:#ffe14d;border-radius:3px}
+.ink-sinp{width:100%;box-sizing:border-box;border:0;background:var(--paper);border-radius:12px;padding:11px 13px;font:inherit;margin:4px 0 10px}
+.ink-presbar{position:absolute;z-index:16;left:50%;bottom:max(16px,env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(20,26,36,.82);color:#fff;border-radius:999px;padding:8px 12px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);max-width:96vw}
+.ink-presbar[hidden]{display:none}.ink-presbar button{border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;min-width:38px;height:38px;font:inherit;font-size:15px;cursor:pointer;padding:0 12px}.ink-presbar button.on{background:#fff;color:#111}.ink-presbar .ink-c{width:22px;height:22px;min-width:22px;padding:0;border:2px solid #fff3}
+.inkdlg.pres .ink-top,.inkdlg.pres .ink-pages{display:none}
+.ink-ocr{position:fixed;inset:0;z-index:80;background:rgba(10,20,40,.45);display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.ink-ocr .ocr-box{background:var(--card,#fff);color:inherit;border-radius:18px;padding:18px;width:min(520px,100%);max-height:92vh;overflow:auto;box-shadow:0 18px 50px rgba(0,0,0,.35)}
+.ink-ocr .ocr-img{display:block;max-width:100%;max-height:120px;margin:0 0 10px;border:1px dashed #9aa7bd;border-radius:10px;background:#fff;object-fit:contain}
+.ink-ocr textarea{width:100%;box-sizing:border-box;font:inherit;font-size:16px;line-height:1.6;padding:10px 12px;border:1px solid #b9c3d6;border-radius:12px;resize:vertical;min-height:120px}
+.ink-ocr .ocr-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.ink-ocr .ocr-btns .btn{width:100%}
+.ink-ocr .ocr-spin{width:34px;height:34px;border:4px solid #cfd8ea;border-top-color:#2a5bd7;border-radius:50%;margin:6px auto 12px;animation:ocrspin .8s linear infinite}
+@keyframes ocrspin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ink-ocr .ocr-spin{animation-duration:2.4s}}
+.ink-voice{position:fixed;left:50%;bottom:max(76px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#111c;color:#fff;border-radius:18px;padding:10px 14px;display:flex;gap:10px;align-items:center;max-width:min(560px,94vw);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.ink-voice i{width:12px;height:12px;border-radius:50%;background:#ef4444;flex:none;animation:vpulse 1s infinite}.ink-voice span{flex:1;min-width:0;font-size:14px;line-height:1.4;max-height:4.2em;overflow:hidden}.ink-voice button{border:0;border-radius:999px;background:#fff2;color:#fff;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+@keyframes vpulse{50%{opacity:.25}}
+.inkcv{padding:5px 5px 5px 16px;border-radius:10px;background:var(--cv,#888)}.inkcv img{display:block;width:100%}
+</style>
+<style>.nlabrow{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}.nlabrow label{margin:0}.nemic{border:0;border-radius:999px;background:var(--accent);color:#fff;padding:8px 14px;font:inherit;font-size:13.5px;cursor:pointer;touch-action:manipulation}.nemic.on,[data-ne=mic].on{background:#ef4444!important;color:#fff!important;animation:vpulse 1.2s infinite}</style><style>
+.stk{display:inline-flex;align-items:center;gap:.28em;border-radius:999px;padding:.12em .7em .12em .45em;font-size:.78em;font-weight:700;line-height:1.5;vertical-align:middle;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2);margin:0 2px;-webkit-user-select:none;user-select:none}
+.stk i{font-style:normal;display:inline-block;font-size:1.2em;line-height:1}.stk b{font-weight:700}
+.stk-e{background:none!important;box-shadow:none;padding:0 .1em;font-size:1.2em}
+.stks{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle;flex-wrap:wrap}
+@keyframes stkPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes stkHop{0%,100%{transform:translateY(0)}40%{transform:translateY(-.28em)}}
+@keyframes stkFlame{0%,100%{transform:scale(1) rotate(-4deg);filter:brightness(1)}30%{transform:scale(1.2,1.08) rotate(5deg);filter:brightness(1.25)}60%{transform:scale(.94,1.14) rotate(-3deg)}}
+@keyframes stkZap{0%,100%{transform:scale(1);opacity:1}45%{transform:scale(1.3);opacity:.55}55%{transform:scale(1.15);opacity:1}}
+@keyframes stkShake{0%,100%{transform:rotate(0)}15%{transform:rotate(-16deg)}30%{transform:rotate(14deg)}45%{transform:rotate(-10deg)}60%{transform:rotate(8deg)}75%{transform:rotate(0)}}
+@keyframes stkFlip{0%,40%{transform:rotate(0)}60%,100%{transform:rotate(180deg)}}
+@keyframes stkLook{0%,100%{transform:translateX(-.12em)}50%{transform:translateX(.14em)}}
+@keyframes stkPop{0%,100%{transform:scale(1)}30%{transform:scale(1.35)}55%{transform:scale(.92)}}
+@keyframes stkWiggle{0%,100%{transform:rotate(-9deg)}50%{transform:rotate(9deg)}}
+@keyframes stkSpin{to{transform:rotate(360deg)}}
+@keyframes stkBlink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes stkFloat{0%,100%{transform:translateY(.08em)}50%{transform:translateY(-.14em)}}
+@keyframes stkBeat{0%,100%{transform:scale(1)}20%{transform:scale(1.28)}40%{transform:scale(1)}60%{transform:scale(1.2)}}
+.stk-pulse{animation:stkPulse 1.1s ease-in-out infinite}.stk-bounce,.stk-hop{animation:stkHop 1s ease-in-out infinite}.stk-float{animation:stkFloat 2s ease-in-out infinite}
+.stk-flame i{animation:stkFlame .9s ease-in-out infinite}.stk-zap i{animation:stkZap 1.1s infinite}.stk-shake i{animation:stkShake 1.4s infinite}.stk-flip i{animation:stkFlip 2.6s ease-in-out infinite}.stk-look i{animation:stkLook 1.3s ease-in-out infinite}.stk-pop i{animation:stkPop 1.8s ease-in-out infinite}.stk-wiggle i{animation:stkWiggle .8s ease-in-out infinite}.stk-spin i{animation:stkSpin 3.2s linear infinite}.stk-blink i{animation:stkBlink 1s infinite}.stk-beat i{animation:stkBeat 1.2s infinite}
+.stk-e.stk-pulse,.stk-e.stk-bounce,.stk-e.stk-hop,.stk-e.stk-float{animation:none}.stk-e.stk-pulse i{animation:stkPulse 1.1s infinite}.stk-e.stk-bounce i,.stk-e.stk-hop i{animation:stkHop 1s infinite}.stk-e.stk-float i{animation:stkFloat 2s infinite}
+.ink-stkl{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;pointer-events:none}
+.ink-stkl .stk{position:absolute;display:flex;align-items:center;justify-content:center;gap:.25em;padding:0;margin:0;box-sizing:border-box;box-shadow:0 2px 5px rgba(0,0,0,.22);animation:none!important}.ink-stkl .stk-e{box-shadow:none}
+.ink-stkl .stk-pulse i{animation:stkBeat 1.1s infinite}.ink-stkl .stk-bounce i,.ink-stkl .stk-hop i{animation:stkHop 1s infinite}.ink-stkl .stk-float i{animation:stkFloat 2s infinite}.ink-stkl .stk i{font-size:1.05em}
+.stkpick{display:flex;flex-wrap:wrap;gap:6px}.stkc{border:2px solid transparent;border-radius:12px;background:var(--paper);padding:4px 5px;cursor:pointer;font:inherit;font-size:15px;line-height:1.2}.stkc.on{border-color:var(--accent);background:var(--accent-soft)}.stkc .stk{margin:0;font-size:13px}
+.li .t1 .stks,.mxc .t1 .stks,td .stks{font-size:15px}
+@media (prefers-reduced-motion:reduce){.stk,.stk i{animation:none!important}}
+</style>
 </head><body>
 <div class="shell">
 <nav class="side">
@@ -728,6 +786,7 @@ svg [data-tip]{outline:none}
 <select id="f-course" style="flex:1;min-width:200px"></select></div>
 <div class="hint" id="f-crshint" style="margin-top:6px"></div></div>
 <div class="f wide"><label for="f-title" id="lbl-title">ชื่องาน</label><input id="f-title" required></div>
+<div class="f wide" id="stk-wrap"><label>สติกเกอร์สถานะ <small style="font-weight:400;color:var(--ink-3)">(แตะเพื่อติด/เอาออก · สูงสุด 4)</small></label><div id="f-stk"></div></div>
 <div class="f"><label for="f-company">บริษัท</label><select id="f-company"></select></div>
 <div class="f"><label for="f-track">กลุ่มงาน</label><select id="f-track"></select></div>
 <div class="f"><label for="f-type">ประเภท</label><select id="f-type"></select></div>
@@ -901,8 +960,11 @@ svg [data-tip]{outline:none}
 <span id="ink-tools" class="ink-grp"></span>
 <span class="ink-sep"></span>
 <span id="ink-colors" class="ink-grp"></span><span id="ink-sizes" class="ink-grp"></span>
+<button type="button" class="ink-t" id="ink-selgrp" hidden title="จัดกลุ่มสิ่งที่เลือก ให้เลือก/ย้ายพร้อมกันเสมอ">จัดกลุ่ม</button><button type="button" class="ink-t" id="ink-selfmt" hidden title="เปลี่ยนสี ความหนา ขนาดตัวอักษร รูปทรง ของที่เลือก">🎨 แต่ง</button><button type="button" class="ink-t" id="ink-selaln" hidden title="จัดแนว / กระจายระยะ">⇔ จัดแนว</button><button type="button" class="ink-t" id="ink-selcopy" hidden title="คัดลอก (Ctrl+C)">คัดลอก</button><button type="button" class="ink-t" id="ink-selcut" hidden title="ตัด (Ctrl+X)">ตัด</button><button type="button" class="ink-t" id="ink-selpaste" hidden title="วาง (Ctrl+V) วางซ้ำได้ ข้ามหน้าได้">วาง</button><button type="button" class="ink-t" id="ink-seldup" hidden title="ทำสำเนาสิ่งที่เลือก">⧉ สำเนา</button><button type="button" class="ink-t" id="ink-seledit" hidden title="แก้ข้อความ">✎ แก้ข้อความ</button><button type="button" class="ink-t" id="ink-seltxt" hidden title="ให้ AI อ่านลายมือที่เลือก แล้วแปลงเป็นตัวพิมพ์ (ไทย/อังกฤษ)">Aa ลายมือ→ตัวพิมพ์</button>
+<button type="button" class="ink-t" id="ink-sellock" hidden title="ล็อก/ปลดล็อก — ล็อกแล้วย้ายหรือลบโดยไม่ตั้งใจไม่ได้ ใช้เป็นพื้นหลังได้">🔒 ล็อก</button><button type="button" class="ink-t" id="ink-selz" hidden title="เลื่อนลำดับชั้น หน้า/หลัง">⧉ ลำดับ</button><button type="button" class="ink-t" id="ink-sellink" hidden title="ใส่ลิงก์ที่สิ่งที่เลือก (เว็บ / ไปหน้าอื่น / บุ๊กมาร์ก)">🔗 ลิงก์</button>
 <button type="button" class="ink-t" id="ink-selshape" hidden title="แปลงเส้นที่เลือกเป็นรูปทรงเป๊ะ (เส้นตรง วงกลม/วงรี สี่เหลี่ยม สามเหลี่ยม)">✨ จัดรูปทรง</button><button type="button" class="ink-t" id="ink-seldel" hidden>ลบที่เลือก</button>
 <span class="ink-sep"></span>
+<button type="button" class="ink-t" id="ink-sidebtn" title="หน้าย่อ · สารบัญ · ค้นหา">☰ สารบัญ</button><button type="button" class="ink-t" id="ink-presbtn" title="โหมดนำเสนอ (เลเซอร์ ซ่อนแถบเครื่องมือ)">▶ นำเสนอ</button>
 <button type="button" class="ink-t" id="ink-finger">นิ้ว: อัตโนมัติ</button>
 <button type="button" class="ink-t" id="ink-tpl">กระดาษ</button>
 <button type="button" class="ink-b" id="ink-zout" title="ซูมออก" aria-label="ซูมออก"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14"/></svg></button>
@@ -911,9 +973,12 @@ svg [data-tip]{outline:none}
 <button type="button" class="ink-t pri" id="ink-exp-b">ส่งออก / Drive</button>
 <button type="button" class="ink-b" id="ink-more" title="เพิ่มเติม" aria-label="เพิ่มเติม"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
 </div>
-<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas><canvas id="ink-pred"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
+<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas><canvas id="ink-pred"></canvas><canvas id="ink-laser"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
 <div id="ink-pages" class="ink-pages"></div>
 <div id="ink-pop" class="ink-pop" hidden></div>
+<div id="ink-side" class="ink-side" hidden></div>
+<div id="ink-presbar" class="ink-presbar" hidden></div>
+<input type="file" id="ink-imgf" accept="image/*" multiple hidden>
 <div id="ink-exp" class="ink-exp" hidden></div>
 </dialog>
 <dialog id="nvdlg" class="nvdlg"><div class="nvbar"></div>
@@ -948,17 +1013,17 @@ svg [data-tip]{outline:none}
 <div class="f"><label for="n-folder">โฟลเดอร์</label><select id="n-folder"></select></div>
 <div class="f"><label for="n-tag">ป้ายกำกับ</label><input id="n-tag" list="ntaglist" placeholder="เช่น อัตรากำลัง"><datalist id="ntaglist"></datalist></div>
 <div class="f"><label>สี</label><div class="swrow" id="n-colors"></div></div>
-<div class="f wide"><label>เนื้อหา</label>
+<div class="f wide"><div class="nlabrow"><label>เนื้อหา</label><button type="button" class="nemic" id="ne-micbtn" title="พูดแล้วให้พิมพ์ตามเสียง (กดอีกครั้งเพื่อหยุด)">🎤 พูดให้พิมพ์</button></div>
 <div class="ntool" id="ntool">
 <button type="button" data-ne="undo" title="ย้อนกลับ (Ctrl+Z)" disabled>↶</button><button type="button" data-ne="redo" title="ทำซ้ำ (Ctrl+Shift+Z)" disabled>↷</button><span class="sep"></span>
 <button type="button" data-ne="h2" title="หัวข้อใหญ่">H1</button><button type="button" data-ne="h3" title="หัวข้อย่อย">H2</button><span class="sep"></span>
 <button type="button" data-ne="bold" title="ตัวหนา (Ctrl+B)"><b>B</b></button><button type="button" data-ne="italic" title="ตัวเอียง (Ctrl+I)"><i>I</i></button><button type="button" data-ne="underline" title="ขีดเส้นใต้ (Ctrl+U)"><u>U</u></button><button type="button" data-ne="strike" title="ขีดฆ่า"><s>S</s></button><button type="button" data-ne="light" title="ตัวบาง (เลือกข้อความก่อน)" style="font-weight:300">บาง</button><span class="sep"></span>
 <button type="button" data-ne="ul" title="บูเลต">• รายการ</button><button type="button" data-ne="ol" title="เลขข้อ">1. เลขข้อ</button><button type="button" data-ne="ck" title="รายการช่องติ๊ก (To-do) — กดที่ช่องสี่เหลี่ยมเพื่อติ๊กเสร็จ">☑ To-do</button><button type="button" data-ne="hr" title="เส้นคั่น">—</button><span class="sep"></span>
 <button type="button" data-ne="outdent" title="ย่อหน้าไปทางซ้าย (Shift+Tab)">⇤</button><button type="button" data-ne="indent" title="ย่อหน้าไปทางขวา (Tab)">⇥</button><span class="sep"></span>
-<button type="button" data-ne="color" title="สีตัวอักษร / ไฮไลต์ (เลือกข้อความก่อน)"><span style="border-bottom:3px solid #dc2626;line-height:1">A</span></button><button type="button" data-ne="img" title="แนบรูป (ย่อให้อัตโนมัติ) — วางรูปจากคลิปบอร์ดได้ด้วย">🖼 รูป</button><button type="button" data-ne="table" title="แทรกตาราง (วางข้อมูลจาก Excel ลงได้เลย)">▦ ตาราง</button><span class="sep"></span>
+<button type="button" data-ne="color" title="สีตัวอักษร / ไฮไลต์ (เลือกข้อความก่อน)"><span style="border-bottom:3px solid #dc2626;line-height:1">A</span></button><button type="button" data-ne="img" title="แนบรูป (ย่อให้อัตโนมัติ) — วางรูปจากคลิปบอร์ดได้ด้วย">🖼 รูป</button><button type="button" data-ne="mic" title="พิมพ์ตามเสียงพูด (ภาษาไทย) — กดอีกครั้งเพื่อหยุด">🎤 พูด</button><button type="button" data-ne="stk" title="สติกเกอร์สถานะงานแบบขยับได้ (ด่วน HOT เสร็จแล้ว…)">🔥 สติกเกอร์</button><button type="button" data-ne="table" title="แทรกตาราง (วางข้อมูลจาก Excel ลงได้เลย)">▦ ตาราง</button><span class="sep"></span>
 <button type="button" data-ne="link" title="แนบลิงก์ (เลือกข้อความก่อนจะใส่ลิงก์ให้ข้อความนั้น)">🔗 ลิงก์</button><span class="sep"></span>
 <button type="button" data-ne="clear" title="ล้างรูปแบบ">ล้างรูปแบบ</button><button type="button" data-ne="hist" title="กู้เวอร์ชันที่เคยบันทึกไว้">🕘 ประวัติ</button>
-<div class="netbar" id="netbar" hidden><b>ตาราง</b><button type="button" data-nt="rowa">＋แถวบน</button><button type="button" data-nt="rowb">＋แถวล่าง</button><button type="button" data-nt="cola">＋คอลัมน์ซ้าย</button><button type="button" data-nt="colb">＋คอลัมน์ขวา</button><button type="button" data-nt="rowd">ลบแถว</button><button type="button" data-nt="cold">ลบคอลัมน์</button><button type="button" data-nt="head">หัวตาราง</button><button type="button" data-nt="align">จัดแนว</button><button type="button" data-nt="bg">สีช่อง</button><button type="button" data-nt="tdel" class="danger">ลบตาราง</button><span class="hint" style="margin:0;font-size:12px">Tab = ช่องถัดไป · Enter = ลงล่าง · Shift+Enter = ขึ้นบรรทัดใหม่ในช่อง</span></div></div>
+<div class="netbar" id="netbar" hidden><b>ตาราง</b><button type="button" data-nt="rowa">＋แถวบน</button><button type="button" data-nt="rowb">＋แถวล่าง</button><button type="button" data-nt="cola">＋คอลัมน์ซ้าย</button><button type="button" data-nt="colb">＋คอลัมน์ขวา</button><button type="button" data-nt="rowd">ลบแถว</button><button type="button" data-nt="cold">ลบคอลัมน์</button><button type="button" data-nt="hide" title="ซ่อนคอลัมน์นี้ในหน้าดู/พิมพ์ (ข้อมูลไม่หาย)">ซ่อนคอลัมน์</button><button type="button" data-nt="show" hidden>แสดงที่ซ่อน</button><button type="button" data-nt="head">หัวตาราง</button><button type="button" data-nt="align">จัดแนว</button><button type="button" data-nt="bg">สีช่อง</button><button type="button" data-nt="tdel" class="danger">ลบตาราง</button><span class="hint" style="margin:0;font-size:12px">Tab = ช่องถัดไป · Enter = ลงล่าง · Shift+Enter = ขึ้นบรรทัดใหม่ในช่อง</span></div></div>
 <input type="file" id="ne-file" accept="image/*" multiple hidden>
 <div id="n-body" class="nrich" contenteditable="true" role="textbox" aria-multiline="true" data-ph="พิมพ์เนื้อหาที่นี่ — เลือกข้อความแล้วกดปุ่มด้านบนเพื่อจัดรูปแบบ"></div></div>
 <div class="f wide"><div class="flagrow" style="grid-template-columns:1fr">
@@ -1089,4 +1154,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.11"></script></body></html>
+<script src="app.js?v=14.14.22"></script></body></html>

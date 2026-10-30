@@ -131,6 +131,7 @@ SEC("Milestones สำคัญ",50,1050,900); LINES(50,950,1100,3,46);
 SEC("ความเสี่ยง / อุปสรรค",50,1255,430); LINES(50,480,1305,2,44);
 SEC("สิ่งที่ต้องการสนับสนุน",520,1255,430); LINES(520,950,1305,2,44);
 break; }
+default: if(typeof inkTplDraw2==="function")inkTplDraw2(ctx,t.k,t,{C,X,T,L,R,CB,LINES,SEC,HEAD,d0,mn,dw,byear,MTH}); break;
 }
 ctx.restore();
 }
@@ -170,7 +171,7 @@ else if(t&&t.need){ opts=`<div class="tg-opt"><label class="chk"><input type="ch
 ${t.need==="date"?`<label>วันที่ <input type="date" id="tg-d" value="${now.toISOString().slice(0,10)}"></label>`:""}
 ${t.need==="month"?`<label>เดือน <select id="tg-m">${mopt(now.getMonth())}</select></label><label>ปี <select id="tg-y">${yopt(yr)}</select></label>`:""}
 ${t.need==="year"?`<label>ปี <select id="tg-y">${yopt(yr)}</select></label>`:""}</div>`; }
-el("tg-body").innerHTML=quick+grp("Planner")+grp("แบบฟอร์มทำงาน")+opts;
+el("tg-body").innerHTML=quick+grp("Planner")+grp("แบบฟอร์มทำงาน")+grp("วางแผน & วิเคราะห์")+grp("HR & ทีม")+grp("ติดตามผล")+opts;
 el("tg-ok").textContent=inkG.mode==="add"?"เพิ่มหน้านี้":"สร้างสมุด";
 }
 function inkGalleryPages(){
