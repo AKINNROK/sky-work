@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.25"; const APP_DATE="30 ต.ค. 2026";
+const APP_VERSION="14.14.27"; const APP_DATE="30 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2882,6 +2882,7 @@ const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="to
 if(!canDraw){ ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 inkClosePop();
 const [x,y]=(typeof inkGdDown==="function"?inkGdDown(e,inkToPage(e)):inkToPage(e)), pr=t==="pen"?(e.pressure||.5):.5; ink.lastPt=[x,y];
+if(ink.tool==="move"){ if(inkMoveDown(e,x,y))return; ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 if(ink.tool==="eraser"){ ink.drag={mode:"erase",id:e.pointerId,del:new Set(),x,y,part:ink.ersPart?1:0,cur:inkPage().strokes,ch:0}; inkEraseAt(x,y); return; }
 if(ink.tool==="lasso"){
 if(ink.sel&&inkSelDown(e,x,y,true))return;
@@ -2948,7 +2949,7 @@ else if(d.mode==="laser"){ ink.laserDown=false; if(!d.moved&&ink.pres)inkLinkTap
 else if(d.mode==="pan"){ if(Math.hypot(e.clientX-d.x,e.clientY-d.y)<6&&(ink.tool==="hand"||ink.pres))inkLinkTap(e); return; }
 else if(d.mode==="erase"){ if(d.part){ if(d.ch)inkCommit(d.cur); else{ inkOverClear(); inkRedraw(); } } else if(d.del.size){ inkCommit(inkPage().strokes.filter((_,i)=>!d.del.has(i))); } else{ inkOverClear(); inkRedraw(); } }
 else if(d.mode==="lasso"){ inkLassoDone(d.poly,d.lk); }
-else if(d.mode==="move"){ if(Math.abs(d.dx)+Math.abs(d.dy)>1){ const idx=ink.sel.idx, pg=inkPage();
+else if(d.mode==="move"){ if(d.dup&&Math.abs(d.dx)+Math.abs(d.dy)>1){ inkMoveDup(d); return; } if(Math.abs(d.dx)+Math.abs(d.dy)>1){ const idx=ink.sel.idx, pg=inkPage();
 const next=pg.strokes.map((s,i)=>idx.has(i)?{...s,p:s.p.map((v,j)=>+(v+(j%3===0?d.dx:j%3===1?d.dy:0)).toFixed(1))}:s);
 const b=ink.sel.box; ink.sel={idx,box:[b[0]+d.dx,b[1]+d.dy,b[2]+d.dx,b[3]+d.dy]}; inkCommit(next,true); } else{ inkRedraw(); inkDrawSel(); } }
 }
@@ -3003,7 +3004,7 @@ ctx.save(); ctx.strokeStyle="rgba(80,80,80,.7)"; ctx.fillStyle="rgba(255,255,255
 }
 
 // ---------- แถบเครื่องมือ ----------
-const INK_TOOLS=[["pen","ปากกา",'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>'],["shape","รูปทรง",'<rect x="3.5" y="4" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>'],["hl","ไฮไลต์",'<path d="M9 4l11 11-5 5L4 9z"/><path d="M4 20h6"/>'],["eraser","ยางลบ",'<path d="M7 20h12M4.5 14.5L13 6l5 5-8.5 8.5H6z"/>'],["text","ข้อความ",'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],["lasso","เลือก/ย้าย",'<path d="M12 4c5 0 8 2 8 5s-3 5-8 5-8-2-8-5 3-5 8-5z" stroke-dasharray="3 3"/><path d="M9 14c-1 3 0 5 3 6"/>'],["laser","เลเซอร์พอยน์เตอร์",'<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'],["tape","เทป (ปิดบัง/ไฮไลต์)",'<path d="M4 9l11-4 5 5-4 11H6z" fill="none"/><path d="M8 12l5 5M10.5 9.5l5 5"/>'],["sticky","โน้ตแปะ",'<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>'],["hand","เลื่อนหน้า",'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v7c0 4-2 7-6 7-3 0-4-2-6-5l-1-2a1.5 1.5 0 0 1 2.5-1.5L8 14"/>']];
+const INK_TOOLS=[["pen","ปากกา",'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>'],["shape","รูปทรง",'<rect x="3.5" y="4" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>'],["hl","ไฮไลต์",'<path d="M9 4l11 11-5 5L4 9z"/><path d="M4 20h6"/>'],["eraser","ยางลบ",'<path d="M7 20h12M4.5 14.5L13 6l5 5-8.5 8.5H6z"/>'],["text","ข้อความ",'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],["lasso","เลือก/ย้าย",'<path d="M12 4c5 0 8 2 8 5s-3 5-8 5-8-2-8-5 3-5 8-5z" stroke-dasharray="3 3"/><path d="M9 14c-1 3 0 5 3 6"/>'],["move","เคลื่อนย้าย (V) — แตะ/ลากวัตถุใดก็ได้เพื่อย้าย ไม่ต้องลาสโซ่ · Alt = ทำสำเนา · ลูกศร = ขยับทีละนิด",'<path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/>'],["laser","เลเซอร์พอยน์เตอร์",'<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'],["tape","เทป (ปิดบัง/ไฮไลต์)",'<path d="M4 9l11-4 5 5-4 11H6z" fill="none"/><path d="M8 12l5 5M10.5 9.5l5 5"/>'],["sticky","โน้ตแปะ",'<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>'],["hand","เลื่อนหน้า",'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v7c0 4-2 7-6 7-3 0-4-2-6-5l-1-2a1.5 1.5 0 0 1 2.5-1.5L8 14"/>']];
 const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'],["calc","เครื่องคิดเลข (+ − × ÷ %) · ใส่ผลลงหน้า · พิมพ์ 1+1= ได้ผลทันที",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/>'],["ruler","ไม้บรรทัด / เส้นไกด์ (ลากจากขอบบน/ซ้ายมาวางทาบ ลากกลับเพื่อลบ)",'<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>'],["ai","ผู้ช่วย AI — ถามหาเครื่องมือ / ให้สอนใช้งานหน้านี้",'<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>']];
 function inkToolbar(){
 const tb=el("ink-tools");
@@ -3240,7 +3241,7 @@ el("ink-title").oninput=()=>{ if(ink.note){ ink.metaDirty=true; inkDirty(); } };
 (function(){ const tt=el("ink-title"); tt.addEventListener("click",()=>{ if(tt.readOnly){ tt.blur(); tt.readOnly=false; tt.focus(); } }); tt.addEventListener("blur",()=>{ tt.readOnly=true; }); tt.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); tt.blur(); } }); })();
 el("inkdlg").addEventListener("click",async e=>{
 const b=e.target.closest("button"); if(!b){ if(!e.target.closest("#ink-pop"))inkClosePop(); return; }
-if(b.dataset.itool){ const pt=ink.tool; ink.tool=b.dataset.itool; if(pt!==ink.tool)ink.sel=null; inkOverClear(); inkDrawSel(); inkToolbar(); }
+if(b.dataset.itool){ const pt=ink.tool; ink.tool=b.dataset.itool; if(pt!==ink.tool&&!(["lasso","move"].includes(pt)&&["lasso","move"].includes(ink.tool)))ink.sel=null; inkOverClear(); inkDrawSel(); inkToolbar(); }
 else if(b.dataset.icolor){ ink.color[inkColKey()]=b.dataset.icolor; inkSetSave(); inkToolbar(); if(ink.pres&&typeof inkPresBar==="function")inkPresBar(); }
 else if(b.dataset.iact){ inkAct(b.dataset.iact,b); }
 else if(b.dataset.ipage){ inkGo(+b.dataset.ipage); }
@@ -4819,6 +4820,7 @@ const HLP_INK=[
  ["hl","ไฮไลต์",'[data-itool="hl"]',"ปากกาไฮไลต์โปร่งแสง ขีดทับข้อความ/ตัวเลขได้ · เปลี่ยนสีและความหนาได้","ไฮไลต์ ขีดทับ เน้น มาร์คเกอร์"],
  ["eraser","ยางลบ",'[data-itool="eraser"]',"ลบเส้น · เลือกโหมดลบเป็นช่วง หรือลบทั้งเส้นได้ในแถบขนาด · ปรับขนาดยางลบได้ · ย้อนกลับได้ด้วยปุ่ม ↶","ยางลบ ลบ ลบเส้น ลบทิ้ง"],
  ["text","ข้อความ",'[data-itool="text"]',"แตะที่หน้าแล้วพิมพ์ · พิมพ์ 1+1= แล้วได้ผลทันที · ปรับขนาดตัวอักษรที่แถบขนาด · แตะข้อความเดิมเพื่อแก้ · เลือกแล้วกด “🎨 แต่ง” เปลี่ยนสี/ขนาด","ข้อความ พิมพ์ ตัวอักษร ตัวหนังสือ text กล่องข้อความ"],
+ ["move","เคลื่อนย้าย (Move)",'[data-itool="move"]',"แบบ Photoshop: แตะ/ลากวัตถุใดก็ได้เพื่อย้ายทันที ไม่ต้องลาสโซ่ · Shift = เลือกเพิ่ม · Alt/Option หรือปุ่ม “ทำสำเนาตอนลาก” = ลากแล้วได้สำเนา · ปุ่มลูกศรบนคีย์บอร์ด = ขยับทีละนิด (Shift = ทีละมาก) · ปุ่ม V = สลับมาเครื่องมือนี้ · ติดเส้นไกด์ได้ · ปิด “เลือกอัตโนมัติ” เพื่อย้ายของที่เลือกอยู่จากตรงไหนก็ได้","เคลื่อนย้าย ย้าย move ขยับ ลาก photoshop ปุ่ม v ลูกศร สำเนา"],
  ["lasso","เลือก/ย้าย (ลาสโซ่)",'[data-itool="lasso"]',"ลากวงรอบสิ่งที่ต้องการเลือก หรือแตะเส้นเดี่ยวๆ · ลากเพื่อย้าย · จุดมุม/ขอบ = ย่อขยาย · จุดวงกลมบนหัว = หมุน · เมื่อเลือกแล้วจะมีปุ่มเพิ่ม: แต่ง คัดลอก ตัด วาง สำเนา ล็อก ลำดับ ลิงก์ จัดแนว ลบ ฯลฯ","เลือก ย้าย ลาสโซ่ ขยับ หมุน ย่อ ขยาย จัดกลุ่ม"],
  ["laser","เลเซอร์พอยน์เตอร์",'[data-itool="laser"]',"ชี้ให้ดูแบบเลเซอร์ที่จางหายเอง ไม่ทิ้งรอยบนงาน · เปลี่ยนสีได้ · ใช้ตอนนำเสนอ/ประชุม","เลเซอร์ ชี้ นำเสนอ ประชุม pointer"],
  ["tape","เทป",'[data-itool="tape"]',"ปิดบังข้อความเหมือนแปะเทป · เลือกสีและโหมด “อิสระ”หรือ“แนวตรง” ที่แถบขนาด · แตะที่เทปอีกครั้งเพื่อเปิด/ปิดทับ (ท่องจำ/ปิดคำตอบ)","เทป ปิดบัง ซ่อน ปิดคำตอบ ปิดทับ"],
@@ -4873,7 +4875,7 @@ const HLP_NOTE=[
  ["hist","กู้เวอร์ชัน",'[data-ne="hist"]',"เปิดเวอร์ชันที่เคยบันทึกไว้ เพื่อกู้ข้อความกลับ","เวอร์ชัน กู้ ประวัติ history ย้อนหลัง หาย"],
  ["micbtn","🎤 พูดให้พิมพ์",'#ne-micbtn',"ปุ่มใหญ่ใกล้ช่องเนื้อหา ใช้เหมือนปุ่มไมค์ในแถบเครื่องมือ","ไมค์ เสียง พูด"]
 ];
-const HLP={ctx:null,open:false,busy:false,msgs:{ink:[],note:[]}};
+const HLP={ctx:null,open:false,busy:false,msgs:{ink:[],note:[]},spk:(()=>{ try{ return localStorage.getItem("sw-hlp-spk")!=="0"; }catch(e){ return true; } })(),listening:false,viaVoice:false};
 const hlpKB=()=>HLP.ctx==="note"?HLP_NOTE:HLP_INK;
 function hlpCtx(){ return el("ndlg")&&el("ndlg").open?"note":"ink"; }
 function hlpState(){
@@ -4903,24 +4905,25 @@ function hlpFmt(t){ let h=esc(String(t||"")).replace(/\*\*([^*\n]+)\*\*/g,"<b>$1
  h=h.replace(/\{\{([a-z0-9]+)\}\}/g,(m,id)=>{ const k=kb.find(x=>x[0]===id); return k?`<button type="button" class="hlp-chip" data-hid="${id}">👆 ชี้ให้ดู: ${esc(k[1])}</button>`:""; });
  return h.replace(/\n/g,"<br>"); }
 function hlpPaint(){ const b=el("hlp-body"); if(!b)return; const arr=HLP.msgs[HLP.ctx]; 
- b.innerHTML=(arr.length?"":`<div class="hlp-hi"><b>ถามได้เลยค่ะ ✨</b><div class="hint" style="margin:4px 0 10px;line-height:1.6">หาเครื่องมือที่ไม่เจอ หรือให้สอนวิธีใช้ของหน้านี้ — ฉันจะบอกพร้อมปุ่ม “ชี้ให้ดู” ว่าอยู่ตรงไหน</div><div class="hlp-sug">${hlpSugs().map(s=>`<button type="button" data-hs="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)+
+ b.innerHTML=(arr.length?"":`<div class="hlp-hi"><b>ถามได้เลยค่ะ ✨</b><div class="hint" style="margin:4px 0 10px;line-height:1.6">หาเครื่องมือที่ไม่เจอ หรือให้สอนวิธีใช้ของหน้านี้ — ฉันจะบอกพร้อมปุ่ม “ชี้ให้ดู” ว่าอยู่ตรงไหน<br>🎤 <b>กดไมค์ครั้งเดียวแล้วพูดได้เลย</b> เช่น “ลบเส้นยังไง” หรือสั่ง “ใช้ปากกา”</div><div class="hlp-sug">${hlpSugs().map(s=>`<button type="button" data-hs="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>`)+
  arr.map(m=>`<div class="hlp-m ${m.r==="u"?"u":"a"}">${m.r==="u"?esc(m.t).replace(/\n/g,"<br>"):hlpFmt(m.t)}</div>`).join("")+(HLP.busy?`<div class="hlp-m a"><span class="hlp-dots"><i></i><i></i><i></i></span></div>`:"");
  b.scrollTop=b.scrollHeight; }
 function hlpSugs(){ return HLP.ctx==="note"?["สอนใช้หน้านี้","ทำตารางคิดเลขอัตโนมัติยังไง","ทำรายการติ๊กถูกยังไง","พูดให้พิมพ์ได้ไหม"]:["สอนใช้หน้านี้","อยากลบเส้นที่เขียนผิด","ทำให้เป็นเส้นตรงเป๊ะยังไง","แปลงลายมือเป็นตัวพิมพ์ยังไง","แทรกรูปภาพยังไง"]; }
-function hlpClose(){ const p=el("hlp"); if(p)p.remove(); HLP.open=false; }
+function hlpClose(){ const p=el("hlp"); if(p)p.remove(); HLP.open=false; hlpShutUp(); if(HLP.listening&&typeof voiceStop==="function")voiceStop(); HLP.listening=false; }
 function hlpOpen(host){
  if(el("hlp")){ hlpClose(); return; } HLP.ctx=hlpCtx(); HLP.open=true; const p=document.createElement("div"); p.id="hlp"; p.className="hlp";
- p.innerHTML=`<div class="hlp-h"><b>✨ ผู้ช่วย Sky Work <small>${HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ")}</small></b><span><button type="button" data-hc="clr" title="ล้างบทสนทนา">ล้าง</button><button type="button" data-hc="x" aria-label="ปิด">✕</button></span></div><div id="hlp-body" class="hlp-body"></div>
- <form class="hlp-f" id="hlp-form"><textarea id="hlp-in" rows="1" placeholder="ถามได้เลย เช่น หาปุ่มลบไม่เจอ" aria-label="ถามผู้ช่วย"></textarea><button type="submit" class="hlp-send" aria-label="ส่ง">ส่ง</button></form>`;
+ p.innerHTML=`<div class="hlp-h"><b>✨ ผู้ช่วย Sky Work <small>${HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ")}</small></b><span><button type="button" data-hc="spk" id="hlp-spk" title="อ่านคำตอบออกเสียง (เมื่อถามด้วยเสียง)">🔊</button><button type="button" data-hc="clr" title="ล้างบทสนทนา">ล้าง</button><button type="button" data-hc="x" aria-label="ปิด">✕</button></span></div><div id="hlp-body" class="hlp-body"></div>
+ <form class="hlp-f" id="hlp-form"><button type="button" class="hlp-mic" id="hlp-mic" data-hmic="1" aria-label="กดแล้วพูดสั่ง" title="กดครั้งเดียว แล้วพูดได้เลย">🎤</button><textarea id="hlp-in" rows="1" placeholder="พิมพ์ หรือกด 🎤 แล้วพูด" aria-label="ถามผู้ช่วย"></textarea><button type="submit" class="hlp-send" aria-label="ส่ง">ส่ง</button></form>`;
  (host||el(HLP.ctx==="note"?"ndlg":"inkdlg")).appendChild(p);
  p.addEventListener("pointerdown",e=>e.stopPropagation()); p.addEventListener("mousedown",e=>{ if(!e.target.closest("textarea"))e.preventDefault(); });
  p.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; e.stopPropagation();
-  if(b.dataset.hc==="x")hlpClose(); else if(b.dataset.hc==="clr"){ HLP.msgs[HLP.ctx]=[]; hlpPaint(); }
+  if(b.dataset.hmic)hlpMic(); else if(b.dataset.hc==="spk"){ HLP.spk=!HLP.spk; try{ localStorage.setItem("sw-hlp-spk",HLP.spk?"1":"0"); }catch(er){} if(!HLP.spk)hlpShutUp(); hlpSpkPaint(); }
+  else if(b.dataset.hc==="x")hlpClose(); else if(b.dataset.hc==="clr"){ HLP.msgs[HLP.ctx]=[]; hlpPaint(); }
   else if(b.dataset.hs)hlpAsk(b.dataset.hs); else if(b.dataset.hid)hlpPoint(b.dataset.hid); });
  const ta=el("hlp-in"); ta.addEventListener("keydown",e=>{ e.stopPropagation(); if(e.key==="Enter"&&!e.shiftKey&&!e.isComposing){ e.preventDefault(); el("hlp-form").requestSubmit(); } else if(e.key==="Escape"){ hlpClose(); } });
  ta.addEventListener("input",()=>{ ta.style.height="auto"; ta.style.height=Math.min(110,ta.scrollHeight)+"px"; });
  el("hlp-form").addEventListener("submit",e=>{ e.preventDefault(); const v=ta.value.trim(); if(!v)return; ta.value=""; ta.style.height="auto"; hlpAsk(v); });
- hlpPaint(); setTimeout(()=>{ try{ ta.focus(); }catch(e){} },80);
+ hlpPaint(); hlpSpkPaint(); setTimeout(()=>{ try{ if(!HLP.noFocus)ta.focus(); }catch(e){} },80);
 }
 // ---------- ชี้ให้ดู ----------
 function hlpPoint(id){
@@ -4930,9 +4933,39 @@ function hlpPoint(id){
  try{ t.scrollIntoView({block:"nearest",inline:"center",behavior:"smooth"}); }catch(e){}
  document.querySelectorAll(".hlp-pulse").forEach(n=>n.classList.remove("hlp-pulse")); void t.offsetWidth; t.classList.add("hlp-pulse"); setTimeout(()=>t.classList.remove("hlp-pulse"),4200);
 }
+// ---------- สั่งด้วยเสียง: กดปุ่ม 🎤 ครั้งเดียว แล้วพูด → ส่งคำถาม/คำสั่งอัตโนมัติ ----------
+function hlpSpkPaint(){ const b=el("hlp-spk"); if(b){ b.textContent=HLP.spk?"🔊":"🔇"; b.classList.toggle("off",!HLP.spk); } }
+function hlpMicPaint(){ const b=el("hlp-mic"); if(b){ b.classList.toggle("on",!!HLP.listening); b.textContent=HLP.listening?"⏹":"🎤"; b.setAttribute("aria-label",HLP.listening?"หยุดฟัง":"กดแล้วพูดสั่ง"); } }
+function hlpMic(){
+ if(HLP.listening){ voiceStop(); HLP.listening=false; hlpMicPaint(); return; }
+ if(typeof voiceSupported!=="function"||!voiceSupported()){ voiceNoSupport(); return; }
+ if(VOICE.on){ voiceStop(); if(HLP.ctx!=="note"){ ink.voiceOn=false; try{ inkToolbar(); }catch(e){} } else if(typeof neVoiceBtns==="function")neVoiceBtns(false); }
+ hlpShutUp(); const host=el(HLP.ctx==="note"?"ndlg":"inkdlg"); let got=false;
+ const ok=voiceStart({host,onText:txt=>{ if(got)return; got=true; HLP.listening=false; setTimeout(()=>{ voiceStop(); hlpMicPaint(); },0); HLP.viaVoice=true; hlpAsk(txt,true); },onStop:()=>{ HLP.listening=false; hlpMicPaint(); }});
+ if(!ok){ voiceNoSupport(); return; } HLP.listening=true; hlpMicPaint();
+}
+function hlpShutUp(){ try{ window.speechSynthesis&&window.speechSynthesis.cancel(); }catch(e){} }
+function hlpSpeak(t){ if(!HLP.spk||!window.speechSynthesis||!window.SpeechSynthesisUtterance)return; try{ const clean=String(t).replace(/\{\{[a-z0-9]+\}\}/g,"").replace(/\([^)]*AI ยังไม่พร้อม[^)]*\)/g,"").replace(/[•*_`]/g," ").replace(/\s+/g," ").trim().slice(0,420); if(!clean)return; window.speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(clean); u.lang="th-TH"; u.rate=1.02; const v=(speechSynthesis.getVoices()||[]).find(x=>/^th/i.test(x.lang)); if(v)u.voice=v; speechSynthesis.speak(u); }catch(e){} }
+// คำสั่งตรง (ไม่ต้องรอ AI): “ใช้ปากกา” “เปลี่ยนเป็นยางลบ” “ย้อนกลับ” “ซูมพอดีหน้า” ฯลฯ — เฉพาะในสมุด/กระดาน
+const HLP_TOOLWORDS=[["pen","ปากกา"],["shape","รูปทรง"],["hl","ไฮไลต์|ไฮไลท์|มาร์คเกอร์"],["eraser","ยางลบ|ลบเส้น"],["text","ข้อความ|พิมพ์ตัวอักษร"],["lasso","ลาสโซ่|เลือกหลายอัน"],["move","เคลื่อนย้าย|ย้ายของ|มูฟ"],["laser","เลเซอร์"],["tape","เทป"],["sticky","โน้ตแปะ|กระดาษโน้ต|สติ๊กกี้"],["hand","เลื่อนหน้า|มือ"]];
+function hlpCommand(q){
+ if(HLP.ctx==="note")return null; const t=String(q||"").trim().replace(/\s+/g,""); if(!t||t.length>40)return null;
+ const verb=/^(ช่วย)?(ขอ|ให้|เปลี่ยนเป็น|เปลี่ยนไปใช้|เปลี่ยนไป|สลับเป็น|สลับไปใช้|สลับไป|เลือก|ใช้|เปิด|หยิบ|ไปที่)/.test(t);
+ if(/^(ช่วย)?(ย้อนกลับ|ย้อน|ยกเลิกที่ทำ|อันดู)$/.test(t)){ try{ inkUndo(); }catch(e){ return null; } return "ย้อนกลับให้แล้วค่ะ"; }
+ if(/^(ช่วย)?(ทำซ้ำ|ย้อนกลับไปข้างหน้า)$/.test(t)){ try{ inkUndo(true); }catch(e){ return null; } return "ทำซ้ำให้แล้วค่ะ"; }
+ if(/(ซูมพอดี|พอดีหน้า|พอดีจอ)/.test(t)){ const z=el("ink-zfit"); if(z){ z.click(); return "ปรับให้พอดีหน้าแล้วค่ะ"; } }
+ if(/^(ซูมเข้า|ขยายหน้า)$/.test(t)){ const z=el("ink-zin"); if(z){ z.click(); return "ซูมเข้าให้แล้วค่ะ"; } }
+ if(/^(ซูมออก|ย่อหน้า)$/.test(t)){ const z=el("ink-zout"); if(z){ z.click(); return "ซูมออกให้แล้วค่ะ"; } }
+ if(/^(ช่วย)?(ลบที่เลือก|ลบอันนี้|ลบเลย)$/.test(t)&&ink.sel){ const d=el("ink-seldel"); if(d&&!d.hidden){ d.click(); return "ลบที่เลือกให้แล้วค่ะ (ย้อนกลับได้)"; } }
+ if(!verb&&t.length>14)return null;
+ for(const [k,w] of HLP_TOOLWORDS){ if(new RegExp("("+w+")").test(t)&&(verb||t.length<=10)){ const b=document.querySelector('[data-itool="'+k+'"]'); if(b){ const nm=(INK_TOOLS.find(x=>x[0]===k)||[])[1]||k; b.click(); setTimeout(()=>hlpPoint(k),150); return "เปลี่ยนเป็นเครื่องมือ “"+nm.split(" ")[0]+"” ให้แล้วค่ะ {{"+k+"}}"; } } }
+ return null;
+}
 // ---------- ถาม AI ----------
-async function hlpAsk(q){
- const arr=HLP.msgs[HLP.ctx]; if(HLP.busy)return; arr.push({r:"u",t:q}); HLP.busy=true; hlpPaint();
+async function hlpAsk(q,viaVoice){
+ const arr=HLP.msgs[HLP.ctx]; if(HLP.busy)return; const voice=!!(viaVoice||HLP.viaVoice); HLP.viaVoice=false; arr.push({r:"u",t:q});
+ const cmd=hlpCommand(q); if(cmd){ arr.push({r:"a",t:cmd}); hlpPaint(); if(voice)hlpSpeak(cmd); return; }
+ HLP.busy=true; hlpPaint();
  let out=""; try{
   let token=""; try{ const {data:{session}}=await SB.auth.getSession(); token=session?session.access_token:""; }catch(e){}
   const turns=[]; arr.slice(-9).forEach(m=>{ const role=m.r==="u"?"user":"assistant"; if(turns.length&&turns[turns.length-1].role===role)turns[turns.length-1].content+="\n"+m.t; else turns.push({role,content:m.t}); });
@@ -4941,12 +4974,66 @@ async function hlpAsk(q){
   const r=await fetch("/api/ai",{method:"POST",signal:ctl.signal,headers:{"Content-Type":"application/json",Authorization:"Bearer "+token},body:JSON.stringify({system:hlpSystem(),context:hlpState(),max_tokens:800,messages:turns})});
   clearTimeout(tm); const j=await r.json().catch(()=>({})); if(!r.ok)throw new Error(j.message||("HTTP "+r.status)); out=String(j.text||"").trim(); if(!out)throw new Error("empty");
  }catch(e){ out=hlpLocal(q)+"\n\n(ตอนนี้ AI ยังไม่พร้อมใช้งาน เลยค้นจากคู่มือในแอปให้แทนค่ะ"+(e&&e.message&&!/empty|abort/i.test(e.message)?" — "+String(e.message).slice(0,90):"")+")"; }
- HLP.busy=false; if(HLP.open){ arr.push({r:"a",t:out}); hlpPaint(); }
+ HLP.busy=false; if(HLP.open){ arr.push({r:"a",t:out}); hlpPaint(); if(voice){ hlpSpeak(out); const m=out.match(/\{\{([a-z0-9]+)\}\}/); if(m&&!/^(ai)$/.test(m[1]))setTimeout(()=>hlpPoint(m[1]),400); } }
 }
 // ---------- ปุ่มเปิด ----------
 function hlpToggle(host){ if(el("hlp")&&el("hlp").parentNode===host){ hlpClose(); return; } hlpClose(); hlpOpen(host); }
 [["inkdlg","ink"],["ndlg","note"]].forEach(([id,c])=>{ const d=el(id); if(d)d.addEventListener("close",()=>{ hlpClose(); HLP.msgs[c]=[]; }); });   // ปิดสมุด/บันทึก = เริ่มบทสนทนาใหม่
 (function(){ const nt=el("ntool"); if(nt)nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="ai"]'); if(b){ e.stopImmediatePropagation(); hlpToggle(el("ndlg")); } },true); })();
+// ===== เครื่องมือเคลื่อนย้าย (Move Tool แบบ Photoshop) — กระดานกว้าง & สมุดเขียนมือ =====
+// • แตะ/ลากที่วัตถุใดก็ได้ = เลือกแล้วย้ายทันที (ไม่ต้องลาสโซ่) · Shift = เพิ่มเข้าที่เลือก · Alt/Option หรือปุ่ม “ทำสำเนา” = ลากแล้วได้สำเนา
+// • ลูกศรบนคีย์บอร์ด = ขยับทีละนิด (Shift = ทีละมาก) · ปุ่ม V = สลับมาใช้เครื่องมือนี้ · ติดเส้นไกด์/ไม้บรรทัดได้
+ink.mvAuto=(()=>{ try{ return localStorage.getItem("sw-ink-mva")!=="0"; }catch(e){ return true; } })();   // true = เลือกวัตถุใต้นิ้วอัตโนมัติ · false = ย้ายสิ่งที่เลือกอยู่จากตรงไหนก็ได้
+ink.mvDup=0;
+function inkMoveSave(){ try{ localStorage.setItem("sw-ink-mva",ink.mvAuto?"1":"0"); }catch(e){} }
+function inkTopHit(S,x,y){ for(let q=S.length-1;q>=0;q--){ if(inkHit(S[q],x,y,10*inkPx()))return q; } return -1; }
+function inkMoveStart(e,x,y,idx,dup){ ink.drag={mode:"move",id:e.pointerId,sx:x,sy:y,dx:0,dy:0,hide:dup?new Set():idx,dup:dup?1:0}; inkRedraw(); inkDrawSel(); }
+// คืน true ถ้ารับเหตุการณ์ไปแล้ว
+function inkMoveDown(e,x,y){
+ const pg=inkPage(), S=pg.strokes, dup=!!(e.altKey||ink.mvDup), add=!!(e.shiftKey||e.ctrlKey||e.metaKey);
+ const hit=inkTopHit(S,x,y);
+ if(ink.sel&&inkSelLocked&&inkSelLocked()){ if(hit<0||!ink.sel.idx.has(hit)){ ink.sel=null; inkToolbar(); inkOverClear(); inkRedraw(); } else return true; }
+ if(ink.sel&&!add){
+  const inSel=hit>=0&&ink.sel.idx.has(hit);
+  if(inSel||hit<0){ const b=ink.sel.box, pad=8, inBox=x>=b[0]-pad&&x<=b[2]+pad&&y>=b[1]-pad&&y<=b[3]+pad;
+   if(inSel||inBox||!ink.mvAuto){ // จุดจับ (หมุน/ย่อขยาย) ก่อน ไม่เจอก็ย้ายทั้งชุดที่เลือก
+    const keep=ink.sel; if(inkSelDown(e,x,y,false)){ if(ink.drag&&ink.drag.mode==="move"&&dup){ ink.drag.hide=new Set(); ink.drag.dup=1; inkRedraw(); inkDrawSel(); } return true; }
+    if(!ink.mvAuto&&keep){ ink.sel=keep; inkToolbar(); inkMoveStart(e,x,y,keep.idx,dup); return true; } } }
+ }
+ if(hit>=0){
+  let idx; if(add&&ink.sel){ idx=new Set(ink.sel.idx); if(idx.has(hit)&&!dup){ const rm=new Set(); inkExpandSel(rm,S,hit); rm.forEach(i=>idx.delete(i)); if(!idx.size){ ink.sel=null; inkToolbar(); inkRedraw(); inkDrawSel(); return true; } ink.sel={idx,box:inkBBox(S,idx)}; inkToolbar(); inkRedraw(); inkDrawSel(); return true; } inkExpandSel(idx,S,hit); }
+  else{ idx=new Set(); inkExpandSel(idx,S,hit); }
+  ink.sel={idx,box:inkBBox(S,idx)}; inkToolbar(); inkMoveStart(e,x,y,idx,dup); return true; }
+ if(ink.sel){ ink.sel=null; inkToolbar(); inkOverClear(); inkRedraw(); }
+ return false;
+}
+function inkMoveDup(d){
+ const pg=inkPage(), S=pg.strokes, ids=[...ink.sel.idx].sort((a,b)=>a-b), gm=new Map();
+ const cp=ids.map(i=>{ const s=S[i], o={...s,p:s.p.map((v,j)=>+(v+(j%3===0?d.dx:j%3===1?d.dy:0)).toFixed(1))}; if(o.id)o.id="q"+Math.random().toString(36).slice(2,8); if(o.fm&&o.fm.ids&&!o.fm.tp)o.fm={...o.fm}; delete o.lk; if(s.g){ if(!gm.has(s.g))gm.set(s.g,"g"+Math.random().toString(36).slice(2,8)); o.g=gm.get(s.g); } return o; });
+ const next=[...S,...cp], idx=new Set(cp.map((_,j)=>S.length+j)); inkCommit(next,true); ink.sel={idx,box:inkBBox(inkPage().strokes,idx)}; inkDrawSel(); inkToolbar();
+ inkStatus("ทำสำเนาแล้ว","ok"); setTimeout(()=>{ if(!ink.saveT)inkStatus("",""); },1600);
+}
+// ---------- ขยับด้วยลูกศร ----------
+function inkNudge(dx,dy){
+ if(!ink.sel||(inkSelLocked&&inkSelLocked()))return; const pg=inkPage(), idx=ink.sel.idx;
+ const next=pg.strokes.map((s,i)=>idx.has(i)?{...s,p:s.p.map((v,j)=>+(v+(j%3===0?dx:j%3===1?dy:0)).toFixed(1))}:s); const b=ink.sel.box;
+ const now=Date.now(), N=ink.nudge; ink.sel={idx,box:[b[0]+dx,b[1]+dy,b[2]+dx,b[3]+dy]};
+ if(N&&N.pg===pg&&now-N.t<900){ pg.strokes=next; pg.dirty=true; N.t=now; inkRedraw(); inkOverClear(); inkDrawSel(); inkDirty(); }   // กดค้าง/กดถี่ = นับเป็นการย้อนครั้งเดียว
+ else{ inkCommit(next,true); ink.nudge={pg,t:now}; }
+}
+document.addEventListener("keydown",e=>{
+ if(!ink.note||!el("inkdlg").open||e.metaKey||e.ctrlKey||ink.ta)return; const a=document.activeElement, tg=a&&a.tagName; if(tg==="INPUT"||tg==="TEXTAREA"||tg==="SELECT"||(a&&a.isContentEditable))return;
+ const k=e.key;
+ if(k==="v"||k==="V"){ if(e.altKey)return; e.preventDefault(); const pt=ink.tool; ink.tool="move"; if(pt!=="move"&&!["lasso","move"].includes(pt))ink.sel=null; inkOverClear(); inkDrawSel(); inkToolbar(); return; }
+ if(!ink.sel)return; const st=e.shiftKey?10:1;
+ if(k==="ArrowLeft"){ e.preventDefault(); inkNudge(-st,0); } else if(k==="ArrowRight"){ e.preventDefault(); inkNudge(st,0); } else if(k==="ArrowUp"){ e.preventDefault(); inkNudge(0,-st); } else if(k==="ArrowDown"){ e.preventDefault(); inkNudge(0,st); }
+});
+// ---------- แถบตัวเลือกของเครื่องมือ ----------
+(function(){ const f=inkSizesHtml; inkSizesHtml=function(){ if(ink.tool!=="move")return f.apply(this,arguments);
+ return `<button type="button" class="ink-opt ink-bb${ink.mvAuto?" on":""}" id="ink-mva" title="เปิด = แตะวัตถุไหนก็เลือกแล้วย้ายได้เลย · ปิด = ย้ายสิ่งที่เลือกอยู่ จากตรงไหนก็ลากได้">${ink.mvAuto?"✓ เลือกอัตโนมัติ":"ย้ายที่เลือก (ปิดเลือกอัตโนมัติ)"}</button><button type="button" class="ink-opt ink-bb${ink.mvDup?" on":""}" id="ink-mvd" title="เปิด = ลากแล้วได้สำเนา (หรือกด Alt/Option ค้างตอนลาก)">${ink.mvDup?"✓ ทำสำเนาตอนลาก":"⧉ ทำสำเนาตอนลาก"}</button><span class="hint" style="font-size:12px;margin:0 6px">Shift = เลือกเพิ่ม · ลูกศร = ขยับทีละนิด</span>`; }; })();
+(function(){ const sz=el("ink-sizes"); if(sz)sz.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return;
+ if(b.id==="ink-mva"){ e.stopPropagation(); ink.mvAuto=!ink.mvAuto; inkMoveSave(); inkToolbar(); } else if(b.id==="ink-mvd"){ e.stopPropagation(); ink.mvDup=ink.mvDup?0:1; inkToolbar(); } },true); })();
+(function(){ const f=inkToolbar; inkToolbar=function(){ const r=f.apply(this,arguments); const s=el("ink-stage"); if(s)s.style.cursor=ink.tool==="move"?"move":""; return r; }; })();
 // ---------- แจ้งเตือนนอกแอป (Web Push) ----------
 const PUSH={checked:false,ready:false,cron:false,key:"",busy:false,msg:"",here:false,ep:"",gen:null};
 const pushOK=()=>("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
