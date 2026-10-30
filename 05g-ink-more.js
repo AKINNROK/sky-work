@@ -74,7 +74,7 @@ document.addEventListener("paste",e=>{ if(!ink.note||!el("inkdlg").open||ink.ta)
  el("ink-imgf").addEventListener("change",e=>{ const fs=[...e.target.files]; e.target.value=""; if(fs.length)inkImgAdd(fs); }); })();
 
 // ---------- ปุ่มลัดบนแถบเครื่องมือ (รูป / ไมค์) ----------
-function inkAct(k,btn){ if(k==="stk"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-istk]")){ inkClosePop(); return; } inkStkMenu(btn); return; } if(k==="img"){ el("ink-imgf").click(); } else if(k==="mic"&&typeof inkVoiceToggle==="function"){ inkVoiceToggle(); } }
+function inkAct(k,btn){ if(k==="stk"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-istk]")){ inkClosePop(); return; } inkStkMenu(btn); return; } if(k==="img"){ el("ink-imgf").click(); } else if(k==="mic"&&typeof inkVoiceToggle==="function"){ inkVoiceToggle(); } else if(k==="calc"&&typeof calcOpenInk==="function"){ calcOpenInk(); } }
 
 // ---------- ล็อก · ลำดับชั้น ----------
 function inkLockToggle(){ if(!ink.sel)return; const pg=inkPage(), idx=ink.sel.idx, all=[...idx].every(i=>pg.strokes[i]&&pg.strokes[i].lk);

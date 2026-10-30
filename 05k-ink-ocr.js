@@ -57,6 +57,7 @@ async function inkOcrRun(){
   if(!resp.ok){ const m=resp.status===503?"ยังไม่ได้ตั้งค่าระบบ AI ที่ Vercel (ต้องมี ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY) — ตั้งเสร็จแล้วใช้ได้เลย":(j.message||("ผิดพลาด "+resp.status)); throw new Error(m); }
   let t=String(j.text||"").trim(); if(!el("ink-ocr"))return;   // ผู้ใช้กดปิดไปแล้ว
   if(!t||/^\(ไม่พบข้อความ\)$/.test(t)){ inkOcrUi("err","ไม่พบข้อความในส่วนที่เลือก — ลองเขียนให้ชัดขึ้น หรือล้อมให้ครบทั้งบรรทัด"); return; }
+  if(typeof calcAutoText==="function")t=calcAutoText(t);   // บรรทัดที่ลงท้ายด้วย = คำนวณให้เลย
   inkOcrUi("ok",t,c);
  }catch(e){ inkOcrUi("err",e&&e.name==="AbortError"?"รอนานเกินไป ลองใหม่อีกครั้งค่ะ":(e.message||String(e))); }
 }

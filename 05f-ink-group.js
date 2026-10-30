@@ -52,7 +52,7 @@ function inkTextClose(commit){
 const T=ink.ta; if(!T)return; ink.ta=null; const tx=T.ta.value.replace(/\s+$/,""); T.ta.remove(); if(!commit)return;
 const pg=inkPage(), old=T.i>=0?pg.strokes[T.i]:null;
 if(!tx){ if(old){ inkCommit(pg.strokes.filter((_,j)=>j!==T.i)); } return; }
-if(old){ if(old.tx===tx)return; const o=inkMkText(old.p[0],old.p[1],tx,old.fs,old.c,old.g,old.bg); inkCommit(pg.strokes.map((s,j)=>j===T.i?o:s)); return; }
+if(old){ if(old.tx===tx)return; const o=inkMkText(old.p[0],old.p[1],tx,old.fs,old.c,old.g,old.bg); if(old.id)o.id=old.id; if(old.lk)o.lk=old.lk; inkCommit(pg.strokes.map((s,j)=>j===T.i?o:s)); return; }
 { const o=T.bg?inkMkText(T.x,T.y,tx,ink.size.sticky,"#1d1d1f",null,T.bg):inkMkText(T.x,T.y,tx,ink.size.text,ink.color.pen); inkCommit([...pg.strokes,o]); }
 }
 // ---------- แต่งสิ่งที่เลือก ----------

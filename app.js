@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.22"; const APP_DATE="30 ต.ค. 2026";
+const APP_VERSION="14.14.23"; const APP_DATE="30 ต.ค. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2576,7 +2576,7 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
   if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
  if(T==="SPAN"&&n.hasAttribute("data-stk")){ const sk=n.getAttribute("data-stk"); if(typeof stkValid==="function"&&stkValid(sk)){ const nn=stkNode(sk); n.replaceWith(nn); return; } n.remove(); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
- let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="";
+ let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="";
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
@@ -2584,10 +2584,11 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if((T==="TD"||T==="TH")&&/^[lcr]$/.test(n.getAttribute("data-a")||""))da=n.getAttribute("data-a");
  if(T==="TABLE"&&/^[lcr]$/.test(n.getAttribute("data-ta")||""))dta=n.getAttribute("data-ta");
  if((T==="TD"||T==="TH")&&n.getAttribute("data-h")==="1")dh="1";
+ if((T==="TD"||T==="TH")&&/^=.{1,120}$/.test(n.getAttribute("data-f")||""))df=n.getAttribute("data-f");
  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
  if(cls)n.className=cls;
  if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
- if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh);
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh); if(df)n.setAttribute("data-f",df);
  if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
@@ -3003,7 +3004,7 @@ ctx.save(); ctx.strokeStyle="rgba(80,80,80,.7)"; ctx.fillStyle="rgba(255,255,255
 
 // ---------- แถบเครื่องมือ ----------
 const INK_TOOLS=[["pen","ปากกา",'<path d="M4 20l1-4L17 4l3 3L8 19z"/><path d="M14 7l3 3"/>'],["shape","รูปทรง",'<rect x="3.5" y="4" width="10" height="10" rx="1.5"/><circle cx="15.5" cy="15.5" r="5"/>'],["hl","ไฮไลต์",'<path d="M9 4l11 11-5 5L4 9z"/><path d="M4 20h6"/>'],["eraser","ยางลบ",'<path d="M7 20h12M4.5 14.5L13 6l5 5-8.5 8.5H6z"/>'],["text","ข้อความ",'<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'],["lasso","เลือก/ย้าย",'<path d="M12 4c5 0 8 2 8 5s-3 5-8 5-8-2-8-5 3-5 8-5z" stroke-dasharray="3 3"/><path d="M9 14c-1 3 0 5 3 6"/>'],["laser","เลเซอร์พอยน์เตอร์",'<circle cx="12" cy="12" r="3.2" fill="currentColor"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>'],["tape","เทป (ปิดบัง/ไฮไลต์)",'<path d="M4 9l11-4 5 5-4 11H6z" fill="none"/><path d="M8 12l5 5M10.5 9.5l5 5"/>'],["sticky","โน้ตแปะ",'<path d="M5 4h14v10l-6 6H5z"/><path d="M13 20v-6h6"/>'],["hand","เลื่อนหน้า",'<path d="M8 12V6a1.5 1.5 0 0 1 3 0v5m0-1V4.5a1.5 1.5 0 0 1 3 0V11m0-1V6a1.5 1.5 0 0 1 3 0v7c0 4-2 7-6 7-3 0-4-2-6-5l-1-2a1.5 1.5 0 0 1 2.5-1.5L8 14"/>']];
-const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>']];
+const INK_ACTS=[["img","แทรกรูปภาพจากเครื่อง",'<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><circle cx="9" cy="10" r="1.7"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'],["stk","สติกเกอร์สถานะ (ด่วน HOT เสร็จแล้ว…) ขยับได้",'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.6 2.2 2.4 3.5 2.4s2.5-.8 3.5-2.4M9 9.5h.01M15 9.5h.01"/>'],["mic","พิมพ์ตามเสียงพูด",'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/>'],["calc","เครื่องคิดเลข (+ − × ÷ %) · ใส่ผลลงหน้า · พิมพ์ 1+1= ได้ผลทันที",'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 15h.01M12 15h.01M15.5 15h.01"/>']];
 function inkToolbar(){
 const tb=el("ink-tools");
 tb.innerHTML=INK_TOOLS.map(([k,l,p])=>`<button type="button" class="ink-b${ink.tool===k?" on":""}" data-itool="${k}" title="${l}" aria-label="${l}" aria-pressed="${ink.tool===k}">${svg(p,20)}</button>`).join("")+INK_ACTS.map(([k,l,p])=>`<button type="button" class="ink-b${k==="mic"&&ink.voiceOn?" on":""}" data-iact="${k}" title="${l}" aria-label="${l}">${svg(p,20)}</button>`).join("");
@@ -4022,7 +4023,7 @@ function inkTextClose(commit){
 const T=ink.ta; if(!T)return; ink.ta=null; const tx=T.ta.value.replace(/\s+$/,""); T.ta.remove(); if(!commit)return;
 const pg=inkPage(), old=T.i>=0?pg.strokes[T.i]:null;
 if(!tx){ if(old){ inkCommit(pg.strokes.filter((_,j)=>j!==T.i)); } return; }
-if(old){ if(old.tx===tx)return; const o=inkMkText(old.p[0],old.p[1],tx,old.fs,old.c,old.g,old.bg); inkCommit(pg.strokes.map((s,j)=>j===T.i?o:s)); return; }
+if(old){ if(old.tx===tx)return; const o=inkMkText(old.p[0],old.p[1],tx,old.fs,old.c,old.g,old.bg); if(old.id)o.id=old.id; if(old.lk)o.lk=old.lk; inkCommit(pg.strokes.map((s,j)=>j===T.i?o:s)); return; }
 { const o=T.bg?inkMkText(T.x,T.y,tx,ink.size.sticky,"#1d1d1f",null,T.bg):inkMkText(T.x,T.y,tx,ink.size.text,ink.color.pen); inkCommit([...pg.strokes,o]); }
 }
 // ---------- แต่งสิ่งที่เลือก ----------
@@ -4162,7 +4163,7 @@ document.addEventListener("paste",e=>{ if(!ink.note||!el("inkdlg").open||ink.ta)
  el("ink-imgf").addEventListener("change",e=>{ const fs=[...e.target.files]; e.target.value=""; if(fs.length)inkImgAdd(fs); }); })();
 
 // ---------- ปุ่มลัดบนแถบเครื่องมือ (รูป / ไมค์) ----------
-function inkAct(k,btn){ if(k==="stk"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-istk]")){ inkClosePop(); return; } inkStkMenu(btn); return; } if(k==="img"){ el("ink-imgf").click(); } else if(k==="mic"&&typeof inkVoiceToggle==="function"){ inkVoiceToggle(); } }
+function inkAct(k,btn){ if(k==="stk"){ const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-istk]")){ inkClosePop(); return; } inkStkMenu(btn); return; } if(k==="img"){ el("ink-imgf").click(); } else if(k==="mic"&&typeof inkVoiceToggle==="function"){ inkVoiceToggle(); } else if(k==="calc"&&typeof calcOpenInk==="function"){ calcOpenInk(); } }
 
 // ---------- ล็อก · ลำดับชั้น ----------
 function inkLockToggle(){ if(!ink.sel)return; const pg=inkPage(), idx=ink.sel.idx, all=[...idx].every(i=>pg.strokes[i]&&pg.strokes[i].lk);
@@ -4400,7 +4401,7 @@ function inkVoiceToggle(){
 }
 function inkVoiceText(txt){
  if(!ink.note)return; const pg=inkPage(), S=pg.strokes; let at=ink.voiceObj?S.indexOf(ink.voiceObj):-1;
- if(at>=0){ const old=S[at], o=inkMkText(old.p[0],old.p[1],(old.tx?old.tx+"\n":"")+txt,old.fs,old.c,old.g,old.bg); ink.voiceObj=o; const next=S.map((s,i)=>i===at?o:s);
+ if(at>=0){ const old=S[at], o=inkMkText(old.p[0],old.p[1],(old.tx?old.tx+"\n":"")+txt,old.fs,old.c,old.g,old.bg); ink.voiceObj=o; if(old.id)o.id=old.id; const next=S.map((s,i)=>i===at?o:s);
   if(ink.sel&&ink.sel.idx.has(at))ink.sel={idx:ink.sel.idx,box:inkBBox(next,ink.sel.idx)}; inkCommit(next,!!ink.sel); return; }
  const st=el("ink-stage"), r=st.getBoundingClientRect(); let x,y;
  const lp=ink.lastPt, v0=inkToPage({clientX:r.left+40,clientY:r.top+70}), v1=inkToPage({clientX:r.right-60,clientY:r.bottom-60});
@@ -4562,12 +4563,171 @@ async function inkOcrRun(){
   if(!resp.ok){ const m=resp.status===503?"ยังไม่ได้ตั้งค่าระบบ AI ที่ Vercel (ต้องมี ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY) — ตั้งเสร็จแล้วใช้ได้เลย":(j.message||("ผิดพลาด "+resp.status)); throw new Error(m); }
   let t=String(j.text||"").trim(); if(!el("ink-ocr"))return;   // ผู้ใช้กดปิดไปแล้ว
   if(!t||/^\(ไม่พบข้อความ\)$/.test(t)){ inkOcrUi("err","ไม่พบข้อความในส่วนที่เลือก — ลองเขียนให้ชัดขึ้น หรือล้อมให้ครบทั้งบรรทัด"); return; }
+  if(typeof calcAutoText==="function")t=calcAutoText(t);   // บรรทัดที่ลงท้ายด้วย = คำนวณให้เลย
   inkOcrUi("ok",t,c);
  }catch(e){ inkOcrUi("err",e&&e.name==="AbortError"?"รอนานเกินไป ลองใหม่อีกครั้งค่ะ":(e.message||String(e))); }
 }
 (function(){ const b=el("ink-seltxt"); if(b)b.onclick=e=>{ e.stopPropagation(); inkOcrRun(); }; const d=el("inkdlg"); if(d)d.addEventListener("close",inkOcrClose); })();
 // แสดงปุ่มเมื่อมีสิ่งที่เลือก (ต่อท้าย inkSelBtns เดิม)
 (function(){ const f=inkSelBtns; inkSelBtns=function(){ f.apply(this,arguments); const b=el("ink-seltxt"); if(!b)return; const on=!!ink.sel&&ink.note; let has=false; if(on){ const pg=inkPage(), S=pg?pg.strokes:[]; has=[...ink.sel.idx].some(i=>S[i]&&(S[i].t==="p"||S[i].t==="s")); } b.hidden=!has; }; })();
+// ===== เครื่องคิดเลข + สูตร (กระดานกว้าง · สมุดเขียนมือ · เขียนบันทึก) =====
+// 1) calcEval: ตัวคำนวณนิพจน์ (ไม่ใช้ eval) รองรับ + − × ÷ ^ % ( ) และฟังก์ชัน SUM AVG MIN MAX COUNT PRODUCT ROUND ABS SQRT (+ชื่อไทย รวม เฉลี่ย สูงสุด ต่ำสุด)
+// 2) พิมพ์ "1200+350*2=" ได้ผลต่อท้ายทันที  3) เครื่องคิดเลขลอย  4) ลาสโซ่ตัวเลข → ผูกสูตรสด (ink)  5) รวมยอดอัตโนมัติในเทมเพลตค่าใช้จ่าย  6) สูตรในตารางของ “เขียนบันทึก”
+const CALC_FN={SUM:a=>a.reduce((x,y)=>x+y,0),AVG:a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0,MIN:a=>a.length?Math.min(...a):0,MAX:a=>a.length?Math.max(...a):0,COUNT:a=>a.length,PRODUCT:a=>a.reduce((x,y)=>x*y,1)};
+const CALC_ALIAS={AVERAGE:"AVG",MEAN:"AVG","รวม":"SUM","เฉลี่ย":"AVG","สูงสุด":"MAX","ต่ำสุด":"MIN","นับ":"COUNT","คูณ":"PRODUCT"};
+const calcDigits=s=>String(s).replace(/[๐-๙]/g,d=>"๐๑๒๓๔๕๖๗๘๙".indexOf(d));
+function calcNorm(s){ s=calcDigits(s).replace(/[×✕]/g,"*").replace(/[÷∕]/g,"/").replace(/[−–—]/g,"-").replace(/[（]/g,"(").replace(/[）]/g,")").replace(/，/g,",");
+ if(!/[A-Za-z฀-๿]/.test(s)){ let p; do{ p=s; s=s.replace(/(\d),(\d{3})(?!\d)/g,"$1$2"); }while(s!==p); } return s; }
+// opts.cell(colIndex1,row1) → number|null (สำหรับอ้างอิงช่อง เช่น B3, A1:A5)
+function calcEval(src,opts){
+ const s=calcNorm(src); let i=0; const cell=opts&&opts.cell;
+ const ws=()=>{ while(i<s.length&&/\s/.test(s[i]))i++; };
+ const err=m=>{ throw new Error(m||"สูตรไม่ถูกต้อง"); };
+ const colNum=L=>{ let n=0; for(const ch of L.toUpperCase())n=n*26+(ch.charCodeAt(0)-64); return n; };
+ function expr(){ let a=term(); for(;;){ ws(); const c=s[i]; if(c==="+"||c==="-"){ i++; const b=term(); const f=b.p?(c==="+"?1+b.v:1-b.v):0; a={v:b.p?a.v*f:(c==="+"?a.v+b.v:a.v-b.v)}; } else break; } return a; }
+ function term(){ let a=pow(); for(;;){ ws(); const c=s[i]; if(c==="*"||c==="/"){ i++; const b=pow(); if(c==="/"&&b.v===0)err("หารด้วยศูนย์"); a={v:c==="*"?a.v*b.v:a.v/b.v}; } else break; } return a; }
+ function pow(){ const a=un(); ws(); if(s[i]==="^"){ i++; const b=pow(); return {v:Math.pow(a.v,b.v)}; } return a; }
+ function un(){ ws(); if(s[i]==="-"){ i++; const a=un(); return {v:-a.v}; } if(s[i]==="+"){ i++; return un(); } return post(); }
+ function post(){ let a=prim(); ws(); while(s[i]==="%"){ i++; a={v:a.v/100,p:1}; ws(); } return a; }
+ function ref(){ const m=/^([A-Za-z]{1,2})(\d{1,3})/.exec(s.slice(i)); if(!m||!cell)return null; i+=m[0].length; return [colNum(m[1]),+m[2]]; }
+ function rangeOrExpr(out){ ws(); const save=i, a=ref(); if(a){ ws(); if(s[i]===":"){ i++; ws(); const b=ref(); if(!b)err(); for(let r=Math.min(a[1],b[1]);r<=Math.max(a[1],b[1]);r++)for(let c=Math.min(a[0],b[0]);c<=Math.max(a[0],b[0]);c++){ const v=cell(c,r); if(v!=null)out.push(v); } return; } } i=save; out.push(expr().v); }
+ function prim(){ ws(); const rest=s.slice(i); let m;
+  if(s[i]==="("){ i++; const a=expr(); ws(); if(s[i]!==")")err("วงเล็บไม่ครบ"); i++; return {v:a.v}; }
+  if((m=/^(\d+(\.\d*)?|\.\d+)/.exec(rest))){ i+=m[0].length; return {v:parseFloat(m[0])}; }
+  if((m=/^[A-Za-zก-๏]+(?=\s*\()/.exec(rest))){ i+=m[0].length; ws(); i++; let nm=m[0].toUpperCase(); nm=CALC_ALIAS[nm]||CALC_ALIAS[m[0]]||nm; const args=[];
+   ws(); if(s[i]===")"){ i++; } else{ for(;;){ rangeOrExpr(args); ws(); if(s[i]===","||s[i]===";"){ i++; continue; } if(s[i]===")"){ i++; break; } err("วงเล็บไม่ครบ"); } }
+   if(CALC_FN[nm])return {v:CALC_FN[nm](args)};
+   if(nm==="ROUND")return {v:(()=>{ const k=Math.pow(10,args[1]||0); return Math.round(args[0]*k)/k; })()};
+   if(nm==="ABS")return {v:Math.abs(args[0])}; if(nm==="SQRT"){ if(args[0]<0)err("รากของค่าติดลบ"); return {v:Math.sqrt(args[0])}; }
+   err("ไม่รู้จักฟังก์ชัน "+m[0]); }
+  if(cell&&/^[A-Za-z]{1,2}\d{1,3}/.test(rest)){ const r=ref(); const v=cell(r[0],r[1]); return {v:v==null?0:v}; }
+  err(); }
+ const r=expr(); ws(); if(i<s.length)err(); if(!isFinite(r.v))err("คำนวณไม่ได้"); return Math.round(r.v*1e9)/1e9;
+}
+function calcFmt(n){ if(!isFinite(n))return "—"; n=Math.round(n*1e8)/1e8; return n.toLocaleString("en-US",{maximumFractionDigits:4}); }
+function calcTry(s){ try{ if(!String(s||"").trim())return null; return calcEval(s); }catch(e){ return null; } }
+// หาเลขทั้งหมดในข้อความ (รองรับ 1,200 · -5 · เลขไทย)
+function calcNums(tx){ const m=calcDigits(tx||"").match(/-?\d[\d,]*(?:\.\d+)?|-?\.\d+/g)||[]; return m.map(x=>parseFloat(x.replace(/,/g,""))).filter(isFinite); }
+const calcSum=a=>a.reduce((x,y)=>x+y,0);
+
+// ---------- พิมพ์ “1200+350*2=” ได้ผลต่อท้าย ----------
+const CALC_CH="0-9๐-๙().,%+\\-−*\\/^×÷ ";
+function calcAutoLine(line){
+ if(!/=\s*$/.test(line))return null; let body=line.replace(/\s*=\s*$/,""); let k=body.length;
+ while(k>0&&new RegExp("^["+CALC_CH+"]$").test(body[k-1]))k--;
+ let ex=body.slice(k); if(!ex.trim())return null;
+ for(let n=0;n<5;n++){ const t=ex.trim().replace(/^[+*\/^×÷.,%\s]+/,""); if(/[+\-−*\/^×÷%]/.test(t.replace(/^[-−]/,""))&&/[0-9๐-๙]/.test(t)){ const v=calcTry(t); if(v!=null)return body.replace(/\s+$/,"")+"="+calcFmt(v); }
+  const sp=ex.search(/\s\S/); if(sp<0)break; ex=ex.slice(sp+1); }
+ return null;
+}
+function calcAutoText(tx){ let ch=false; const out=String(tx).split("\n").map(l=>{ const r=calcAutoLine(l); if(r!=null){ ch=true; return r; } return l; }); return ch?out.join("\n"):tx; }
+
+// ---------- เครื่องคิดเลขลอย ----------
+const CALC={exp:"",done:false,host:null,ins:null};
+function calcPopEl(){ return el("calc-pop"); }
+function calcClose(){ const p=calcPopEl(); if(p)p.remove(); CALC.ins=null; }
+function calcSync(){ const inp=el("calc-in"); if(!inp)return; if(inp.value!==CALC.exp)inp.value=CALC.exp; const v=calcTry(CALC.exp), r=el("calc-res"); const plain=/^-?[\d.]+$/.test(CALC.exp.trim()); r.textContent=v==null?(CALC.exp.trim()?"…":" "):(plain&&!CALC.done?" ":"= "+calcFmt(v)); }
+function calcKey(k){
+ if(k==="C"){ CALC.exp=""; CALC.done=false; }
+ else if(k==="⌫"){ CALC.exp=CALC.exp.slice(0,-1); CALC.done=false; }
+ else if(k==="="){ const v=calcTry(CALC.exp); if(v!=null){ CALC.last={e:CALC.exp,r:v}; CALC.exp=String(v); CALC.done=true; } else{ const r=el("calc-res"); if(r)r.textContent="สูตรไม่ถูกต้อง"; return; } }
+ else{ if(CALC.done&&/^[0-9.(]$/.test(k))CALC.exp=""; CALC.done=false; CALC.exp+=k; }
+ calcSync();
+}
+function calcOpen(o){ // o={host, insert(txt), nums?:[number]}
+ calcClose(); const p=document.createElement("div"); p.id="calc-pop"; p.className="calc-pop"; CALC.exp=""; CALC.done=false; CALC.last=null; CALC.ins=o.insert;
+ const keys=["C","(",")","⌫","7","8","9","÷","4","5","6","×","1","2","3","−","0",".","%","+"];
+ const st=o.nums&&o.nums.length?`<div class="calc-st"><span>ที่เลือก ${o.nums.length} ตัว</span><button type="button" data-cs="${calcSum(o.nums)}">รวม ${calcFmt(calcSum(o.nums))}</button><button type="button" data-cs="${calcSum(o.nums)/o.nums.length}">เฉลี่ย ${calcFmt(calcSum(o.nums)/o.nums.length)}</button><button type="button" data-cs="${Math.max(...o.nums)}">สูงสุด ${calcFmt(Math.max(...o.nums))}</button><button type="button" data-cs="${Math.min(...o.nums)}">ต่ำสุด ${calcFmt(Math.min(...o.nums))}</button></div>`:"";
+ p.innerHTML=`<div class="calc-h"><b>🧮 เครื่องคิดเลข</b><button type="button" data-cc="x" aria-label="ปิด">✕</button></div>
+ <input id="calc-in" inputmode="none" autocomplete="off" spellcheck="false" placeholder="พิมพ์ หรือกดเลข เช่น 1200+350*2" aria-label="นิพจน์">
+ <div id="calc-res" class="calc-res"> </div>${st}
+ <div class="calc-keys">${keys.map(k=>`<button type="button" data-ck="${k}" class="${/[0-9.]/.test(k)?"n":(k==="C"||k==="⌫"||k==="("||k===")")?"f":"o"}">${k}</button>`).join("")}<button type="button" data-ck="=" class="eq">=</button></div>
+ <div class="calc-ins"><button type="button" data-cc="r">ใส่ผลลัพธ์</button><button type="button" data-cc="e">ใส่สูตร+ผล</button><button type="button" data-cc="cp">คัดลอก</button></div>`;
+ o.host.appendChild(p); calcSync();
+ p.addEventListener("pointerdown",e=>e.stopPropagation()); p.addEventListener("mousedown",e=>{ if(!e.target.closest("input"))e.preventDefault(); });
+ const inp=el("calc-in"); inp.addEventListener("input",()=>{ CALC.exp=inp.value; CALC.done=false; calcSync(); }); inp.addEventListener("keydown",e=>{ e.stopPropagation(); if(e.key==="Enter"){ e.preventDefault(); calcKey("="); } else if(e.key==="Escape"){ calcClose(); } });
+ p.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; e.stopPropagation();
+  if(b.dataset.ck){ calcKey(b.dataset.ck); return; }
+  if(b.dataset.cs){ if(CALC.done)CALC.exp=""; CALC.done=false; CALC.exp+=calcFmt(+b.dataset.cs).replace(/,/g,""); calcSync(); return; }
+  const c=b.dataset.cc; if(c==="x"){ calcClose(); return; }
+  let v=calcTry(CALC.exp); if(v==null){ const r=el("calc-res"); r.textContent="ยังไม่มีผลลัพธ์"; return; }
+  const exp=CALC.done&&CALC.last?CALC.last.e:CALC.exp, txt=c==="e"?(exp.trim()+" = "+calcFmt(v)):calcFmt(v);
+  if(c==="cp"){ (async()=>{ try{ await navigator.clipboard.writeText(calcFmt(v).replace(/,/g,"")); b.textContent="คัดลอกแล้ว ✓"; }catch(er){ b.textContent="คัดลอกไม่ได้"; } })(); return; }
+  if(CALC.ins)CALC.ins(txt); });
+ // ลากย้ายได้
+ const h=p.querySelector(".calc-h"); h.addEventListener("pointerdown",e=>{ if(e.target.closest("button"))return; const r=p.getBoundingClientRect(), dx=e.clientX-r.left, dy=e.clientY-r.top; h.setPointerCapture(e.pointerId);
+  const mv=ev=>{ p.style.left=Math.max(0,Math.min(innerWidth-60,ev.clientX-dx))+"px"; p.style.top=Math.max(0,Math.min(innerHeight-60,ev.clientY-dy))+"px"; p.style.right="auto"; p.style.bottom="auto"; };
+  const up=()=>{ h.removeEventListener("pointermove",mv); h.removeEventListener("pointerup",up); }; h.addEventListener("pointermove",mv); h.addEventListener("pointerup",up); });
+ return p;
+}
+function calcOpenInk(){
+ const nums=[]; if(ink.sel&&ink.note){ const S=inkPage().strokes; ink.sel.idx.forEach(i=>{ const s=S[i]; if(s&&s.t==="x")nums.push(...calcNums(s.tx)); }); }
+ calcOpen({host:el("inkdlg"),nums,insert:txt=>{ const S=ink.sel&&ink.sel.idx.size===1?inkPage().strokes[[...ink.sel.idx][0]]:null; ink.voiceObj=(S&&S.t==="x"&&!S.fm)?S:null; inkVoiceText(txt); ink.voiceObj=null; }});
+}
+function calcOpenNote(){
+ neSave(); const sel=getSelection(); const nums=(sel&&!sel.isCollapsed&&NE().contains(sel.anchorNode))?calcNums(sel.toString()):[];
+ calcOpen({host:el("ndlg"),nums,insert:txt=>{ neRestore(); document.execCommand("insertText",false,txt); neSave(); }});
+}
+["inkdlg","ndlg"].forEach(id=>{ const d=el(id); if(d)d.addEventListener("close",calcClose); });
+
+// ---------- ink: พิมพ์ในกล่องข้อความแล้วได้ผลทันทีเมื่อกด = ----------
+(function(){ const f=inkTextEdit; inkTextEdit=function(){ const r=f.apply(this,arguments); const T=ink.ta; if(T&&T.ta&&!T.ta.__calc){ T.ta.__calc=1; const ta=T.ta;
+  ta.addEventListener("input",e=>{ if(ta.selectionStart!==ta.value.length||!/=\s*$/.test(ta.value))return; const lines=ta.value.split("\n"), last=lines[lines.length-1], out=calcAutoLine(last); if(out!=null){ lines[lines.length-1]=out; ta.value=lines.join("\n"); ta.setSelectionRange(ta.value.length,ta.value.length); ta.dispatchEvent(new Event("input")); } }); }
+  return r; }; })();
+
+// ---------- ink: ผูกสูตรสด (ลาสโซ่ตัวเลข → รวม/เฉลี่ย/…) ----------
+const CALC_OPS={sum:{lb:"รวม",t:"ผลรวม",f:v=>calcSum(v)},avg:{lb:"เฉลี่ย",t:"ค่าเฉลี่ย",f:v=>calcSum(v)/v.length},max:{lb:"สูงสุด",t:"ค่าสูงสุด",f:v=>Math.max(...v)},min:{lb:"ต่ำสุด",t:"ค่าต่ำสุด",f:v=>Math.min(...v)},cnt:{lb:"จำนวน",t:"นับจำนวน",f:v=>v.length},prod:{lb:"คูณ",t:"ผลคูณ",f:v=>v.reduce((a,b)=>a*b,1)},
+ diff:{lb:"คงเหลือ",t:"ตัวแรก − ตัวที่เหลือ (เช่น งบ − ใช้ไป)",f:v=>v[0]-calcSum(v.slice(1)),min2:2},div:{lb:"หาร",t:"ตัวแรก ÷ ตัวที่สอง",f:v=>v[1]===0?NaN:v[0]/v[1],min2:2},pct:{lb:"เป็น",t:"% = ตัวแรก ÷ ตัวที่สอง × 100",f:v=>v[1]===0?NaN:v[0]/v[1]*100,min2:2,sfx:"%"}};
+function calcFmText(fm,vals){ const op=CALC_OPS[fm.f]; if(!op||!vals.length||(op.min2&&vals.length<2))return (fm.lb||"")+" —"; const r=op.f(vals); return (fm.lb||op.lb)+" "+(isFinite(r)?calcFmt(r)+(op.sfx||""):"—"); }
+const calcSrcVal=q=>{ const n=calcNums(q.tx); return n.length?calcSum(n):null; };
+function calcOrder(arr){ return arr.slice().sort((a,b)=>{ const fa=Math.max(a.fs||24,12); if(Math.abs(a.p[1]-b.p[1])<fa*.8)return a.p[0]-b.p[0]; return a.p[1]-b.p[1]; }); }
+function calcRebuild(s,text,x,y){ const o=inkMkText(x==null?s.p[0]:x,y==null?s.p[1]:y,text,s.fs,s.c,s.g,s.bg); ["fm","id","lk","u"].forEach(k=>{ if(s[k]!=null)o[k]=s[k]; }); return o; }
+function calcLinkPass(arr){ let out=arr, ch=false; const byId=new Map(); arr.forEach(s=>{ if(s&&s.id)byId.set(s.id,s); });
+ arr.forEach((s,i)=>{ if(!s||s.t!=="x"||!s.fm||!s.fm.ids)return; const srcs=calcOrder(s.fm.ids.map(id=>byId.get(id)).filter(q=>q&&q.t==="x"&&q!==s)); const vals=srcs.map(calcSrcVal).filter(v=>v!=null);
+  const tx=calcFmText(s.fm,vals); if(tx!==s.tx){ if(!ch){ out=arr.slice(); ch=true; } const o=calcRebuild(s,tx); out[i]=o; byId.set(o.id,o); } });
+ return {out,ch}; }
+// เทมเพลตค่าใช้จ่ายรายเดือน: รวมยอดคอลัมน์จำนวนเงิน → ช่อง “ใช้ไปแล้ว” “คงเหลือ” และ “รวมทั้งเดือน”
+const CALC_TPL={budget:{box:[50,270,490],bx:[128,204],amt:[700,850],ay:[250,1352],tot:[700,1352,150,44]}};
+function calcTplPass(arr,tpl){ const G=CALC_TPL[tpl]; if(!G)return arr;
+ const user=arr.filter(s=>s&&s.t==="x"&&!s.fm); const num=s=>{ const n=calcNums(s.tx); return n.length?calcSum(n):null; };
+ const inB=s=>s.p[0]>=G.box[0]-2&&s.p[0]<G.box[0]+210&&s.p[1]>=G.bx[0]-6&&s.p[1]<G.bx[1];
+ const inA=s=>s.p[0]>=G.amt[0]-2&&s.p[0]<G.amt[1]&&s.p[1]>=G.ay[0]&&s.p[1]<G.ay[1]+6;
+ const bs=user.filter(inB).map(num).filter(v=>v!=null), as=user.filter(inA).map(num).filter(v=>v!=null);
+ const want=[]; const fs=26;
+ if(as.length){ const total=calcSum(as); want.push({tp:"total",v:total,c:"#1f6f80",right:[G.amt[1]-10,G.tot[1]+(G.tot[3]-fs*1.35)/2]}); want.push({tp:"used",v:total,c:"#d9692f",mid:[G.box[1]+105,164]});
+  if(bs.length){ const rem=calcSum(bs)-total; want.push({tp:"remain",v:rem,c:rem<0?"#c0392b":"#2e8b57",mid:[G.box[2]+105,164]}); } }
+ let out=arr, ch=false; const has=new Map(); arr.forEach((s,i)=>{ if(s&&s.fm&&s.fm.tp)has.set(s.fm.tp,i); });
+ const drop=new Set(); has.forEach((i,tp)=>{ if(!want.some(w=>w.tp===tp))drop.add(i); });
+ if(drop.size){ out=arr.filter((_,i)=>!drop.has(i)); ch=true; has.clear(); out.forEach((s,i)=>{ if(s&&s.fm&&s.fm.tp)has.set(s.fm.tp,i); }); }
+ want.forEach(w=>{ const tx=calcFmt(w.v), proto={t:"x",fs,c:w.c,p:[0,0,0,0,0,0],tx}; const m=inkTextMeasure(proto); const x=w.right?w.right[0]-m[0]:w.mid[0]-m[0]/2, y=w.right?w.right[1]:w.mid[1];
+  const i=has.get(w.tp), old=i!=null?out[i]:null;
+  if(old&&old.tx===tx&&old.c===w.c&&Math.abs(old.p[0]-x)<1&&Math.abs(old.p[1]-y)<1)return;
+  const o=inkMkText(x,y,tx,fs,w.c); o.fm={tp:w.tp}; if(!ch){ out=out.slice(); ch=true; } if(i!=null)out[i]=o; else{ out.push(o); has.set(w.tp,out.length-1); } });
+ return out; }
+function calcRefresh(next){ if(!Array.isArray(next))return next; let a=next;
+ if(a.some(s=>s&&s.fm&&s.fm.ids)){ for(let n=0;n<4;n++){ const r=calcLinkPass(a); a=r.out; if(!r.ch)break; } }
+ const pg=inkPage(), tpl=(pg&&pg.tpl)||inkLive().tpl||""; if(CALC_TPL[tpl])a=calcTplPass(a,tpl); return a; }
+(function(){ const f=inkCommit; inkCommit=function(next,keepSel){ return f.call(this,calcRefresh(next),keepSel); }; })();
+
+function calcSelSrc(){ if(!ink.sel||!ink.note)return []; const S=inkPage().strokes; return [...ink.sel.idx].filter(i=>S[i]&&S[i].t==="x"&&calcNums(S[i].tx).length); }
+function inkCalcMenu(a){
+ const S=inkPage().strokes, src=calcSelSrc(); if(!src.length){ inkStatus("ลาสโซ่ล้อมกล่องข้อความที่มีตัวเลขก่อน (ลายมือให้กด Aa ลายมือ→ตัวพิมพ์ ก่อน)","bad"); return; }
+ const vals=calcOrder(src.map(i=>S[i])).map(calcSrcVal);
+ inkPop(`<div class="ink-ph">ผูกสูตร · ${vals.length} กล่อง · ผลรวมตอนนี้ ${calcFmt(calcSum(vals))}</div><div class="hint" style="margin:0 10px 6px;font-size:12px;max-width:290px">ผลจะอัปเดตเองเมื่อแก้ตัวเลขต้นทาง</div>`+Object.keys(CALC_OPS).map(k=>`<button type="button" class="ink-mi" data-cop="${k}"${CALC_OPS[k].min2&&vals.length<2?" disabled":""}>${CALC_OPS[k].t}</button>`).join(""),a);
+}
+function inkCalcMake(op){
+ const pg=inkPage(), S=pg.strokes, src=calcSelSrc(); if(!src.length)return; const rid=()=>"q"+Math.random().toString(36).slice(2,8);
+ const next=S.slice(), ids=[]; const ordered=calcOrder(src.map(i=>S[i]));
+ ordered.forEach(q=>{ const i=S.indexOf(q); let o=next[i]; if(!o.id){ o={...o,id:rid()}; next[i]=o; } ids.push(o.id); });
+ const bb=inkBBox(S,ink.sel.idx), fs=Math.round(ordered.reduce((a,q)=>a+(q.fs||24),0)/ordered.length);
+ const fm={f:op,ids,lb:CALC_OPS[op].lb}; const o=inkMkText(bb[0],bb[3]+14,calcFmText(fm,ordered.map(calcSrcVal).filter(v=>v!=null)),fs,"#0f766e"); o.fm=fm; o.id=rid();
+ inkClosePop(); inkCommit([...next,o]); const idx=new Set([inkPage().strokes.length-1]); ink.sel={idx,box:inkBBox(inkPage().strokes,idx)}; inkDrawSel(); inkToolbar();
+ inkStatus("ผูกสูตรแล้ว — แก้ตัวเลขต้นทาง ผลเปลี่ยนเอง","ok"); setTimeout(()=>{ if(!ink.saveT)inkStatus("",""); },2600);
+}
+(function(){ const b=el("ink-selcalc"); if(b)b.onclick=e=>{ e.stopPropagation(); const p=el("ink-pop"); if(!p.hidden&&p.querySelector("[data-cop]")){ inkClosePop(); return; } inkCalcMenu(e.currentTarget); };
+ const pop=el("ink-pop"); if(pop)pop.addEventListener("click",e=>{ const b=e.target.closest("[data-cop]"); if(!b||b.disabled)return; e.stopPropagation(); inkCalcMake(b.dataset.cop); });
+ const f=inkSelBtns; inkSelBtns=function(){ f.apply(this,arguments); const c=el("ink-selcalc"); if(c)c.hidden=!(ink.sel&&ink.note&&calcSelSrc().length); }; })();
+
 // ---------- แจ้งเตือนนอกแอป (Web Push) ----------
 const PUSH={checked:false,ready:false,cron:false,key:"",busy:false,msg:"",here:false,ep:"",gen:null};
 const pushOK=()=>("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
@@ -7361,6 +7521,24 @@ el("nepop").hidden=true;
 if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
 neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
 });
+// ===== เขียนบันทึก: สูตรในตาราง + พิมพ์ = ได้ผลทันที (ใช้ตัวคำนวณจาก 05l-calc.js) =====
+// ---------- เขียนบันทึก: = ต่อท้ายนิพจน์ได้ผลทันที · ช่องตารางพิมพ์ =SUM(B2:B5) ได้ ----------
+let neFxCur=null;
+const neFxNum=c=>{ const t=c._fv!=null&&c===neFxCur?c._fv:c.textContent; const n=calcNums(t); return n.length?n[0]:null; };
+function neFxAll(){ const NEe=NE(); if(!NEe)return;
+ NEe.querySelectorAll("table").forEach(tb=>{ const cells=[...tb.querySelectorAll("td[data-f],th[data-f]")]; if(!cells.length)return;
+  const cellFn=(c,r)=>{ const row=tb.rows[r-1], cl=row&&row.cells[c-1]; return cl?neFxNum(cl):null; };
+  for(let pass=0;pass<3;pass++)cells.forEach(c=>{ if(c===neFxCur)return; let t; try{ t=calcFmt(calcEval(c.getAttribute("data-f").slice(1),{cell:cellFn})); }catch(e){ t="#ERR"; } if(c.textContent!==t)c.textContent=t; }); }); }
+function neFxLeave(){ const c=neFxCur; neFxCur=null; if(!c||!NE().contains(c))return; const t=c.textContent.trim(); if(/^=.+/.test(t))c.setAttribute("data-f",t.slice(0,120)); else c.removeAttribute("data-f"); neFxAll(); }
+function neFxEnter(c){ neFxCur=c; if(c){ const f=c.getAttribute("data-f"); if(f){ c._fv=c.textContent; c.textContent=f; neFocusCell(c,true); } } }
+(function(){ const NEe=NE(); if(!NEe)return;
+ document.addEventListener("selectionchange",()=>{ const d=el("ndlg"); if(!d||!d.open)return; const c=neCell(); if(c===neFxCur)return; neFxLeave(); neFxEnter(c); });
+ NEe.addEventListener("focusout",()=>{ setTimeout(()=>{ if(!NEe.contains(document.activeElement))neFxLeave(); },0); });
+ NEe.addEventListener("input",e=>{
+  if(e.inputType==="insertText"&&e.data==="="){ const s=getSelection(); if(s.rangeCount&&s.isCollapsed){ const n=s.anchorNode; if(n&&n.nodeType===3){ const before=n.data.slice(0,s.anchorOffset), line=before.split("\n").pop(); const out=calcAutoLine(line); if(out!=null&&!/^=/.test(line.trim())){ const add=out.slice(line.length); document.execCommand("insertText",false,add); } } } }
+  neFxAll(); });
+ const nt=el("ntool"); if(nt)nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="calc"]'); if(b){ e.stopImmediatePropagation(); calcOpenNote(); } },true);
+})();
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

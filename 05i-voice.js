@@ -52,7 +52,7 @@ function inkVoiceToggle(){
 }
 function inkVoiceText(txt){
  if(!ink.note)return; const pg=inkPage(), S=pg.strokes; let at=ink.voiceObj?S.indexOf(ink.voiceObj):-1;
- if(at>=0){ const old=S[at], o=inkMkText(old.p[0],old.p[1],(old.tx?old.tx+"\n":"")+txt,old.fs,old.c,old.g,old.bg); ink.voiceObj=o; const next=S.map((s,i)=>i===at?o:s);
+ if(at>=0){ const old=S[at], o=inkMkText(old.p[0],old.p[1],(old.tx?old.tx+"\n":"")+txt,old.fs,old.c,old.g,old.bg); ink.voiceObj=o; if(old.id)o.id=old.id; const next=S.map((s,i)=>i===at?o:s);
   if(ink.sel&&ink.sel.idx.has(at))ink.sel={idx:ink.sel.idx,box:inkBBox(next,ink.sel.idx)}; inkCommit(next,!!ink.sel); return; }
  const st=el("ink-stage"), r=st.getBoundingClientRect(); let x,y;
  const lp=ink.lastPt, v0=inkToPage({clientX:r.left+40,clientY:r.top+70}), v1=inkToPage({clientX:r.right-60,clientY:r.bottom-60});
