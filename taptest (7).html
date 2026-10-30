@@ -1,0 +1,24 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>ทดสอบจิ้มปากกา</title>
+<style>html,body{margin:0;height:100%;background:#fff;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;font:16px system-ui}
+#bar{position:fixed;left:0;right:0;top:0;padding:10px;background:#eef;z-index:2}
+button{font:inherit;padding:10px 14px;border:0;border-radius:10px;background:#fff;margin:2px}button.on{background:#2563eb;color:#fff}
+#c{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none}
+#out{white-space:pre-wrap;font-size:14px;margin-top:6px}</style></head><body>
+<div id="bar"><b>จิ้มปากกาให้เร็วที่สุด 20 ครั้ง (ยกแล้วจิ้มทันที) แล้วดูตัวเลข</b><br>
+<button id="m0" class="on">โหมด 1: ปกติ</button><button id="m1">โหมด 2: กัน gesture ระบบ</button><button id="rs">เริ่มใหม่</button>
+<div id="out">รอจิ้ม…</div></div>
+<canvas id="c"></canvas>
+<script>
+const c=document.getElementById("c"),x=c.getContext("2d"),out=document.getElementById("out");let dpr=Math.min(devicePixelRatio||1,2),mode=0;
+function rs(){c.width=innerWidth*dpr;c.height=innerHeight*dpr;x.setTransform(dpr,0,0,dpr,0,0);}rs();addEventListener("resize",rs);
+let n,t0,lastUp,gaps;function reset(){n={pdownPen:0,pdownTouch:0,touchstart:0,pup:0,pcancel:0};gaps=[];lastUp=0;x.clearRect(0,0,innerWidth,innerHeight);show();}
+function show(){const g=gaps.length?Math.round(gaps.reduce((a,b)=>a+b,0)/gaps.length):0;out.textContent="โหมด "+(mode+1)+" · จิ้มปากกาเข้าจริง "+n.pdownPen+" ครั้ง · pointerdown(นิ้ว) "+n.pdownTouch+" · touchstart "+n.touchstart+" · pointerup "+n.pup+" · cancel "+n.pcancel+" · เว้นระหว่างจิ้มเฉลี่ย "+g+" ms (ต่ำสุด "+(gaps.length?Math.round(Math.min(...gaps)):0)+")";}
+c.addEventListener("pointerdown",e=>{if(e.pointerType==="pen"){n.pdownPen++;if(lastUp)gaps.push(e.timeStamp-lastUp);}else n.pdownTouch++;x.fillStyle=e.pointerType==="pen"?"#111":"#e11";x.beginPath();x.arc(e.clientX,e.clientY,6,0,7);x.fill();show();});
+c.addEventListener("pointerup",e=>{n.pup++;if(e.pointerType==="pen")lastUp=e.timeStamp;});c.addEventListener("pointercancel",()=>{n.pcancel++;});
+c.addEventListener("touchstart",e=>{n.touchstart++;if(mode===1&&e.touches[0]&&e.touches[0].touchType==="stylus")e.preventDefault();},{passive:false});
+c.addEventListener("touchmove",e=>{if(mode===1&&e.touches[0]&&e.touches[0].touchType==="stylus")e.preventDefault();},{passive:false});
+c.addEventListener("contextmenu",e=>e.preventDefault());
+document.getElementById("rs").onclick=reset;
+for(const i of[0,1])document.getElementById("m"+i).onclick=()=>{mode=i;document.getElementById("m0").className=i?"":"on";document.getElementById("m1").className=i?"on":"";reset();};
+reset();
+</script></body></html>
