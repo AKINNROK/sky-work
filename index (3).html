@@ -707,6 +707,10 @@ svg [data-tip]{outline:none}
 .calc-pop .calc-keys .eq{grid-column:1/-1;background:var(--accent,#1f6f80);color:#fff}
 .calc-pop .calc-ins{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:8px}.calc-pop .calc-ins button{border:1px solid #9fb0cc;background:transparent;color:inherit;border-radius:12px;padding:8px 6px;font-size:13px;cursor:pointer}
 table.nt td[data-f],table.nt th[data-f]{background-image:linear-gradient(135deg,transparent 88%,#1f6f80 88%)}
+#ink-rul{position:absolute;left:0;top:0;pointer-events:none;z-index:7}
+.ink-rulh,.ink-rulv,.ink-rulc{position:absolute;z-index:8;touch-action:none;-webkit-user-select:none;user-select:none}
+.ink-rulh{left:22px;right:0;top:0;height:22px;cursor:ns-resize}.ink-rulv{left:0;top:22px;bottom:0;width:22px;cursor:ew-resize}
+.ink-rulc{left:0;top:0;width:22px;height:22px;border:0;padding:0;background:transparent;cursor:pointer}
 .ink-voice{position:fixed;left:50%;bottom:max(76px,env(safe-area-inset-bottom));transform:translateX(-50%);z-index:60;background:#111c;color:#fff;border-radius:18px;padding:10px 14px;display:flex;gap:10px;align-items:center;max-width:min(560px,94vw);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .ink-voice i{width:12px;height:12px;border-radius:50%;background:#ef4444;flex:none;animation:vpulse 1s infinite}.ink-voice span{flex:1;min-width:0;font-size:14px;line-height:1.4;max-height:4.2em;overflow:hidden}.ink-voice button{border:0;border-radius:999px;background:#fff2;color:#fff;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
 @keyframes vpulse{50%{opacity:.25}}
@@ -985,7 +989,7 @@ table.nt td[data-f],table.nt th[data-f]{background-image:linear-gradient(135deg,
 <button type="button" class="ink-t pri" id="ink-exp-b">ส่งออก / Drive</button>
 <button type="button" class="ink-b" id="ink-more" title="เพิ่มเติม" aria-label="เพิ่มเติม"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
 </div>
-<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas><canvas id="ink-pred"></canvas><canvas id="ink-laser"></canvas></div><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
+<div id="ink-stage" class="ink-stage"><div id="ink-pg" class="ink-pg"><canvas id="ink-base"></canvas><canvas id="ink-over"></canvas><canvas id="ink-pred"></canvas><canvas id="ink-laser"></canvas></div><canvas id="ink-rul"></canvas><div id="ink-rul-h" class="ink-rulh" hidden title="ลากลงมาเพื่อสร้างเส้นไกด์แนวนอน"></div><div id="ink-rul-v" class="ink-rulv" hidden title="ลากไปทางขวาเพื่อสร้างเส้นไกด์แนวตั้ง"></div><button type="button" id="ink-rul-c" class="ink-rulc" hidden aria-label="ตั้งค่าไม้บรรทัด"></button><div id="ink-load" class="ink-load" hidden>กำลังโหลดสมุด…</div></div>
 <div id="ink-pages" class="ink-pages"></div>
 <div id="ink-pop" class="ink-pop" hidden></div>
 <div id="ink-side" class="ink-side" hidden></div>
@@ -1166,4 +1170,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.23"></script></body></html>
+<script src="app.js?v=14.14.24"></script></body></html>
