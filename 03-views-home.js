@@ -351,13 +351,24 @@ const BUD_WARN=80; // เตือนเมื่อใช้ถึง % นี�
 // เดือนสุดท้ายที่นับเป็น "สะสมถึงตอนนี้" (-1 = ปีอนาคต ยังไม่มียอดสะสม)
 function budCut(y,scope,m){ if(scope==="month")return m; if(y<THISYEAR)return 11; if(y>THISYEAR)return -1; return new Date().getMonth(); }
 // รวมแผนงบ + ยอดใช้จริงรายเดือนต่อหมวด GL ไว้ที่เดียว (ใช้ทั้งหน้างบและแบนเนอร์หน้าแรก)
+// งานนี้ "อยู่ในปี y" ไหม (งบแยกปี ไม่ปนข้ามปี): คืนเดือน 0-11 · -1 = อยู่ในปีแต่ไม่รู้เดือน · undefined = ไม่ใช่ปีนี้
+// มีวันที่ครั้งเดียว → ปีของวันที่นั้น · งานซ้ำ → นับทุกปีที่ซีรีส์ยังอยู่ (เดือนแรกที่เกิดในปีนั้น) · ไม่มีวันที่ → นับเฉพาะปีปัจจุบัน
+function budItemMonth(t,y){
+ const R2=rr(t);
+ if(R2){ const sy=t.date?new Date(t.date).getFullYear():null; if(sy!==null&&sy>y)return undefined; if(R2.until&&+String(R2.until).slice(0,4)<y)return undefined;
+  for(let m=0;m<12;m++)if(occDays(t,y,m).length)return m;
+  return (sy!==null||y===THISYEAR)?-1:undefined; }
+ if(t.date){ const d=new Date(t.date); return d.getFullYear()===y?d.getMonth():undefined; }
+ return y===THISYEAR?-1:undefined;
+}
+const sum0=a=>a.reduce((x,v)=>x+v,0);
 function budFlow(y){
 const rows={}, Z=()=>Array(12).fill(0);
 const row=k=>rows[k]||(rows[k]={k,plan:Z(),task:Z(),act:Z(),taskNoM:0,actNoM:0,ceil:0});
 gls.forEach(g=>{const r=row(g.key); r.ceil=glBudget(g,y); for(let m=0;m<12;m++)r.plan[m]=glBudget(g,y,m);});
-const monthOf=t=>{const d=dueDate(t)||(t.date?new Date(t.date):null); return d&&d.getFullYear()===y?d.getMonth():-1;};
-items.filter(t=>!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==y)).forEach(t=>{
-const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"", m=monthOf(t), live=t.status!==STATUS_CANCEL;
+items.forEach(t=>{
+const m=budItemMonth(t,y); if(m===undefined)return;                       // งานของปีอื่น ไม่นับปนในปีนี้
+const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"", live=t.status!==STATUS_CANCEL;
 const put=(k,bd,ac)=>{const r=row(k); if(m>=0){r.task[m]+=bd;r.act[m]+=ac;}else{r.taskNoM+=bd;r.actNoM+=ac;}};
 put(k1||k2, live?(+t.b1||0):0, +t.actual||0);
 if(+t.b2)put(k2||k1, live?(+t.b2||0):0, 0);
@@ -395,7 +406,7 @@ const scope=R.budScope, m=R.budMonth, y=R.year;
 const tx=ledgerIn(scope,m);
 const inc=tx.filter(x=>x.kind==="income").reduce((s,x)=>s+(+x.amount||0),0);
 const exp=tx.filter(x=>x.kind!=="income").reduce((s,x)=>s+(+x.amount||0),0);
-const inYear=items.filter(t=>!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==y));
+const inYear=items.filter(t=>budItemMonth(t,y)!==undefined);
 const flow=budFlow(y), cut=budCut(y,scope,m), mSel=scope==="month"?m:null;
 const st={}; Object.values(flow).forEach(r=>{st[r.k]=budStat(r,cut,mSel);});
 const keys=Object.keys(st).filter(k=>st[k].plan||st[k].act);
@@ -452,9 +463,11 @@ const tks=inYear.filter(t=>k?(glKeysOf(t).includes(k)&&(glShare(t,k)+(+t.actual|
 const txs=ledger.filter(x=>(x.gl||"")===k&&x.date&&new Date(x.date).getFullYear()===y);
 const mrows=[];
 r.eff.forEach((e,i)=>{ if(!e&&!r.act[i])return; const lf=e-r.act[i];
-mrows.push({t1:MTHFULL[i]+" "+(y+543),t2:`แผน ${baht(e)} ฿ · ใช้จริง ${baht(r.act[i])} ฿`,d:MTH[i],p:lf>=0?"เหลือ "+baht(lf):"เกิน "+baht(-lf),pc:lf>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"}); });
-if(r.taskNoM||r.actNoM)mrows.push({t1:"ไม่ระบุเดือน (งานประจำ/ยังไม่ใส่วันที่)",t2:`งบ ${baht(r.taskNoM)} ฿ · ใช้จริง ${baht(r.actNoM)} ฿ — นับเฉพาะยอดทั้งปี`,d:"—",p:"ทั้งปี",pc:"s-mid",c:"var(--accent-soft)",ic:"var(--accent)"});
-const rowsL=[...mrows,
+mrows.push({t1:MTHFULL[i]+" "+(y+543),t2:`แผน ${baht(e)} ฿${r.task[i]>r.plan[i]&&r.plan[i]?` (แผนหมวด ${baht(r.plan[i])} แต่งานเดือนนี้ลงงบรวม ${baht(r.task[i])} จึงใช้ค่าที่มากกว่า)`:r.plan[i]?"":" (จากงบของงานในเดือนนี้)"} · ใช้จริง ${baht(r.act[i])} ฿`,d:MTH[i],p:lf>=0?"เหลือ "+baht(lf):"เกิน "+baht(-lf),pc:lf>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"}); });
+if(r.taskNoM||r.actNoM)mrows.push({t1:"ไม่ระบุเดือน (งานประจำ/ยังไม่ใส่วันที่)",t2:`งบ ${baht(r.taskNoM)} ฿ · ใช้จริง ${baht(r.actNoM)} ฿ — นับเฉพาะยอดทั้งปี ${y+543} (งานไม่มีวันที่นับในปีปัจจุบันเท่านั้น)`,d:"—",p:"ทั้งปี",pc:"s-mid",c:"var(--accent-soft)",ic:"var(--accent)"});
+const sumP=r.plan.reduce((a,b)=>a+b,0), sumE=r.eff.reduce((a,b)=>a+b,0);
+const sumRow={t1:"สรุปปี "+(y+543)+" — งบ "+baht(r.planY)+" ฿ · ใช้จริง "+baht(r.actY)+" ฿",t2:`แผนรายเดือนของหมวด ${baht(sumP)}${sumE>sumP?" + ส่วนที่งานลงงบเกินแผนเดือนนั้น "+baht(sumE-sumP):""}${r.taskNoM?" · งานไม่ระบุเดือน "+baht(r.taskNoM):""}${r.ceil>Math.max(sumE,sum0(r.task)+r.taskNoM)?" · เพดานงบรายปี "+baht(r.ceil):""}`,d:"Σ",p:r.planY-r.actY>=0?"เหลือ "+baht(r.planY-r.actY):"เกิน "+baht(r.actY-r.planY),pc:r.planY-r.actY>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"};
+const rowsL=[sumRow,...mrows,
 ...tks.map(t=>{const d=dueDate(t);const mine=k?glShare(t,k):budgetOf(t);
 const mineAct=(k?((glKeyOf(t.gl1)||glKeyOf(t.gl2))===k):!hasGL(t))?(+t.actual||0):0;
 return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${mineAct?` · ใช้จริง ${baht(mineAct)} ฿`:""}${t.company?" · "+cLabel(t.company):""}`,
@@ -462,7 +475,7 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)}
 ...txs.map(x=>({tx:x._id,t1:x.note||(x.kind==="income"?"รายรับ":"รายจ่าย"),
 t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.date?`${new Date(x.date).getDate()}<br>${MTH[new Date(x.date).getMonth()]}`:"—",
 p:(x.kind==="income"?"+":"-")+baht(x.amount)+" ฿",pc:x.kind==="income"?"s-done":"s-run",c:"var(--run-soft)",ic:"var(--run)"}))];
-const lk=regList("gl:"+k,esc(nm)+" · ปี "+(y+543),rowsL);
+const lk=regList("gl:"+k,esc(nm)+" · ปี "+(y+543),rowsL,k?[{l:"✎ แก้ยอดงบรายเดือน ปี "+(y+543),f:()=>openGlPlan(k,y)}]:null);
 const chip=s.lvl==="over"?`<span class="bchip over">เกินงบ</span>`:s.lvl==="warn"?`<span class="bchip warn">ใกล้เต็ม ${Math.round(s.pct)}%</span>`
 :s.lvl==="nob"?`<span class="bchip nob">ยังไม่ได้ตั้งงบ</span>`:s.pace?`<span class="bchip warn">เร็วกว่าแผน</span>`:`<span class="bchip">${Math.round(s.pct)}%</span>`;
 const pacePos=(mSel==null&&s.plan&&s.ytdP&&cut>=0)?Math.min(100,s.ytdP/s.plan*100):null;

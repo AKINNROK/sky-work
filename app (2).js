@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.33"; const APP_DATE="16 พ.ย. 2026";
+const APP_VERSION="14.14.35"; const APP_DATE="16 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -923,7 +923,7 @@ n.onclick=hardRefresh;
 n.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();hardRefresh();}};});
 }
 let LISTBOX={};
-function regList(key,title,rows){ LISTBOX[key]={title,rows}; return `data-list="${esc(key)}"`; }
+function regList(key,title,rows,acts){ LISTBOX[key]={title,rows,acts:acts||null}; return `data-list="${esc(key)}"`; }
 function openListBox(key){
 const L=LISTBOX[key]; if(!L||!L.rows.length)return;
 el("pdlgh").textContent=L.title;
@@ -939,6 +939,7 @@ return pre+`<div class="li${clk(r)?"":" static"}"${clk(r)?` data-pick="${i}"`:""
 <div class="tx"><div class="t1">${esc(r.t1)}</div><div class="t2">${esc(r.t2||"")}</div></div>
 <span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span>${clk(r)?`<span class="lchev">›</span>`:""}</div>`;}).join("")}</div>
 ${anyClk&&!seenStatic?`<div class="hint">แตะรายการเพื่อเปิดดู</div>`:""}`;
+const pa=el("pacts"); if(pa){ pa.innerHTML=(L.acts||[]).map((a,i)=>`<button type="button" class="btn" data-pact="${i}">${esc(a.l)}</button>`).join(""); pa.querySelectorAll("[data-pact]").forEach(b=>b.onclick=()=>{ el("pdlg").close(); try{ L.acts[+b.dataset.pact].f(); }catch(e){} }); }
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
 if(r.id){const t=items.find(x=>x._id===r.id); if(t)openCard(t);}
@@ -1407,13 +1408,24 @@ const BUD_WARN=80; // เตือนเมื่อใช้ถึง % นี�
 // เดือนสุดท้ายที่นับเป็น "สะสมถึงตอนนี้" (-1 = ปีอนาคต ยังไม่มียอดสะสม)
 function budCut(y,scope,m){ if(scope==="month")return m; if(y<THISYEAR)return 11; if(y>THISYEAR)return -1; return new Date().getMonth(); }
 // รวมแผนงบ + ยอดใช้จริงรายเดือนต่อหมวด GL ไว้ที่เดียว (ใช้ทั้งหน้างบและแบนเนอร์หน้าแรก)
+// งานนี้ "อยู่ในปี y" ไหม (งบแยกปี ไม่ปนข้ามปี): คืนเดือน 0-11 · -1 = อยู่ในปีแต่ไม่รู้เดือน · undefined = ไม่ใช่ปีนี้
+// มีวันที่ครั้งเดียว → ปีของวันที่นั้น · งานซ้ำ → นับทุกปีที่ซีรีส์ยังอยู่ (เดือนแรกที่เกิดในปีนั้น) · ไม่มีวันที่ → นับเฉพาะปีปัจจุบัน
+function budItemMonth(t,y){
+ const R2=rr(t);
+ if(R2){ const sy=t.date?new Date(t.date).getFullYear():null; if(sy!==null&&sy>y)return undefined; if(R2.until&&+String(R2.until).slice(0,4)<y)return undefined;
+  for(let m=0;m<12;m++)if(occDays(t,y,m).length)return m;
+  return (sy!==null||y===THISYEAR)?-1:undefined; }
+ if(t.date){ const d=new Date(t.date); return d.getFullYear()===y?d.getMonth():undefined; }
+ return y===THISYEAR?-1:undefined;
+}
+const sum0=a=>a.reduce((x,v)=>x+v,0);
 function budFlow(y){
 const rows={}, Z=()=>Array(12).fill(0);
 const row=k=>rows[k]||(rows[k]={k,plan:Z(),task:Z(),act:Z(),taskNoM:0,actNoM:0,ceil:0});
 gls.forEach(g=>{const r=row(g.key); r.ceil=glBudget(g,y); for(let m=0;m<12;m++)r.plan[m]=glBudget(g,y,m);});
-const monthOf=t=>{const d=dueDate(t)||(t.date?new Date(t.date):null); return d&&d.getFullYear()===y?d.getMonth():-1;};
-items.filter(t=>!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==y)).forEach(t=>{
-const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"", m=monthOf(t), live=t.status!==STATUS_CANCEL;
+items.forEach(t=>{
+const m=budItemMonth(t,y); if(m===undefined)return;                       // งานของปีอื่น ไม่นับปนในปีนี้
+const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"", live=t.status!==STATUS_CANCEL;
 const put=(k,bd,ac)=>{const r=row(k); if(m>=0){r.task[m]+=bd;r.act[m]+=ac;}else{r.taskNoM+=bd;r.actNoM+=ac;}};
 put(k1||k2, live?(+t.b1||0):0, +t.actual||0);
 if(+t.b2)put(k2||k1, live?(+t.b2||0):0, 0);
@@ -1451,7 +1463,7 @@ const scope=R.budScope, m=R.budMonth, y=R.year;
 const tx=ledgerIn(scope,m);
 const inc=tx.filter(x=>x.kind==="income").reduce((s,x)=>s+(+x.amount||0),0);
 const exp=tx.filter(x=>x.kind!=="income").reduce((s,x)=>s+(+x.amount||0),0);
-const inYear=items.filter(t=>!(t.date&&!rr(t)&&new Date(t.date).getFullYear()!==y));
+const inYear=items.filter(t=>budItemMonth(t,y)!==undefined);
 const flow=budFlow(y), cut=budCut(y,scope,m), mSel=scope==="month"?m:null;
 const st={}; Object.values(flow).forEach(r=>{st[r.k]=budStat(r,cut,mSel);});
 const keys=Object.keys(st).filter(k=>st[k].plan||st[k].act);
@@ -1508,9 +1520,11 @@ const tks=inYear.filter(t=>k?(glKeysOf(t).includes(k)&&(glShare(t,k)+(+t.actual|
 const txs=ledger.filter(x=>(x.gl||"")===k&&x.date&&new Date(x.date).getFullYear()===y);
 const mrows=[];
 r.eff.forEach((e,i)=>{ if(!e&&!r.act[i])return; const lf=e-r.act[i];
-mrows.push({t1:MTHFULL[i]+" "+(y+543),t2:`แผน ${baht(e)} ฿ · ใช้จริง ${baht(r.act[i])} ฿`,d:MTH[i],p:lf>=0?"เหลือ "+baht(lf):"เกิน "+baht(-lf),pc:lf>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"}); });
-if(r.taskNoM||r.actNoM)mrows.push({t1:"ไม่ระบุเดือน (งานประจำ/ยังไม่ใส่วันที่)",t2:`งบ ${baht(r.taskNoM)} ฿ · ใช้จริง ${baht(r.actNoM)} ฿ — นับเฉพาะยอดทั้งปี`,d:"—",p:"ทั้งปี",pc:"s-mid",c:"var(--accent-soft)",ic:"var(--accent)"});
-const rowsL=[...mrows,
+mrows.push({t1:MTHFULL[i]+" "+(y+543),t2:`แผน ${baht(e)} ฿${r.task[i]>r.plan[i]&&r.plan[i]?` (แผนหมวด ${baht(r.plan[i])} แต่งานเดือนนี้ลงงบรวม ${baht(r.task[i])} จึงใช้ค่าที่มากกว่า)`:r.plan[i]?"":" (จากงบของงานในเดือนนี้)"} · ใช้จริง ${baht(r.act[i])} ฿`,d:MTH[i],p:lf>=0?"เหลือ "+baht(lf):"เกิน "+baht(-lf),pc:lf>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"}); });
+if(r.taskNoM||r.actNoM)mrows.push({t1:"ไม่ระบุเดือน (งานประจำ/ยังไม่ใส่วันที่)",t2:`งบ ${baht(r.taskNoM)} ฿ · ใช้จริง ${baht(r.actNoM)} ฿ — นับเฉพาะยอดทั้งปี ${y+543} (งานไม่มีวันที่นับในปีปัจจุบันเท่านั้น)`,d:"—",p:"ทั้งปี",pc:"s-mid",c:"var(--accent-soft)",ic:"var(--accent)"});
+const sumP=r.plan.reduce((a,b)=>a+b,0), sumE=r.eff.reduce((a,b)=>a+b,0);
+const sumRow={t1:"สรุปปี "+(y+543)+" — งบ "+baht(r.planY)+" ฿ · ใช้จริง "+baht(r.actY)+" ฿",t2:`แผนรายเดือนของหมวด ${baht(sumP)}${sumE>sumP?" + ส่วนที่งานลงงบเกินแผนเดือนนั้น "+baht(sumE-sumP):""}${r.taskNoM?" · งานไม่ระบุเดือน "+baht(r.taskNoM):""}${r.ceil>Math.max(sumE,sum0(r.task)+r.taskNoM)?" · เพดานงบรายปี "+baht(r.ceil):""}`,d:"Σ",p:r.planY-r.actY>=0?"เหลือ "+baht(r.planY-r.actY):"เกิน "+baht(r.actY-r.planY),pc:r.planY-r.actY>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"};
+const rowsL=[sumRow,...mrows,
 ...tks.map(t=>{const d=dueDate(t);const mine=k?glShare(t,k):budgetOf(t);
 const mineAct=(k?((glKeyOf(t.gl1)||glKeyOf(t.gl2))===k):!hasGL(t))?(+t.actual||0):0;
 return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${mineAct?` · ใช้จริง ${baht(mineAct)} ฿`:""}${t.company?" · "+cLabel(t.company):""}`,
@@ -1518,7 +1532,7 @@ d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)}
 ...txs.map(x=>({tx:x._id,t1:x.note||(x.kind==="income"?"รายรับ":"รายจ่าย"),
 t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.date?`${new Date(x.date).getDate()}<br>${MTH[new Date(x.date).getMonth()]}`:"—",
 p:(x.kind==="income"?"+":"-")+baht(x.amount)+" ฿",pc:x.kind==="income"?"s-done":"s-run",c:"var(--run-soft)",ic:"var(--run)"}))];
-const lk=regList("gl:"+k,esc(nm)+" · ปี "+(y+543),rowsL);
+const lk=regList("gl:"+k,esc(nm)+" · ปี "+(y+543),rowsL,k?[{l:"✎ แก้ยอดงบรายเดือน ปี "+(y+543),f:()=>openGlPlan(k,y)}]:null);
 const chip=s.lvl==="over"?`<span class="bchip over">เกินงบ</span>`:s.lvl==="warn"?`<span class="bchip warn">ใกล้เต็ม ${Math.round(s.pct)}%</span>`
 :s.lvl==="nob"?`<span class="bchip nob">ยังไม่ได้ตั้งงบ</span>`:s.pace?`<span class="bchip warn">เร็วกว่าแผน</span>`:`<span class="bchip">${Math.round(s.pct)}%</span>`;
 const pacePos=(mSel==null&&s.plan&&s.ytdP&&cut>=0)?Math.min(100,s.ytdP/s.plan*100):null;
@@ -2352,6 +2366,26 @@ if(!keys.length)return `<div class="card span2"><h2>รายการอบร�
 return keys.map(k=>board(k,ty.filter(t=>trainKind(t)===k))).join("");})()}
 </div>`;
 }
+// ===== กฎหมาย: จัดกลุ่ม → กดแสดงรายชื่อ (เรียงตามวันหมดอายุ) =====
+let LGOPEN=new Set(); try{ LGOPEN=new Set(JSON.parse(localStorage.getItem("sw-lgopen")||"[]")); }catch(e){}
+const lgSaveOpen=()=>{ try{ localStorage.setItem("sw-lgopen",JSON.stringify([...LGOPEN])); }catch(e){} };
+function legalGroups(list,gm){
+ const m=new Map(), add=(k,L)=>{ if(!m.has(k))m.set(k,[]); m.get(k).push(L); };
+ list.forEach(L=>{ if(gm==="cat")add(L.cat||"(ไม่ระบุหมวด)",L); else if(gm==="comp"){ const c=(L.comps||[]); if(c.length)c.forEach(k=>add(cLabel(k),L)); else add("(ไม่ระบุบริษัท)",L); } else add((L.title||"(ไม่มีชื่อ)").trim(),L); });
+ const due=L=>{ const d=legalDue(L); return d?+d:Infinity; };
+ const rows=[...m.entries()].map(([k,a])=>{ a.sort((x,y)=>due(x)-due(y)||String(x.person||"").localeCompare(String(y.person||""),"th")); const ks=a.map(L=>legalState(L).k); return {k,a,min:Math.min(...a.map(due)),late:ks.filter(x=>x==="late").length,soon:ks.filter(x=>x==="soon").length,np:ks.filter(x=>x==="noperson"||x==="none").length}; });
+ rows.sort((x,y)=>(y.late>0)-(x.late>0)||x.min-y.min||x.k.localeCompare(y.k,"th"));
+ return rows;
+}
+function legalBody(list,gm,row){
+ if(!list.length)return `<tr><td colspan="6"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV ที่หน้าตั้งค่า</div></td></tr>`;
+ if(!gm)return list.map(L=>row(L,false)).join("");
+ const searching=!!(R.pq&&String(R.pq).trim());
+ return legalGroups(list,gm).map(g=>{ const key=gm+":"+g.k, open=searching||LGOPEN.has(key), d=g.min<Infinity?new Date(g.min):null;
+  return `<tr class="lg-gh${open?" open":""}" data-lgg="${esc(key)}" tabindex="0"><td colspan="6"><span class="lg-ch">${open?"▾":"▸"}</span> <b>${esc(g.k)}</b> <span class="tag" style="margin-left:6px">${g.a.length} รายการ</span>
+${g.late?`<span class="pill s-over" style="margin-left:6px">เกินกำหนด ${g.late}</span>`:""}${g.soon?`<span class="pill s-run" style="margin-left:6px">ใกล้ครบ ${g.soon}</span>`:""}${g.np?`<span class="pill s-wait" style="margin-left:6px">ไม่มีผู้รับผิดชอบ ${g.np}</span>`:""}
+<span class="lg-gd">${d?"ครบก่อน "+fmtDate(d)+" "+(d.getFullYear()+543-2500):""}</span></td></tr>`+(open?g.a.map(L=>row(L,gm==="title")).join(""):""); }).join("");
+}
 function legalView(){
 const fc=R.legalComp||"", fk=R.legalCat||"";
 const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk)&&pqHit(L.title,L.owner,L.no,L.cat,L.note))
@@ -2361,9 +2395,10 @@ const st=L=>legalState(L);
 const late=legal.filter(L=>st(L).k==="late"), soon=legal.filter(L=>st(L).k==="soon");
 const noP=legal.filter(L=>st(L).k==="noperson"||st(L).k==="none");
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
-const row=L=>{const S=st(L), d=legalDue(L);
-return `<tr data-lg="${L._id}">
-<td><div style="font-weight:600">${esc(L.title)}</div>
+const gm=R.legalGrp===undefined?"title":R.legalGrp;
+const row=(L,hideT)=>{const S=st(L), d=legalDue(L);
+return `<tr data-lg="${L._id}"${hideT?' class="lg-sub"':""}>
+<td>${hideT?"":`<div style="font-weight:600">${esc(L.title)}</div>`}
 <div class="t-note">${esc(L.unit||"")}${L.note?(L.unit?" · ":"")+esc(String(L.note).slice(0,70))+(String(L.note).length>70?"…":""):""}</div></td>
 <td>${(L.comps||[]).length?(L.comps||[]).map(k=>`<span class="tag" style="margin:1px">${esc(cLabel(k))}</span>`).join(""):"—"}</td>
 <td>${esc(L.person||"—")}</td>
@@ -2397,9 +2432,10 @@ const used=[...new Set(inCo.map(L=>L.cat).filter(Boolean))];
 const list=fc?LEGALCAT.filter(x=>used.includes(x)):LEGALCAT;
 return opt([["",fc?"ทุกหมวดของบริษัทนี้":"ทุกหมวด"],...list.map(x=>[x,x])],list.includes(fk)?fk:"");})()}</select>
 <span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
+<div class="toolbar" style="margin-top:-4px"><span style="font-size:13px;color:var(--ink-3)">จัดกลุ่ม</span><div class="seg">${[["title","ตามรายการ"],["cat","ตามหมวด"],["comp","ตามบริษัท"],["","ไม่จัดกลุ่ม"]].map(([k,l])=>`<button data-lggm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>${gm?`<button class="btn ghost sm" id="lgOpenAll">ขยายทั้งหมด</button><button class="btn ghost sm" id="lgCloseAll">ย่อทั้งหมด</button>`:""}</div>
 <div class="tblwrap"><table>
 <thead><tr><th>รายการ</th><th>บริษัทที่ต้องมี</th><th>ผู้รับผิดชอบ</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>สถานะ</th></tr></thead>
-<tbody>${list.map(row).join("")||`<tr><td colspan="6"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV ที่หน้าตั้งค่า</div></td></tr>`}</tbody></table></div></div>
+<tbody>${legalBody(list,gm,row)}</tbody></table></div></div>
 </div>`;
 }
 const IDXSTATUS=["ใช้งานอยู่","กำลังพัฒนา","ไม่ได้ใช้งาน"];
@@ -3608,12 +3644,20 @@ R(50,1352,800,44,{f:C.soft,s:C.acc,r:0}); T("รวมทั้งเดือ�
 break; }
 }
 }
-// ---------- โฟลเดอร์จัดระเบียบ Note ----------
-let noteFolders=[];                      // [{id,name,color}]
+// ---------- โฟลเดอร์จัดระเบียบ Note (ซ้อนโฟลเดอร์ได้ — field parent) ----------
+let noteFolders=[];                      // [{id,name,color,parent?}]
 const FLD_COLORS=["#2f80c8","#2e9e6b","#e08a1e","#c94c4c","#8a5cc7","#3aa5a5","#d1568f","#6b7a89"];
+const FLD_MAXD=5;                        // ซ้อนได้สูงสุด 5 ชั้น
 const folderOf=key=>noteFolders.find(f=>f.id===key);
-const folderName=key=>{ const f=folderOf(key); return f?f.name:"(ไม่พบโฟลเดอร์)"; };
-const fldCount=key=>notes.filter(n=>key==="__none"?!n.folder||!folderOf(n.folder):n.folder===key).length;
+const fldParentOf=f=>{ const p=f&&f.parent; return (p&&p!==f.id&&noteFolders.some(x=>x.id===p))?p:""; };
+const fldKids=id=>noteFolders.filter(f=>fldParentOf(f)===(id||""));
+function fldTree(){ const out=[], seen=new Set(); const walk=(pid,d)=>{ fldKids(pid).forEach(f=>{ if(seen.has(f.id)||d>FLD_MAXD+3)return; seen.add(f.id); out.push({f,d}); walk(f.id,d+1); }); }; walk("",0); noteFolders.forEach(f=>{ if(!seen.has(f.id)){ seen.add(f.id); out.push({f,d:0}); } }); return out; }
+function fldPath(id){ const a=[], seen=new Set(); let f=folderOf(id); while(f&&!seen.has(f.id)){ seen.add(f.id); a.unshift(f); f=folderOf(fldParentOf(f)); } return a; }
+const fldDepth=id=>Math.max(0,fldPath(id).length-1);
+const folderName=key=>{ const a=fldPath(key); return a.length?a.map(f=>f.name).join(" › "):"(ไม่พบโฟลเดอร์)"; };
+function fldDesc(id){ const out=[id]; const walk=p=>fldKids(p).forEach(k=>{ if(!out.includes(k.id)){ out.push(k.id); walk(k.id); } }); walk(id); return out; }
+const fldCount=key=>{ if(key==="__none")return notes.filter(n=>!n.folder||!folderOf(n.folder)).length; const ids=new Set(fldDesc(key)); return notes.filter(n=>ids.has(n.folder)).length; };
+const fldDirect=key=>notes.filter(n=>n.folder===key).length;
 async function fldSave(list){ noteFolders=list; await saveMeta("nfolders",noteFolders); }
 function askText(msg,def="",yes="ตกลง"){
 el("cmsg").innerHTML=msg+`<div style="margin-top:14px"><input id="ctext" maxlength="60" value="${esc(def)}" style="width:100%;background:var(--paper);border:0;border-radius:var(--r-xs);padding:12px 14px;font-size:15px"></div>`;
@@ -3621,18 +3665,22 @@ el("cyes").textContent=yes; el("cyes").style.display=""; el("cno").textContent="
 el("cdlg").showModal(); setTimeout(()=>{ const i=el("ctext"); if(i){ i.focus(); i.select(); i.onkeydown=e=>{ if(e.key==="Enter"){ e.preventDefault(); el("cyes").click(); } }; } },30);
 return new Promise(r=>{ cResolve=v=>r(v?((el("ctext")&&el("ctext").value)||"").trim():null); });
 }
-async function fldCreate(name){
-name=(name||"").trim(); if(!name)return null;
-const ex=noteFolders.find(f=>f.name===name); if(ex)return ex.id;
-const f={id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,color:FLD_COLORS[noteFolders.length%FLD_COLORS.length]};
+async function fldCreate(name,parent){
+name=(name||"").trim(); if(!name)return null; parent=parent&&folderOf(parent)?parent:"";
+if(parent&&fldDepth(parent)>=FLD_MAXD-1){ tell("ซ้อนโฟลเดอร์ได้สูงสุด "+FLD_MAXD+" ชั้นค่ะ"); return null; }
+const ex=noteFolders.find(f=>f.name===name&&fldParentOf(f)===parent); if(ex)return ex.id;
+const f={id:"f"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name,color:(parent&&(folderOf(parent)||{}).color)||FLD_COLORS[noteFolders.length%FLD_COLORS.length]};
+if(parent)f.parent=parent;
 await fldSave([...noteFolders,f]); return f.id;
 }
 // เลือกโฟลเดอร์ปลายทาง — คืน id | "" (ไม่อยู่โฟลเดอร์) | null (ยกเลิก)
+const fldOptHtml=(cur,skip)=>fldTree().filter(({f})=>!skip||!skip.includes(f.id)).map(({f,d})=>`<option value="${esc(f.id)}"${f.id===cur?" selected":""}>${"\u00a0\u00a0\u00a0".repeat(d)}📁 ${esc(f.name)}</option>`).join("");
 async function pickFolder(cur){
-const opts=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}"${f.id===cur?" selected":""}>📁 ${esc(f.name)}</option>`).join("")+`<option value="__new">＋ สร้างโฟลเดอร์ใหม่…</option>`;
+const here=R.noteFolder&&R.noteFolder!=="__none"&&folderOf(R.noteFolder)?R.noteFolder:"";
+const opts=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+fldOptHtml(cur)+`<option value="__new">＋ สร้างโฟลเดอร์ใหม่ (ระดับบนสุด)…</option>`+(here?`<option value="__newsub">＋ สร้างโฟลเดอร์ย่อยใน “${esc(folderName(here))}”…</option>`:"");
 const v=await askPick("ย้ายไปโฟลเดอร์ไหนคะ?",opts,"ย้าย");
 if(v===null)return null;
-if(v==="__new"){ const nm=await askText("ตั้งชื่อโฟลเดอร์ใหม่","","สร้างและย้าย"); if(!nm)return null; return await fldCreate(nm); }
+if(v==="__new"||v==="__newsub"){ const nm=await askText(v==="__new"?"ตั้งชื่อโฟลเดอร์ใหม่":"ตั้งชื่อโฟลเดอร์ย่อยใหม่","","สร้างและย้าย"); if(!nm)return null; return await fldCreate(nm,v==="__newsub"?here:""); }
 return v;
 }
 async function noteMoveTo(ids,folder){
@@ -3640,36 +3688,54 @@ for(const id of ids){ try{ await DB.collection("note").doc(id).set({folder},{mer
 setFoot(folder?"ย้ายไปโฟลเดอร์ “"+folderName(folder)+"” แล้ว":"เอาออกจากโฟลเดอร์แล้ว");
 }
 function noteFolderBar(){
-const cur=R.noteFolder||"";
-const chip=(key,label,n,col)=>`<button type="button" class="fchip${cur===key?" on":""}" data-fld="${esc(key)}"${key&&key!=="__none"?` data-fdrop="${esc(key)}"`:key==="__none"?` data-fdrop=""`:""}>${col?`<i style="background:${col}"></i>`:""}<span>${esc(label)}</span><b>${n}</b></button>`;
-return `<div class="fbar" id="fbar">${chip("","ทั้งหมด",notes.length)}${noteFolders.map(f=>chip(f.id,f.name,fldCount(f.id),f.color)).join("")}${noteFolders.length?chip("__none","ยังไม่จัดโฟลเดอร์",fldCount("__none")):""}
+const cur=R.noteFolder||"", valid=cur&&cur!=="__none"&&folderOf(cur);
+const chip=(key,label,n,col,on)=>`<button type="button" class="fchip${on!==undefined?(on?" on":""):(cur===key?" on":"")}" data-fld="${esc(key)}"${key&&key!=="__none"?` data-fdrop="${esc(key)}"`:key==="__none"?` data-fdrop=""`:""}>${col?`<i style="background:${col}"></i>`:""}<span>${esc(label)}</span><b>${n}</b></button>`;
+if(valid){
+const path=fldPath(cur), kids=fldKids(cur), sub=R.noteSub!==false;
+return `<div class="fbar" id="fbar">${chip("","ทั้งหมด",notes.length,"",false)}${path.map((f,i)=>`<span class="fsep">›</span>`+chip(f.id,f.name,fldCount(f.id),f.color,i===path.length-1)).join("")}</div>
+<div class="fbar" id="fbar2">${kids.map(f=>chip(f.id,f.name,fldCount(f.id),f.color,false)).join("")}${kids.length?"":`<span class="hint" style="margin:0;align-self:center">ยังไม่มีโฟลเดอร์ย่อย</span>`}
+${fldDepth(cur)<FLD_MAXD-1?`<button type="button" class="fchip add" id="fld-addsub">＋ โฟลเดอร์ย่อย</button>`:""}<button type="button" class="fchip add" id="fld-mng">จัดการ</button>${kids.length?`<button type="button" class="fchip add" id="fld-sub" aria-pressed="${sub}">${sub?"✓ ":""}รวมบันทึกในโฟลเดอร์ย่อย</button>`:""}</div>`;
+}
+const roots=fldKids("");
+return `<div class="fbar" id="fbar">${chip("","ทั้งหมด",notes.length)}${roots.map(f=>chip(f.id,f.name,fldCount(f.id),f.color)).join("")}${noteFolders.length?chip("__none","ยังไม่จัดโฟลเดอร์",fldCount("__none")):""}
 <button type="button" class="fchip add" id="fld-add">＋ โฟลเดอร์</button>${noteFolders.length?`<button type="button" class="fchip add" id="fld-mng">จัดการ</button>`:""}</div>`;
 }
-function noteFolderTag(n){ const f=n.folder&&folderOf(n.folder); return f?`<span class="tag" style="background:${f.color}22;color:${f.color}" title="โฟลเดอร์">📁 ${esc(f.name)}</span>`:""; }
-function noteFolderFilter(n){ const c=R.noteFolder||""; if(!c)return true; if(c==="__none")return !n.folder||!folderOf(n.folder); return n.folder===c; }
+function noteFolderTag(n){ const f=n.folder&&folderOf(n.folder); return f?`<span class="tag" style="background:${f.color}22;color:${f.color}" title="โฟลเดอร์">📁 ${esc(folderName(f.id))}</span>`:""; }
+function noteFolderFilter(n){ const c=R.noteFolder||""; if(!c)return true; if(c==="__none")return !n.folder||!folderOf(n.folder); if(R.noteSub===false)return n.folder===c; return fldDesc(c).includes(n.folder); }
 function fldManage(){
-const box=el("fl-list");
-box.innerHTML=noteFolders.length?noteFolders.map((f,i)=>`<div class="flrow"><i style="background:${f.color}"></i><input class="nm" data-flname="${esc(f.id)}" value="${esc(f.name)}" aria-label="ชื่อโฟลเดอร์"><span class="flc">${fldCount(f.id)} รายการ</span>
-<button class="iconbtn" data-flmv="${i}:-1" ${i===0?"disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button><button class="iconbtn" data-flmv="${i}:1" ${i===noteFolders.length-1?"disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
-<button class="iconbtn" data-flcol="${esc(f.id)}" title="เปลี่ยนสี">🎨</button><button class="iconbtn" data-fldel="${esc(f.id)}" title="ลบโฟลเดอร์" style="color:var(--over)">✕</button></div>`).join(""):`<div class="empty">ยังไม่มีโฟลเดอร์</div>`;
+const box=el("fl-list"), T=fldTree();
+box.innerHTML=T.length?T.map(({f,d})=>{ const sib=fldKids(fldParentOf(f)), i=sib.indexOf(f);
+return `<div class="flrow" style="padding-left:${d*20}px">${d?`<span class="fsep" style="margin:0 2px 0 0">└</span>`:""}<i style="background:${f.color}"></i><input class="nm" data-flname="${esc(f.id)}" value="${esc(f.name)}" aria-label="ชื่อโฟลเดอร์"><span class="flc">${fldDirect(f.id)}${fldKids(f.id).length?" ("+fldCount(f.id)+")":""} รายการ</span>
+${fldDepth(f.id)<FLD_MAXD-1?`<button class="iconbtn" data-flsub="${esc(f.id)}" title="เพิ่มโฟลเดอร์ย่อย" style="font-size:13px">＋</button>`:""}<button class="iconbtn" data-flmvp="${esc(f.id)}" title="ย้ายโฟลเดอร์นี้ไปไว้ใน…" style="font-size:12px">ย้าย</button>
+<button class="iconbtn" data-flmv="${esc(f.id)}:-1" ${i<=0?"disabled":""} title="เลื่อนขึ้น">${svg(ICON_UP,15)}</button><button class="iconbtn" data-flmv="${esc(f.id)}:1" ${i>=sib.length-1?"disabled":""} title="เลื่อนลง">${svg(ICON_DN,15)}</button>
+<button class="iconbtn" data-flcol="${esc(f.id)}" title="เปลี่ยนสี">🎨</button><button class="iconbtn" data-fldel="${esc(f.id)}" title="ลบโฟลเดอร์" style="color:var(--over)">✕</button></div>`; }).join(""):`<div class="empty">ยังไม่มีโฟลเดอร์</div>`;
 box.querySelectorAll("[data-flname]").forEach(i=>i.onchange=async()=>{ const nm=i.value.trim(); if(!nm){ fldManage(); return; } await fldSave(noteFolders.map(f=>f.id===i.dataset.flname?{...f,name:nm}:f)); });
-box.querySelectorAll("[data-flmv]").forEach(b=>b.onclick=async()=>{ const [i,d]=b.dataset.flmv.split(":").map(Number), a=noteFolders.slice(), j=i+d; if(j<0||j>=a.length)return; [a[i],a[j]]=[a[j],a[i]]; await fldSave(a); fldManage(); });
+box.querySelectorAll("[data-flmv]").forEach(b=>b.onclick=async()=>{ const [id,dd]=b.dataset.flmv.split(":"), f=folderOf(id), sib=fldKids(fldParentOf(f)), k=sib.indexOf(f)+(+dd); if(k<0||k>=sib.length)return; const a=noteFolders.slice(), x=a.indexOf(f), y=a.indexOf(sib[k]); [a[x],a[y]]=[a[y],a[x]]; await fldSave(a); fldManage(); });
 box.querySelectorAll("[data-flcol]").forEach(b=>b.onclick=async()=>{ const f=folderOf(b.dataset.flcol), k=(FLD_COLORS.indexOf(f.color)+1)%FLD_COLORS.length; await fldSave(noteFolders.map(x=>x.id===f.id?{...x,color:FLD_COLORS[k]}:x)); fldManage(); });
+box.querySelectorAll("[data-flsub]").forEach(b=>b.onclick=async()=>{ const pid=b.dataset.flsub; el("fldlg").close(); const nm=await askText("ตั้งชื่อโฟลเดอร์ย่อยใน “"+esc(folderName(pid))+"”","","สร้าง"); if(nm)await fldCreate(nm,pid); fldManage(); el("fldlg").showModal(); });
+box.querySelectorAll("[data-flmvp]").forEach(b=>b.onclick=async()=>{ const f=folderOf(b.dataset.flmvp); el("fldlg").close();
+const bad=fldDesc(f.id), depthBelow=Math.max(...fldDesc(f.id).map(id=>fldDepth(id)-fldDepth(f.id)));
+const opts=`<option value=""${!fldParentOf(f)?" selected":""}>(ระดับบนสุด)</option>`+fldTree().filter(({f:x})=>!bad.includes(x.id)&&fldDepth(x.id)+1+depthBelow<FLD_MAXD).map(({f:x,d})=>`<option value="${esc(x.id)}"${fldParentOf(f)===x.id?" selected":""}>${"\u00a0\u00a0\u00a0".repeat(d)}📁 ${esc(x.name)}</option>`).join("");
+const v=await askPick("ย้ายโฟลเดอร์ “"+esc(f.name)+"” ไปไว้ใน…",opts,"ย้าย");
+if(v!==null){ await fldSave(noteFolders.map(x=>{ if(x.id!==f.id)return x; const o={...x}; if(v)o.parent=v; else delete o.parent; return o; })); }
+fldManage(); el("fldlg").showModal(); });
 box.querySelectorAll("[data-fldel]").forEach(b=>b.onclick=async()=>{
-const f=folderOf(b.dataset.fldel), n=notes.filter(x=>x.folder===f.id);
+const f=folderOf(b.dataset.fldel), n=notes.filter(x=>x.folder===f.id), kids=fldKids(f.id), up=fldParentOf(f);
 el("fldlg").close();
-const ok=await ask(`ลบโฟลเดอร์ “${esc(f.name)}” ใช่ไหมคะ?<div class="hint">บันทึกในโฟลเดอร์ ${n.length} รายการจะ <b>ไม่ถูกลบ</b> แค่ย้ายไปเป็น “ยังไม่จัดโฟลเดอร์”</div>`,"ลบโฟลเดอร์");
-if(ok){ await noteMoveTo(n.map(x=>x._id),""); await fldSave(noteFolders.filter(x=>x.id!==f.id)); if(R.noteFolder===f.id)R.noteFolder=""; render(); }
+const ok=await ask(`ลบโฟลเดอร์ “${esc(f.name)}” ใช่ไหมคะ?<div class="hint">บันทึกในโฟลเดอร์ ${n.length} รายการ <b>ไม่ถูกลบ</b> — ย้ายไป${up?" “"+esc(folderName(up))+"”":"เป็น “ยังไม่จัดโฟลเดอร์”"}${kids.length?` · โฟลเดอร์ย่อย ${kids.length} โฟลเดอร์ จะเลื่อนขึ้นมาแทน (ไม่ถูกลบ)`:""}</div>`,"ลบโฟลเดอร์");
+if(ok){ await noteMoveTo(n.map(x=>x._id),up); await fldSave(noteFolders.filter(x=>x.id!==f.id).map(x=>{ if(fldParentOf(x)!==f.id)return x; const o={...x}; if(up)o.parent=up; else delete o.parent; return o; })); if(R.noteFolder===f.id)R.noteFolder=up; render(); }
 if(noteFolders.length){ fldManage(); el("fldlg").showModal(); }
 });
 }
-async function fldNew(andPick){
-const nm=await askText("ตั้งชื่อโฟลเดอร์ใหม่ เช่น “ประชุมประจำเดือน” “งานสรรหา”","","สร้างโฟลเดอร์");
-if(!nm)return null; const id=await fldCreate(nm); if(andPick){ R.noteFolder=id; render(); } return id;
+async function fldNew(andPick,parent){
+const nm=await askText(parent?"ตั้งชื่อโฟลเดอร์ย่อยใน “"+esc(folderName(parent))+"”":"ตั้งชื่อโฟลเดอร์ใหม่ เช่น “ประชุมประจำเดือน” “งานสรรหา”","","สร้างโฟลเดอร์");
+if(!nm)return null; const id=await fldCreate(nm,parent); if(id&&andPick){ R.noteFolder=id; render(); } return id;
 }
 function noteFolderWire(){
 document.querySelectorAll("[data-fld]").forEach(b=>b.onclick=()=>{ R.noteFolder=b.dataset.fld; render(); });
-el("fld-add")&&(el("fld-add").onclick=()=>fldNew(true));
+el("fld-add")&&(el("fld-add").onclick=()=>fldNew(true,""));
+el("fld-addsub")&&(el("fld-addsub").onclick=()=>fldNew(true,R.noteFolder));
+el("fld-sub")&&(el("fld-sub").onclick=()=>{ R.noteSub=R.noteSub===false; render(); });
 el("fld-mng")&&(el("fld-mng").onclick=()=>{ fldManage(); el("fldlg").showModal(); });
 document.querySelectorAll("[data-ntmv]").forEach(b=>b.onclick=async e=>{
 e.stopPropagation(); const n=notes.find(v=>v._id===b.dataset.ntmv); if(!n)return;
@@ -6400,6 +6466,10 @@ const inCo=legal.filter(L=>!R.legalComp||(L.comps||[]).includes(R.legalComp));
 if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
+document.querySelectorAll("[data-lggm]").forEach(n=>n.onclick=()=>{ R.legalGrp=n.dataset.lggm; render(); });
+document.querySelectorAll("[data-lgg]").forEach(n=>{ const tg=()=>{ const k=n.dataset.lgg; LGOPEN.has(k)?LGOPEN.delete(k):LGOPEN.add(k); lgSaveOpen(); const y=window.scrollY; render(); window.scrollTo(0,y); }; n.onclick=tg; n.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); tg(); } }; });
+el("lgOpenAll")&&(el("lgOpenAll").onclick=()=>{ document.querySelectorAll("[data-lgg]").forEach(n=>LGOPEN.add(n.dataset.lgg)); lgSaveOpen(); render(); });
+el("lgCloseAll")&&(el("lgCloseAll").onclick=()=>{ document.querySelectorAll("[data-lgg]").forEach(n=>LGOPEN.delete(n.dataset.lgg)); lgSaveOpen(); render(); });
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
 const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t,n.dataset.occ||"");};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
@@ -7721,7 +7791,7 @@ fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการปร
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
 el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
 el("n-pin").checked=!!n?.pin;
-el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join("");
+el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+fldTree().map(({f,d})=>`<option value="${esc(f.id)}">${"\u00a0\u00a0\u00a0".repeat(d)}📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
 el("n-colors").innerHTML=[["","ค่าเริ่มต้น"],...TAGCOLORS.map(c=>[c,c])].map(([c])=>
 `<button type="button" class="sw1${(n?.color||"")===c?" on":""}" data-ncolor="${c}" style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
@@ -7818,9 +7888,9 @@ const n=e.target.closest("[data-crsitem]"); if(!n)return;
 const t=items.find(x=>x._id===n.dataset.crsitem); if(!t)return;
 el("crsdlg").close(); setTimeout(()=>openCard(t),200);});
 let editingGl=null, glDraft=null, glDraftCo="";
-function openGlPlan(key){
+function openGlPlan(key,yy){
 const g=gls.find(x=>x.key===key); if(!g)return;
-const y=R.glYear||R.year;
+const y=(yy!=null)?yy:(R.glYear||R.year);
 editingGl={key,y};
 glDraft={}; const P=glPlan(g,y); Object.keys(P).forEach(ck=>glDraft[ck]=glPlanMonths(g,y,ck));
 const cos=visible(companies).filter(c=>!c.isGroup);
@@ -8226,8 +8296,10 @@ function srcnPaint(t){ const b=el("f-srcn"); if(!b)return; const n=t&&t.srcn?(no
  else{ b.hidden=true; b.innerHTML=""; } }
 // ===== เขียนบันทึก: To-do ติ๊กได้ · ย่อหน้า · สีตัวอักษร · แนบรูป · ตารางแบบ Excel =====
 // (ใช้ร่วมกับตัวกรอง ntClean ใน 05-views-more.js — ถ้าเพิ่มรูปแบบใหม่ต้องอนุญาตที่ตัวกรองด้วย)
-const NE_COLS=["#dc2626","#ea580c","#ca8a04","#16a34a","#0d9488","#2563eb","#7c3aed","#db2777","#6b7280"];
-const NE_HIL=["#fef08a","#bbf7d0","#bfdbfe","#fecaca","#e9d5ff","#fed7aa","#e5e7eb"];
+const NE_COLS=["#dc2626","#ea580c","#ca8a04","#16a34a","#0d9488","#2563eb","#7c3aed","#db2777","#6b7280",
+ "#000000","#3f3f46","#9ca3af","#7f1d1d","#f87171","#9a3412","#fb923c","#a16207","#eab308","#14532d","#4ade80","#115e59","#14b8a6","#075985","#0ea5e9","#1e3a8a","#60a5fa","#4c1d95","#a78bfa","#831843","#f472b6","#78350f","#a16a3a"];
+const NE_HIL=["#fef08a","#bbf7d0","#bfdbfe","#fecaca","#e9d5ff","#fed7aa","#e5e7eb",
+ "#fde047","#86efac","#93c5fd","#fca5a5","#c4b5fd","#fdba74","#f9a8d4","#99f6e4","#d6d3d1","#fff7cd"];
 const NE_BG={y:"#fef9c3",g:"#dcfce7",b:"#dbeafe",r:"#fee2e2",p:"#f3e8ff",o:"#ffedd5",x:"#e5e7eb"};
 let neRange=null, neScope="cell", neImgSel=null;
 
@@ -8264,8 +8336,8 @@ const b=el("neimgbar"); if(b&&!b.hidden&&!e.target.closest("#neimgbar,#n-body im
 el("ndlg").addEventListener("close",neHideAll);
 el("ndlg").addEventListener("scroll",()=>{ const p=el("nepop"); if(p)p.hidden=true; neImgPos(); },true);
 
-const neColorHtml=()=>`<div class="nepl">สีตัวอักษร</div><div class="nesw">${NE_COLS.map(c=>`<button type="button" data-cc="fore:${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="fore:">ค่าเริ่มต้น</button></div>
-<div class="nepl">ไฮไลต์พื้นหลัง</div><div class="nesw">${NE_HIL.map(c=>`<button type="button" data-cc="hil:${c}" style="background:${c}" aria-label="ไฮไลต์ ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="hil:">ไม่มี</button></div>`;
+const neColorHtml=()=>`<div class="nepl">สีตัวอักษร</div><div class="nesw">${NE_COLS.map(c=>`<button type="button" data-cc="fore:${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="fore:">ค่าเริ่มต้น</button><label class="nex nepick">🎨 เลือกสีเอง <input type="color" data-ncust="fore" value="#2563eb"></label></div>
+<div class="nepl">ไฮไลต์พื้นหลัง</div><div class="nesw">${NE_HIL.map(c=>`<button type="button" data-cc="hil:${c}" style="background:${c}" aria-label="ไฮไลต์ ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="hil:">ไม่มี</button><label class="nex nepick">🎨 เลือกสีเอง <input type="color" data-ncust="hil" value="#fef08a"></label></div>`;
 const neTableHtml=()=>`<div class="nepl">แทรกตาราง</div><div class="nrow"><label>แถว <input type="number" id="net-r" min="1" max="50" value="3"></label><label>คอลัมน์ <input type="number" id="net-c" min="1" max="12" value="3"></label></div>
 <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="net-h" checked> แถวแรกเป็นหัวตาราง</label><button type="button" class="go" data-tmake="1">สร้างตาราง</button>`;
 const neCellBgHtml=()=>`<div class="nepl">ใส่สีให้</div><div class="nesw">${[["cell","ช่องนี้"],["row","ทั้งแถว"],["col","ทั้งคอลัมน์"]].map(([k,l])=>`<button type="button" class="nex${neScope===k?" on":""}" data-scope="${k}">${l}</button>`).join("")}</div>
@@ -8548,6 +8620,8 @@ el("nepop").hidden=true;
 if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
 neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
 });
+
+document.addEventListener("change",e=>{ const t=e.target; if(t&&t.dataset&&t.dataset.ncust){ el("nepop").hidden=true; neColor(t.dataset.ncust,t.value); } });
 // ===== เขียนบันทึก: สูตรในตาราง + พิมพ์ = ได้ผลทันที (ใช้ตัวคำนวณจาก 05l-calc.js) =====
 // ---------- เขียนบันทึก: = ต่อท้ายนิพจน์ได้ผลทันที · ช่องตารางพิมพ์ =SUM(B2:B5) ได้ ----------
 let neFxCur=null;
