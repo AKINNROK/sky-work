@@ -387,6 +387,26 @@ if(!keys.length)return `<div class="card span2"><h2>รายการอบร�
 return keys.map(k=>board(k,ty.filter(t=>trainKind(t)===k))).join("");})()}
 </div>`;
 }
+// ===== กฎหมาย: จัดกลุ่ม → กดแสดงรายชื่อ (เรียงตามวันหมดอายุ) =====
+let LGOPEN=new Set(); try{ LGOPEN=new Set(JSON.parse(localStorage.getItem("sw-lgopen")||"[]")); }catch(e){}
+const lgSaveOpen=()=>{ try{ localStorage.setItem("sw-lgopen",JSON.stringify([...LGOPEN])); }catch(e){} };
+function legalGroups(list,gm){
+ const m=new Map(), add=(k,L)=>{ if(!m.has(k))m.set(k,[]); m.get(k).push(L); };
+ list.forEach(L=>{ if(gm==="cat")add(L.cat||"(ไม่ระบุหมวด)",L); else if(gm==="comp"){ const c=(L.comps||[]); if(c.length)c.forEach(k=>add(cLabel(k),L)); else add("(ไม่ระบุบริษัท)",L); } else add((L.title||"(ไม่มีชื่อ)").trim(),L); });
+ const due=L=>{ const d=legalDue(L); return d?+d:Infinity; };
+ const rows=[...m.entries()].map(([k,a])=>{ a.sort((x,y)=>due(x)-due(y)||String(x.person||"").localeCompare(String(y.person||""),"th")); const ks=a.map(L=>legalState(L).k); return {k,a,min:Math.min(...a.map(due)),late:ks.filter(x=>x==="late").length,soon:ks.filter(x=>x==="soon").length,np:ks.filter(x=>x==="noperson"||x==="none").length}; });
+ rows.sort((x,y)=>(y.late>0)-(x.late>0)||x.min-y.min||x.k.localeCompare(y.k,"th"));
+ return rows;
+}
+function legalBody(list,gm,row){
+ if(!list.length)return `<tr><td colspan="6"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV ที่หน้าตั้งค่า</div></td></tr>`;
+ if(!gm)return list.map(L=>row(L,false)).join("");
+ const searching=!!(R.pq&&String(R.pq).trim());
+ return legalGroups(list,gm).map(g=>{ const key=gm+":"+g.k, open=searching||LGOPEN.has(key), d=g.min<Infinity?new Date(g.min):null;
+  return `<tr class="lg-gh${open?" open":""}" data-lgg="${esc(key)}" tabindex="0"><td colspan="6"><span class="lg-ch">${open?"▾":"▸"}</span> <b>${esc(g.k)}</b> <span class="tag" style="margin-left:6px">${g.a.length} รายการ</span>
+${g.late?`<span class="pill s-over" style="margin-left:6px">เกินกำหนด ${g.late}</span>`:""}${g.soon?`<span class="pill s-run" style="margin-left:6px">ใกล้ครบ ${g.soon}</span>`:""}${g.np?`<span class="pill s-wait" style="margin-left:6px">ไม่มีผู้รับผิดชอบ ${g.np}</span>`:""}
+<span class="lg-gd">${d?"ครบก่อน "+fmtDate(d)+" "+(d.getFullYear()+543-2500):""}</span></td></tr>`+(open?g.a.map(L=>row(L,gm==="title")).join(""):""); }).join("");
+}
 function legalView(){
 const fc=R.legalComp||"", fk=R.legalCat||"";
 const list=legal.filter(L=>(!fc||(L.comps||[]).includes(fc))&&(!fk||L.cat===fk)&&pqHit(L.title,L.owner,L.no,L.cat,L.note))
@@ -396,9 +416,10 @@ const st=L=>legalState(L);
 const late=legal.filter(L=>st(L).k==="late"), soon=legal.filter(L=>st(L).k==="soon");
 const noP=legal.filter(L=>st(L).k==="noperson"||st(L).k==="none");
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
-const row=L=>{const S=st(L), d=legalDue(L);
-return `<tr data-lg="${L._id}">
-<td><div style="font-weight:600">${esc(L.title)}</div>
+const gm=R.legalGrp===undefined?"title":R.legalGrp;
+const row=(L,hideT)=>{const S=st(L), d=legalDue(L);
+return `<tr data-lg="${L._id}"${hideT?' class="lg-sub"':""}>
+<td>${hideT?"":`<div style="font-weight:600">${esc(L.title)}</div>`}
 <div class="t-note">${esc(L.unit||"")}${L.note?(L.unit?" · ":"")+esc(String(L.note).slice(0,70))+(String(L.note).length>70?"…":""):""}</div></td>
 <td>${(L.comps||[]).length?(L.comps||[]).map(k=>`<span class="tag" style="margin:1px">${esc(cLabel(k))}</span>`).join(""):"—"}</td>
 <td>${esc(L.person||"—")}</td>
@@ -432,9 +453,10 @@ const used=[...new Set(inCo.map(L=>L.cat).filter(Boolean))];
 const list=fc?LEGALCAT.filter(x=>used.includes(x)):LEGALCAT;
 return opt([["",fc?"ทุกหมวดของบริษัทนี้":"ทุกหมวด"],...list.map(x=>[x,x])],list.includes(fk)?fk:"");})()}</select>
 <span style="font-size:13px;color:var(--ink-3)">${list.length} รายการ</span></div>
+<div class="toolbar" style="margin-top:-4px"><span style="font-size:13px;color:var(--ink-3)">จัดกลุ่ม</span><div class="seg">${[["title","ตามรายการ"],["cat","ตามหมวด"],["comp","ตามบริษัท"],["","ไม่จัดกลุ่ม"]].map(([k,l])=>`<button data-lggm="${k}" aria-pressed="${gm===k}">${l}</button>`).join("")}</div>${gm?`<button class="btn ghost sm" id="lgOpenAll">ขยายทั้งหมด</button><button class="btn ghost sm" id="lgCloseAll">ย่อทั้งหมด</button>`:""}</div>
 <div class="tblwrap"><table>
 <thead><tr><th>รายการ</th><th>บริษัทที่ต้องมี</th><th>ผู้รับผิดชอบ</th><th>วันที่ออก</th><th>ครบกำหนด</th><th>สถานะ</th></tr></thead>
-<tbody>${list.map(row).join("")||`<tr><td colspan="6"><div class="empty">ยังไม่มีรายการ — กด “เพิ่มรายการ” หรือ นำเข้า CSV ที่หน้าตั้งค่า</div></td></tr>`}</tbody></table></div></div>
+<tbody>${legalBody(list,gm,row)}</tbody></table></div></div>
 </div>`;
 }
 const IDXSTATUS=["ใช้งานอยู่","กำลังพัฒนา","ไม่ได้ใช้งาน"];

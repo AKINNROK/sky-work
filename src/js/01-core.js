@@ -1,4 +1,4 @@
-const APP_VERSION="14.14.29"; const APP_DATE="30 ต.ค. 2026";
+const APP_VERSION="14.14.39"; const APP_DATE="16 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -67,6 +67,8 @@ home:'<path d="M4 11 12 4l8 7"/><path d="M6 10v9h12v-9"/>',
 all:'<path d="M4 7h16M4 12h16M4 17h10"/>',
 cal:'<rect x="3.5" y="5" width="17" height="15" rx="4.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>',
 exec:'<path d="M5 20V10M12 20V4M19 20v-7"/>',
+proj:'<path d="M4 6h9M4 12h13M4 18h7"/><circle cx="17" cy="6" r="1.6"/><circle cx="20" cy="18" r="1.6"/>',
+sec:'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/><path d="M9 15l2 2 4-4"/>',
 ai:'<path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
 budget:'<path d="M12 4v16"/><path d="M16 8c0-2-2-3-4-3s-4 1-4 3 2 2.6 4 3 4 1 4 3-2 3-4 3-4-1-4-3"/>',
 train:'<path d="M12 4 2.5 9 12 14l9.5-5L12 4z"/><path d="M6.5 11.2V16c0 1.5 2.6 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4.8"/><path d="M21.5 9v5"/>',
@@ -86,9 +88,9 @@ file:'<path d="M13.5 3.5H7a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9z"/>
 phone:'<rect x="7" y="2.5" width="10" height="19" rx="3"/><path d="M11 18.5h2"/>',
 laptop:'<rect x="4" y="5" width="16" height="11" rx="2.5"/><path d="M2.5 19.5h19"/>'
 };
-const VIEWS=[["cal","ปฏิทิน"],["home","ภาพรวม"],["all","งานทั้งหมด"],["matrix","Matrix งาน"],["gaps","งานค้างข้อมูล"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["ai","ผู้ช่วย AI"],["set","ตั้งค่า"]];
-const TABS=["cal","home","all","matrix","gaps","budget","exec","meet","train","dsd","legal","idx","note","ai","set"];
-const TABLABEL={gaps:"ค้างข้อมูล",home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",matrix:"Matrix",budget:"งบ",exec:"ผู้บริหาร",ai:"AI",set:"ตั้งค่า"};
+const VIEWS=[["cal","ปฏิทิน"],["home","ภาพรวม"],["all","งานทั้งหมด"],["matrix","Matrix งาน"],["gaps","งานค้างข้อมูล"],["budget","งบประมาณ"],["exec","รายงานผู้บริหาร"],["proj","Project Hub"],["sec","เลขาผู้บริหาร"],["meet","การประชุม"],["train","ฝึกอบรม"],["dsd","กรมพัฒนาฯ"],["legal","กฎหมาย"],["idx","Index Online"],["note","บันทึก & ไอเดีย"],["ai","ผู้ช่วย AI"],["set","ตั้งค่า"]];
+const TABS=["cal","home","all","matrix","gaps","budget","exec","proj","sec","meet","train","dsd","legal","idx","note","ai","set"];
+const TABLABEL={gaps:"ค้างข้อมูล",home:"ภาพรวม",all:"งาน",meet:"ประชุม",train:"อบรม",dsd:"กรมพัฒฯ",legal:"กฎหมาย",idx:"Index",note:"บันทึก",cal:"ปฏิทิน",matrix:"Matrix",budget:"งบ",exec:"ผู้บริหาร",proj:"โปรเจค",sec:"เลขาฯ",ai:"AI",set:"ตั้งค่า"};
 const SETTABS=[["companies","บริษัท"],["groups","กลุ่มงาน"],["types","ประเภทงาน"],["courses","หลักสูตรอบรม"],["gl","หมวด GL"],["theme","ธีมสี"],["remind","เตือน & ปฏิทิน"],["import","นำเข้า CSV"],["trash","ถังขยะ"],["connect","การเชื่อมต่อ"]];
 const PALETTES=[
 {key:"cumulus", name:"เมฆกลางคืน", note:"ฟ้าเทาสุขุม", ramp:["#DAE1E9","#AEBECD","#90A5BA","#5B7BAA","#124E82"]},
@@ -498,11 +500,11 @@ const CFG_BAKED={url:"https://bakdblnqllcoltbgbwpe.supabase.co",key:"eyJhbGciOiJ
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{},dsd:{},subsidy:{pct:70,rate:200}};
-let legal=[], idx=[], notes=[];
+let legal=[], idx=[], notes=[], secs=[], secEx=[], secPin=null;
 const TRASH={items:[],ledger:[],legal:[],index:[],note:[]};
 const TRASH_DAYS=30;
-const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),meta:new Map()};
-const listeners={items:[],ledger:[],legal:[],index:[],note:[],meta:new Map()};
+const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),sec:new Map(),meta:new Map()};
+const listeners={items:[],ledger:[],legal:[],index:[],note:[],sec:[],meta:new Map()};
 const snapDoc=(id,d)=>({id,exists:!!d,data:()=>d,metadata:{fromCache:false,hasPendingWrites:false}});
 const emit=coll=>{
 const docs=[...cache[coll].entries()].map(([id,d])=>snapDoc(id,d));
@@ -560,7 +562,7 @@ const {data,error}=await SB.from("rows").select("id,kind,data").eq("uid",uid).ne
 if(error){setFoot("โหลดข้อมูลไม่ได้","var(--over)");return;}
 cache.items.clear();cache.ledger.clear();cache.meta.clear();
 data.forEach(r=>cache[r.kind]?.set(r.id,r.data));
-emit("items");emit("ledger");emit("legal");emit("index");emit("note");[...cache.meta.keys()].forEach(emitMeta);
+emit("items");emit("ledger");emit("legal");emit("index");emit("note");emit("sec");[...cache.meta.keys()].forEach(emitMeta);
 ["groups","companies","gl","theme","hr"].forEach(emitMeta);
 }
 function liveSync(){
@@ -612,6 +614,9 @@ DBShim.collection("index").onSnapshot(s=>{ idx=splitTrash(s.docs,"index"); rende
 DBShim.collection("note").onSnapshot(s=>{ notes=splitTrash(s.docs,"note"); render();});
 DBShim.collection("legal").onSnapshot(s=>{ legal=splitTrash(s.docs,"legal"); render();});
 DBShim.collection("ledger").onSnapshot(s=>{ ledger=splitTrash(s.docs,"ledger"); render();});
+DBShim.collection("sec").onSnapshot(s=>{ secs=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
+sub("meta/secex",d=>{ if(Array.isArray(d.list))secEx=d.list; });
+sub("meta/secpin",d=>{ secPin=d||null; });
 setFoot("กำลังโหลด…");
 await loadAll(); liveSync(); LOADING=false; render();
 setFoot(items.length+" งาน · ซิงก์แล้ว");

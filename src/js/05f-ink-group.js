@@ -60,7 +60,7 @@ function inkSelApply(fn){ if(!ink.sel)return; const pg=inkPage(), idx=ink.sel.id
 function inkSelFmtMenu(a){
 const pg=inkPage(), ids=[...ink.sel.idx], S=ids.map(i=>pg.strokes[i]), hasT=S.some(s=>s.t==="x"), hasO=S.some(s=>s.t!=="x"), hasS=S.some(s=>s.t==="s");
 const w0=Math.round((S.find(s=>s.t!=="x")||{w:3}).w*2)/2, f0=Math.round((S.find(s=>s.t==="x")||{fs:26}).fs);
-inkPop(`<div class="ink-ph">สี</div><div class="ink-row" style="flex-wrap:wrap;max-width:300px">${INK_PEN.map(c=>`<button type="button" class="ink-c" data-sfc="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}</div>
+inkPop(`<div class="ink-ph">สี</div><div class="ink-row" style="flex-wrap:wrap;max-width:300px">${(typeof INK_PEN_ALL!=="undefined"?INK_PEN_ALL:INK_PEN).map(c=>`<button type="button" class="ink-c" data-sfc="${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}</div>
 ${hasO?`<div class="ink-ph">ความหนาเส้น <b id="ink-sfwv">${w0}</b></div><input type="range" id="ink-sfw" class="ink-wide" min="1" max="40" step="0.5" value="${w0}">`:""}
 ${hasT?`<div class="ink-ph">ขนาดตัวอักษร <b id="ink-sffv">${f0}</b></div><input type="range" id="ink-sff" class="ink-wide" min="10" max="120" step="1" value="${f0}">`:""}
 ${hasT?`<div class="ink-ph">พื้นโน้ตแปะ</div><div class="ink-row" style="flex-wrap:wrap;max-width:300px"><button type="button" class="ink-opt" data-sfb="">ไม่มีพื้น</button>${INK_STICKY.map(c=>`<button type="button" class="ink-c" data-sfb="${c}" style="background:${c}" aria-label="พื้น ${c}"></button>`).join("")}</div>`:""}

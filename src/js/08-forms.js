@@ -75,16 +75,19 @@ el("pickdlg").close();
 if(k==="note"){ openNote(null); return; }
 formKind=k; open_(null,k,true);}
 // เช็กลิสต์ย่อย (ขั้นตอนโปรเจค / ของที่ต้องเตรียม)
-const chkList=a=>(Array.isArray(a)?a:[]).map(x=>typeof x==="string"?{t:x,d:false}:{t:(x&&x.t)||"",d:!!(x&&x.d)}).filter(x=>x.t);
+const chkList=a=>(Array.isArray(a)?a:[]).map(x=>typeof x==="string"?{t:x,d:false}:Object.assign({t:(x&&x.t)||"",d:!!(x&&x.d)},x&&x.due?{due:x.due}:{})).filter(x=>x.t);
 function paintChk(which){
 const arr=which==="ms"?msDraft:apDraft, box=el(which==="ms"?"ms-list":"ap-list"); if(!box)return;
 box.innerHTML=arr.length?arr.map((x,i)=>`<label class="chkrow${x.d?" on":""}">
 <input type="checkbox" data-chk="${which}:${i}"${x.d?" checked":""}><span>${esc(x.t)}</span>
-<button type="button" data-chkdel="${which}:${i}" title="ลบข้อนี้">×</button></label>`).join("")
+<button type="button" data-chkup="${which}:${i}" title="เลื่อนขึ้น"${i===0?" disabled":""}>▲</button><button type="button" data-chkdn="${which}:${i}" title="เลื่อนลง"${i===arr.length-1?" disabled":""}>▼</button><button type="button" data-chkdel="${which}:${i}" title="ลบข้อนี้">×</button></label>`).join("")
 :`<div class="hint" style="margin:0">ยังไม่มีรายการ — พิมพ์ด้านล่างแล้วกดเพิ่ม</div>`;
 box.querySelectorAll("[data-chk]").forEach(n=>n.onchange=()=>{
 const [w,i]=n.dataset.chk.split(":"); const a=w==="ms"?msDraft:apDraft;
 a[+i].d=n.checked; paintChk(w); if(w==="ms")syncProg();});
+box.querySelectorAll("[data-chkup],[data-chkdn]").forEach(n=>n.onclick=()=>{
+const up=n.dataset.chkup!==undefined, [w,i0]=(up?n.dataset.chkup:n.dataset.chkdn).split(":"), a=w==="ms"?msDraft:apDraft, i=+i0, j=up?i-1:i+1;
+if(j<0||j>=a.length)return; const m=a[i]; a[i]=a[j]; a[j]=m; paintChk(w);});
 box.querySelectorAll("[data-chkdel]").forEach(n=>n.onclick=()=>{
 const [w,i]=n.dataset.chkdel.split(":"); const a=w==="ms"?msDraft:apDraft;
 a.splice(+i,1); paintChk(w); if(w==="ms")syncProg();});}
@@ -418,6 +421,7 @@ const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
 return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
 if(editing&&editing.srcn)data.srcn=editing.srcn;
+if(editing)["kpis","kteams","plog","rag"].forEach(k=>{ if(editing[k]!==undefined)data[k]=editing[k]; });
 if(el("f-course").value==="__newcrs__"){
 const nm=(data.title||"").trim();
 if(!nm){el("f-title").focus();return;}
@@ -646,7 +650,7 @@ fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการปร
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
 el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
 el("n-pin").checked=!!n?.pin;
-el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+noteFolders.map(f=>`<option value="${esc(f.id)}">📁 ${esc(f.name)}</option>`).join("");
+el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+fldTree().map(({f,d})=>`<option value="${esc(f.id)}">${"\u00a0\u00a0\u00a0".repeat(d)}📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
 el("n-colors").innerHTML=[["","ค่าเริ่มต้น"],...TAGCOLORS.map(c=>[c,c])].map(([c])=>
 `<button type="button" class="sw1${(n?.color||"")===c?" on":""}" data-ncolor="${c}" style="${c?`background:${c}`:"background:var(--line-2)"}">${c?"":"—"}</button>`).join("");
@@ -743,9 +747,9 @@ const n=e.target.closest("[data-crsitem]"); if(!n)return;
 const t=items.find(x=>x._id===n.dataset.crsitem); if(!t)return;
 el("crsdlg").close(); setTimeout(()=>openCard(t),200);});
 let editingGl=null, glDraft=null, glDraftCo="";
-function openGlPlan(key){
+function openGlPlan(key,yy){
 const g=gls.find(x=>x.key===key); if(!g)return;
-const y=R.glYear||R.year;
+const y=(yy!=null)?yy:(R.glYear||R.year);
 editingGl={key,y};
 glDraft={}; const P=glPlan(g,y); Object.keys(P).forEach(ck=>glDraft[ck]=glPlanMonths(g,y,ck));
 const cos=visible(companies).filter(c=>!c.isGroup);
@@ -780,6 +784,7 @@ const others=Object.keys(glDraft||{}).filter(k=>k!==glDraftCo).reduce((s2,k)=>s2
 el("gb-sum").innerHTML=`<div><span>รวมบริษัทนี้</span><b>${baht(cur)} ฿</b></div>
 <div><span>บริษัทอื่นที่ตั้งไว้แล้ว</span><b>${baht(others)} ฿</b></div>
 <div><span>รวมทั้งหมวดในปีนี้</span><b style="color:var(--accent)">${baht(cur+others)} ฿</b></div>`;
+const g=editingGl&&gls.find(x=>x.key===editingGl.key), b=el("gb-clear"); if(b)b.hidden=!(g&&(glBudget(g,editingGl.y)>0||cur+others>0));
 }
 el("gb-co").onchange=()=>{ stashGl(); glDraftCo=el("gb-co").value; paintGlMonths(); paintGlFlat(); };
 el("gbdlg").addEventListener("input",e=>{ if(e.target.classList.contains("gm")){ paintGlSum(); paintGlFlat(); } });
@@ -789,6 +794,15 @@ if(!tot){tell("ใส่ยอดในเดือนใดเดือนห�
 const per=Math.round(tot/12);
 [...el("gb-months").querySelectorAll(".gm")].forEach((i,k)=>i.value=k===11?tot-per*11:per);
 paintGlSum();};
+// ล้างงบทั้งหมวดของปีนี้ (ทุกบริษัท + ยอดรายปีก้อนเดิม) ให้เป็น 0 แล้วกรอกใหม่ — ถามยืนยันทุกครั้ง
+el("gb-clear").onclick=async()=>{
+if(!editingGl)return; const g=gls.find(x=>x.key===editingGl.key); if(!g)return; const y=editingGl.y;
+const saved=glBudget(g,y), cos=Object.keys(glPlan(g,y)).length;
+if(!await ask(`<b>ล้าง Budget หมวดนี้ให้เป็น 0?</b><div style="margin-top:8px;line-height:1.7">${esc((g.code?g.code+" · ":"")+g.label)} · ปี <b>${y+543}</b><br>${saved?`ยอดที่ตั้งไว้ <b>${baht(saved)} ฿</b>${cos>1?` (${cos} บริษัท)`:""} จะกลายเป็น <b>0</b> ทันที`:"ตัวเลขที่กรอกค้างไว้ในหน้านี้จะถูกล้าง"}<br><span style="font-size:13px;color:var(--ink-3)">ล้างทุกบริษัทของหมวดนี้ในปีนี้ แล้วกรอกใหม่ได้เลย · ย้อนกลับไม่ได้</span></div>`,"ยืนยันล้างงบ"))return;
+if(g.plan&&g.plan[y]){ delete g.plan[y]; if(!Object.keys(g.plan).length)delete g.plan; }
+setGlBudget(g,y,0);
+glDraft={}; paintGlMonths(); paintGlFlat();
+render(); await saveMeta("gl",gls); setFoot("ล้างงบหมวด "+g.label+" ปี "+(y+543)+" แล้ว");};
 el("gbcancel").onclick=()=>el("gbdlg").close();
 el("gbsave").onclick=async()=>{
 if(!editingGl)return; stashGl();

@@ -78,6 +78,10 @@ const inCo=legal.filter(L=>!R.legalComp||(L.comps||[]).includes(R.legalComp));
 if(R.legalCat&&!inCo.some(L=>L.cat===R.legalCat))R.legalCat="";
 render();});
 el("lg-cat")&&(el("lg-cat").onchange=e=>{R.legalCat=e.target.value;render();});
+document.querySelectorAll("[data-lggm]").forEach(n=>n.onclick=()=>{ R.legalGrp=n.dataset.lggm; render(); });
+document.querySelectorAll("[data-lgg]").forEach(n=>{ const tg=()=>{ const k=n.dataset.lgg; LGOPEN.has(k)?LGOPEN.delete(k):LGOPEN.add(k); lgSaveOpen(); const y=window.scrollY; render(); window.scrollTo(0,y); }; n.onclick=tg; n.onkeydown=e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); tg(); } }; });
+el("lgOpenAll")&&(el("lgOpenAll").onclick=()=>{ document.querySelectorAll("[data-lgg]").forEach(n=>LGOPEN.add(n.dataset.lgg)); lgSaveOpen(); render(); });
+el("lgCloseAll")&&(el("lgCloseAll").onclick=()=>{ document.querySelectorAll("[data-lgg]").forEach(n=>LGOPEN.delete(n.dataset.lgg)); lgSaveOpen(); render(); });
 document.querySelectorAll("[data-id]").forEach(n=>{ if(n.dataset.nolink)return; n.onclick=()=>{
 const t=items.find(x=>x._id===n.dataset.id); if(t)openCard(t,n.dataset.occ||"");};});
 document.querySelectorAll("[data-tx]").forEach(n=>n.onclick=()=>{
@@ -458,11 +462,12 @@ el("glCopy")&&(el("glCopy").onclick=async()=>{
 const y=R.glYear||R.year, from=y-1;
 const n=gls.filter(g=>glBudget(g,from)).length;
 if(!n){tell("ปี "+(from+543)+" ยังไม่มีงบให้คัดลอกค่ะ");return;}
-if(!await ask(`คัดลอกงบ <b>${n}</b> หมวด จากปี ${from+543} มาทับปี ${y+543} ใช่ไหมคะ?`,"คัดลอก"))return;
+const src=gls.filter(g=>glBudget(g,from)), srcTot=src.reduce((a,g)=>a+glBudget(g,from),0), ov=src.filter(g=>glBudget(g,y)), ovTot=ov.reduce((a,g)=>a+glBudget(g,y),0);
+if(!await ask(`<b>ยืนยันการคัดลอกงบ</b><div style="margin-top:8px;line-height:1.7">จากปี <b>${from+543}</b> → ปี <b>${y+543}</b><br>คัดลอก <b>${n}</b> หมวด รวม <b>${baht(srcTot)} ฿</b> (ทั้งแผนรายเดือนและแยกบริษัท)</div>${ov.length?`<div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--over-soft);color:var(--over);line-height:1.6">⚠ ปี ${y+543} มีงบอยู่แล้ว <b>${ov.length}</b> หมวด (รวม ${baht(ovTot)} ฿) <b>จะถูกทับด้วยค่าจากปี ${from+543}</b></div>`:`<div style="margin-top:8px;font-size:13px;color:var(--ink-3)">ปี ${y+543} ยังไม่มีงบในหมวดเหล่านี้ ไม่มีอะไรถูกทับ</div>`}<div style="margin-top:8px;font-size:13px;color:var(--ink-3)">กดยืนยันแล้วย้อนกลับไม่ได้ — ตรวจปีให้ถูกก่อนนะคะ</div>`,"ยืนยันคัดลอก"))return;
 gls.forEach(g=>{ if(!glBudget(g,from))return;
 if(hasPlan(g,from)){const P=glPlan(g,from); Object.keys(P).forEach(ck=>setGlPlan(g,y,ck,glPlanMonths(g,from,ck)));}
 else{g.budgets=g.budgets&&typeof g.budgets==="object"?g.budgets:{}; g.budgets[y]=glBudget(g,from); g.budget=g.budgets[THISYEAR]||0;}});
-render(); await saveMeta("gl",gls);});
+render(); await saveMeta("gl",gls); setFoot("คัดลอกงบจากปี "+(from+543)+" แล้ว");});
 document.querySelectorAll("[data-reng]").forEach(n=>n.onchange=async()=>{
 const g=gls.find(x=>x.key===n.dataset.reng), v=n.value.trim();
 if(!g||!v){render();return;} g.label=v; await saveMeta("gl",gls); render();});

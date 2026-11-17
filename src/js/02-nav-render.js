@@ -171,7 +171,7 @@ n.onclick=hardRefresh;
 n.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();hardRefresh();}};});
 }
 let LISTBOX={};
-function regList(key,title,rows){ LISTBOX[key]={title,rows}; return `data-list="${esc(key)}"`; }
+function regList(key,title,rows,acts){ LISTBOX[key]={title,rows,acts:acts||null}; return `data-list="${esc(key)}"`; }
 function openListBox(key){
 const L=LISTBOX[key]; if(!L||!L.rows.length)return;
 el("pdlgh").textContent=L.title;
@@ -187,6 +187,7 @@ return pre+`<div class="li${clk(r)?"":" static"}"${clk(r)?` data-pick="${i}"`:""
 <div class="tx"><div class="t1">${esc(r.t1)}</div><div class="t2">${esc(r.t2||"")}</div></div>
 <span class="pill ${r.pc||"s-wait"}">${esc(r.p||"แก้ไข")}</span>${clk(r)?`<span class="lchev">›</span>`:""}</div>`;}).join("")}</div>
 ${anyClk&&!seenStatic?`<div class="hint">แตะรายการเพื่อเปิดดู</div>`:""}`;
+const pa=el("pacts"); if(pa){ pa.innerHTML=(L.acts||[]).map((a,i)=>`<button type="button" class="btn" data-pact="${i}">${esc(a.l)}</button>`).join(""); pa.querySelectorAll("[data-pact]").forEach(b=>b.onclick=()=>{ el("pdlg").close(); try{ L.acts[+b.dataset.pact].f(); }catch(e){} }); }
 el("pdlgb").querySelectorAll("[data-pick]").forEach(n=>n.onclick=()=>{
 const r=L.rows[+n.dataset.pick]; el("pdlg").close();
 if(r.id){const t=items.find(x=>x._id===r.id); if(t)openCard(t);}
@@ -207,7 +208,7 @@ LISTBOX={};
 if(LOADING){ el("view").innerHTML=`<div class="head"><div><h1>กำลังโหลดข้อมูล…</h1><div class="sub">กำลังดึงข้อมูลล่าสุดจากระบบ · ${syncChip()}</div></div></div>
 <div class="dash"><div class="card hero span2 sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div><div class="card stat sk" style="height:150px"></div>
 <div class="card span4 sk" style="height:220px"></div></div>`; paintSync(); return; }
-el("view").innerHTML={home,all,matrix:matrixView,gaps:gapsView,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,exec:execView,ai:aiView,pipeline,set:setView}[view]();
+el("view").innerHTML={home,all,matrix:matrixView,gaps:gapsView,meet,train,dsd:dsdView,legal:legalView,idx:idxView,note:noteView,cal:calView,budget,exec:execView,proj:projView,sec:secView,ai:aiView,pipeline,set:setView}[view]();
 paintSync(); wire(); if(AI.open)aiPopRender(); pushPlanKick();
 }
 function header(title,sub,btn=true){

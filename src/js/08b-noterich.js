@@ -1,7 +1,9 @@
 // ===== เขียนบันทึก: To-do ติ๊กได้ · ย่อหน้า · สีตัวอักษร · แนบรูป · ตารางแบบ Excel =====
 // (ใช้ร่วมกับตัวกรอง ntClean ใน 05-views-more.js — ถ้าเพิ่มรูปแบบใหม่ต้องอนุญาตที่ตัวกรองด้วย)
-const NE_COLS=["#dc2626","#ea580c","#ca8a04","#16a34a","#0d9488","#2563eb","#7c3aed","#db2777","#6b7280"];
-const NE_HIL=["#fef08a","#bbf7d0","#bfdbfe","#fecaca","#e9d5ff","#fed7aa","#e5e7eb"];
+const NE_COLS=["#dc2626","#ea580c","#ca8a04","#16a34a","#0d9488","#2563eb","#7c3aed","#db2777","#6b7280",
+ "#000000","#3f3f46","#9ca3af","#7f1d1d","#f87171","#9a3412","#fb923c","#a16207","#eab308","#14532d","#4ade80","#115e59","#14b8a6","#075985","#0ea5e9","#1e3a8a","#60a5fa","#4c1d95","#a78bfa","#831843","#f472b6","#78350f","#a16a3a"];
+const NE_HIL=["#fef08a","#bbf7d0","#bfdbfe","#fecaca","#e9d5ff","#fed7aa","#e5e7eb",
+ "#fde047","#86efac","#93c5fd","#fca5a5","#c4b5fd","#fdba74","#f9a8d4","#99f6e4","#d6d3d1","#fff7cd"];
 const NE_BG={y:"#fef9c3",g:"#dcfce7",b:"#dbeafe",r:"#fee2e2",p:"#f3e8ff",o:"#ffedd5",x:"#e5e7eb"};
 let neRange=null, neScope="cell", neImgSel=null;
 
@@ -38,8 +40,8 @@ const b=el("neimgbar"); if(b&&!b.hidden&&!e.target.closest("#neimgbar,#n-body im
 el("ndlg").addEventListener("close",neHideAll);
 el("ndlg").addEventListener("scroll",()=>{ const p=el("nepop"); if(p)p.hidden=true; neImgPos(); },true);
 
-const neColorHtml=()=>`<div class="nepl">สีตัวอักษร</div><div class="nesw">${NE_COLS.map(c=>`<button type="button" data-cc="fore:${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="fore:">ค่าเริ่มต้น</button></div>
-<div class="nepl">ไฮไลต์พื้นหลัง</div><div class="nesw">${NE_HIL.map(c=>`<button type="button" data-cc="hil:${c}" style="background:${c}" aria-label="ไฮไลต์ ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="hil:">ไม่มี</button></div>`;
+const neColorHtml=()=>`<div class="nepl">สีตัวอักษร</div><div class="nesw">${NE_COLS.map(c=>`<button type="button" data-cc="fore:${c}" style="background:${c}" aria-label="สี ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="fore:">ค่าเริ่มต้น</button><label class="nex nepick">🎨 เลือกสีเอง <input type="color" data-ncust="fore" value="#2563eb"></label></div>
+<div class="nepl">ไฮไลต์พื้นหลัง</div><div class="nesw">${NE_HIL.map(c=>`<button type="button" data-cc="hil:${c}" style="background:${c}" aria-label="ไฮไลต์ ${c}"></button>`).join("")}<button type="button" class="nex" data-cc="hil:">ไม่มี</button><label class="nex nepick">🎨 เลือกสีเอง <input type="color" data-ncust="hil" value="#fef08a"></label></div>`;
 const neTableHtml=()=>`<div class="nepl">แทรกตาราง</div><div class="nrow"><label>แถว <input type="number" id="net-r" min="1" max="50" value="3"></label><label>คอลัมน์ <input type="number" id="net-c" min="1" max="12" value="3"></label></div>
 <label style="display:flex;gap:6px;align-items:center;font-size:13px"><input type="checkbox" id="net-h" checked> แถวแรกเป็นหัวตาราง</label><button type="button" class="go" data-tmake="1">สร้างตาราง</button>`;
 const neCellBgHtml=()=>`<div class="nepl">ใส่สีให้</div><div class="nesw">${[["cell","ช่องนี้"],["row","ทั้งแถว"],["col","ทั้งคอลัมน์"]].map(([k,l])=>`<button type="button" class="nex${neScope===k?" on":""}" data-scope="${k}">${l}</button>`).join("")}</div>
@@ -322,3 +324,5 @@ el("nepop").hidden=true;
 if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
 neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
 });
+
+document.addEventListener("change",e=>{ const t=e.target; if(t&&t.dataset&&t.dataset.ncust){ el("nepop").hidden=true; neColor(t.dataset.ncust,t.value); } });
