@@ -580,6 +580,16 @@ el("ink-tpl").onclick=e=>{ e.stopPropagation(); inkTplMenu(e.currentTarget); };
 el("ink-more").onclick=e=>{ e.stopPropagation(); inkMoreMenu(e.currentTarget); };
 el("ink-exp-b").onclick=e=>{ e.stopPropagation(); inkExportMenu(e.currentTarget); };
 el("ink-save").onclick=()=>{ if(ink.saveErr)inkSave(); };
+// ปุ่ม "บันทึก" — บันทึกทันที (ลายเส้นทุกหน้า + ชื่อ + รูปย่อ) แล้วแจ้งผล
+async function inkSaveNow(){ const b=el("ink-savebtn"); if(!ink.note||!b||b.disabled)return;
+ b.disabled=true; const t0=b.textContent; b.textContent="กำลังบันทึก…"; inkStatus("กำลังบันทึก…","busy");
+ try{ for(let i=0;i<60&&ink.saving;i++)await new Promise(r=>setTimeout(r,100));
+  ink.saveErr=false; await inkSave(true); for(let i=0;i<60&&ink.saving;i++)await new Promise(r=>setTimeout(r,100));
+  if(ink.saveErr){ tell("<b>บันทึกไม่สำเร็จ</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">ตรวจอินเทอร์เน็ตแล้วกดบันทึกอีกครั้ง — ลายเส้นยังอยู่ในหน้าจอ ไม่หาย</div>"); }
+  else{ b.textContent="✓ บันทึกแล้ว"; setTimeout(()=>{ if(b)b.textContent=t0; },1600); b.disabled=false; return; } }
+ finally{ if(b.textContent==="กำลังบันทึก…")b.textContent=t0; b.disabled=false; } }
+el("ink-savebtn").onclick=e=>{ e.stopPropagation(); inkSaveNow(); };
+document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&(e.key==="s"||e.key==="S")&&document.body.classList.contains("ink-on")){ e.preventDefault(); inkSaveNow(); } });
 el("ink-title").oninput=()=>{ if(ink.note){ ink.metaDirty=true; inkDirty(); } };
 // ช่องชื่อสมุดเป็นแบบอ่านอย่างเดียวระหว่างเขียน — กัน Scribble ของ iPad มองว่าทั้งหน้าเป็นที่เขียนข้อความ แล้วแย่งรับเส้นปากกา; แตะที่ชื่อเพื่อแก้ไข
 (function(){ const tt=el("ink-title"); tt.addEventListener("click",()=>{ if(tt.readOnly){ tt.blur(); tt.readOnly=false; tt.focus(); } }); tt.addEventListener("blur",()=>{ tt.readOnly=true; }); tt.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); tt.blur(); } }); })();

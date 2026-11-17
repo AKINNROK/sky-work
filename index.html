@@ -901,6 +901,8 @@ textarea.ph-in{resize:vertical;line-height:1.5}
 .sec-rp{color:var(--accent);font-weight:600}.sec-cf{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}.sec-bad{color:var(--over)}
 .sec-tripc{background:var(--accent-soft);color:var(--accent);border-radius:8px;padding:5px 8px;font-size:12px}
 .sec-add{border:1px dashed var(--line,#c9d0d6);background:transparent;color:var(--ink-3);border-radius:10px;padding:6px;cursor:pointer;font:inherit;font-size:12.5px}.sec-add:hover{color:var(--accent);border-color:var(--accent)}
+.li-done{opacity:.55;filter:grayscale(1)}.li-done .t1{text-decoration:line-through;text-decoration-color:var(--ink-3)}
+.li-hd{border-top:0!important;padding-top:0!important;display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-size:12.5px;font-weight:700;color:var(--ink-2)}.li-hd:first-child{margin-top:0}.li-hd i{width:9px;height:9px;border-radius:50%;background:var(--c)}.li-hd small{font-weight:400;color:var(--ink-3)}
 .sec-lower{display:grid;grid-template-columns:300px 1fr;gap:14px;align-items:start}
 .sec-mini{padding:14px}.sec-mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .sec-mg{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}.sec-mw span{font-size:11.5px;color:var(--ink-3);padding:3px 0}
@@ -1145,6 +1147,7 @@ textarea.ph-in{resize:vertical;line-height:1.5}
 <button type="button" class="ink-b" id="ink-close" title="ปิดสมุด (บันทึกให้อัตโนมัติ)" aria-label="ปิดสมุด"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
 <input id="ink-title" class="ink-title" placeholder="ชื่อสมุด" aria-label="ชื่อสมุด" autocomplete="off" autocorrect="off" spellcheck="false" readonly>
 <span id="ink-save" class="ink-save" role="status"></span>
+<button type="button" class="ink-t pri" id="ink-savebtn" title="บันทึกทันที (ระบบบันทึกอัตโนมัติอยู่แล้ว ปุ่มนี้ไว้ให้มั่นใจ) · Ctrl/⌘+S">💾 บันทึก</button>
 <span class="ink-sp"></span>
 <button type="button" class="ink-b" id="ink-undo" title="ย้อนกลับ" aria-label="ย้อนกลับ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
 <button type="button" class="ink-b" id="ink-redo" title="ทำซ้ำ" aria-label="ทำซ้ำ"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
@@ -1347,4 +1350,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.40"></script></body></html>
+<script src="app.js?v=14.14.42"></script></body></html>

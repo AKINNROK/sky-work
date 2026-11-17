@@ -1,4 +1,4 @@
-const APP_VERSION="14.14.40"; const APP_DATE="16 พ.ย. 2026";
+const APP_VERSION="14.14.42"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -177,7 +177,7 @@ localStorage.setItem("sw-vars",JSON.stringify({vars,cs:s.colorScheme,mode:theme.
 }
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let LOADING=true;
-let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
+let DB=null, items=[], ledger=[], view="cal", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
 let typeList=[], tagList=[], courses=[], skillList=[], modeList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};

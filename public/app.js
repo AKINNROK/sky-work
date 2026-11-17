@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.40"; const APP_DATE="16 พ.ย. 2026";
+const APP_VERSION="14.14.42"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -223,7 +223,7 @@ localStorage.setItem("sw-vars",JSON.stringify({vars,cs:s.colorScheme,mode:theme.
 }
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let LOADING=true;
-let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
+let DB=null, items=[], ledger=[], view="cal", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
 let typeList=[], tagList=[], courses=[], skillList=[], modeList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
@@ -1287,7 +1287,15 @@ return `<i style="background:${cl}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
-const monthAll=items.filter(t=>occDays(t,y,m).length).map(t=>({t,d:Math.min(...occDays(t,y,m))})).sort((a,b)=>a.d-b.d||String(a.t.title).localeCompare(String(b.t.title),"th"));
+// เรียงงานเดือนนี้: สถานะ (ค้าง → กำลังดำเนินการ → รอดำเนินการ → เสร็จสิ้น → ยกเลิก) แล้วตามวันที่ · เสร็จสิ้น/ยกเลิก = เทา
+const MRANK=[["ค้าง / เกินกำหนด","var(--over)"],["กำลังดำเนินการ","var(--run)"],["รอดำเนินการ","var(--wait)"],["เสร็จสิ้น","var(--ink-3)"],["ยกเลิก","var(--ink-3)"]];
+const mRank=t=>{ const ms=monthState(t,y,m), n=ms.n||""; let st=t.status;
+ if(rr(t)){ if(/^ค้าง/.test(n))return 0; if(/^ปิดครบ/.test(n))return 3; if(/^(ยกเลิก|งด)/.test(n))return 4; if(/^ปิดแล้ว/.test(n))return 1; return 2; }
+ if(st===STATUS_CANCEL)return 4; if(st===STATUS_DONE)return 3;
+ const dd=dueDate(t); if(dd&&daysTo(dd)<0)return 0; return st==="กำลังดำเนินการ"?1:2; };
+const mGrey=t=>mRank(t)>=3;
+const greyRow=(t,h)=>mGrey(t)?h.replace('<div class="li" ','<div class="li li-done" '):h;
+const monthAll=items.filter(t=>occDays(t,y,m).length).map(t=>({t,d:Math.min(...occDays(t,y,m)),r:mRank(t)})).sort((a,b)=>a.r-b.r||a.d-b.d||String(a.t.title).localeCompare(String(b.t.title),"th"));
 return header("ปฏิทิน","แตะวันที่เพื่อดูงานของวันนั้น · จุดสีคือสถานะงาน")+
 `<div class="toolbar">
 <div class="seg" id="calmode">
@@ -1318,8 +1326,8 @@ ${calColor()==="matrix"
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานเดือนนี้ <small>"+(monthAll.length+recurring.length)+" รายการ</small>"}</h2>
 <div class="list">${
 R.selDay
-? (selTasks.map(t=>liRow(t,false,new Date(y,m,R.selDay))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
-: ((monthAll.length?monthAll.map(x=>liRow(x.t,true,rr(x.t)?new Date(y,m,x.d):undefined)).join(""):"")+(recurring.length?`<div class="lsec" style="margin:12px 0 4px;font-size:12.5px;color:var(--ink-3)">งานประจำเดือน (ไม่ระบุวัน)</div>`+recurring.map(t=>liRow(t)).join(""):"")||`<div class="empty">ไม่มีงานในเดือนนี้</div>`)}</div>
+? (selTasks.map(t=>greyRow(t,liRow(t,false,new Date(y,m,R.selDay)))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
+: ((monthAll.length?monthAll.map((x,i)=>(i===0||monthAll[i-1].r!==x.r?`<div class="lsec li-hd" style="--c:${MRANK[x.r][1]}"><i></i>${MRANK[x.r][0]} <small>${monthAll.filter(z=>z.r===x.r).length}</small></div>`:"")+greyRow(x.t,liRow(x.t,true,rr(x.t)?new Date(y,m,x.d):undefined))).join(""):"")+(recurring.length?`<div class="lsec" style="margin:12px 0 4px;font-size:12.5px;color:var(--ink-3)">งานประจำเดือน (ไม่ระบุวัน)</div>`+recurring.map(t=>greyRow(t,liRow(t))).join(""):"")||`<div class="empty">ไม่มีงานในเดือนนี้</div>`)}</div>
 ${R.selDay?`<div class="addg" style="margin-top:12px">
 <button class="btn sm" id="addOnDay">${svg('<path d="M12 5v14M5 12h14"/>',16)}เพิ่มงานวันที่ ${R.selDay} ${MTH[m]}</button>
 <button class="btn ghost sm" id="clearDay">ดูงานทั้งเดือนแทน</button></div>`:""}
@@ -3282,6 +3290,16 @@ el("ink-tpl").onclick=e=>{ e.stopPropagation(); inkTplMenu(e.currentTarget); };
 el("ink-more").onclick=e=>{ e.stopPropagation(); inkMoreMenu(e.currentTarget); };
 el("ink-exp-b").onclick=e=>{ e.stopPropagation(); inkExportMenu(e.currentTarget); };
 el("ink-save").onclick=()=>{ if(ink.saveErr)inkSave(); };
+// ปุ่ม "บันทึก" — บันทึกทันที (ลายเส้นทุกหน้า + ชื่อ + รูปย่อ) แล้วแจ้งผล
+async function inkSaveNow(){ const b=el("ink-savebtn"); if(!ink.note||!b||b.disabled)return;
+ b.disabled=true; const t0=b.textContent; b.textContent="กำลังบันทึก…"; inkStatus("กำลังบันทึก…","busy");
+ try{ for(let i=0;i<60&&ink.saving;i++)await new Promise(r=>setTimeout(r,100));
+  ink.saveErr=false; await inkSave(true); for(let i=0;i<60&&ink.saving;i++)await new Promise(r=>setTimeout(r,100));
+  if(ink.saveErr){ tell("<b>บันทึกไม่สำเร็จ</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">ตรวจอินเทอร์เน็ตแล้วกดบันทึกอีกครั้ง — ลายเส้นยังอยู่ในหน้าจอ ไม่หาย</div>"); }
+  else{ b.textContent="✓ บันทึกแล้ว"; setTimeout(()=>{ if(b)b.textContent=t0; },1600); b.disabled=false; return; } }
+ finally{ if(b.textContent==="กำลังบันทึก…")b.textContent=t0; b.disabled=false; } }
+el("ink-savebtn").onclick=e=>{ e.stopPropagation(); inkSaveNow(); };
+document.addEventListener("keydown",e=>{ if((e.ctrlKey||e.metaKey)&&(e.key==="s"||e.key==="S")&&document.body.classList.contains("ink-on")){ e.preventDefault(); inkSaveNow(); } });
 el("ink-title").oninput=()=>{ if(ink.note){ ink.metaDirty=true; inkDirty(); } };
 // ช่องชื่อสมุดเป็นแบบอ่านอย่างเดียวระหว่างเขียน — กัน Scribble ของ iPad มองว่าทั้งหน้าเป็นที่เขียนข้อความ แล้วแย่งรับเส้นปากกา; แตะที่ชื่อเพื่อแก้ไข
 (function(){ const tt=el("ink-title"); tt.addEventListener("click",()=>{ if(tt.readOnly){ tt.blur(); tt.readOnly=false; tt.focus(); } }); tt.addEventListener("blur",()=>{ tt.readOnly=true; }); tt.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); tt.blur(); } }); })();
