@@ -664,7 +664,7 @@ el("ndlg").showModal(); neState();
 el("ncancel").onclick=()=>{ const n=editingNote, back=noteBack; el("ndlg").close(); if(back&&n)viewNote(n); };
 el("nsave").onclick=async()=>{
 const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
-tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
+tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",nf:NE().getAttribute("data-nf")||"",ns:+NE().getAttribute("data-ns")||0,color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
 if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
 if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
  if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
