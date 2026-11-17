@@ -501,7 +501,7 @@ function viewNote(n){
 viewingNote=n;
 el("nvk").textContent=n.kind||"โน้ต"; el("nvd").textContent=n.date||"";
 el("nvt").textContent=n.title||"(ไม่มีหัวข้อ)";
-el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>'; ntHydrate(el("nvb"));
+el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>'; ntHydrate(el("nvb")); ntFoldApply(el("nvb")); ntFoldBar();
 el("nvtag").textContent=n.tag?"#"+n.tag:"";
 el("nvpin").textContent=n.pin?"เลิกปักหมุด":"ปักหมุด";
 el("nvdlg").querySelector(".nvbar").style.background=n.color||"var(--accent-2)";
@@ -648,7 +648,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof ntFoldApply==="function")ntFoldApply(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
 el("n-pin").checked=!!n?.pin;
 el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+fldTree().map(({f,d})=>`<option value="${esc(f.id)}">${"\u00a0\u00a0\u00a0".repeat(d)}📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");

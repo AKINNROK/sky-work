@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.39"; const APP_DATE="16 พ.ย. 2026";
+const APP_VERSION="14.14.40"; const APP_DATE="16 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2618,7 +2618,7 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
   if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
  if(T==="SPAN"&&n.hasAttribute("data-stk")){ const sk=n.getAttribute("data-stk"); if(typeof stkValid==="function"&&stkValid(sk)){ const nn=stkNode(sk); n.replaceWith(nn); return; } n.remove(); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
- let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="";
+ let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="",dfo="";
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
@@ -2627,10 +2627,11 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(T==="TABLE"&&/^[lcr]$/.test(n.getAttribute("data-ta")||""))dta=n.getAttribute("data-ta");
  if((T==="TD"||T==="TH")&&n.getAttribute("data-h")==="1")dh="1";
  if((T==="TD"||T==="TH")&&/^=.{1,120}$/.test(n.getAttribute("data-f")||""))df=n.getAttribute("data-f");
+ if((T==="H2"||T==="H3")&&n.getAttribute("data-fold")==="1")dfo="1";
  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
  if(cls)n.className=cls;
  if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
- if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh); if(df)n.setAttribute("data-f",df);
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh); if(df)n.setAttribute("data-f",df); if(dfo)n.setAttribute("data-fold",dfo);
  if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
@@ -5704,7 +5705,7 @@ async function secHash(pin,salt){ const s=salt+":"+pin;
  try{ if(window.crypto&&crypto.subtle){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); } }catch(e){}
  let h=5381; for(const c of s)h=((h<<5)+h+c.charCodeAt(0))|0; return "x"+h; }
 const secHasPin=()=>!!(secPin&&secPin.hash);
-function secScrub(){ ["secdlg","secxdlg"].forEach(id=>{ const d=el(id); if(d){ try{ if(d.open)d.close(); }catch(e){} d.innerHTML=""; } }); const c=el("cdlg"); if(c&&!c.open&&el("cmsg"))el("cmsg").innerHTML=""; }
+function secScrub(){ ["secdlg","secxdlg","secpk","seccp"].forEach(id=>{ const d=el(id); if(d){ try{ if(d.open)d.close(); }catch(e){} d.innerHTML=""; } }); const c=el("cdlg"); if(c&&!c.open&&el("cmsg"))el("cmsg").innerHTML=""; }
 function secLock(){ SEC.unl=false; secScrub(); if(view==="sec")render(); }
 function secTouch(){ if(SEC.unl)SEC.last=Date.now(); }
 document.addEventListener("pointerdown",secTouch,true); document.addEventListener("keydown",secTouch,true);
@@ -5750,11 +5751,28 @@ async function secPut(rec){
  try{ const id=rec._id, d=Object.assign({},rec); delete d._id; await DB.collection("sec").doc(id).set(d); return true; }
  catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); return false; }
 }
-async function secDel(rec){ if(!(await ask("ลบรายการนี้ถาวรเลยไหมคะ?<br><small>(ส่วนเลขาฯ ไม่มีถังขยะ)</small>","ลบ")))return false; try{ await DB.collection("sec").doc(rec._id).delete(); return true; }catch(e){ return false; } }
+async function secDel(rec,msg){ if(!(await ask((msg||"ลบรายการนี้ถาวรเลยไหมคะ?")+"<br><small>(ส่วนเลขาฯ ไม่มีถังขยะ)</small>","ลบ")))return false; try{ await DB.collection("sec").doc(rec._id).delete(); return true; }catch(e){ return false; } }
 const secNew=(t,extra)=>Object.assign({_id:uuid(),t,ex:SEC.ex!=="all"?SEC.ex:(secEx[0]&&secEx[0].id)||"",at:new Date().toISOString()},extra||{});
+// ---------- นัดซ้ำ (ทุกวัน / ทุกวันทำงาน / ทุกสัปดาห์ / ทุกเดือน / ทุกปี) ----------
+// rec.rep: d|wd|w|m|y · rec.repn: ทุก ๆ กี่ครั้ง · rec.repend: ซ้ำถึงวันที่ · rec.repx: วันที่ที่ยกเว้น (ลบ/แก้เฉพาะวันนั้น)
+const SEC_REP=[["","ไม่ซ้ำ"],["d","ทุกวัน"],["wd","ทุกวันทำงาน (จ.–ศ.)"],["w","ทุกสัปดาห์"],["m","ทุกเดือน (วันที่เดิม)"],["y","ทุกปี (วันที่เดิม)"]];
+const secDim=(y,m)=>new Date(y,m+1,0).getDate();
+const secRepTxt=r=>{ if(!r||!r.rep)return ""; const n=+r.repn||1, u={d:"วัน",w:"สัปดาห์",m:"เดือน",y:"ปี"}; const t=r.rep==="wd"?"ทุกวันทำงาน":(n>1?"ทุก "+n+" "+u[r.rep]:"ทุก"+u[r.rep]); return t+(r.repend?" · ถึง "+fmtDate(r.repend):" · ไม่สิ้นสุด"); };
+function secOccursOn(r,iso){
+ if(!r.rep)return r.date===iso; if(!r.date||iso<r.date)return false; if(r.repend&&iso>r.repend)return false; if((r.repx||[]).indexOf(iso)>=0)return false;
+ const n=Math.max(1,+r.repn||1), a=new Date(r.date+"T00:00:00"), b=new Date(iso+"T00:00:00"), dd=Math.round((b-a)/864e5);
+ if(r.rep==="d")return dd%n===0;
+ if(r.rep==="wd"){ const w=b.getDay(); return w>=1&&w<=5; }
+ if(r.rep==="w")return dd%(7*n)===0;
+ const dom=Math.min(a.getDate(),secDim(b.getFullYear(),b.getMonth()));
+ if(r.rep==="m"){ const mm=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth(); return mm>=0&&mm%n===0&&b.getDate()===dom; }
+ if(r.rep==="y"){ const yy=b.getFullYear()-a.getFullYear(); return yy>=0&&yy%n===0&&b.getMonth()===a.getMonth()&&b.getDate()===dom; }
+ return false; }
+// นัดทั้งหมดของวันหนึ่ง (รวมนัดซ้ำที่ตกวันนั้น — ตัวที่ซ้ำมี _ser/_od ใช้ _id เดียวกับต้นชุด)
+function secApptsOn(iso){ return secs.filter(r=>r.t==="appt"&&secOccursOn(r,iso)).map(r=>r.rep?Object.assign({},r,{date:iso,_od:iso,_ser:true}):r); }
 // ---------- คิว / ช่องว่าง ----------
 const WH=[510,1050];
-function secBlocks(ex,iso,skip){ return secs.filter(r=>r.t==="appt"&&r.ex===ex&&r.date===iso&&r.status!=="cancelled"&&r.status!=="moved"&&r._id!==skip).map(r=>{ const a=secMin(r.st); if(a===null)return null; const b=secMin(r.en); return {a:a-(+r.buf||0),b:b!==null?b:a+60,r}; }).filter(Boolean).sort((x,y)=>x.a-y.a); }
+function secBlocks(ex,iso,skip){ return secApptsOn(iso).filter(r=>r.ex===ex&&r.status!=="cancelled"&&r.status!=="moved"&&r._id!==skip).map(r=>{ const a=secMin(r.st); if(a===null)return null; const b=secMin(r.en); return {a:a-(+r.buf||0),b:b!==null?b:a+60,r}; }).filter(Boolean).sort((x,y)=>x.a-y.a); }
 const secTrip1=(ex,iso)=>secs.find(r=>r.t==="trip"&&r.ex===ex&&r.status!=="cancelled"&&r.from&&r.from<=iso&&iso<=(r.to||r.from));
 function secConf(r){ const a=secMin(r.st); if(a===null||r.status==="cancelled"||r.status==="moved")return []; const b0=secMin(r.en), b=b0!==null?b0:a+60, a2=a-(+r.buf||0);
  return secBlocks(r.ex,r.date,r._id).filter(x=>a2<x.b&&b>x.a).map(x=>x.r); }
@@ -5768,7 +5786,7 @@ function secView(){
  if(!SEC.unl)return secLockView();
  if(!SEC.day)SEC.day=secToday();
  const T=secToday(), mine=r=>SEC.ex==="all"||r.ex===SEC.ex;
- const tdA=secs.filter(r=>r.t==="appt"&&mine(r)&&r.date===T&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
+ const tdA=secApptsOn(T).filter(r=>mine(r)&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
  const nowM=new Date().getHours()*60+new Date().getMinutes(), nxt=tdA.find(r=>(secMin(r.st)||0)>=nowM);
  const docs=secs.filter(r=>r.t==="doc"&&mine(r)&&r.status==="wait"), docLate=docs.filter(r=>r.due&&r.due<T);
  const reqs=secs.filter(r=>r.t==="req"&&mine(r)&&r.status==="new");
@@ -5778,10 +5796,11 @@ function secView(){
  let body;
  if(!secEx.length)body=`<div class="card"><div class="empty">เริ่มจากเพิ่มผู้บริหารที่ดูแลก่อนนะคะ<br><button class="btn" id="secExAdd0" style="margin-top:14px">เพิ่มผู้บริหารท่านแรก</button></div></div>`;
  else body=SEC.tab==="req"?secReqView():SEC.tab==="doc"?secDocView():SEC.tab==="trip"?secTripView():secQueueView();
- return header("เลขาผู้บริหาร","ตารางคิว · คำขอเข้าพบ · เอกสารรอลงนาม · ทริปและงานสั่งการ",false).replace(/<\/div>\s*$/,`<div class="ph-hb"><button class="btn ghost" id="secEx">ผู้บริหาร</button><button class="btn ghost" id="secChg">เปลี่ยน PIN</button><button class="btn" id="secLk">${svg('<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',16)}<span>ล็อก</span></button></div></div>`)+
+ return header("เลขาผู้บริหาร","ตารางคิว · คำขอเข้าพบ · เอกสารรอลงนาม · ทริปและงานสั่งการ",false).replace(/<\/div>\s*$/,`<div class="ph-hb">${secEx.length&&SEC.tab==="queue"?`<input id="secQ" class="sec-q" type="search" placeholder="ค้นหานัดหมาย…" value="${esc(SEC.q||"")}" autocomplete="off">`:""}<button class="btn ghost" id="secEx">ผู้บริหาร</button><button class="btn ghost" id="secChg">เปลี่ยน PIN</button><button class="btn" id="secLk">${svg('<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',16)}<span>ล็อก</span></button></div></div>`)+
  (secEx.length?`<div class="ph-stat">
 <div class="ph-s" data-sect="queue"><b>${tdA.length}</b><span>นัดวันนี้</span></div>
 <div class="ph-s" data-sect="queue"><b style="font-size:20px">${nxt?esc(nxt.st):"—"}</b><span>${nxt?esc(nxt.title).slice(0,24):"นัดถัดไป"}</span></div>
+<div class="ph-s" data-sect="queue"><b>${secWeekCount()}</b><span>นัดสัปดาห์นี้</span></div>
 <div class="ph-s" data-sect="req"><b${reqs.length?` style="color:#d99a14"`:""}>${reqs.length}</b><span>คำขอรอจัดคิว</span></div>
 <div class="ph-s" data-sect="doc"><b${docLate.length?` style="color:var(--over)"`:""}>${docs.length}</b><span>รอลงนาม${docLate.length?` (เกิน ${docLate.length})`:""}</span></div>
 <div class="ph-s" data-sect="trip"><b${dirLate.length?` style="color:var(--over)"`:""}>${dirs.length}</b><span>งานสั่งการค้าง${dirLate.length?` (เกิน ${dirLate.length})`:""}</span></div></div>
@@ -5830,20 +5849,43 @@ function secTripView(){
 <div class="card"><div class="sec-dh"><h2>งานสั่งการ / ติดตาม <small>${dirs.filter(r=>r.status!=="done").length} ค้าง</small></h2><button class="btn sm" id="secAddDir">+ เพิ่มงานสั่งการ</button></div><div class="list">${dirs.map(drow).join("")||`<div class="empty">ยังไม่มีงานสั่งการ</div>`}</div></div></div>`;
 }
 // ---------- แก้ไขรายการ ----------
-const AP_F=[{k:"ex",l:"ผู้บริหาร",type:"select",opts:[]},{k:"title",l:"เรื่อง/ชื่อนัด",req:1,wide:1},{k:"date",l:"วันที่",type:"date",req:1},{k:"st",l:"เริ่ม",type:"time",req:1},{k:"en",l:"สิ้นสุด",type:"time"},{k:"buf",l:"เผื่อเวลาเดินทางก่อนนัด",type:"select",opts:[["0","ไม่เผื่อ"],["15","15 นาที"],["30","30 นาที"],["45","45 นาที"],["60","1 ชั่วโมง"],["90","1.5 ชั่วโมง"]]},{k:"with",l:"ผู้มาพบ/ผู้ร่วมประชุม"},{k:"place",l:"สถานที่"},{k:"status",l:"สถานะ",type:"select",opts:Object.entries(APST).map(([a,b])=>[a,b[0]])},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}];
-async function secEditAp(rec,isNew,after){
- const F=AP_F.map(f=>f.k==="ex"?Object.assign({},f,{opts:secExOpts()}):f);
- const v=await secForm(isNew?"เพิ่มนัดหมาย":"แก้ไขนัดหมาย",F,Object.assign({buf:"0",status:"confirmed"},rec),{del:!isNew});
- if(!v)return; if(v.__del){ if(await secDel(rec))setFoot("ลบนัดแล้ว"); return; }
- const next=Object.assign({},rec,v,{buf:+v.buf||0});
- if(next.en&&secMin(next.en)<=secMin(next.st)){ tell("เวลาสิ้นสุดต้องหลังเวลาเริ่มค่ะ"); return secEditAp(Object.assign({},rec,v),isNew,after); }
- const tp=secTrip1(next.ex,next.date); const cf=secConf(next);
- if(tp||cf.length){ const m=[]; if(tp)m.push("ผู้บริหารติดทริป "+esc(tp.dest||"")+" วันนั้น"); if(cf.length)m.push("ชนกับ "+cf.map(x=>"<b>"+esc(x.title)+"</b> ("+esc(x.st)+")").join(", ")); if(!(await ask("<b>ตรวจพบปัญหา</b><br>"+m.join("<br>")+"<br>บันทึกต่อไหมคะ?","บันทึกต่อ")))return; }
- if(await secPut(next)){ SEC.day=next.date; if(SEC.ex!=="all"&&next.ex!==SEC.ex)SEC.ex=next.ex; setFoot("บันทึกนัดแล้ว"); if(after)after(next); }
+const AP_F=[{k:"ex",l:"ผู้บริหาร",type:"select",opts:[]},{k:"title",l:"เรื่อง/ชื่อนัด",req:1,wide:1},{k:"date",l:"วันที่",type:"date",req:1},{k:"st",l:"เริ่ม",type:"time",req:1},{k:"en",l:"สิ้นสุด",type:"time"},{k:"buf",l:"เผื่อเวลาเดินทางก่อนนัด",type:"select",opts:[["0","ไม่เผื่อ"],["15","15 นาที"],["30","30 นาที"],["45","45 นาที"],["60","1 ชั่วโมง"],["90","1.5 ชั่วโมง"]]},{k:"with",l:"ผู้มาพบ/ผู้ร่วมประชุม"},{k:"place",l:"สถานที่"},{k:"rep",l:"ทำซ้ำ",type:"select",opts:SEC_REP},{k:"repn",l:"ทุก ๆ กี่รอบ (2 = เว้นหนึ่งรอบ)",type:"number"},{k:"repend",l:"ซ้ำจนถึงวันที่ (ว่าง = ไม่สิ้นสุด)",type:"date"},{k:"status",l:"สถานะ",type:"select",opts:Object.entries(APST).map(([a,b])=>[a,b[0]])},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}];
+function secPick(title,msg,opts){ return new Promise(res=>{ const d=xDlg("secpk","min(460px,94vw)"); let done=false;
+ d.innerHTML=`<div class="dlg-h">${esc(title)}</div><div class="dlg-b" style="grid-template-columns:1fr"><div style="line-height:1.7">${msg}</div><div class="sec-pk">${opts.map(([k,l,c])=>`<button type="button" class="btn ${c||"ghost"}" data-pk="${k}">${l}</button>`).join("")}</div></div><div class="dlg-f"><button type="button" class="btn ghost" id="pk-no">ยกเลิก</button></div>`;
+ const fin=v=>{ if(done)return; done=true; d.close(); res(v); }; d.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>fin(b.dataset.pk)); el("pk-no").onclick=()=>fin(null); d.onclose=()=>{ if(!done){ done=true; res(null); } }; d.showModal(); }); }
+// ตรวจนัดซ้ำล่วงหน้า (120 วัน) ว่าชนนัดอื่น/ทริปไหม
+function secSerProblems(next){ const out=[]; if(!next.rep){ const tp=secTrip1(next.ex,next.date), cf=secConf(next); if(tp)out.push("ผู้บริหารติดทริป "+esc(tp.dest||"")+" วันนั้น"); if(cf.length)out.push("ชนกับ "+cf.map(x=>"<b>"+esc(x.title)+"</b> ("+esc(x.st)+")").join(", ")); return out; }
+ for(let i=0;i<120&&out.length<5;i++){ const d=secAdd(next.date,i); if(!secOccursOn(next,d))continue; const o=Object.assign({},next,{date:d}), tp=secTrip1(next.ex,d), cf=secConf(o); if(tp)out.push(fmtDate(d)+" ผู้บริหารติดทริป "+esc(tp.dest||"")); if(cf.length)out.push(fmtDate(d)+" ชนกับ "+cf.map(x=>"<b>"+esc(x.title)+"</b>").join(", ")); }
+ return out; }
+async function secEditAp(rec,isNew,after,mode,draft){
+ let base=rec, src=null;
+ if(!isNew&&rec._ser&&!mode){ const c=await secPick("นัดนี้เป็นนัดซ้ำ","<b>"+esc(rec.title)+"</b><br><span style=\"color:var(--ink-3)\">"+esc(secRepTxt(rec))+"</span><br>ต้องการแก้ไข…",[["one","เฉพาะวันที่ "+fmtDate(rec._od),"btn"],["all","ทั้งชุด (ทุกครั้ง)","ghost"]]); if(!c)return; mode=c; }
+ if(mode==="all"){ src=secs.find(x=>x._id===rec._id); if(!src)return; base=src; }
+ if(mode==="one"){ src=secs.find(x=>x._id===rec._id); if(!src)return; base=Object.assign({},rec,{rep:"",repn:"",repend:""}); delete base._ser; delete base._od; delete base.repx; }
+ const F=AP_F.filter(f=>mode!=="one"||!/^rep/.test(f.k)).map(f=>f.k==="ex"?Object.assign({},f,{opts:secExOpts()}):f);
+ const ttl=isNew?"เพิ่มนัดหมาย":mode==="one"?"แก้ไขเฉพาะวันที่ "+fmtDate(rec._od):mode==="all"?"แก้ไขนัดซ้ำ (ทั้งชุด)":"แก้ไขนัดหมาย";
+ const v=await secForm(ttl,F,Object.assign({buf:"0",status:"confirmed",repn:"1"},base,draft||{}),{del:!isNew,note:mode==="all"?"ช่อง “วันที่” คือวันเริ่มของชุดนัดซ้ำ":mode==="one"?"บันทึกแล้ววันนี้จะแยกออกจากชุดซ้ำ กลายเป็นนัดเดี่ยว":(isNew?"ตั้ง “ทำซ้ำ” เพื่อให้ลงนัดอัตโนมัติทุกวัน/สัปดาห์/เดือน/ปี ไม่ต้องบุ๊คใหม่ทุกครั้ง":"")});
+ if(!v)return;
+ if(v.__del){
+  if(mode==="one"){ if(await ask("ลบ <b>"+esc(rec.title)+"</b> เฉพาะวันที่ "+fmtDate(rec._od)+" ใช่ไหมคะ?<br><small>ครั้งอื่นของชุดนี้ยังอยู่</small>","ลบวันนี้")){ await secPut(Object.assign({},src,{repx:[...(src.repx||[]),rec._od]})); setFoot("ลบเฉพาะวันนั้นแล้ว"); } return; }
+  if(mode==="all"){ if(await secDel(src,"ลบนัดซ้ำ <b>"+esc(src.title)+"</b> <b>ทั้งชุด</b> (ทุกครั้ง) ใช่ไหมคะ?"))setFoot("ลบนัดซ้ำทั้งชุดแล้ว"); return; }
+  if(await secDel(rec))setFoot("ลบนัดแล้ว"); return; }
+ const next=Object.assign({},base,v,{buf:+v.buf||0}); delete next._ser; delete next._od;
+ const again=()=>secEditAp(rec,isNew,after,mode,v);
+ if(next.en&&secMin(next.en)<=secMin(next.st)){ tell("เวลาสิ้นสุดต้องหลังเวลาเริ่มค่ะ"); return again(); }
+ if(mode!=="one"){
+  if(next.rep){ next.repn=Math.max(1,Math.round(+next.repn||1)); if(!next.repend)delete next.repend; if(next.repend&&next.repend<next.date){ tell("วันสิ้นสุดการซ้ำต้องไม่ก่อนวันเริ่มค่ะ"); return again(); } }
+  else{ next.rep=""; delete next.repn; delete next.repend; delete next.repx; } }
+ if(mode==="one"){ next._id=uuid(); next.at=new Date().toISOString(); }
+ const pr=secSerProblems(next);
+ if(pr.length){ if(!(await ask("<b>ตรวจพบปัญหา</b>"+(next.rep?" (ในช่วง 4 เดือนข้างหน้า)":"")+"<br>"+pr.join("<br>")+"<br>บันทึกต่อไหมคะ?","บันทึกต่อ")))return; }
+ if(await secPut(next)){
+  if(mode==="one")await secPut(Object.assign({},src,{repx:[...(src.repx||[]),rec._od]}));
+  SEC.day=next.date; if(SEC.ex!=="all"&&next.ex!==SEC.ex)SEC.ex=next.ex; setFoot(next.rep?"บันทึกนัดซ้ำแล้ว · "+secRepTxt(next):"บันทึกนัดแล้ว"); if(after)after(next); }
 }
-async function secEdit(id){
+async function secEdit(id,occ){
  const r=secs.find(x=>x._id===id); if(!r)return; const ex={ex:secExOpts()};
- if(r.t==="appt")return secEditAp(r,false);
+ if(r.t==="appt")return secEditAp((r.rep&&occ)?Object.assign({},r,{date:occ,_od:occ,_ser:true}):r,false);
  if(r.t==="req"){ const v=await secForm("คำขอเข้าพบ",[{k:"ex",l:"ผู้บริหาร",type:"select",opts:ex.ex},{k:"who",l:"ผู้ขอพบ",req:1},{k:"topic",l:"เรื่อง",req:1,wide:1},{k:"urg",l:"ความเร่งด่วน",type:"select",opts:[["high","ด่วน"],["normal","ปกติ"],["low","ไม่เร่ง"]]},{k:"dur",l:"ใช้เวลา (นาที)",type:"number"},{k:"want",l:"อยากพบช่วงไหน",type:"date"},{k:"status",l:"สถานะ",type:"select",opts:Object.entries(RQST).map(([a,b])=>[a,b[0]])},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}],r,{del:1});
   if(!v)return; if(v.__del){ await secDel(r); return; } await secPut(Object.assign({},r,v,{dur:+v.dur||60})); return; }
  if(r.t==="doc"){ const v=await secForm("เอกสารรอผู้บริหาร",[{k:"ex",l:"ผู้บริหาร",type:"select",opts:ex.ex},{k:"title",l:"ชื่อเอกสาร",req:1,wide:1},{k:"from",l:"ส่งมาจาก (ฝ่าย/คน)"},{k:"rcv",l:"วันที่รับ",type:"date"},{k:"due",l:"ต้องการภายใน",type:"date"},{k:"urgent",l:"ด่วนมาก",type:"select",opts:[["","ปกติ"],["1","ด่วนมาก"]]},{k:"status",l:"สถานะ",type:"select",opts:[["wait","รอลงนาม"],["signed","ลงนามแล้ว"],["returned","ส่งกลับแก้ไข"]]},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}],r,{del:1});
@@ -5894,7 +5936,7 @@ function secExMgr(){
 }
 async function secSaveEx(l){ secEx=l; try{ await DB.doc("meta/secex").set({list:l}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); } }
 function secCopyDay(){
- const day=SEC.day, L=secs.filter(r=>r.t==="appt"&&(SEC.ex==="all"||r.ex===SEC.ex)&&r.date===day&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
+ const day=SEC.day, L=secApptsOn(day).filter(r=>(SEC.ex==="all"||r.ex===SEC.ex)&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
  const t=["กำหนดการ "+DOWFULL[secDow(day)]+"ที่ "+(+day.slice(8))+" "+MTHFULL[+day.slice(5,7)-1]+" "+(+day.slice(0,4)+543)+(SEC.ex!=="all"?" — "+secExName(SEC.ex):"")].concat(L.map(r=>"• "+r.st+(r.en?"–"+r.en:"")+" "+r.title+(r.with?" (พบ "+r.with+")":"")+(r.place?" @"+r.place:"")+(SEC.ex==="all"?" ["+secExName(r.ex)+"]":"")),L.length?[]:["ไม่มีนัดหมาย"]).join("\n");
  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>setFoot("คัดลอกกำหนดการแล้ว"),()=>{ tell("<b>กำหนดการ</b><pre style=\"white-space:pre-wrap;font:inherit;margin-top:8px\">"+esc(t)+"</pre>"); });
 }
@@ -5916,7 +5958,7 @@ function secWire(){
  document.querySelectorAll("[data-secx]").forEach(n=>n.onclick=()=>{ SEC.ex=n.dataset.secx; render(); });
  document.querySelectorAll("[data-secday]").forEach(n=>n.onclick=()=>{ SEC.day=n.dataset.secday; render(); });
  document.querySelectorAll("[data-secwk]").forEach(n=>n.onclick=()=>{ const v=+n.dataset.secwk; SEC.day=v?secAdd(SEC.day||secToday(),v):secToday(); render(); });
- document.querySelectorAll("[data-secedit]").forEach(n=>n.onclick=e=>{ if(e.target.closest("button"))return; secEdit(n.dataset.secedit); });
+ document.querySelectorAll("[data-secedit]").forEach(n=>n.onclick=e=>{ if(e.target.closest("button"))return; secEdit(n.dataset.secedit,n.dataset.secocc); });
  document.querySelectorAll("[data-secfree]").forEach(n=>n.onclick=()=>{ const [a,b]=n.dataset.secfree.split("|").map(Number); secAdd1("appt",{date:SEC.day,st:secHM(a),en:secHM(Math.min(b,a+60))}); });
  document.querySelectorAll("[data-secbook]").forEach(n=>n.onclick=e=>{ e.stopPropagation(); secBook(n.dataset.secbook); });
  document.querySelectorAll("[data-secrq]").forEach(n=>n.onclick=async e=>{ e.stopPropagation(); const [id,st]=n.dataset.secrq.split("|"), r=secs.find(x=>x._id===id); if(r)await secPut(Object.assign({},r,{status:st})); });
@@ -5925,6 +5967,111 @@ function secWire(){
  on("secAddAp",()=>secAdd1("appt")); on("secAddRq",()=>secAdd1("req")); on("secAddDoc",()=>secAdd1("doc")); on("secAddTrip",()=>secAdd1("trip")); on("secAddDir",()=>secAdd1("dir")); on("secCopy",secCopyDay);
 }
 { const _w=wire; wire=function(){ _w.apply(this,arguments); try{ projWire(); }catch(e){ console.error(e); } try{ secWire(); }catch(e){ console.error(e); } }; }
+// ===== เลขาผู้บริหาร — ตารางสัปดาห์ 7 วัน (เริ่มวันอาทิตย์/จันทร์เลือกได้) · ปฏิทินย่อ · คัดลอกนัด/คัดลอกทั้งวัน-ทั้งสัปดาห์ไปวันอื่น =====
+const SEC_OK=r=>r.status!=="cancelled"&&r.status!=="moved";
+const secMine=r=>SEC.ex==="all"||r.ex===SEC.ex;
+const secHay=r=>[r.title,r.with,r.place,r.note].join(" ").toLowerCase();
+const secWs=()=>{ try{ return localStorage.getItem("sw-sec-ws")==="1"?1:0; }catch(e){ return 0; } };
+const secWkStart=iso=>secAdd(iso,-((secDow(iso)-secWs()+7)%7));
+const secDayLbl=iso=>+iso.slice(8)+" "+MTH[+iso.slice(5,7)-1];
+function secWeekCount(){ const w0=secWkStart(secToday()); let n=0; for(let i=0;i<7;i++)n+=secApptsOn(secAdd(w0,i)).filter(r=>secMine(r)&&SEC_OK(r)).length; return n; }
+
+// ---------- บัตรนัด / คอลัมน์วัน ----------
+function secCard(r,iso){ const cf=secConf(r), st=APST[r.status]||APST.confirmed, e=secEx1(r.ex), col=(e&&e.color)||"#6b7a89";
+ return `<div class="sec-card${r.status==="cancelled"?" off":""}" style="--c:${col}" data-secedit="${r._id}" data-secocc="${iso}" tabindex="0">
+<div class="sec-ct"><b>${esc(r.title)}</b><button type="button" class="sec-cp" data-seccp="${r._id}|${iso}" title="คัดลอกนัดนี้ไปวันอื่น" aria-label="คัดลอกนัดนี้">⧉</button></div>
+<div class="sec-cm">🕘 ${esc(r.st||"—")}${r.en?" – "+esc(r.en):""}${r.rep?` <span class="sec-rp" title="${esc(secRepTxt(r))}">↻ ${esc(secRepTxt(r).split(" · ")[0])}</span>`:""}</div>
+${r.with?`<div class="sec-cm">👤 ${esc(r.with)}</div>`:""}${r.place?`<div class="sec-cm">📍 ${esc(r.place)}</div>`:""}${+r.buf?`<div class="sec-cm">🚗 เผื่อเดินทาง ${r.buf} น.</div>`:""}${r.note?`<div class="sec-cm sec-nt">${esc(r.note)}</div>`:""}
+<div class="sec-cf">${SEC.ex==="all"?secExChip(r.ex):""}${r.status!=="confirmed"?`<span class="pill ${st[1]}">${st[0]}</span>`:""}${cf.length?`<b class="sec-bad">⚠ ชน ${esc(cf.map(x=>x.title).join(", "))}</b>`:""}</div></div>`; }
+function secUpcoming(){ const T=secToday(), lim=secAdd(T,45), lim2=secAdd(T,14), it=[];
+ secs.forEach(r=>{ if(!secMine(r))return;
+  if(r.t==="trip"&&r.status!=="cancelled"&&r.status!=="done"&&r.from&&((r.from>=T&&r.from<=lim)||(r.from<T&&(r.to||r.from)>=T)))it.push({d:r.from<T?T:r.from,t:"✈ ทริป "+(r.dest||""),s:fmtDate(r.from)+(r.to&&r.to!==r.from?" – "+fmtDate(r.to):""),tab:"trip",r});
+  if(r.t==="doc"&&r.status==="wait"&&r.due&&r.due<=lim2)it.push({d:r.due<T?T:r.due,t:"✍ ลงนาม: "+(r.title||""),s:(r.due<T?"เกินกำหนด ":"ครบ ")+fmtDate(r.due),bad:r.due<T,tab:"doc",r});
+  if(r.t==="dir"&&r.status!=="done"&&r.due&&r.due<=lim2)it.push({d:r.due<T?T:r.due,t:"📌 สั่งการ: "+(r.title||""),s:(r.due<T?"เกินกำหนด ":"ครบ ")+fmtDate(r.due),bad:r.due<T,tab:"trip",r});
+  if(r.t==="req"&&r.status==="new"&&r.want&&r.want>=T&&r.want<=lim)it.push({d:r.want,t:"คำขอพบ: "+(r.who||""),s:"อยากพบ "+fmtDate(r.want),tab:"req",r}); });
+ it.sort((a,b)=>a.d.localeCompare(b.d)); if(!it.length)return "";
+ return `<div class="sec-up"><h3 class="ph-h">ทริป & กำหนดการที่กำลังจะมาถึง</h3><div class="sec-ups">${it.slice(0,14).map(i=>`<button type="button" class="sec-u${i.bad?" bad":""}" data-sect="${i.tab}"><span class="sec-ud"><b>${+i.d.slice(8)}</b>${MTH[+i.d.slice(5,7)-1]}</span><span class="sec-ui"><b>${esc(i.t)}</b><small>${esc(i.s)} ${SEC.ex==="all"?secExChip(i.r.ex):""}</small></span></button>`).join("")}</div></div>`; }
+function secMini(){ const base=SEC.mini||SEC.day.slice(0,7), [y,m]=base.split("-").map(Number), ws=secWs(), first=new Date(y,m-1,1), lead=(first.getDay()-ws+7)%7, st=secAdd(isoOf(first),-lead);
+ const T=secToday(), wk0=secWkStart(SEC.day), wk1=secAdd(wk0,6);
+ const cells=Array.from({length:42},(_,i)=>secAdd(st,i)).map(iso=>{ const n=secApptsOn(iso).filter(r=>secMine(r)&&SEC_OK(r)).length, out=+iso.slice(5,7)!==m;
+  return `<button type="button" data-secday="${iso}" class="${out?"out ":""}${iso===T?"today ":""}${iso===SEC.day?"sel ":""}${iso>=wk0&&iso<=wk1?"inwk ":""}">${+iso.slice(8)}${n?`<i></i>`:""}</button>`; }).join("");
+ return `<div class="sec-mh"><button type="button" class="btn ghost sm" data-secmini="-1">‹</button><b>${MTHFULL[m-1]} ${y+543}</b><button type="button" class="btn ghost sm" data-secmini="1">›</button></div>
+<div class="sec-mg sec-mw">${[0,1,2,3,4,5,6].map(i=>`<span>${DOW[(ws+i)%7]}</span>`).join("")}</div><div class="sec-mg">${cells}</div><div class="ph-hint" style="margin-top:6px">จุดใต้วันที่ = มีนัด · แถบสีอ่อน = สัปดาห์ที่กำลังดู</div>`; }
+
+// ---------- หน้าตารางคิว (แทนของเดิม) ----------
+function secQueueView(){
+ const T=secToday(), day=SEC.day, w0=secWkStart(day), days=[0,1,2,3,4,5,6].map(i=>secAdd(w0,i)), w6=days[6];
+ const exs=(SEC.ex==="all"?secEx:[secEx1(SEC.ex)]).filter(Boolean), q=(SEC.q||"").trim().toLowerCase();
+ const dayList=iso=>secApptsOn(iso).filter(r=>secMine(r)&&(!q||secHay(r).includes(q))).sort((a,b)=>(a.st||"").localeCompare(b.st||""));
+ const col=iso=>{ const L=dayList(iso), tr=exs.map(e=>({e,t:secTrip1(e.id,iso)})).filter(x=>x.t), n=L.filter(SEC_OK).length;
+  return `<div class="sec-col${iso===T?" today":""}${iso===day?" sel":""}"><div class="sec-ch" data-secday="${iso}" role="button" tabindex="0"><span class="sec-dn">${+iso.slice(8)}</span><div><b>${DOWFULL[secDow(iso)]}</b><small>${n?n+" นัด":"ไม่มีนัด"}${+iso.slice(5,7)!==+day.slice(5,7)?" · "+MTH[+iso.slice(5,7)-1]:""}</small></div></div>
+${tr.map(x=>`<div class="sec-tripc">✈ ${exs.length>1?esc(x.e.name)+": ":""}${esc(x.t.dest||"ทริป")}</div>`).join("")}
+<div class="sec-cl">${L.map(r=>secCard(r,iso)).join("")||`<div class="sec-none">—</div>`}</div>
+<button type="button" class="sec-add" data-secaddday="${iso}">+ เพิ่มนัด</button></div>`; };
+ const tr=exs.map(e=>({e,t:secTrip1(e.id,day)})).filter(x=>x.t);
+ const free=SEC.ex!=="all"&&!tr.length&&secDow(day)!==0&&secDow(day)!==6?secFree(SEC.ex,day,30):null;
+ const nDay=secApptsOn(day).filter(r=>secMine(r)&&SEC_OK(r)).length;
+ const hits=q?secs.filter(r=>r.t==="appt"&&secMine(r)&&secHay(r).includes(q)).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30):[];
+ return `${secUpcoming()}
+<div class="card sec-board"><div class="sec-bh"><div class="sec-wr"><button class="btn ghost sm" data-secwk="-7" aria-label="สัปดาห์ก่อน">‹</button><h2>${secDayLbl(w0)} – ${secDayLbl(w6)} ${+w6.slice(0,4)+543}</h2><button class="btn ghost sm" data-secwk="7" aria-label="สัปดาห์ถัดไป">›</button><button class="btn ghost sm" data-secwk="0">วันนี้</button></div>
+<div class="sec-bo"><label class="sec-gt">ไปวันที่ <input type="date" id="secGo" value="${day}"></label><label class="sec-gt">เริ่มสัปดาห์ <select id="secWs"><option value="0"${secWs()===0?" selected":""}>อาทิตย์</option><option value="1"${secWs()===1?" selected":""}>จันทร์</option></select></label></div></div>
+<div class="sec-bt"><button class="btn sm" id="secAddAp">+ เพิ่มนัด</button><button class="btn ghost sm" id="secCopyTo" title="คัดลอกนัดของวันที่เลือก (หรือทั้งสัปดาห์) ไปวางวันอื่น">คัดลอกไปวันอื่น</button><button class="btn ghost sm" id="secCopy" title="คัดลอกกำหนดการวันที่เลือกเป็นข้อความ เพื่อวางใน LINE/อีเมล">คัดลอกเป็นข้อความ</button><span class="ph-hint">แตะวันที่หัวคอลัมน์เพื่อเลือกวัน · แตะนัดเพื่อแก้ไข · ⧉ = คัดลอกนัดนั้น</span></div>
+<div class="sec-wkw"><div class="sec-wk7">${days.map(col).join("")}</div></div></div>
+${q?`<div class="card"><h2>ผลค้นหา “${esc(SEC.q)}” <small>${hits.length} รายการ${hits.length===30?"+":""}</small></h2><div class="list">${hits.map(r=>`<div class="li sec-ap" data-secedit="${r._id}" data-secocc="${r.date}"><div class="ic" style="background:var(--accent-soft);color:var(--accent);font-size:12px;line-height:1.25">${r.date?secDayLbl(r.date).replace(" ","<br>"):"—"}</div><div class="tx"><div class="t1">${esc(r.title)} ${SEC.ex==="all"?secExChip(r.ex):""}${r.rep?` <span class="sec-rp">↻</span>`:""}</div><div class="t2">${esc(r.st||"")}${r.en?"–"+esc(r.en):""}${r.with?" · พบ "+esc(r.with):""}${r.place?" · "+esc(r.place):""}${r.rep?" · "+esc(secRepTxt(r)):""}</div></div><button class="btn ghost sm" data-secday="${r.date}">ดูวันนั้น</button></div>`).join("")||`<div class="empty">ไม่พบนัดที่ตรงกับคำค้น</div>`}</div></div>`:""}
+<div class="sec-lower"><div class="card sec-mini">${secMini()}</div>
+<div class="card sec-seld"><div class="sec-dh"><h2>${DOWFULL[secDow(day)]}ที่ ${+day.slice(8)} ${MTHFULL[+day.slice(5,7)-1]} <small>${nDay} นัด</small></h2><button class="btn sm" id="secAddAp2">+ เพิ่มนัดวันนี้</button></div>
+${tr.map(x=>`<div class="sec-trip">✈ ${esc(x.e.name)} ติดทริป ${esc(x.t.dest||"")} (${fmtDate(x.t.from)}${x.t.to&&x.t.to!==x.t.from?" – "+fmtDate(x.t.to):""})</div>`).join("")}
+${free?`<div class="sec-free"><b>ช่องว่าง (ไม่ชนนัด/เผื่อเดินทางแล้ว):</b> ${free.length?free.map(g=>`<button class="sec-fb" data-secfree="${g[0]}|${g[1]}">${secHM(g[0])}–${secHM(g[1])}</button>`).join(" "):"เต็ม"}<div class="ph-hint" style="margin-top:6px">แตะช่วงเวลาเพื่อลงนัดตรงนั้น · เวลาทำการ ${secHM(WH[0])}–${secHM(WH[1])}</div></div>`:(SEC.ex==="all"?`<div class="ph-hint" style="margin-top:12px">เลือกผู้บริหารรายท่านด้านบนเพื่อดูช่องว่างในตาราง</div>`:"")}
+<div class="ph-hint" style="margin-top:10px">นัดที่ต้องมาทุกวัน/สัปดาห์/เดือน/ปี → ตอนเพิ่มนัดเลือก “ทำซ้ำ” ครั้งเดียว ไม่ต้องบุ๊คใหม่ · นัดซ้ำมีเครื่องหมาย ↻ · แก้/ลบได้ทั้งชุดหรือเฉพาะวัน</div></div></div>`;
+}
+
+// ---------- คัดลอกนัด / คัดลอกกำหนดการไปวันอื่น ----------
+function secCopyOpen(mode,rec){
+ const day=SEC.day, d=xDlg("seccp","min(600px,96vw)"), S={scope:"day",dates:[]};
+ const exf=r=>secMine(r)&&SEC_OK(r), w0=()=>secWkStart(day), wk=()=>mode==="day"&&S.scope==="week";
+ const sources=()=>mode==="one"?[rec]:wk()?[0,1,2,3,4,5,6].flatMap(i=>secApptsOn(secAdd(w0(),i)).filter(exf)):secApptsOn(day).filter(exf);
+ const baseD=()=>mode==="one"?rec.date:wk()?w0():day;
+ const plan=()=>{ const out=[],skip=[],srcs=sources();
+  S.dates.forEach(t=>{ const off=wk()?Math.round((new Date(secWkStart(t)+"T00:00:00")-new Date(w0()+"T00:00:00"))/864e5):0;
+   srcs.forEach(r=>{ const nd=wk()?secAdd(r.date,off):t, same=x=>x.ex===r.ex&&x.title===r.title&&x.st===r.st;
+    if(secApptsOn(nd).some(same)||out.some(x=>x.date===nd&&same(x))){ skip.push(r); return; }
+    const n=Object.assign({},r,{_id:uuid(),date:nd,at:new Date().toISOString(),copiedFrom:r._id}); ["_od","_ser","rep","repn","repend","repx"].forEach(k=>delete n[k]); out.push(n); }); });
+  return {out,skip,bad:out.filter(n=>secConf(n).length||secTrip1(n.ex,n.date))}; };
+ const addD=iso=>{ if(iso&&S.dates.indexOf(iso)<0){ S.dates.push(iso); S.dates.sort(); } };
+ const paint=()=>{ const {out,skip,bad}=plan(), srcN=sources().length, b=baseD();
+  const quick=wk()?[["สัปดาห์หน้า","7"],["อีก 2 สัปดาห์","14"],["4 สัปดาห์ถัดไป","7,14,21,28"]]:[["พรุ่งนี้ (+1 วัน)","1"],["+1 สัปดาห์","7"],["+2 สัปดาห์","14"],["+1 เดือน","30"],["ทุกสัปดาห์ ×4","7,14,21,28"]];
+  d.innerHTML=`<div class="dlg-h">${mode==="one"?"คัดลอกนัดนี้ไปวันอื่น":"คัดลอกกำหนดการไปวันอื่น"}</div><div class="dlg-b" style="grid-template-columns:1fr">
+${mode==="one"?`<div class="sec-cpi"><b>${esc(rec.title)}</b><small>${fmtDate(rec.date)} · ${esc(rec.st||"")}${rec.en?"–"+esc(rec.en):""}${rec.with?" · พบ "+esc(rec.with):""}</small></div>`
+:`<div class="f"><label for="cp-scope">คัดลอกอะไร</label><select class="ph-in" id="cp-scope"><option value="day"${S.scope==="day"?" selected":""}>ทั้งวันที่ ${secDayLbl(day)}</option><option value="week"${S.scope==="week"?" selected":""}>ทั้งสัปดาห์ ${secDayLbl(w0())} – ${secDayLbl(secAdd(w0(),6))}</option></select><div class="hint" style="margin:6px 0 0">ต้นทาง ${srcN} นัด${SEC.ex!=="all"?" ของ "+esc(secExName(SEC.ex)):" (ทุกท่าน)"} · นัดซ้ำ (↻) จะถูกคัดลอกเป็นนัดเดี่ยว</div></div>`}
+<div class="f"><label for="cp-date">${wk()?"วางในสัปดาห์ที่มีวันที่":"วางในวันที่"}</label><div class="sec-cpd"><input type="date" class="ph-in" id="cp-date"><button type="button" class="btn ghost sm" id="cp-add">เพิ่มวัน</button></div>
+<div class="sec-cpq">${quick.map(([l,v])=>`<button type="button" class="sec-fb" data-cpq="${v}">${l}</button>`).join("")}</div></div>
+<div class="sec-chips">${S.dates.map((t,i)=>`<span class="sec-dc">${fmtDate(t)} (${DOW[secDow(t)]})<button type="button" data-cpx="${i}" aria-label="เอาออก">×</button></span>`).join("")||`<span class="ph-hint">ยังไม่ได้เลือกวัน — เลือกจากช่องวันที่หรือปุ่มลัดด้านบน (เลือกได้หลายวัน)</span>`}</div>
+${S.dates.length?`<div class="sec-cpp">จะสร้าง <b>${out.length}</b> นัด${skip.length?` · ข้าม ${skip.length} (มีนัดเดียวกัน วัน-เวลาเดียวกันอยู่แล้ว)`:""}${bad.length?` · <b class="sec-bad">⚠ ชน/ตรงทริป ${bad.length}</b>`:""}</div>`:""}</div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="cp-no">ยกเลิก</button><button type="button" class="btn" id="cp-ok"${out.length?"":" disabled"}>คัดลอก ${out.length} นัด</button></div>`;
+  const sc=el("cp-scope"); if(sc)sc.onchange=()=>{ S.scope=sc.value; paint(); };
+  el("cp-add").onclick=()=>{ const v=el("cp-date").value; if(!v){ el("cp-date").focus(); return; } addD(v); paint(); };
+  d.querySelectorAll("[data-cpq]").forEach(x=>x.onclick=()=>{ x.dataset.cpq.split(",").forEach(o=>addD(secAdd(b,+o))); paint(); });
+  d.querySelectorAll("[data-cpx]").forEach(x=>x.onclick=()=>{ S.dates.splice(+x.dataset.cpx,1); paint(); });
+  el("cp-no").onclick=()=>d.close();
+  el("cp-ok").onclick=async()=>{ const P=plan(); if(!P.out.length)return;
+   if(P.bad.length&&!(await ask("พบ <b>"+P.bad.length+"</b> นัดที่ชนกับนัดอื่นหรือตรงช่วงทริป<br>คัดลอกต่อไหมคะ?","คัดลอกต่อ")))return;
+   d.close(); let ok=0; for(const n of P.out){ if(await secPut(n))ok++; setFoot("กำลังคัดลอก "+ok+"/"+P.out.length+" …"); }
+   SEC.day=S.dates[0]; render(); tell("<b>คัดลอกแล้ว "+ok+" นัด</b> ไป "+S.dates.length+" วัน"+(P.skip.length?"<div style=\"font-size:13px;margin-top:8px\">ข้าม "+P.skip.length+" นัดที่มีอยู่แล้ว</div>":"")+"<div style=\"font-size:13px;margin-top:8px\">เปิดแต่ละนัดเพื่อแก้เวลา/รายละเอียดได้เลยค่ะ</div>"); }; };
+ paint(); d.showModal(); }
+
+// ---------- ผูกเหตุการณ์ของหน้าใหม่ ----------
+function secWire2(){
+ if(view!=="sec"||!SEC.unl)return; const on=(id,f)=>{ const n=el(id); if(n)n.onclick=f; };
+ on("secCopyTo",()=>secCopyOpen("day")); on("secAddAp2",()=>secAdd1("appt"));
+ document.querySelectorAll("[data-secaddday]").forEach(n=>n.onclick=e=>{ e.stopPropagation(); SEC.day=n.dataset.secaddday; secAdd1("appt",{date:n.dataset.secaddday}); });
+ document.querySelectorAll("[data-seccp]").forEach(n=>n.onclick=e=>{ e.stopPropagation(); const [id,iso]=n.dataset.seccp.split("|"), r=secs.find(x=>x._id===id); if(r)secCopyOpen("one",r.rep?Object.assign({},r,{date:iso,_od:iso,_ser:true}):r); });
+ document.querySelectorAll("[data-secday]").forEach(n=>{ const o=n.onclick; n.onclick=ev=>{ SEC.mini=""; if(o)o.call(n,ev); }; n.onkeydown=ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); n.click(); } }; });
+ document.querySelectorAll("[data-secmini]").forEach(n=>n.onclick=()=>{ const base=SEC.mini||SEC.day.slice(0,7), [y,m]=base.split("-").map(Number), nd=new Date(y,m-1+(+n.dataset.secmini),1); SEC.mini=nd.getFullYear()+"-"+String(nd.getMonth()+1).padStart(2,"0"); render(); });
+ const go=el("secGo"); if(go)go.onchange=()=>{ if(go.value){ SEC.day=go.value; SEC.mini=""; render(); } };
+ const ws=el("secWs"); if(ws)ws.onchange=()=>{ try{ localStorage.setItem("sw-sec-ws",ws.value); }catch(e){} render(); };
+ const qi=el("secQ"); if(qi){ qi.oninput=()=>{ SEC.q=qi.value; clearTimeout(SEC.qt); SEC.qt=setTimeout(()=>{ render(); const i=el("secQ"); if(i){ i.focus(); try{ i.setSelectionRange(i.value.length,i.value.length); }catch(e){} } },280); }; }
+}
+{ const _sw=secWire; secWire=function(){ _sw.apply(this,arguments); try{ secWire2(); }catch(e){ console.error(e); } }; }
 // ===== สีปากกา/ไฮไลต์เพิ่ม: พาเลตเต็ม ~40 สี + สีที่ใช้ล่าสุด + เลือกสีเอง =====
 // แถบเครื่องมือยังโชว์ 8 สีหลักเดิม + สีที่เลือกอยู่ (ถ้านอกชุดหลัก) + ปุ่ม ＋ เปิดพาเลตเต็ม · ปุ่มสีในพาเลตใช้ data-icolor เดิม
 const INK_PEN_ALL=["#000000","#1d1d1f","#3f3f46","#6b7280","#9ca3af","#d1d5db","#f5f5f5","#ffffff",
@@ -7865,7 +8012,7 @@ function viewNote(n){
 viewingNote=n;
 el("nvk").textContent=n.kind||"โน้ต"; el("nvd").textContent=n.date||"";
 el("nvt").textContent=n.title||"(ไม่มีหัวข้อ)";
-el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>'; ntHydrate(el("nvb"));
+el("nvb").innerHTML=ntHtml(n)||'<span style="color:var(--ink-3)">(ไม่มีเนื้อหา)</span>'; ntHydrate(el("nvb")); ntFoldApply(el("nvb")); ntFoldBar();
 el("nvtag").textContent=n.tag?"#"+n.tag:"";
 el("nvpin").textContent=n.pin?"เลิกปักหมุด":"ปักหมุด";
 el("nvdlg").querySelector(".nvbar").style.background=n.color||"var(--accent-2)";
@@ -8012,7 +8159,7 @@ el("ndel").style.display=n?"":"none";
 el("n-title").value=n?.title||"";
 fill("n-kind",NOTEKIND.map(v=>[v,v]),n?.kind||"บันทึกการประชุม");
 el("n-date").value=n?.date||new Date().toISOString().slice(0,10);
-el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
+el("n-tag").value=n?.tag||""; NE().innerHTML=n?ntHtml(n):""; ntHydrate(NE()); if(typeof ntFoldApply==="function")ntFoldApply(NE()); if(typeof neHideAll==="function")neHideAll(); if(typeof neHistReset==="function")neHistReset();
 el("n-pin").checked=!!n?.pin;
 el("n-folder").innerHTML=`<option value="">— ไม่อยู่ในโฟลเดอร์ —</option>`+fldTree().map(({f,d})=>`<option value="${esc(f.id)}">${"\u00a0\u00a0\u00a0".repeat(d)}📁 ${esc(f.name)}</option>`).join("");
 el("n-folder").value=n?(n.folder||""):((R.noteFolder&&R.noteFolder!=="__none")?R.noteFolder:"");
@@ -8818,7 +8965,7 @@ function neHistReset(){ clearTimeout(neH.t); neH.s=[]; neH.i=-1; neH.pend=0; neS
 function neGo(d){
 neFlush(); const k=neH.i+d; if(k<0||k>=neH.s.length)return;
 neH.i=k; const st=neH.s[k]; neH.busy=1; neHideAll();
-NE().innerHTML=st.h; ntHydrate(NE()); NE().focus(); neSetOffsets(st.c); neH.busy=0; neHistUi(); neState();
+NE().innerHTML=st.h; ntHydrate(NE()); ntFoldApply(NE()); NE().focus(); neSetOffsets(st.c); neH.busy=0; neHistUi(); neState();
 }
 const neUndo=()=>neGo(-1), neRedo=()=>neGo(1);
 // ครอบการแก้ไขที่ทำเองกับ DOM (ไม่มี input event) ให้บันทึกสถานะก่อน/หลัง
@@ -8851,10 +8998,25 @@ el("ndlg").addEventListener("click",async e=>{
 const b=e.target.closest("[data-hv]"); if(!b||!editingNote)return; const v=(editingNote.hist||[])[+b.dataset.hv]; if(!v)return;
 el("nepop").hidden=true;
 if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
-neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
+neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); ntFoldApply(NE()); neSnap(); NE().focus();
 });
 
 document.addEventListener("change",e=>{ const t=e.target; if(t&&t.dataset&&t.dataset.ncust){ el("nepop").hidden=true; neColor(t.dataset.ncust,t.value); } });
+
+// ===== พับ / ย่อส่วนใต้หัวข้อ (H1 พับถึงหัวข้อใหญ่ถัดไป · H2 พับถึงหัวข้อใดก็ได้ถัดไป) =====
+// สถานะที่บันทึก: data-fold="1" บนหัวข้อ · การซ่อนจริงใช้ data-nfh ชั่วคราว (ไม่ถูกบันทึก)
+function ntFoldApply(root){ if(!root)return; root.querySelectorAll("[data-nfh]").forEach(n=>n.removeAttribute("data-nfh"));
+ let cur=0; [...root.children].forEach(n=>{ const L=n.tagName==="H2"?2:n.tagName==="H3"?3:0;
+  if(L){ if(cur&&L>cur){ n.setAttribute("data-nfh","1"); return; } cur=n.getAttribute("data-fold")==="1"?L:0; return; }
+  if(cur)n.setAttribute("data-nfh","1"); }); }
+function ntFoldToggle(h,root){ if(h.getAttribute("data-fold")==="1")h.removeAttribute("data-fold"); else h.setAttribute("data-fold","1"); ntFoldApply(root); }
+function ntFoldAll(root){ const hs=[...root.querySelectorAll(":scope>h2,:scope>h3")]; if(!hs.length)return false; const any=hs.some(h=>h.getAttribute("data-fold")!=="1"); hs.forEach(h=>{ if(any)h.setAttribute("data-fold","1"); else h.removeAttribute("data-fold"); }); ntFoldApply(root); return any; }
+function ntFoldHit(e,root){ const h=e.target&&e.target.closest?e.target.closest("h2,h3"):null; if(!h||h.parentNode!==root)return null; return (e.clientX-h.getBoundingClientRect().left)<34?h:null; }
+NE().addEventListener("click",e=>{ const h=ntFoldHit(e,NE()); if(h){ e.preventDefault(); ntFoldToggle(h,NE()); } },true);
+el("nvb").addEventListener("click",e=>{ const h=ntFoldHit(e,el("nvb")); if(h)ntFoldToggle(h,el("nvb")); });
+function ntFoldBar(){ let b=el("nvfold"); if(!b){ b=document.createElement("div"); b.id="nvfold"; b.className="nvfold"; el("nvb").parentNode.insertBefore(b,el("nvb")); b.onclick=e=>{ const x=e.target.closest("button"); if(!x)return; ntFoldAll(el("nvb")); ntFoldBar(); }; }
+ const hs=el("nvb").querySelectorAll(":scope>h2,:scope>h3"); b.hidden=hs.length<2; const any=[...hs].some(h=>h.getAttribute("data-fold")!=="1"); b.innerHTML=`<button type="button">${any?"▾ พับทุกหัวข้อ":"▸ ขยายทุกหัวข้อ"}</button><small>แตะลูกศรหน้าหัวข้อเพื่อพับ/ขยายเฉพาะส่วน</small>`; }
+el("ntool").addEventListener("click",e=>{ const b=e.target.closest('[data-ne="fold"]'); if(!b)return; const any=ntFoldAll(NE()); b.textContent=any?"▸ ขยายทุกหัวข้อ":"▾ พับทุกหัวข้อ"; });
 // ===== เขียนบันทึก: สูตรในตาราง + พิมพ์ = ได้ผลทันที (ใช้ตัวคำนวณจาก 05l-calc.js) =====
 // ---------- เขียนบันทึก: = ต่อท้ายนิพจน์ได้ผลทันที · ช่องตารางพิมพ์ =SUM(B2:B5) ได้ ----------
 let neFxCur=null;

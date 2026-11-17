@@ -639,7 +639,7 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
   if(/^(33|50|100)$/.test(w))n.setAttribute("data-w",w); return; }
  if(T==="SPAN"&&n.hasAttribute("data-stk")){ const sk=n.getAttribute("data-stk"); if(typeof stkValid==="function"&&stkValid(sk)){ const nn=stkNode(sk); n.replaceWith(nn); return; } n.remove(); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
- let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="";
+ let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="",dfo="";
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
@@ -648,10 +648,11 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(T==="TABLE"&&/^[lcr]$/.test(n.getAttribute("data-ta")||""))dta=n.getAttribute("data-ta");
  if((T==="TD"||T==="TH")&&n.getAttribute("data-h")==="1")dh="1";
  if((T==="TD"||T==="TH")&&/^=.{1,120}$/.test(n.getAttribute("data-f")||""))df=n.getAttribute("data-f");
+ if((T==="H2"||T==="H3")&&n.getAttribute("data-fold")==="1")dfo="1";
  [...n.attributes].forEach(at=>n.removeAttribute(at.name));
  if(cls)n.className=cls;
  if(col||bg)n.setAttribute("style",(col?"color:"+col+";":"")+(bg?"background-color:"+bg+";":""));
- if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh); if(df)n.setAttribute("data-f",df);
+ if(dc)n.setAttribute("data-c",dc); if(di)n.setAttribute("data-i",di); if(dbg)n.setAttribute("data-bg",dbg); if(da)n.setAttribute("data-a",da); if(dta)n.setAttribute("data-ta",dta); if(dh)n.setAttribute("data-h",dh); if(df)n.setAttribute("data-f",df); if(dfo)n.setAttribute("data-fold",dfo);
  if(T==="SPAN"&&!cls&&!col&&!bg){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  walk(n); }); })(d);
 return d.innerHTML;
