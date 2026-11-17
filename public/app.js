@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.45"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.46"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -9157,23 +9157,28 @@ function neViewFont(n){ const v=el("nvb"); if(!v)return; if(n&&n.nf&&NE_FKEYS.ha
 const neSelHas=()=>{ const s=getSelection(); return !!(neRange&&!neRange.collapsed&&NE().contains(neRange.commonAncestorContainer)); };
 function neCurSize(){ if(neFScope==="all"){ return Math.round(parseFloat(getComputedStyle(NE()).fontSize)||15); }
  let n=neRange&&neRange.startContainer; if(n&&n.nodeType===1&&neRange.startOffset<n.childNodes.length)n=n.childNodes[neRange.startOffset]; if(n&&n.nodeType===3)n=n.parentElement; return Math.round(parseFloat(getComputedStyle(n&&n.nodeType===1?n:NE()).fontSize)||15); }
-function neFontPopHtml(){ neFScope=neSelHas()?"sel":"all"; const cur=neFScope==="all"?(NE().getAttribute("data-nf")||"sarabun"):"", sz=neCurSize();
- return `<div class="nefw"><div class="nepl">ฟอนต์ · ขนาด — ใช้กับ <b>${neFScope==="sel"?"ข้อความที่เลือก":"ทั้งบันทึก"}</b>${neFScope==="all"?`<br><small style="font-weight:400">(อยากเปลี่ยนเฉพาะบางคำ: ลากเลือกข้อความก่อนกดปุ่มนี้)</small>`:""}</div>
-<div class="nefn">${NE_FONTS.map(f=>`<button type="button" data-ffk="${f[0]}" class="${cur===f[0]?"on":""}" style="font-family:${f[3]},Sarabun,sans-serif">ก ข ค Abc<small>${f[1]} · ${f[2]}</small></button>`).join("")}</div>
-<div class="nepl">ขนาด</div><div class="nefs"><button type="button" data-fsz="-2" aria-label="ลดขนาด">A−</button><b id="nefs-v">${sz}</b><button type="button" data-fsz="2" aria-label="เพิ่มขนาด">A+</button>${NE_FSIZES.map(x=>`<button type="button" data-fsz="=${x[1]}">${x[0]}</button>`).join("")}<button type="button" data-fsz="0" title="กลับเป็นขนาดมาตรฐาน">รีเซ็ต</button></div>
-${neFScope==="sel"?`<div class="nefs" style="margin-top:8px"><button type="button" data-ffk="">ล้างฟอนต์ที่เลือก</button></div>`:`<div class="nefs" style="margin-top:8px"><button type="button" data-ffk="" title="กลับเป็น Sarabun">ฟอนต์เริ่มต้น</button></div>`}</div>`; }
+function neFBarHtml(){ return `<div class="nefbar-l" id="nefbar-sc">ฟอนต์ · ใช้กับ ทั้งบันทึก</div><div class="nefbar-r">
+<div class="nefbar-f">${NE_FONTS.map(f=>`<button type="button" data-ffk="${f[0]}" title="${f[1]} · ${f[2]}" style="font-family:${f[3]},Sarabun,sans-serif">${f[1].replace(" Sans Thai","")}</button>`).join("")}<button type="button" data-ffk="" class="rs" title="กลับเป็นฟอนต์เริ่มต้น">รีเซ็ต</button></div>
+<div class="nefbar-s"><button type="button" data-fsz="-2" aria-label="ลดขนาด">A−</button><b id="nefs-v">15</b><button type="button" data-fsz="2" aria-label="เพิ่มขนาด">A+</button>${NE_FSIZES.map(x=>`<button type="button" data-fsz="=${x[1]}" title="${x[1]}px">${x[0]}</button>`).join("")}<button type="button" data-fsz="0" class="rs" title="กลับเป็นขนาดมาตรฐาน">รีเซ็ต</button></div></div>`; }
+function neFBarSync(){ const bar=el("nefbar"); if(!bar)return; const sel=neSelHas(); neFScope=sel?"sel":"all";
+ const sc=el("nefbar-sc"); if(sc)sc.innerHTML="ฟอนต์ · ใช้กับ <b>"+(sel?"ข้อความที่เลือก":"ทั้งบันทึก")+"</b>"+(sel?"":" <small>(ลากเลือกข้อความเพื่อเปลี่ยนเฉพาะส่วน)</small>");
+ let cur=NE().getAttribute("data-nf")||"sarabun";
+ if(sel){ let n=neRange.startContainer; if(n&&n.nodeType===1&&neRange.startOffset<n.childNodes.length)n=n.childNodes[neRange.startOffset]; if(n&&n.nodeType===3)n=n.parentElement; const a=n&&n.closest?n.closest("[data-ff]"):null; if(a&&NE().contains(a))cur=a.getAttribute("data-ff"); }
+ bar.querySelectorAll("[data-ffk]").forEach(b=>b.classList.toggle("on",!!b.dataset.ffk&&b.dataset.ffk===cur));
+ const v=el("nefs-v"); if(v)v.textContent=neCurSize(); }
 function neSpanTidy(){ NE().querySelectorAll("span:not([class])").forEach(sp=>{ if(!sp.getAttribute("style")&&!sp.getAttribute("data-ff")&&!sp.getAttribute("data-fs")&&!sp.hasAttribute("data-stk")){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } }); }
 function neReselect(list){ if(!list.length)return; const r=document.createRange(); r.setStartBefore(list[0]); r.setEndAfter(list[list.length-1]); const s=getSelection(); s.removeAllRanges(); s.addRange(r); }
-function neFlatten(){ ["data-fs","data-ff"].forEach(at=>NE().querySelectorAll("span["+at+"]").forEach(o=>{ const k=o.firstElementChild; if(k&&o.children.length===1&&o.firstChild===k&&o.lastChild===k&&k.hasAttribute(at)){ o.removeAttribute(at); if(at==="data-fs"){ o.style.fontSize=""; if(!o.getAttribute("style"))o.removeAttribute("style"); } } })); }
-function neKeepPop(){ [30,120,300].forEach(t=>setTimeout(()=>{ const p=el("nepop"); if(p&&p.dataset.for==="font"&&p.hidden&&el("ndlg").open)p.hidden=false; },t)); }
+function neFlatten(){ ["data-fs","data-ff"].forEach(at=>NE().querySelectorAll("span["+at+"]").forEach(k=>{ let o=k.parentElement; while(o&&o!==NE()&&o.tagName==="SPAN"&&o.childNodes.length===1){ if(o.hasAttribute(at)){ o.removeAttribute(at); if(at==="data-fs"){ o.style.fontSize=""; if(!o.getAttribute("style"))o.removeAttribute("style"); } } o=o.parentElement; } })); }
 function neApplyFont(key){
- if(neFScope==="all"){ neNoteFontSet(key,+NE().getAttribute("data-ns")||0); neKeepPop(); neHistPush(); return; }
+ neFScope=neSelHas()?"sel":"all";
+ if(neFScope==="all"){ neNoteFontSet(key,+NE().getAttribute("data-ns")||0); neHistPush(); return; }
  neRestore(); const s0=NE().innerHTML;
  if(!key){ const r=getSelection().getRangeAt(0); NE().querySelectorAll("[data-ff]").forEach(sp=>{ if(r.intersectsNode(sp))sp.removeAttribute("data-ff"); }); }
  else{ document.execCommand("styleWithCSS",false,false); document.execCommand("fontName",false,"nefx__");
   const made=[]; NE().querySelectorAll('font[face="nefx__"]').forEach(f=>{ const sp=document.createElement("span"); sp.setAttribute("data-ff",key); while(f.firstChild)sp.appendChild(f.firstChild); f.replaceWith(sp); sp.querySelectorAll("[data-ff]").forEach(x=>x.removeAttribute("data-ff")); made.push(sp); }); neReselect(made); }
  neFlatten(); neSpanTidy(); neSave(); neState(); neHistPush(); }
 function neApplySize(arg){
+ neFScope=neSelHas()?"sel":"all";
  let cur=neCurSize(), px= arg==="0"?0 : arg[0]==="="?+arg.slice(1) : cur+(+arg);
  px=px?Math.max(9,Math.min(72,px)):0;
  if(neFScope==="all"){ neNoteFontSet(NE().getAttribute("data-nf")||"",px); }
@@ -9183,14 +9188,15 @@ function neApplySize(arg){
    const made=[]; NE().querySelectorAll('font[size="7"]').forEach(f=>{ const sp=document.createElement("span"); made.push(sp); sp.setAttribute("data-fs",px); sp.style.fontSize=px+"px"; while(f.firstChild)sp.appendChild(f.firstChild); f.replaceWith(sp);
     sp.querySelectorAll("[data-fs]").forEach(x=>{ x.removeAttribute("data-fs"); x.style.fontSize=""; if(!x.getAttribute("style"))x.removeAttribute("style"); }); }); neReselect(made); }
   neFlatten(); neSpanTidy(); neSave(); neState(); }
- neKeepPop(); neHistPush(); const v=el("nefs-v"); if(v)v.textContent=px||neCurSize(); }
+ neHistPush(); const v=el("nefs-v"); if(v)v.textContent=px||neCurSize(); }
 function neHistPush(){ try{ if(typeof neSnap==="function")neSnap(); }catch(e){} try{ if(typeof drLater==="function")drLater(); }catch(e){} }
 (function(){ const nt=el("ntool"); if(!nt)return;
- nt.addEventListener("click",e=>{ const b=e.target.closest('[data-ne="font"]'); if(!b)return; e.stopImmediatePropagation(); neSave(); nePopShow(neFontPopHtml(),b,"font"); },true);
- document.addEventListener("click",e=>{ const b=e.target.closest("#nepop [data-ffk],#nepop [data-fsz]"); if(!b)return; e.stopImmediatePropagation(); e.preventDefault();
-  if(b.dataset.ffk!==undefined){ neApplyFont(b.dataset.ffk); const pp=el("nepop"); pp.querySelectorAll("[data-ffk]").forEach(x=>x.classList.toggle("on",neFScope==="all"&&(x.dataset.ffk||"sarabun")===(b.dataset.ffk||"sarabun")&&!!x.dataset.ffk||false)); }
-  else neApplySize(b.dataset.fsz); },true);
- const _o=openNote; openNote=function(n){ const r=_o.apply(this,arguments); try{ neNoteFontSet(n&&n.nf||"",n&&n.ns||0); }catch(e){} return r; };
+ const bar=document.createElement("div"); bar.id="nefbar"; bar.className="nefbar"; bar.innerHTML=neFBarHtml(); nt.insertBefore(bar,nt.firstChild);
+ bar.addEventListener("mousedown",e=>{ e.preventDefault(); });
+ bar.addEventListener("click",e=>{ const b=e.target.closest("[data-ffk],[data-fsz]"); if(!b)return; e.preventDefault(); neSave(); neFScope=neSelHas()?"sel":"all";
+  if(b.dataset.ffk!==undefined)neApplyFont(b.dataset.ffk); else neApplySize(b.dataset.fsz); neFBarSync(); });
+ let raf=0; document.addEventListener("selectionchange",()=>{ if(!el("ndlg").open)return; const s=getSelection(); if(s.rangeCount&&NE().contains(s.getRangeAt(0).commonAncestorContainer)){ neSave(); cancelAnimationFrame(raf); raf=requestAnimationFrame(neFBarSync); } });
+ const _o=openNote; openNote=function(n){ const r=_o.apply(this,arguments); try{ neNoteFontSet(n&&n.nf||"",n&&n.ns||0); neRange=null; neFBarSync(); }catch(e){} return r; };
  const _v=viewNote; viewNote=function(n){ const r=_v.apply(this,arguments); try{ neViewFont(n); }catch(e){} return r; };
 })();
 function gate(mode){
