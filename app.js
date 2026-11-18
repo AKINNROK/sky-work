@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.56"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.57"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1299,13 +1299,17 @@ ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
 // เรียงงานเดือนนี้: สถานะ (ค้าง → กำลังดำเนินการ → รอดำเนินการ → เสร็จสิ้น → ยกเลิก) แล้วตามวันที่ · เสร็จสิ้น/ยกเลิก = เทา
 const MRANK=[["ค้าง / เกินกำหนด","var(--over)"],["กำลังดำเนินการ","var(--run)"],["รอดำเนินการ","var(--wait)"],["เสร็จสิ้น","var(--ink-3)"],["ยกเลิก","var(--ink-3)"]];
-const mRank=t=>{ const ms=monthState(t,y,m), n=ms.n||""; let st=t.status;
- if(rr(t)){ if(/^ค้าง/.test(n))return 0; if(/^ปิดครบ/.test(n))return 3; if(/^(ยกเลิก|งด)/.test(n))return 4; if(/^ปิดแล้ว/.test(n))return 1; return 2; }
+// งานซ้ำ: ใช้ "รอบตัวแทน" ของเดือน = รอบที่ยังไม่ปิดที่เก่าสุด (ค้างก่อน → วันนี้/ถัดไป) ถ้าปิดหมดแล้วใช้รอบล่าสุด
+// วันที่ · สถานะ · กลุ่ม · ปุ่มเปลี่ยนสถานะในการ์ด ใช้รอบเดียวกันทั้งหมด (เดิมโชว์รอบแรกของเดือน แต่จัดกลุ่มจากภาพรวมทั้งเดือน → สถานะดูไม่เปลี่ยน)
+const repDay=t=>{ const ds=occDays(t,y,m); if(!rr(t))return Math.min(...ds); const op=ds.filter(d=>{ const D=new Date(y,m,d); return !occDone(t,D)&&!occSkip(t,D)&&!occCancel(t,D); }); return op.length?op[0]:ds[ds.length-1]; };
+const mRank=t=>{ let st=t.status;
+ if(rr(t)){ if(t.status===STATUS_CANCEL)return 4; const D=new Date(y,m,repDay(t)), os=occStat(t,D), td=new Date(); td.setHours(0,0,0,0);
+  if(os===STATUS_CANCEL||occSkip(t,D))return 4; if(os===STATUS_DONE)return 3; if(D<td)return 0; return os==="กำลังดำเนินการ"?1:2; }
  if(st===STATUS_CANCEL)return 4; if(st===STATUS_DONE)return 3;
  const dd=dueDate(t); if(dd&&daysTo(dd)<0)return 0; return st==="กำลังดำเนินการ"?1:2; };
 const mGrey=t=>mRank(t)>=3;
 const greyRow=(t,h)=>mGrey(t)?h.replace('<div class="li" ','<div class="li li-done" '):h;
-const monthAll=items.filter(t=>occDays(t,y,m).length).map(t=>({t,d:Math.min(...occDays(t,y,m)),r:mRank(t)})).sort((a,b)=>a.r-b.r||a.d-b.d||String(a.t.title).localeCompare(String(b.t.title),"th"));
+const monthAll=items.filter(t=>occDays(t,y,m).length).map(t=>({t,d:repDay(t),r:mRank(t)})).sort((a,b)=>a.r-b.r||a.d-b.d||String(a.t.title).localeCompare(String(b.t.title),"th"));
 return header("ปฏิทิน","แตะวันที่เพื่อดูงานของวันนั้น · จุดสีคือสถานะงาน")+
 `<div class="toolbar">
 <div class="seg" id="calmode">

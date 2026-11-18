@@ -1,4 +1,4 @@
-const APP_VERSION="14.14.35"; const APP_DATE="16 พ.ย. 2026";
+const APP_VERSION="14.14.57"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -177,7 +177,7 @@ localStorage.setItem("sw-vars",JSON.stringify({vars,cs:s.colorScheme,mode:theme.
 }
 setInterval(()=>{ if(theme.mode==="auto"){ const n=isNight(); if(n!==applyTheme._last){ applyTheme._last=n; applyTheme(); } } },60000);
 let LOADING=true;
-let DB=null, items=[], ledger=[], view="home", settab="companies", editing=null, editingTx=null;
+let DB=null, items=[], ledger=[], view="cal", settab="companies", editing=null, editingTx=null;
 let groups=DEFAULT_GROUPS.slice(), companies=DEFAULT_COMPANIES.slice(), gls=[];
 let typeList=[], tagList=[], courses=[], skillList=[], modeList=[];
 let theme={preset:"cumulus",custom:null,mode:"auto"};
@@ -500,7 +500,7 @@ const CFG_BAKED={url:"https://bakdblnqllcoltbgbwpe.supabase.co",key:"eyJhbGciOiJ
 let cfg=CFG_BAKED.url?CFG_BAKED:(()=>{try{return JSON.parse(localStorage.getItem("sw-cfg")||"null")||{url:"",key:""}}catch(e){return{url:"",key:""}}})();
 let SB=null, uid=null;
 let hrdata={manpower:{},certified:{},dsd:{},subsidy:{pct:70,rate:200}};
-let legal=[], idx=[], notes=[], secs=[], secEx=[], secPin=null;
+let legal=[], idx=[], notes=[], secs=[], secEx=[], secPin=null, NT_DAYS=20, RMC={ap:1,lead:30,title:0,kpi:1,kday:25};
 const TRASH={items:[],ledger:[],legal:[],index:[],note:[]};
 const TRASH_DAYS=30;
 const cache={items:new Map(),ledger:new Map(),legal:new Map(),index:new Map(),note:new Map(),sec:new Map(),meta:new Map()};
@@ -617,6 +617,8 @@ DBShim.collection("ledger").onSnapshot(s=>{ ledger=splitTrash(s.docs,"ledger"); 
 DBShim.collection("sec").onSnapshot(s=>{ secs=s.docs.map(d=>Object.assign({},d.data(),{_id:d.id})); render();});
 sub("meta/secex",d=>{ if(Array.isArray(d.list))secEx=d.list; });
 sub("meta/secpin",d=>{ secPin=d||null; });
+sub("meta/notearch",d=>{ if(d&&typeof d.days==="number")NT_DAYS=d.days; });
+sub("meta/remindcfg",d=>{ if(d&&typeof d==="object")RMC=Object.assign({ap:1,lead:30,title:0,kpi:1,kday:25},d); });
 setFoot("กำลังโหลด…");
 await loadAll(); liveSync(); LOADING=false; render();
 setFoot(items.length+" งาน · ซิงก์แล้ว");

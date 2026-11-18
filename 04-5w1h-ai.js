@@ -100,7 +100,7 @@ function aiContext(){
 const y=THISYEAR, D=execData(y), now=new Date();
 const lawTag=t=>isLawItem(t)?" [กฎหมาย]":"";
 const QN={q1:"1 ทำเลย",q2:"2 วางแผน",q3:"3 มอบหมาย",q4:"4 ไว้ทีหลัง"};
-const row=t=>{const d=dueDate(t); return [t._id,(t.title||"")+lawTag(t),(t.type||gLabel(t.track)),t.company?cLabel(t.company):"-",t.owner||"-",d?isoOf(d):"-",t.status,budgetOf(t)||"-",t.actual||"-",QN[quadOf(t)]||"-"].join(" | ");};
+const row=t=>{const d=dueDate(t); return [t._id,(t.title||"")+lawTag(t),(t.type||gLabel(t.track)),t.company?cLabel(t.company):"-",t.owner||"-",d?isoOf(d):"-",t.status,budgetOf(t)||"-",actOf(t)||"-",QN[quadOf(t)]||"-"].join(" | ");};
 const live=items.filter(t=>!isSysRow(t));
 const open=live.filter(t=>isOpenStatus(t.status));
 const soon=open.filter(t=>{const d=dueDate(t);return d&&daysTo(d)>=0&&daysTo(d)<=14;}).sort((a,b)=>dueDate(a)-dueDate(b));

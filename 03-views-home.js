@@ -1,3 +1,5 @@
+// รอบ C: ภาพรวม = ตัวเลข/กราฟ · เรื่องที่ต้องลงมือ (ค้าง/ใกล้ครบ/เตรียมประชุม/ช่อง 1) ไปอยู่หน้า วันนี้ — เหลือแถบสรุปลิงก์เดียว
+const HOME_COMPACT=true;
 function homeQ1(){
 const mi=matrixItems().filter(inScope), q1=mi.filter(t=>quadOf(t)==="q1").sort((x,y)=>mxDl(x).n-mxDl(y).n), un=mi.filter(t=>!quadOf(t)).length;
 const cn=k=>mi.filter(t=>quadOf(t)===k).length;
@@ -9,6 +11,11 @@ ${q1.length?`<div class="mxlist" style="max-height:none">${q1.slice(0,5).map(t=>
 <div class="sub" style="margin-top:8px">${q1.length>5?`และอีก ${q1.length-5} งาน · `:""}${late?`เลย Deadline แล้ว ${late} งาน · `:""}<a class="lklink" ${jump("matrix")} style="cursor:pointer">เปิด Matrix งาน →</a></div>`
 :`<div class="sub" style="padding:6px 0 2px">${un?`ยังไม่มีงานในช่อง 1 · มี <b>${un} งาน</b> ที่ยังไม่ได้จัดลำดับ — `:"ยังไม่มีงานในช่อง 1 ✨ · "}<a class="lklink" ${jump("matrix")} style="cursor:pointer">เปิด Matrix งาน →</a></div>`}</div>`;
 }
+// ค่าใช้จ่ายจริงของงาน: ถ้ามี "บันทึกเงิน" ผูกกับงาน → ใช้ยอดรวมบันทึกเงิน (ไม่บวกกับช่องใช้จริงซ้ำ) · ไม่มี → ใช้ช่องใช้จริงในงาน
+let _txM=null,_txSrc=null;
+function txLinkedSum(t){ if(!t||!t._id)return 0; if(_txSrc!==ledger){ _txSrc=ledger; _txM={}; ledger.forEach(x=>{ if(x&&x.taskId&&x.kind!=="income")_txM[x.taskId]=(_txM[x.taskId]||0)+(+x.amount||0); }); } return _txM[t._id]||0; }
+const actOf=t=>{ const l=txLinkedSum(t); return l>0?l:(+t.actual||0); };
+const actOwn=t=>txLinkedSum(t)>0?0:(+t.actual||0);   // ใช้ใน budFlow: ยอดบันทึกเงินถูกนับแยกอยู่แล้ว
 function home(){
 const now=new Date();
 const scoped=items.filter(inScope);
@@ -16,8 +23,9 @@ const A=scoped.filter(t=>t.track!=="idea"&&t.status!==STATUS_CANCEL);
 const cnt=s=>A.filter(t=>t.status===s).length;
 const done=cnt("เสร็จสิ้น"), run=cnt("กำลังดำเนินการ"), wait=cnt("รอดำเนินการ");
 const cancelled=scoped.filter(t=>t.status===STATUS_CANCEL).length;
-const bud=scoped.reduce((s,t)=>s+budgetOf(t),0), act=scoped.reduce((s,t)=>s+(+t.actual||0),0);
-const over=items.filter(t=>budgetOf(t)>0&&(+t.actual||0)>budgetOf(t));
+const _bf=(R.scope==="year"||R.scope==="month")?Object.values(budFlow(R.year)):null;   // ให้ตรงกับหน้างบประมาณ (รวมบันทึกเงิน)
+const bud=_bf?_bf.reduce((s,r)=>s+(R.scope==="month"?r.eff[R.month]:r.planY),0):scoped.reduce((s,t)=>s+budgetOf(t),0), act=_bf?_bf.reduce((s,r)=>s+(R.scope==="month"?r.act[R.month]:r.actY),0):scoped.reduce((s,t)=>s+actOf(t),0);
+const over=items.filter(t=>budgetOf(t)>0&&actOf(t)>budgetOf(t));
 const up=items.filter(t=>t.date&&new Date(t.date)>=new Date(now.toDateString())&&isOpenStatus(t.status))
 .sort((a,b)=>a.date<b.date?-1:1).slice(0,6);
 const pct=A.length?Math.round(done/A.length*100):0;
@@ -39,20 +47,20 @@ const pr=prepDue(3);
 return (lg.filter(L=>legalState(L).k==="late").length?`<div class="banner bad" ${regList("hLegal","ใบรับรอง/คำสั่งแต่งตั้งที่เกินกำหนด",lg.filter(L=>legalState(L).k==="late").map(L=>{const d=legalDue(L);return {lg:L._id,t1:L.title,
 t2:`${(L.comps||[]).map(cLabel).join(", ")||"ไม่ระบุบริษัท"}${L.person?" · "+L.person:" · ยังไม่มีผู้รับผิดชอบ"}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",p:legalState(L).t,pc:"s-over"};}))}>${svg(ICON.legal,19)} ใบรับรอง/คำสั่งแต่งตั้ง <b>${lg.filter(L=>legalState(L).k==="late").length}</b> รายการเกินกำหนดแล้ว — ดูที่หน้ากฎหมาย</div>`:"")
-+(pr.length?`<div class="banner bad" ${regList("hPrep","ต้องเตรียมข้อมูลก่อนประชุม",pr.map(x=>({id:x.t._id,t1:x.t.title,
++(!HOME_COMPACT&&pr.length?`<div class="banner bad" ${regList("hPrep","ต้องเตรียมข้อมูลก่อนประชุม",pr.map(x=>({id:x.t._id,t1:x.t.title,
 t2:`ประชุม ${x.d.getDate()} ${MTH[x.d.getMonth()]}${x.t.prepNote?" · "+x.t.prepNote:""}`,
 d:`${x.p.getDate()}<br>${MTH[x.p.getMonth()]}`,c:"var(--over-soft)",ic:"var(--over)",
 p:daysTo(x.p)<0?"เลยวันเตรียม":"เตรียมวันนี้",pc:"s-over"})))}>${svg(ICON.meet,19)} ต้องเตรียมข้อมูลก่อนประชุม <b>${pr.length}</b> รายการ — ${esc(pr.slice(0,2).map(x=>x.t.title).join(" · "))}${pr.length>2?" …":""}</div>`:"")
-+(w.late.length?`<div class="banner bad" ${regList("hLate","งานที่เลยกำหนดแล้ว",w.late.map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
++(!HOME_COMPACT&&w.late.length?`<div class="banner bad" ${regList("hLate","งานที่เลยกำหนดแล้ว",w.late.map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
 t2:`${gLabel(t.track)}${t.company?" · "+cLabel(t.company):""}${t.owner?" · "+t.owner:""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--over-soft)",ic:"var(--over)",p:"เลย "+(-daysTo(d))+" วัน",pc:"s-over"};}))}>${svg(ICON.bell,19)} เลยกำหนดแล้ว <b>${w.late.length}</b> งาน — ${esc(w.late.slice(0,2).map(t=>t.title).join(" · "))}${w.late.length>2?" …":""}</div>`:"")
-+(w.soon.length?`<div class="banner" ${regList("hSoon","ครบกำหนดใน 7 วัน",w.soon.map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
++(!HOME_COMPACT&&w.soon.length?`<div class="banner" ${regList("hSoon","ครบกำหนดใน 7 วัน",w.soon.map(t=>{const d=dueDate(t);return {id:t._id,t1:t.title,
 t2:`${gLabel(t.track)}${t.company?" · "+cLabel(t.company):""}${t.owner?" · "+t.owner:""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",c:"var(--run-soft)",ic:"var(--run)",p:"อีก "+daysTo(d)+" วัน",pc:"s-run"};}))}>${svg(ICON.bell,19)} ครบกำหนดใน 7 วัน <b>${w.soon.length}</b> งาน — ${esc(w.soon.slice(0,2).map(t=>t.title).join(" · "))}${w.soon.length>2?" …":""}</div>`:"");})()+
 (over.length?`<div class="banner" ${jump("budget")}>${svg(ICON.bell,19)} มี ${over.length} งานที่ใช้งบเกินแผน — ดูที่หน้างบประมาณ</div>`:"")+
 budBanner(THISYEAR)+
 `<div class="dash">
-${homeQ1()}
+${HOME_COMPACT?homeStrip():homeQ1()}
 <div class="card hero span2"${tipAttr("ความคืบหน้า · "+scopeLabel()+" · "+pct+"%","เสร็จสิ้น|"+done+" งาน","กำลังดำเนินการ|"+run+" งาน","รอดำเนินการ|"+wait+" งาน",cancelled?"ยกเลิก|"+cancelled+" งาน (ไม่นับ)":"","คิดจาก งานเสร็จ ÷ งานทั้งหมด ไม่รวมงานที่ยกเลิกและไอเดีย")}><div class="lab">ความคืบหน้า · ${scopeLabel()}</div>
 <div class="big">${pct}%</div>
 <div class="meta"><span>เสร็จแล้ว ${done} งาน</span><span>เหลืออีก ${A.length-done} งาน</span></div>
@@ -174,7 +182,7 @@ ${t.note?`<div class="t-note">${esc(t.note)}</div>`:""}${w5Line(t)}</td>
 <td class="num">${rr(t)?esc(rruleText(t)):(t.date?fmtDate(t.date):esc(t.recurring||"—"))}</td>
 <td>${esc(t.owner||"—")}</td>
 <td class="num">${budgetOf(t)?baht(budgetOf(t)):"—"}</td>
-<td class="num"${(+t.actual||0)>budgetOf(t)&&budgetOf(t)?' style="color:var(--over);font-weight:600"':""}>${t.actual?baht(t.actual):"—"}</td>
+<td class="num"${actOf(t)>budgetOf(t)&&budgetOf(t)?' style="color:var(--over);font-weight:600"':""}>${actOf(t)?baht(actOf(t)):"—"}</td>
 <td>${(()=>{const S=rr(t)?occState(t):null; return S?`<span class="pill ${S.cls}" title="สถานะรอบที่ใกล้ที่สุด — สถานะรายวันดูที่ปฏิทิน/การ์ด">${esc(S.label)}</span>`:`<span class="pill ${sCls(t.status)}">${esc(t.status)}</span>`;})()}</td></tr>`;
 const table=body=>`<div class="tblwrap"><table>
 <thead><tr><th>ประเภท</th><th>งาน</th><th>บริษัท</th><th>กลุ่ม</th><th>เวลา</th><th>ผู้รับผิดชอบ</th><th style="text-align:right">งบ</th><th style="text-align:right">ใช้จริง</th><th>สถานะ</th></tr></thead>
@@ -230,7 +238,19 @@ return `<i style="background:${cl}"></i>`;}).join("")}</span>
 ${ts.length>4?`<span class="more">+${ts.length-4}</span>`:""}</div>`);
 }
 const selTasks=R.selDay?tasksOnDay(y,m,R.selDay):[];
-const monthAll=items.filter(t=>occDays(t,y,m).length).map(t=>({t,d:Math.min(...occDays(t,y,m))})).sort((a,b)=>a.d-b.d||String(a.t.title).localeCompare(String(b.t.title),"th"));
+// เรียงงานเดือนนี้: สถานะ (ค้าง → กำลังดำเนินการ → รอดำเนินการ → เสร็จสิ้น → ยกเลิก) แล้วตามวันที่ · เสร็จสิ้น/ยกเลิก = เทา
+const MRANK=[["ค้าง / เกินกำหนด","var(--over)"],["กำลังดำเนินการ","var(--run)"],["รอดำเนินการ","var(--wait)"],["เสร็จสิ้น","var(--ink-3)"],["ยกเลิก","var(--ink-3)"]];
+// งานซ้ำ: ใช้ "รอบตัวแทน" ของเดือน = รอบที่ยังไม่ปิดที่เก่าสุด (ค้างก่อน → วันนี้/ถัดไป) ถ้าปิดหมดแล้วใช้รอบล่าสุด
+// วันที่ · สถานะ · กลุ่ม · ปุ่มเปลี่ยนสถานะในการ์ด ใช้รอบเดียวกันทั้งหมด (เดิมโชว์รอบแรกของเดือน แต่จัดกลุ่มจากภาพรวมทั้งเดือน → สถานะดูไม่เปลี่ยน)
+const repDay=t=>{ const ds=occDays(t,y,m); if(!rr(t))return Math.min(...ds); const op=ds.filter(d=>{ const D=new Date(y,m,d); return !occDone(t,D)&&!occSkip(t,D)&&!occCancel(t,D); }); return op.length?op[0]:ds[ds.length-1]; };
+const mRank=t=>{ let st=t.status;
+ if(rr(t)){ if(t.status===STATUS_CANCEL)return 4; const D=new Date(y,m,repDay(t)), os=occStat(t,D), td=new Date(); td.setHours(0,0,0,0);
+  if(os===STATUS_CANCEL||occSkip(t,D))return 4; if(os===STATUS_DONE)return 3; if(D<td)return 0; return os==="กำลังดำเนินการ"?1:2; }
+ if(st===STATUS_CANCEL)return 4; if(st===STATUS_DONE)return 3;
+ const dd=dueDate(t); if(dd&&daysTo(dd)<0)return 0; return st==="กำลังดำเนินการ"?1:2; };
+const mGrey=t=>mRank(t)>=3;
+const greyRow=(t,h)=>mGrey(t)?h.replace('<div class="li" ','<div class="li li-done" '):h;
+const monthAll=items.filter(t=>occDays(t,y,m).length).map(t=>({t,d:repDay(t),r:mRank(t)})).sort((a,b)=>a.r-b.r||a.d-b.d||String(a.t.title).localeCompare(String(b.t.title),"th"));
 return header("ปฏิทิน","แตะวันที่เพื่อดูงานของวันนั้น · จุดสีคือสถานะงาน")+
 `<div class="toolbar">
 <div class="seg" id="calmode">
@@ -261,8 +281,8 @@ ${calColor()==="matrix"
 <h2>${R.selDay?`วันที่ ${R.selDay} ${MTH[m]}`:"งานเดือนนี้ <small>"+(monthAll.length+recurring.length)+" รายการ</small>"}</h2>
 <div class="list">${
 R.selDay
-? (selTasks.map(t=>liRow(t,false,new Date(y,m,R.selDay))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
-: ((monthAll.length?monthAll.map(x=>liRow(x.t,true,rr(x.t)?new Date(y,m,x.d):undefined)).join(""):"")+(recurring.length?`<div class="lsec" style="margin:12px 0 4px;font-size:12.5px;color:var(--ink-3)">งานประจำเดือน (ไม่ระบุวัน)</div>`+recurring.map(t=>liRow(t)).join(""):"")||`<div class="empty">ไม่มีงานในเดือนนี้</div>`)}</div>
+? (selTasks.map(t=>greyRow(t,liRow(t,false,new Date(y,m,R.selDay)))).join("")||`<div class="empty">วันนี้ไม่มีงานที่กำหนดไว้<br><span style="font-size:12.5px">กด “เพิ่มงาน” เพื่อใส่งานใหม่</span></div>`)
+: ((monthAll.length?monthAll.map((x,i)=>(i===0||monthAll[i-1].r!==x.r?`<div class="lsec li-hd" style="--c:${MRANK[x.r][1]}"><i></i>${MRANK[x.r][0]} <small>${monthAll.filter(z=>z.r===x.r).length}</small></div>`:"")+greyRow(x.t,liRow(x.t,true,rr(x.t)?new Date(y,m,x.d):undefined))).join(""):"")+(recurring.length?`<div class="lsec" style="margin:12px 0 4px;font-size:12.5px;color:var(--ink-3)">งานประจำเดือน (ไม่ระบุวัน)</div>`+recurring.map(t=>greyRow(t,liRow(t))).join(""):"")||`<div class="empty">ไม่มีงานในเดือนนี้</div>`)}</div>
 ${R.selDay?`<div class="addg" style="margin-top:12px">
 <button class="btn sm" id="addOnDay">${svg('<path d="M12 5v14M5 12h14"/>',16)}เพิ่มงานวันที่ ${R.selDay} ${MTH[m]}</button>
 <button class="btn ghost sm" id="clearDay">ดูงานทั้งเดือนแทน</button></div>`:""}
@@ -370,7 +390,7 @@ items.forEach(t=>{
 const m=budItemMonth(t,y); if(m===undefined)return;                       // งานของปีอื่น ไม่นับปนในปีนี้
 const k1=glKeyOf(t.gl1)||"", k2=glKeyOf(t.gl2)||"", live=t.status!==STATUS_CANCEL;
 const put=(k,bd,ac)=>{const r=row(k); if(m>=0){r.task[m]+=bd;r.act[m]+=ac;}else{r.taskNoM+=bd;r.actNoM+=ac;}};
-put(k1||k2, live?(+t.b1||0):0, +t.actual||0);
+put(k1||k2, live?(+t.b1||0):0, actOwn(t));
 if(+t.b2)put(k2||k1, live?(+t.b2||0):0, 0);
 });
 ledger.filter(x=>x.kind!=="income"&&x.date&&new Date(x.date).getFullYear()===y)
@@ -452,14 +472,14 @@ ${dualBars(planM,actM,MTH,scope==="month"?m:new Date().getMonth(),"แผนง�
 <div class="glfix"><button class="btn sm" id="glGo">✎ แก้ไขหมวด GL / ตั้งงบ</button><span class="hint" style="margin:0;align-self:center">เพิ่ม · แก้ชื่อ · รหัส GL · งบรายเดือน ทำที่ ตั้งค่า › หมวดงบประมาณ</span></div>
 <div class="hint" style="margin:2px 0 10px">
 <b>งบที่ตั้งไว้</b> = แต่ละเดือนใช้ค่าที่มากกว่าระหว่าง “แผนงบเดือนนั้นของหมวด (หน้าตั้งค่า)” กับ “ผลรวมช่องงบของงานที่ตกเดือนนั้น” (ไม่บวกซ้ำ) · งานที่ยกเลิกไม่นับงบ<br>
-<b>ใช้จริง</b> = ช่องใช้จริงของงาน (นับในเดือนของวันครบกำหนด) + รายจ่ายที่บันทึกในหน้านี้ ที่แท็กหมวดเดียวกัน<br>
+<b>ใช้จริง</b> = ช่องใช้จริงของงาน (นับในเดือนของวันครบกำหนด) + รายจ่ายที่บันทึกในหน้านี้ ที่แท็กหมวดเดียวกัน · งานที่มีบันทึกเงินผูกอยู่ ใช้ยอดบันทึกเงินแทนช่องใช้จริง (ไม่นับซ้ำ)<br>
 <b>เตือน</b> ใกล้เต็มเมื่อใช้ ≥${BUD_WARN}% · เกินงบเมื่อ ≥100% · “เร็วกว่าแผน” = ยอดสะสมถึงเดือนนี้เกินแผนสะสม ทั้งที่ยังไม่ถึง ${BUD_WARN}% ของทั้งปี · เส้นขีดบนแถบ = จุดที่ควรอยู่ตามแผนสะสม</div>
 ${keys.length?keys.sort((x,z)=>(st[z].plan-st[x].plan)||(st[z].act-st[x].act)).map(k=>{
 const s=st[k], r=flow[k];
 const p=s.plan?Math.min(100,s.act/s.plan*100):(s.act?100:0);
 const nm=k?glLabel(k):"ยังไม่ระบุหมวด GL";
-const tks=inYear.filter(t=>k?(glKeysOf(t).includes(k)&&(glShare(t,k)+(+t.actual||0))>0)
-:(!hasGL(t)&&((+t.b1||0)+(+t.b2||0)+(+t.actual||0))>0));
+const tks=inYear.filter(t=>k?(glKeysOf(t).includes(k)&&(glShare(t,k)+actOf(t))>0)
+:(!hasGL(t)&&((+t.b1||0)+(+t.b2||0)+actOf(t))>0));
 const txs=ledger.filter(x=>(x.gl||"")===k&&x.date&&new Date(x.date).getFullYear()===y);
 const mrows=[];
 r.eff.forEach((e,i)=>{ if(!e&&!r.act[i])return; const lf=e-r.act[i];
@@ -469,8 +489,8 @@ const sumP=r.plan.reduce((a,b)=>a+b,0), sumE=r.eff.reduce((a,b)=>a+b,0);
 const sumRow={t1:"สรุปปี "+(y+543)+" — งบ "+baht(r.planY)+" ฿ · ใช้จริง "+baht(r.actY)+" ฿",t2:`แผนรายเดือนของหมวด ${baht(sumP)}${sumE>sumP?" + ส่วนที่งานลงงบเกินแผนเดือนนั้น "+baht(sumE-sumP):""}${r.taskNoM?" · งานไม่ระบุเดือน "+baht(r.taskNoM):""}${r.ceil>Math.max(sumE,sum0(r.task)+r.taskNoM)?" · เพดานงบรายปี "+baht(r.ceil):""}`,d:"Σ",p:r.planY-r.actY>=0?"เหลือ "+baht(r.planY-r.actY):"เกิน "+baht(r.actY-r.planY),pc:r.planY-r.actY>=0?"s-done":"s-over",c:"var(--accent-soft)",ic:"var(--accent)"};
 const rowsL=[sumRow,...mrows,
 ...tks.map(t=>{const d=dueDate(t);const mine=k?glShare(t,k):budgetOf(t);
-const mineAct=(k?((glKeyOf(t.gl1)||glKeyOf(t.gl2))===k):!hasGL(t))?(+t.actual||0):0;
-return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${mineAct?` · ใช้จริง ${baht(mineAct)} ฿`:""}${t.company?" · "+cLabel(t.company):""}`,
+const mineAct=(k?((glKeyOf(t.gl1)||glKeyOf(t.gl2))===k):!hasGL(t))?actOf(t):0, viaTx=txLinkedSum(t)>0;
+return {id:t._id,t1:t.title,t2:`งบ ${baht(mine)} ฿${mineAct?` · ใช้จริง ${baht(mineAct)} ฿${viaTx?" (จากบันทึกเงินด้านล่าง)":""}`:""}${t.company?" · "+cLabel(t.company):""}`,
 d:d?`${d.getDate()}<br>${MTH[d.getMonth()]}`:"—",p:t.status,pc:sCls(t.status)};}),
 ...txs.map(x=>({tx:x._id,t1:x.note||(x.kind==="income"?"รายรับ":"รายจ่าย"),
 t2:`บันทึกเงิน${x.company?" · "+cLabel(x.company):""}`,d:x.date?`${new Date(x.date).getDate()}<br>${MTH[new Date(x.date).getMonth()]}`:"—",
@@ -510,7 +530,7 @@ const ytdB=gl.reduce((n,x)=>n+x.s.ytdP,0), ytdA=gl.reduce((n,x)=>n+x.s.ytdA,0);
 const tr=items.filter(t=>isTrain(t)&&inYr(t)&&t.status!==STATUS_CANCEL&&(()=>{const d=dueDate(t)||(t.date?new Date(t.date):null);return d&&d.getFullYear()===y;})());
 const trDone=tr.filter(t=>t.status===STATUS_DONE);
 const train={n:tr.length,done:trDone.length,pax:trDone.reduce((n,t)=>n+(+t.pax||0),0),hrs:trDone.reduce((n,t)=>n+(+hoursOf(t)||0)*(+t.pax||0),0),
-cost:tr.reduce((n,t)=>n+((+t.actual||0)||budgetOf(t)),0)};
+cost:tr.reduce((n,t)=>n+(actOf(t)||budgetOf(t)),0)};
 const dsd=dsdList(y).map(c=>({c,k:dsdCalc(dsdRec(c.key,y))})).filter(x=>x.k.avg);
 const late=items.filter(t=>!isSysRow(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})()).sort((a,b)=>dueDate(a)-dueDate(b));
 const lawLate=late.filter(isLawItem);

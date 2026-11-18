@@ -21,7 +21,7 @@ async function secHash(pin,salt){ const s=salt+":"+pin;
  try{ if(window.crypto&&crypto.subtle){ const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(s)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); } }catch(e){}
  let h=5381; for(const c of s)h=((h<<5)+h+c.charCodeAt(0))|0; return "x"+h; }
 const secHasPin=()=>!!(secPin&&secPin.hash);
-function secScrub(){ ["secdlg","secxdlg"].forEach(id=>{ const d=el(id); if(d){ try{ if(d.open)d.close(); }catch(e){} d.innerHTML=""; } }); const c=el("cdlg"); if(c&&!c.open&&el("cmsg"))el("cmsg").innerHTML=""; }
+function secScrub(){ ["secdlg","secxdlg","secpk","seccp"].forEach(id=>{ const d=el(id); if(d){ try{ if(d.open)d.close(); }catch(e){} d.innerHTML=""; } }); const c=el("cdlg"); if(c&&!c.open&&el("cmsg"))el("cmsg").innerHTML=""; }
 function secLock(){ SEC.unl=false; secScrub(); if(view==="sec")render(); }
 function secTouch(){ if(SEC.unl)SEC.last=Date.now(); }
 document.addEventListener("pointerdown",secTouch,true); document.addEventListener("keydown",secTouch,true);
@@ -67,11 +67,28 @@ async function secPut(rec){
  try{ const id=rec._id, d=Object.assign({},rec); delete d._id; await DB.collection("sec").doc(id).set(d); return true; }
  catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); return false; }
 }
-async function secDel(rec){ if(!(await ask("ลบรายการนี้ถาวรเลยไหมคะ?<br><small>(ส่วนเลขาฯ ไม่มีถังขยะ)</small>","ลบ")))return false; try{ await DB.collection("sec").doc(rec._id).delete(); return true; }catch(e){ return false; } }
+async function secDel(rec,msg){ if(!(await ask((msg||"ลบรายการนี้ถาวรเลยไหมคะ?")+"<br><small>(ส่วนเลขาฯ ไม่มีถังขยะ)</small>","ลบ")))return false; try{ await DB.collection("sec").doc(rec._id).delete(); return true; }catch(e){ return false; } }
 const secNew=(t,extra)=>Object.assign({_id:uuid(),t,ex:SEC.ex!=="all"?SEC.ex:(secEx[0]&&secEx[0].id)||"",at:new Date().toISOString()},extra||{});
+// ---------- นัดซ้ำ (ทุกวัน / ทุกวันทำงาน / ทุกสัปดาห์ / ทุกเดือน / ทุกปี) ----------
+// rec.rep: d|wd|w|m|y · rec.repn: ทุก ๆ กี่ครั้ง · rec.repend: ซ้ำถึงวันที่ · rec.repx: วันที่ที่ยกเว้น (ลบ/แก้เฉพาะวันนั้น)
+const SEC_REP=[["","ไม่ซ้ำ"],["d","ทุกวัน"],["wd","ทุกวันทำงาน (จ.–ศ.)"],["w","ทุกสัปดาห์"],["m","ทุกเดือน (วันที่เดิม)"],["y","ทุกปี (วันที่เดิม)"]];
+const secDim=(y,m)=>new Date(y,m+1,0).getDate();
+const secRepTxt=r=>{ if(!r||!r.rep)return ""; const n=+r.repn||1, u={d:"วัน",w:"สัปดาห์",m:"เดือน",y:"ปี"}; const t=r.rep==="wd"?"ทุกวันทำงาน":(n>1?"ทุก "+n+" "+u[r.rep]:"ทุก"+u[r.rep]); return t+(r.repend?" · ถึง "+fmtDate(r.repend):" · ไม่สิ้นสุด"); };
+function secOccursOn(r,iso){
+ if(!r.rep)return r.date===iso; if(!r.date||iso<r.date)return false; if(r.repend&&iso>r.repend)return false; if((r.repx||[]).indexOf(iso)>=0)return false;
+ const n=Math.max(1,+r.repn||1), a=new Date(r.date+"T00:00:00"), b=new Date(iso+"T00:00:00"), dd=Math.round((b-a)/864e5);
+ if(r.rep==="d")return dd%n===0;
+ if(r.rep==="wd"){ const w=b.getDay(); return w>=1&&w<=5; }
+ if(r.rep==="w")return dd%(7*n)===0;
+ const dom=Math.min(a.getDate(),secDim(b.getFullYear(),b.getMonth()));
+ if(r.rep==="m"){ const mm=(b.getFullYear()-a.getFullYear())*12+b.getMonth()-a.getMonth(); return mm>=0&&mm%n===0&&b.getDate()===dom; }
+ if(r.rep==="y"){ const yy=b.getFullYear()-a.getFullYear(); return yy>=0&&yy%n===0&&b.getMonth()===a.getMonth()&&b.getDate()===dom; }
+ return false; }
+// นัดทั้งหมดของวันหนึ่ง (รวมนัดซ้ำที่ตกวันนั้น — ตัวที่ซ้ำมี _ser/_od ใช้ _id เดียวกับต้นชุด)
+function secApptsOn(iso){ return secs.filter(r=>r.t==="appt"&&secOccursOn(r,iso)).map(r=>r.rep?Object.assign({},r,{date:iso,_od:iso,_ser:true}):r); }
 // ---------- คิว / ช่องว่าง ----------
 const WH=[510,1050];
-function secBlocks(ex,iso,skip){ return secs.filter(r=>r.t==="appt"&&r.ex===ex&&r.date===iso&&r.status!=="cancelled"&&r.status!=="moved"&&r._id!==skip).map(r=>{ const a=secMin(r.st); if(a===null)return null; const b=secMin(r.en); return {a:a-(+r.buf||0),b:b!==null?b:a+60,r}; }).filter(Boolean).sort((x,y)=>x.a-y.a); }
+function secBlocks(ex,iso,skip){ return secApptsOn(iso).filter(r=>r.ex===ex&&r.status!=="cancelled"&&r.status!=="moved"&&r._id!==skip).map(r=>{ const a=secMin(r.st); if(a===null)return null; const b=secMin(r.en); return {a:a-(+r.buf||0),b:b!==null?b:a+60,r}; }).filter(Boolean).sort((x,y)=>x.a-y.a); }
 const secTrip1=(ex,iso)=>secs.find(r=>r.t==="trip"&&r.ex===ex&&r.status!=="cancelled"&&r.from&&r.from<=iso&&iso<=(r.to||r.from));
 function secConf(r){ const a=secMin(r.st); if(a===null||r.status==="cancelled"||r.status==="moved")return []; const b0=secMin(r.en), b=b0!==null?b0:a+60, a2=a-(+r.buf||0);
  return secBlocks(r.ex,r.date,r._id).filter(x=>a2<x.b&&b>x.a).map(x=>x.r); }
@@ -85,7 +102,7 @@ function secView(){
  if(!SEC.unl)return secLockView();
  if(!SEC.day)SEC.day=secToday();
  const T=secToday(), mine=r=>SEC.ex==="all"||r.ex===SEC.ex;
- const tdA=secs.filter(r=>r.t==="appt"&&mine(r)&&r.date===T&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
+ const tdA=secApptsOn(T).filter(r=>mine(r)&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
  const nowM=new Date().getHours()*60+new Date().getMinutes(), nxt=tdA.find(r=>(secMin(r.st)||0)>=nowM);
  const docs=secs.filter(r=>r.t==="doc"&&mine(r)&&r.status==="wait"), docLate=docs.filter(r=>r.due&&r.due<T);
  const reqs=secs.filter(r=>r.t==="req"&&mine(r)&&r.status==="new");
@@ -95,10 +112,11 @@ function secView(){
  let body;
  if(!secEx.length)body=`<div class="card"><div class="empty">เริ่มจากเพิ่มผู้บริหารที่ดูแลก่อนนะคะ<br><button class="btn" id="secExAdd0" style="margin-top:14px">เพิ่มผู้บริหารท่านแรก</button></div></div>`;
  else body=SEC.tab==="req"?secReqView():SEC.tab==="doc"?secDocView():SEC.tab==="trip"?secTripView():secQueueView();
- return header("เลขาผู้บริหาร","ตารางคิว · คำขอเข้าพบ · เอกสารรอลงนาม · ทริปและงานสั่งการ",false).replace(/<\/div>\s*$/,`<div class="ph-hb"><button class="btn ghost" id="secEx">ผู้บริหาร</button><button class="btn ghost" id="secChg">เปลี่ยน PIN</button><button class="btn" id="secLk">${svg('<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',16)}<span>ล็อก</span></button></div></div>`)+
+ return header("เลขาผู้บริหาร","ตารางคิว · คำขอเข้าพบ · เอกสารรอลงนาม · ทริปและงานสั่งการ",false).replace(/<\/div>\s*$/,`<div class="ph-hb">${secEx.length&&SEC.tab==="queue"?`<input id="secQ" class="sec-q" type="search" placeholder="ค้นหานัดหมาย…" value="${esc(SEC.q||"")}" autocomplete="off">`:""}<button class="btn ghost" id="secEx">ผู้บริหาร</button><button class="btn ghost" id="secChg">เปลี่ยน PIN</button><button class="btn" id="secLk">${svg('<rect x="5" y="11" width="14" height="9" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',16)}<span>ล็อก</span></button></div></div>`)+
  (secEx.length?`<div class="ph-stat">
 <div class="ph-s" data-sect="queue"><b>${tdA.length}</b><span>นัดวันนี้</span></div>
 <div class="ph-s" data-sect="queue"><b style="font-size:20px">${nxt?esc(nxt.st):"—"}</b><span>${nxt?esc(nxt.title).slice(0,24):"นัดถัดไป"}</span></div>
+<div class="ph-s" data-sect="queue"><b>${secWeekCount()}</b><span>นัดสัปดาห์นี้</span></div>
 <div class="ph-s" data-sect="req"><b${reqs.length?` style="color:#d99a14"`:""}>${reqs.length}</b><span>คำขอรอจัดคิว</span></div>
 <div class="ph-s" data-sect="doc"><b${docLate.length?` style="color:var(--over)"`:""}>${docs.length}</b><span>รอลงนาม${docLate.length?` (เกิน ${docLate.length})`:""}</span></div>
 <div class="ph-s" data-sect="trip"><b${dirLate.length?` style="color:var(--over)"`:""}>${dirs.length}</b><span>งานสั่งการค้าง${dirLate.length?` (เกิน ${dirLate.length})`:""}</span></div></div>
@@ -147,20 +165,43 @@ function secTripView(){
 <div class="card"><div class="sec-dh"><h2>งานสั่งการ / ติดตาม <small>${dirs.filter(r=>r.status!=="done").length} ค้าง</small></h2><button class="btn sm" id="secAddDir">+ เพิ่มงานสั่งการ</button></div><div class="list">${dirs.map(drow).join("")||`<div class="empty">ยังไม่มีงานสั่งการ</div>`}</div></div></div>`;
 }
 // ---------- แก้ไขรายการ ----------
-const AP_F=[{k:"ex",l:"ผู้บริหาร",type:"select",opts:[]},{k:"title",l:"เรื่อง/ชื่อนัด",req:1,wide:1},{k:"date",l:"วันที่",type:"date",req:1},{k:"st",l:"เริ่ม",type:"time",req:1},{k:"en",l:"สิ้นสุด",type:"time"},{k:"buf",l:"เผื่อเวลาเดินทางก่อนนัด",type:"select",opts:[["0","ไม่เผื่อ"],["15","15 นาที"],["30","30 นาที"],["45","45 นาที"],["60","1 ชั่วโมง"],["90","1.5 ชั่วโมง"]]},{k:"with",l:"ผู้มาพบ/ผู้ร่วมประชุม"},{k:"place",l:"สถานที่"},{k:"status",l:"สถานะ",type:"select",opts:Object.entries(APST).map(([a,b])=>[a,b[0]])},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}];
-async function secEditAp(rec,isNew,after){
- const F=AP_F.map(f=>f.k==="ex"?Object.assign({},f,{opts:secExOpts()}):f);
- const v=await secForm(isNew?"เพิ่มนัดหมาย":"แก้ไขนัดหมาย",F,Object.assign({buf:"0",status:"confirmed"},rec),{del:!isNew});
- if(!v)return; if(v.__del){ if(await secDel(rec))setFoot("ลบนัดแล้ว"); return; }
- const next=Object.assign({},rec,v,{buf:+v.buf||0});
- if(next.en&&secMin(next.en)<=secMin(next.st)){ tell("เวลาสิ้นสุดต้องหลังเวลาเริ่มค่ะ"); return secEditAp(Object.assign({},rec,v),isNew,after); }
- const tp=secTrip1(next.ex,next.date); const cf=secConf(next);
- if(tp||cf.length){ const m=[]; if(tp)m.push("ผู้บริหารติดทริป "+esc(tp.dest||"")+" วันนั้น"); if(cf.length)m.push("ชนกับ "+cf.map(x=>"<b>"+esc(x.title)+"</b> ("+esc(x.st)+")").join(", ")); if(!(await ask("<b>ตรวจพบปัญหา</b><br>"+m.join("<br>")+"<br>บันทึกต่อไหมคะ?","บันทึกต่อ")))return; }
- if(await secPut(next)){ SEC.day=next.date; if(SEC.ex!=="all"&&next.ex!==SEC.ex)SEC.ex=next.ex; setFoot("บันทึกนัดแล้ว"); if(after)after(next); }
+const AP_F=[{k:"ex",l:"ผู้บริหาร",type:"select",opts:[]},{k:"title",l:"เรื่อง/ชื่อนัด",req:1,wide:1},{k:"date",l:"วันที่",type:"date",req:1},{k:"st",l:"เริ่ม",type:"time",req:1},{k:"en",l:"สิ้นสุด",type:"time"},{k:"buf",l:"เผื่อเวลาเดินทางก่อนนัด",type:"select",opts:[["0","ไม่เผื่อ"],["15","15 นาที"],["30","30 นาที"],["45","45 นาที"],["60","1 ชั่วโมง"],["90","1.5 ชั่วโมง"]]},{k:"with",l:"ผู้มาพบ/ผู้ร่วมประชุม"},{k:"place",l:"สถานที่"},{k:"rep",l:"ทำซ้ำ",type:"select",opts:SEC_REP},{k:"repn",l:"ทุก ๆ กี่รอบ (2 = เว้นหนึ่งรอบ)",type:"number"},{k:"repend",l:"ซ้ำจนถึงวันที่ (ว่าง = ไม่สิ้นสุด)",type:"date"},{k:"status",l:"สถานะ",type:"select",opts:Object.entries(APST).map(([a,b])=>[a,b[0]])},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}];
+function secPick(title,msg,opts){ return new Promise(res=>{ const d=xDlg("secpk","min(460px,94vw)"); let done=false;
+ d.innerHTML=`<div class="dlg-h">${esc(title)}</div><div class="dlg-b" style="grid-template-columns:1fr"><div style="line-height:1.7">${msg}</div><div class="sec-pk">${opts.map(([k,l,c])=>`<button type="button" class="btn ${c||"ghost"}" data-pk="${k}">${l}</button>`).join("")}</div></div><div class="dlg-f"><button type="button" class="btn ghost" id="pk-no">ยกเลิก</button></div>`;
+ const fin=v=>{ if(done)return; done=true; d.close(); res(v); }; d.querySelectorAll("[data-pk]").forEach(b=>b.onclick=()=>fin(b.dataset.pk)); el("pk-no").onclick=()=>fin(null); d.onclose=()=>{ if(!done){ done=true; res(null); } }; d.showModal(); }); }
+// ตรวจนัดซ้ำล่วงหน้า (120 วัน) ว่าชนนัดอื่น/ทริปไหม
+function secSerProblems(next){ const out=[]; if(!next.rep){ const tp=secTrip1(next.ex,next.date), cf=secConf(next); if(tp)out.push("ผู้บริหารติดทริป "+esc(tp.dest||"")+" วันนั้น"); if(cf.length)out.push("ชนกับ "+cf.map(x=>"<b>"+esc(x.title)+"</b> ("+esc(x.st)+")").join(", ")); return out; }
+ for(let i=0;i<120&&out.length<5;i++){ const d=secAdd(next.date,i); if(!secOccursOn(next,d))continue; const o=Object.assign({},next,{date:d}), tp=secTrip1(next.ex,d), cf=secConf(o); if(tp)out.push(fmtDate(d)+" ผู้บริหารติดทริป "+esc(tp.dest||"")); if(cf.length)out.push(fmtDate(d)+" ชนกับ "+cf.map(x=>"<b>"+esc(x.title)+"</b>").join(", ")); }
+ return out; }
+async function secEditAp(rec,isNew,after,mode,draft){
+ let base=rec, src=null;
+ if(!isNew&&rec._ser&&!mode){ const c=await secPick("นัดนี้เป็นนัดซ้ำ","<b>"+esc(rec.title)+"</b><br><span style=\"color:var(--ink-3)\">"+esc(secRepTxt(rec))+"</span><br>ต้องการแก้ไข…",[["one","เฉพาะวันที่ "+fmtDate(rec._od),"btn"],["all","ทั้งชุด (ทุกครั้ง)","ghost"]]); if(!c)return; mode=c; }
+ if(mode==="all"){ src=secs.find(x=>x._id===rec._id); if(!src)return; base=src; }
+ if(mode==="one"){ src=secs.find(x=>x._id===rec._id); if(!src)return; base=Object.assign({},rec,{rep:"",repn:"",repend:""}); delete base._ser; delete base._od; delete base.repx; }
+ const F=AP_F.filter(f=>mode!=="one"||!/^rep/.test(f.k)).map(f=>f.k==="ex"?Object.assign({},f,{opts:secExOpts()}):f);
+ const ttl=isNew?"เพิ่มนัดหมาย":mode==="one"?"แก้ไขเฉพาะวันที่ "+fmtDate(rec._od):mode==="all"?"แก้ไขนัดซ้ำ (ทั้งชุด)":"แก้ไขนัดหมาย";
+ const v=await secForm(ttl,F,Object.assign({buf:"0",status:"confirmed",repn:"1"},base,draft||{}),{del:!isNew,note:mode==="all"?"ช่อง “วันที่” คือวันเริ่มของชุดนัดซ้ำ":mode==="one"?"บันทึกแล้ววันนี้จะแยกออกจากชุดซ้ำ กลายเป็นนัดเดี่ยว":(isNew?"ตั้ง “ทำซ้ำ” เพื่อให้ลงนัดอัตโนมัติทุกวัน/สัปดาห์/เดือน/ปี ไม่ต้องบุ๊คใหม่ทุกครั้ง":"")});
+ if(!v)return;
+ if(v.__del){
+  if(mode==="one"){ if(await ask("ลบ <b>"+esc(rec.title)+"</b> เฉพาะวันที่ "+fmtDate(rec._od)+" ใช่ไหมคะ?<br><small>ครั้งอื่นของชุดนี้ยังอยู่</small>","ลบวันนี้")){ await secPut(Object.assign({},src,{repx:[...(src.repx||[]),rec._od]})); setFoot("ลบเฉพาะวันนั้นแล้ว"); } return; }
+  if(mode==="all"){ if(await secDel(src,"ลบนัดซ้ำ <b>"+esc(src.title)+"</b> <b>ทั้งชุด</b> (ทุกครั้ง) ใช่ไหมคะ?"))setFoot("ลบนัดซ้ำทั้งชุดแล้ว"); return; }
+  if(await secDel(rec))setFoot("ลบนัดแล้ว"); return; }
+ const next=Object.assign({},base,v,{buf:+v.buf||0}); delete next._ser; delete next._od;
+ const again=()=>secEditAp(rec,isNew,after,mode,v);
+ if(next.en&&secMin(next.en)<=secMin(next.st)){ tell("เวลาสิ้นสุดต้องหลังเวลาเริ่มค่ะ"); return again(); }
+ if(mode!=="one"){
+  if(next.rep){ next.repn=Math.max(1,Math.round(+next.repn||1)); if(!next.repend)delete next.repend; if(next.repend&&next.repend<next.date){ tell("วันสิ้นสุดการซ้ำต้องไม่ก่อนวันเริ่มค่ะ"); return again(); } }
+  else{ next.rep=""; delete next.repn; delete next.repend; delete next.repx; } }
+ if(mode==="one"){ next._id=uuid(); next.at=new Date().toISOString(); }
+ const pr=secSerProblems(next);
+ if(pr.length){ if(!(await ask("<b>ตรวจพบปัญหา</b>"+(next.rep?" (ในช่วง 4 เดือนข้างหน้า)":"")+"<br>"+pr.join("<br>")+"<br>บันทึกต่อไหมคะ?","บันทึกต่อ")))return; }
+ if(await secPut(next)){
+  if(mode==="one")await secPut(Object.assign({},src,{repx:[...(src.repx||[]),rec._od]}));
+  SEC.day=next.date; if(SEC.ex!=="all"&&next.ex!==SEC.ex)SEC.ex=next.ex; setFoot(next.rep?"บันทึกนัดซ้ำแล้ว · "+secRepTxt(next):"บันทึกนัดแล้ว"); if(after)after(next); }
 }
-async function secEdit(id){
+async function secEdit(id,occ){
  const r=secs.find(x=>x._id===id); if(!r)return; const ex={ex:secExOpts()};
- if(r.t==="appt")return secEditAp(r,false);
+ if(r.t==="appt")return secEditAp((r.rep&&occ)?Object.assign({},r,{date:occ,_od:occ,_ser:true}):r,false);
  if(r.t==="req"){ const v=await secForm("คำขอเข้าพบ",[{k:"ex",l:"ผู้บริหาร",type:"select",opts:ex.ex},{k:"who",l:"ผู้ขอพบ",req:1},{k:"topic",l:"เรื่อง",req:1,wide:1},{k:"urg",l:"ความเร่งด่วน",type:"select",opts:[["high","ด่วน"],["normal","ปกติ"],["low","ไม่เร่ง"]]},{k:"dur",l:"ใช้เวลา (นาที)",type:"number"},{k:"want",l:"อยากพบช่วงไหน",type:"date"},{k:"status",l:"สถานะ",type:"select",opts:Object.entries(RQST).map(([a,b])=>[a,b[0]])},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}],r,{del:1});
   if(!v)return; if(v.__del){ await secDel(r); return; } await secPut(Object.assign({},r,v,{dur:+v.dur||60})); return; }
  if(r.t==="doc"){ const v=await secForm("เอกสารรอผู้บริหาร",[{k:"ex",l:"ผู้บริหาร",type:"select",opts:ex.ex},{k:"title",l:"ชื่อเอกสาร",req:1,wide:1},{k:"from",l:"ส่งมาจาก (ฝ่าย/คน)"},{k:"rcv",l:"วันที่รับ",type:"date"},{k:"due",l:"ต้องการภายใน",type:"date"},{k:"urgent",l:"ด่วนมาก",type:"select",opts:[["","ปกติ"],["1","ด่วนมาก"]]},{k:"status",l:"สถานะ",type:"select",opts:[["wait","รอลงนาม"],["signed","ลงนามแล้ว"],["returned","ส่งกลับแก้ไข"]]},{k:"note",l:"หมายเหตุ",type:"textarea",wide:1}],r,{del:1});
@@ -211,7 +252,7 @@ function secExMgr(){
 }
 async function secSaveEx(l){ secEx=l; try{ await DB.doc("meta/secex").set({list:l}); }catch(e){ const x=explainErr(e); tell("<b>"+esc(x.title)+"</b>"); } }
 function secCopyDay(){
- const day=SEC.day, L=secs.filter(r=>r.t==="appt"&&(SEC.ex==="all"||r.ex===SEC.ex)&&r.date===day&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
+ const day=SEC.day, L=secApptsOn(day).filter(r=>(SEC.ex==="all"||r.ex===SEC.ex)&&r.status!=="cancelled"&&r.status!=="moved").sort((a,b)=>(a.st||"").localeCompare(b.st||""));
  const t=["กำหนดการ "+DOWFULL[secDow(day)]+"ที่ "+(+day.slice(8))+" "+MTHFULL[+day.slice(5,7)-1]+" "+(+day.slice(0,4)+543)+(SEC.ex!=="all"?" — "+secExName(SEC.ex):"")].concat(L.map(r=>"• "+r.st+(r.en?"–"+r.en:"")+" "+r.title+(r.with?" (พบ "+r.with+")":"")+(r.place?" @"+r.place:"")+(SEC.ex==="all"?" ["+secExName(r.ex)+"]":"")),L.length?[]:["ไม่มีนัดหมาย"]).join("\n");
  (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>setFoot("คัดลอกกำหนดการแล้ว"),()=>{ tell("<b>กำหนดการ</b><pre style=\"white-space:pre-wrap;font:inherit;margin-top:8px\">"+esc(t)+"</pre>"); });
 }
@@ -233,7 +274,7 @@ function secWire(){
  document.querySelectorAll("[data-secx]").forEach(n=>n.onclick=()=>{ SEC.ex=n.dataset.secx; render(); });
  document.querySelectorAll("[data-secday]").forEach(n=>n.onclick=()=>{ SEC.day=n.dataset.secday; render(); });
  document.querySelectorAll("[data-secwk]").forEach(n=>n.onclick=()=>{ const v=+n.dataset.secwk; SEC.day=v?secAdd(SEC.day||secToday(),v):secToday(); render(); });
- document.querySelectorAll("[data-secedit]").forEach(n=>n.onclick=e=>{ if(e.target.closest("button"))return; secEdit(n.dataset.secedit); });
+ document.querySelectorAll("[data-secedit]").forEach(n=>n.onclick=e=>{ if(e.target.closest("button"))return; secEdit(n.dataset.secedit,n.dataset.secocc); });
  document.querySelectorAll("[data-secfree]").forEach(n=>n.onclick=()=>{ const [a,b]=n.dataset.secfree.split("|").map(Number); secAdd1("appt",{date:SEC.day,st:secHM(a),en:secHM(Math.min(b,a+60))}); });
  document.querySelectorAll("[data-secbook]").forEach(n=>n.onclick=e=>{ e.stopPropagation(); secBook(n.dataset.secbook); });
  document.querySelectorAll("[data-secrq]").forEach(n=>n.onclick=async e=>{ e.stopPropagation(); const [id,st]=n.dataset.secrq.split("|"), r=secs.find(x=>x._id===id); if(r)await secPut(Object.assign({},r,{status:st})); });

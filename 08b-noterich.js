@@ -289,7 +289,7 @@ function neHistReset(){ clearTimeout(neH.t); neH.s=[]; neH.i=-1; neH.pend=0; neS
 function neGo(d){
 neFlush(); const k=neH.i+d; if(k<0||k>=neH.s.length)return;
 neH.i=k; const st=neH.s[k]; neH.busy=1; neHideAll();
-NE().innerHTML=st.h; ntHydrate(NE()); NE().focus(); neSetOffsets(st.c); neH.busy=0; neHistUi(); neState();
+NE().innerHTML=st.h; ntHydrate(NE()); ntFoldApply(NE()); NE().focus(); neSetOffsets(st.c); neH.busy=0; neHistUi(); neState();
 }
 const neUndo=()=>neGo(-1), neRedo=()=>neGo(1);
 // ครอบการแก้ไขที่ทำเองกับ DOM (ไม่มี input event) ให้บันทึกสถานะก่อน/หลัง
@@ -322,7 +322,22 @@ el("ndlg").addEventListener("click",async e=>{
 const b=e.target.closest("[data-hv]"); if(!b||!editingNote)return; const v=(editingNote.hist||[])[+b.dataset.hv]; if(!v)return;
 el("nepop").hidden=true;
 if(!await ask("กู้เวอร์ชันนี้มาแทนเนื้อหาตอนนี้ไหมคะ? (ถ้าเปลี่ยนใจกดปุ่มย้อนกลับ ↶ ได้)","กู้เวอร์ชันนี้"))return;
-neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); neSnap(); NE().focus();
+neFlush(); NE().innerHTML=ntHtml({fmt:v.f,body:v.b}); ntHydrate(NE()); ntFoldApply(NE()); neSnap(); NE().focus();
 });
 
 document.addEventListener("change",e=>{ const t=e.target; if(t&&t.dataset&&t.dataset.ncust){ el("nepop").hidden=true; neColor(t.dataset.ncust,t.value); } });
+
+// ===== พับ / ย่อส่วนใต้หัวข้อ (H1 พับถึงหัวข้อใหญ่ถัดไป · H2 พับถึงหัวข้อใดก็ได้ถัดไป) =====
+// สถานะที่บันทึก: data-fold="1" บนหัวข้อ · การซ่อนจริงใช้ data-nfh ชั่วคราว (ไม่ถูกบันทึก)
+function ntFoldApply(root){ if(!root)return; root.querySelectorAll("[data-nfh]").forEach(n=>n.removeAttribute("data-nfh"));
+ let cur=0; [...root.children].forEach(n=>{ const L=n.tagName==="H2"?2:n.tagName==="H3"?3:0;
+  if(L){ if(cur&&L>cur){ n.setAttribute("data-nfh","1"); return; } cur=n.getAttribute("data-fold")==="1"?L:0; return; }
+  if(cur)n.setAttribute("data-nfh","1"); }); }
+function ntFoldToggle(h,root){ if(h.getAttribute("data-fold")==="1")h.removeAttribute("data-fold"); else h.setAttribute("data-fold","1"); ntFoldApply(root); }
+function ntFoldAll(root){ const hs=[...root.querySelectorAll(":scope>h2,:scope>h3")]; if(!hs.length)return false; const any=hs.some(h=>h.getAttribute("data-fold")!=="1"); hs.forEach(h=>{ if(any)h.setAttribute("data-fold","1"); else h.removeAttribute("data-fold"); }); ntFoldApply(root); return any; }
+function ntFoldHit(e,root){ const h=e.target&&e.target.closest?e.target.closest("h2,h3"):null; if(!h||h.parentNode!==root)return null; return (e.clientX-h.getBoundingClientRect().left)<34?h:null; }
+NE().addEventListener("click",e=>{ const h=ntFoldHit(e,NE()); if(h){ e.preventDefault(); ntFoldToggle(h,NE()); } },true);
+el("nvb").addEventListener("click",e=>{ const h=ntFoldHit(e,el("nvb")); if(h)ntFoldToggle(h,el("nvb")); });
+function ntFoldBar(){ let b=el("nvfold"); if(!b){ b=document.createElement("div"); b.id="nvfold"; b.className="nvfold"; el("nvb").parentNode.insertBefore(b,el("nvb")); b.onclick=e=>{ const x=e.target.closest("button"); if(!x)return; ntFoldAll(el("nvb")); ntFoldBar(); }; }
+ const hs=el("nvb").querySelectorAll(":scope>h2,:scope>h3"); b.hidden=hs.length<2; const any=[...hs].some(h=>h.getAttribute("data-fold")!=="1"); b.innerHTML=`<button type="button">${any?"▾ พับทุกหัวข้อ":"▸ ขยายทุกหัวข้อ"}</button><small>แตะลูกศรหน้าหัวข้อเพื่อพับ/ขยายเฉพาะส่วน</small>`; }
+el("ntool").addEventListener("click",e=>{ const b=e.target.closest('[data-ne="fold"]'); if(!b)return; const any=ntFoldAll(NE()); b.textContent=any?"▸ ขยายทุกหัวข้อ":"▾ พับทุกหัวข้อ"; });
