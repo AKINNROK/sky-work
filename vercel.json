@@ -26,6 +26,15 @@
     {
       "path": "/api/push",
       "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/backup",
+      "schedule": "0 18 * * 0"
     }
-  ]
+  ],
+  "functions": {
+    "api/backup.js": {
+      "maxDuration": 60
+    }
+  }
 }

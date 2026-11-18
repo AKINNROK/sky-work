@@ -51,6 +51,8 @@ if(dl)dl.textContent=(f==="none")?"วันที่":"วันที่เร
 let formCtx="", formKind="", msDraft=[], apDraft=[];
 const KINDG={train:/อบรม|training/i,meet:/ประชุม|meeting/i,proj:/โปรเจค|โครงการ|project/i,act:/กิจกรรม|event/i};
 const kindGroup=k=>(visible(groups).find(g=>KINDG[k]&&KINDG[k].test(g.label))||{}).key||"";
+// กลุ่ม "กลาง" (ไม่ใช่อบรม/ประชุม/โปรเจค/กิจกรรม) — ใช้เมื่อหากลุ่มที่ตรงประเภทไม่เจอ กันประชุมไปตกกลุ่ม "อบรมตามกฎหมาย"
+const neutralGroup=()=>(visible(groups).find(g=>!/อบรม|training|ประชุม|meeting|โปรเจค|โครงการ|project|กิจกรรม|event|ไอเดีย|idea/i.test(g.label))||visible(groups).find(g=>!/อบรม|training/i.test(g.label))||{}).key||"";
 const kindOfItem=t=>{
 if(!t)return "";
 if(t.kind)return t.kind;
@@ -126,8 +128,8 @@ el("wrap-flags").hidden=!!formCtx;
 el("del").style.display=t?"":"none";
 fill("f-company",[["","— ไม่ระบุ —"],...visible(companies).map(c=>[c.key,c.label])],t?.company||"");
 fill("f-track",visible(groups).map(g=>[g.key,g.label]),t?.track||
-(genMode?((visible(groups).find(g=>!/อบรม|training|ประชุม|meeting|โปรเจค|โครงการ|project|กิจกรรม|event/i.test(g.label))||{}).key||""):(formKind?kindGroup(formKind):""))||
-(formCtx==="train"?kindGroup("train"):formCtx==="meet"?kindGroup("meet"):"")||groups[0]?.key);
+(genMode?((visible(groups).find(g=>!/อบรม|training|ประชุม|meeting|โปรเจค|โครงการ|project|กิจกรรม|event/i.test(g.label))||{}).key||""):(formKind?(kindGroup(formKind)||(formKind!=="train"?neutralGroup():"")):""))||
+(formCtx==="train"?kindGroup("train"):formCtx==="meet"?(kindGroup("meet")||neutralGroup()):"")||groups[0]?.key);
 fill("f-status",STATUS.map(x=>[x,x]),t?.status||"รอดำเนินการ");
 const glopts=[["","— ไม่ผูกหมวด —"],...visible(gls).map(g=>[g.key,glLabel(g.key)])];
 fill("f-gl1",glopts,glKeyOf(t?.gl1)); fill("f-gl2",glopts,glKeyOf(t?.gl2));
@@ -167,7 +169,7 @@ el("f-dsdcertno").value=t?.dsdCertNo||"";
 el("f-pax").value=t?.pax||""; el("f-hours").value=t?.hours||"";
 el("f-vendor").value=t?.vendor||"";
 fill("f-dsd",[["","— ไม่ระบุ —"],...DSD.map(x=>[x,x])],t?.dsd||"");
-if(!t)el("f-train").checked=genMode?false:((formCtx==="train")||trainish());
+if(!t)el("f-train").checked=genMode?false:((formCtx==="train")||(formCtx!=="meet"&&formKind!=="meet"&&trainish()));
 syncTrain(); if(typeof syncBatches==="function")syncBatches();
 el("f-b1").value=t?.b1||""; el("f-b2").value=t?.b2||"";
 el("f-actual").value=t?.actual||""; el("f-code").value=t?.code||"";
@@ -421,7 +423,7 @@ const keep=(editing?.done||[]).filter(v=>!shown.includes(v));
 return [...keep,...[...box.querySelectorAll(".oc:checked")].map(i=>i.value)];})()
 };
 if(editing&&editing.srcn)data.srcn=editing.srcn;
-if(editing)["kpis","kteams","plog","rag"].forEach(k=>{ if(editing[k]!==undefined)data[k]=editing[k]; });
+if(editing)["kpis","kteams","plog","rag","acts","ev"].forEach(k=>{ if(editing[k]!==undefined)data[k]=editing[k]; });
 if(el("f-course").value==="__newcrs__"){
 const nm=(data.title||"").trim();
 if(!nm){el("f-title").focus();return;}
@@ -664,7 +666,8 @@ el("ndlg").showModal(); neState();
 el("ncancel").onclick=()=>{ const n=editingNote, back=noteBack; el("ndlg").close(); if(back&&n)viewNote(n); };
 el("nsave").onclick=async()=>{
 const d={title:el("n-title").value.trim(),kind:el("n-kind").value,date:el("n-date").value||null,
-tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",nf:NE().getAttribute("data-nf")||"",ns:+NE().getAttribute("data-ns")||0,color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
+tag:el("n-tag").value.trim(),body:ntClean(NE().innerHTML),fmt:"h",nf:NE().getAttribute("data-nf")||"",ns:+NE().getAttribute("data-ns")||0,arch:false,opened:isoOf(new Date()),color:el("n-colors").dataset.val||"",pin:el("n-pin").checked,folder:el("n-folder").value||""};
+if(editingNote&&editingNote.mtg){ d.mtg=editingNote.mtg; if(editingNote.mtgd)d.mtgd=editingNote.mtgd; }   // คงลิงก์ไปการประชุมไว้
 if(!d.title&&!(NE().textContent||"").trim()){el("n-title").focus();return;}
 if(editingNote){ const old=editingNote.body||"", prev=editingNote.hist||[];
  if(old!==d.body&&old.length<300000)d.hist=[{at:new Date().toISOString(),t:editingNote.title||"",f:editingNote.fmt||"",b:old},...prev].slice(0,8); else if(prev.length)d.hist=prev; }
@@ -683,7 +686,7 @@ const c=crsOf(code); if(!c)return;
 editingCrs=code;
 const bs=crsBatches(code).slice().sort((x,y)=>String(x.date||"9999").localeCompare(String(y.date||"9999")));
 const pax=bs.reduce((a,t)=>a+(+t.pax||0),0);
-const cost=bs.reduce((a,t)=>a+((+t.actual||0)||budgetOf(t)),0);
+const cost=bs.reduce((a,t)=>a+(actOf(t)||budgetOf(t)),0);
 const yrs=[...new Set(bs.map(t=>t.date?new Date(t.date).getFullYear():null).filter(Boolean))].sort();
 el("crsdlgh").textContent=c.code+" · "+c.name;
 el("crs-kpi").innerHTML=`<div><span>จำนวนรุ่น</span><b>${bs.length}</b></div>
@@ -1003,7 +1006,7 @@ const act=kind==="act"?sec("รายละเอียดกิจกรรม"
 +R_("ผู้เข้าร่วม (เป้า)",t.apax?t.apax+" คน":"")+R_("ผู้เข้าร่วม (จริง)",t.apaxreal?t.apaxreal+" คน":"")+R_("ผู้จัด / ผู้รับเหมา",t.aorg)+chips(t.aprep)):"";
 const glL=(g,b)=>g?`${glLabel(glKeyOf(g))}${+b?" · "+baht(b)+" ฿":""}`:"";
 const money=sec("งบประมาณ",R_("หมวด GL หลัก",glL(t.gl1,t.b1),true)+R_("หมวด GL รอง",glL(t.gl2,t.b2),true)
-+R_("งบรวม",budgetOf(t)?baht(budgetOf(t))+" ฿":"")+R_("ใช้จริง",+t.actual?baht(t.actual)+" ฿":""));
++R_("งบรวม",budgetOf(t)?baht(budgetOf(t))+" ฿":"")+R_("ใช้จริง",actOf(t)?baht(actOf(t))+" ฿"+(txLinkedSum(t)>0?" (จากบันทึกเงินที่ผูกกับงานนี้)":""):""));
 const k5=isTrain(t)?"train":isMeet(t)?"meet":"task", L5=W5LAB[k5];
 const w5=sec("5W1H",R_(L5[0],t.why,true)+R_(L5[2],t.inv,true)+(k5==="task"?R_("Where · สถานที่ / ระบบ / ลิงก์",t.whr,true):"")+R_(L5[4],t.how,true));
 const note=R_("",t.note,true)?sec("รายละเอียด",V("หมายเหตุ",t.note,true)):"";

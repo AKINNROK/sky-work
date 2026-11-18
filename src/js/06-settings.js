@@ -344,7 +344,7 @@ ${all.length?`<div class="tybar" style="margin-top:12px"><span style="font-size:
 }
 function setImport(){
 return `<div class="card"><h2>สำรองข้อมูล & กู้คืน <small>ลบไปแล้วกู้กลับได้ ถ้ามีไฟล์สำรอง</small></h2>
-<div class="hint" style="margin-top:2px">ของที่กดลบจะพักใน<b>ถังขยะ ${TRASH_DAYS} วัน</b> (ตั้งค่า › ถังขยะ) ก่อนหายถาวร — ส่วนไฟล์สำรองเก็บได้ไม่มีวันหมดอายุ และกู้ได้แม้ลบถาวรไปแล้ว แนะนำกดสำรองสัปดาห์ละครั้ง หรือก่อนลบอะไรเป็นชุดใหญ่</div>
+<div class="hint" style="margin-top:2px">ของที่กดลบจะพักใน<b>ถังขยะ ${TRASH_DAYS} วัน</b> (ตั้งค่า › ถังขยะ) ก่อนหายถาวร — ส่วนไฟล์สำรองเก็บได้ไม่มีวันหมดอายุ และกู้ได้แม้ลบถาวรไปแล้ว แนะนำกดสำรองสัปดาห์ละครั้ง หรือก่อนลบอะไรเป็นชุดใหญ่<br>🛡 <b>สำรองอัตโนมัติฝั่งเซิร์ฟเวอร์</b> ทุกวันอาทิตย์ (เก็บ 8 สัปดาห์) ที่ Supabase › Storage › backups — ต้องตั้ง SUPABASE_SERVICE_ROLE_KEY ใน Vercel (ดู README) · ไฟล์นั้นเลือก "กู้คืนจากไฟล์" ได้เลย</div>
 <div class="addg">
 <button class="btn" id="bkdown">${svg(ICON.file,17)}สำรองข้อมูลทั้งหมด (.json)</button>
 <input type="file" id="bkfile" accept=".json,application/json" style="background:var(--paper);padding:9px 14px">

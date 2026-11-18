@@ -8,12 +8,21 @@ const secDayLbl=iso=>+iso.slice(8)+" "+MTH[+iso.slice(5,7)-1];
 function secWeekCount(){ const w0=secWkStart(secToday()); let n=0; for(let i=0;i<7;i++)n+=secApptsOn(secAdd(w0,i)).filter(r=>secMine(r)&&SEC_OK(r)).length; return n; }
 
 // ---------- บัตรนัด / คอลัมน์วัน ----------
-function secCard(r,iso){ const cf=secConf(r), st=APST[r.status]||APST.confirmed, e=secEx1(r.ex), col=(e&&e.color)||"#6b7a89";
- return `<div class="sec-card${r.status==="cancelled"?" off":""}" style="--c:${col}" data-secedit="${r._id}" data-secocc="${iso}" tabindex="0">
-<div class="sec-ct"><b>${esc(r.title)}</b><button type="button" class="sec-cp" data-seccp="${r._id}|${iso}" title="คัดลอกนัดนี้ไปวันอื่น" aria-label="คัดลอกนัดนี้">⧉</button></div>
-<div class="sec-cm">🕘 ${esc(r.st||"—")}${r.en?" – "+esc(r.en):""}${r.rep?` <span class="sec-rp" title="${esc(secRepTxt(r))}">↻ ${esc(secRepTxt(r).split(" · ")[0])}</span>`:""}</div>
-${r.with?`<div class="sec-cm">👤 ${esc(r.with)}</div>`:""}${r.place?`<div class="sec-cm">📍 ${esc(r.place)}</div>`:""}${+r.buf?`<div class="sec-cm">🚗 เผื่อเดินทาง ${r.buf} น.</div>`:""}${r.note?`<div class="sec-cm sec-nt">${esc(r.note)}</div>`:""}
-<div class="sec-cf">${SEC.ex==="all"?secExChip(r.ex):""}${r.status!=="confirmed"?`<span class="pill ${st[1]}">${st[0]}</span>`:""}${cf.length?`<b class="sec-bad">⚠ ชน ${esc(cf.map(x=>x.title).join(", "))}</b>`:""}</div></div>`; }
+function secCard(r,iso){ const cf=secConf(r), e=secEx1(r.ex), col=(e&&e.color)||"#6b7a89";
+ return `<div class="sec-card${r.status==="cancelled"?" off":""}" style="--c:${col}" data-secview="${r._id}|${iso}" tabindex="0" role="button" aria-label="ดูรายละเอียด ${esc(r.title)}">
+<div class="sec-ct"><b>${esc(r.title)}${r.rep?` <span class="sec-rp" title="${esc(secRepTxt(r))}">↻</span>`:""}${cf.length?` <span class="sec-bad" title="ชนกับ ${esc(cf.map(x=>x.title).join(", "))}">⚠</span>`:""}</b><button type="button" class="sec-cp" data-seccp="${r._id}|${iso}" title="คัดลอกนัดนี้ไปวันอื่น" aria-label="คัดลอกนัดนี้">⧉</button></div></div>`; }
+// หน้าต่างดูรายละเอียดนัด (แตะการ์ดในตารางสัปดาห์) — แก้ไข/คัดลอกจากที่นี่
+function secView1(id,iso){ const r0=secs.find(x=>x._id===id); if(!r0)return; const r=r0.rep?Object.assign({},r0,{date:iso,_od:iso,_ser:true}):r0;
+ const d=xDlg("secview","min(520px,96vw)"), st=APST[r.status]||APST.confirmed, cf=secConf(r), tp=secTrip1(r.ex,r.date);
+ const row=(l,v)=>v?`<div class="sec-vr"><span>${l}</span><b>${v}</b></div>`:"";
+ d.innerHTML=`<div class="dlg-h">${esc(r.title)}</div><div class="dlg-b" style="grid-template-columns:1fr">
+${row("ผู้บริหาร",secExChip(r.ex))}${row("วันที่",fmtDate(r.date)+" ("+DOWFULL[secDow(r.date)]+")")}${row("เวลา",esc(r.st||"—")+(r.en?" – "+esc(r.en):""))}
+${row("ผู้มาพบ / ผู้ร่วมประชุม",esc(r.with||""))}${row("สถานที่",esc(r.place||""))}${+r.buf?row("เผื่อเวลาเดินทาง",r.buf+" นาที"):""}
+${row("สถานะ",`<span class="pill ${st[1]}">${st[0]}</span>`)}${r.rep?row("ทำซ้ำ","↻ "+esc(secRepTxt(r))):""}${row("หมายเหตุ",esc(r.note||"").replace(/\n/g,"<br>"))}
+${cf.length?`<div class="sec-vr"><span>แจ้งเตือน</span><b class="sec-bad">⚠ ชนกับ ${esc(cf.map(x=>x.title).join(", "))}</b></div>`:""}${tp?`<div class="sec-vr"><span>แจ้งเตือน</span><b class="sec-bad">✈ ผู้บริหารติดทริป ${esc(tp.dest||"")}</b></div>`:""}</div>
+<div class="dlg-f"><button type="button" class="btn ghost" id="sv-x">ปิด</button><button type="button" class="btn ghost" id="sv-cp">⧉ คัดลอกไปวันอื่น</button><button type="button" class="btn" id="sv-ed">แก้ไข</button></div>`;
+ el("sv-x").onclick=()=>d.close(); el("sv-cp").onclick=()=>{ d.close(); secCopyOpen("one",r); }; el("sv-ed").onclick=()=>{ d.close(); secEdit(id,iso); };
+ d.showModal(); }
 function secUpcoming(){ const T=secToday(), lim=secAdd(T,45), lim2=secAdd(T,14), it=[];
  secs.forEach(r=>{ if(!secMine(r))return;
   if(r.t==="trip"&&r.status!=="cancelled"&&r.status!=="done"&&r.from&&((r.from>=T&&r.from<=lim)||(r.from<T&&(r.to||r.from)>=T)))it.push({d:r.from<T?T:r.from,t:"✈ ทริป "+(r.dest||""),s:fmtDate(r.from)+(r.to&&r.to!==r.from?" – "+fmtDate(r.to):""),tab:"trip",r});
@@ -95,6 +104,7 @@ function secWire2(){
  if(view!=="sec"||!SEC.unl)return; const on=(id,f)=>{ const n=el(id); if(n)n.onclick=f; };
  on("secCopyTo",()=>secCopyOpen("day")); on("secAddAp2",()=>secAdd1("appt"));
  document.querySelectorAll("[data-secaddday]").forEach(n=>n.onclick=e=>{ e.stopPropagation(); SEC.day=n.dataset.secaddday; secAdd1("appt",{date:n.dataset.secaddday}); });
+ document.querySelectorAll("[data-secview]").forEach(n=>{ n.onclick=e=>{ if(e.target.closest("button"))return; const [id,iso]=n.dataset.secview.split("|"); secView1(id,iso); }; n.onkeydown=e=>{ if((e.key==="Enter"||e.key===" ")&&e.target===n){ e.preventDefault(); n.click(); } }; });
  document.querySelectorAll("[data-seccp]").forEach(n=>n.onclick=e=>{ e.stopPropagation(); const [id,iso]=n.dataset.seccp.split("|"), r=secs.find(x=>x._id===id); if(r)secCopyOpen("one",r.rep?Object.assign({},r,{date:iso,_od:iso,_ser:true}):r); });
  document.querySelectorAll("[data-secday]").forEach(n=>{ const o=n.onclick; n.onclick=ev=>{ SEC.mini=""; if(o)o.call(n,ev); }; n.onkeydown=ev=>{ if(ev.key==="Enter"||ev.key===" "){ ev.preventDefault(); n.click(); } }; });
  document.querySelectorAll("[data-secmini]").forEach(n=>n.onclick=()=>{ const base=SEC.mini||SEC.day.slice(0,7), [y,m]=base.split("-").map(Number), nd=new Date(y,m-1+(+n.dataset.secmini),1); SEC.mini=nd.getFullYear()+"-"+String(nd.getMonth()+1).padStart(2,"0"); render(); });

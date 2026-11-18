@@ -2,7 +2,7 @@
 // ตัวแปรที่ต้องมี: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, SUPABASE_URL, SUPABASE_ANON_KEY
 // สรุปอัตโนมัติรายเช้า (Vercel Cron) ต้องเพิ่ม: SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET
 // ตัวแปรเสริม: VAPID_SUBJECT (เช่น mailto:you@example.com), ALLOWED_EMAILS
-const { bangkokToday, buildDigest } = require("./_digest");
+const { bangkokToday, buildDigest, buildReminders } = require("./_digest");
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
@@ -16,6 +16,7 @@ module.exports = async (req, res) => {
     const auth = req.headers.authorization || "";
     if (CRON && auth === "Bearer " + CRON) {
       if (!cronReady) return res.status(503).json({ error: "not_configured" });
+      if (q.remind) return res.status(200).json(await runReminders(E, SB_URL, SVC));
       return res.status(200).json(await runDigest(E, SB_URL, SVC));
     }
     // โหมดตั้งค่าครั้งแรก: สร้างคีย์ VAPID ใหม่ให้คัดลอกไปใส่ที่ Vercel (ไม่เก็บอะไรไว้ และปิดทันทีเมื่อมีคีย์แล้ว)
@@ -81,7 +82,7 @@ async function runDigest(E, SB_URL, SVC) {
     const subs = (byUid[uid].pushsubs || {}).list || [];
     if (!subs.length) continue;
     sum.users++;
-    const dg = buildDigest((byUid[uid].pushplan || {}).list || [], today);
+    const pp = byUid[uid].pushplan || {}, dg = buildDigest(pp.list || [], today, 3, { ap: pp.ap, kpi: pp.kpi, cfg: pp.cfg });
     if (!dg) { sum.skipped++; continue; }
     const out = await sendAll(E, subs, dg);
     sum.sent += out.sent; sum.failed += out.failed;
@@ -92,3 +93,32 @@ async function runDigest(E, SB_URL, SVC) {
   }
   return { ok: true, date: today, ...sum };
 }
+
+// เตือนก่อนนัด: เรียกจากตัวยิงภายนอกทุก ~10 นาที (GET /api/push?remind=1 + Authorization: Bearer CRON_SECRET)
+async function runReminders(E, SB_URL, SVC, nowMs, deps) {
+  nowMs = nowMs || Date.now(); deps = deps || {};
+  const send = deps.send || sendAll, day = bangkokToday(new Date(nowMs));
+  const rows = await readDocs(SB_URL, SVC, SVC, "?kind=eq.meta&id=in.(pushsubs,pushplan,pushsent)&select=uid,id,data");
+  const byUid = {}; rows.forEach(r => { (byUid[r.uid] = byUid[r.uid] || {})[r.id] = r.data || {}; });
+  const sum = { users: 0, due: 0, sent: 0, failed: 0 };
+  for (const uid of Object.keys(byUid)) {
+    const D = byUid[uid], subs = (D.pushsubs || {}).list || [], pp = D.pushplan || {};
+    if (!subs.length || !Array.isArray(pp.ap) || !pp.ap.length) continue;
+    const ps = D.pushsent || {}, sent = ps.day === day ? (ps.keys || []) : [];
+    const due = buildReminders(pp.ap, nowMs, pp.cfg, sent);
+    if (!due.length) continue;
+    sum.users++; sum.due += due.length;
+    const okKeys = [];
+    for (const d of due) { const o = await send(E, subs, d); sum.sent += o.sent; sum.failed += o.failed; if (o.sent) okKeys.push(d.key); }
+    if (okKeys.length) await saveSent(SB_URL, SVC, uid, { day, keys: [...sent, ...okKeys].slice(-200) });
+  }
+  return { ok: true, at: new Date(nowMs).toISOString(), ...sum };
+}
+async function saveSent(SB_URL, SVC, uid, data) {
+  const H = { apikey: SVC, Authorization: "Bearer " + SVC, "Content-Type": "application/json", Prefer: "return=representation" };
+  const body = JSON.stringify({ data, updated_at: new Date().toISOString() });
+  const r = await fetch(SB_URL + "/rest/v1/rows?id=eq.pushsent&uid=eq." + encodeURIComponent(uid), { method: "PATCH", headers: H, body });
+  let upd = []; try { upd = r.ok ? await r.json() : []; } catch (e) {}
+  if (!upd.length) await fetch(SB_URL + "/rest/v1/rows", { method: "POST", headers: Object.assign({}, H, { Prefer: "return=minimal" }), body: JSON.stringify({ id: "pushsent", uid, kind: "meta", data, updated_at: new Date().toISOString() }) });
+}
+module.exports.runReminders = runReminders;

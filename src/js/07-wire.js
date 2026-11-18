@@ -5,7 +5,7 @@ el("pushGen")&&(el("pushGen").onclick=pushGenKeys); el("pushPing")&&(el("pushPin
 el("pushCopy")&&(el("pushCopy").onclick=async()=>{ try{ await navigator.clipboard.writeText(el("pushKeys").innerText); setFoot("คัดลอกคีย์แล้ว"); }catch(e){ setFoot("คัดลอกไม่ได้ — ลากเลือกข้อความเอง"); } });
 document.querySelectorAll("[data-gapf]").forEach(b=>b.onclick=()=>{ R.gapF=b.dataset.gapf===R.gapF?"":b.dataset.gapf; render(); });
 if(el("gapAI"))el("gapAI").onclick=()=>{ AI.open=false; aiGo("ai"); aiSend("/5w1h"); };
-if(el("bkNow"))el("bkNow").onclick=()=>{ const p=bkDownload(); setFoot("สำรองแล้ว "+(p.items.length+p.ledger.length+p.legal.length+p.index.length+p.note.length)+" รายการ"); render(); };
+if(el("bkNow"))el("bkNow").onclick=async()=>{ setFoot("กำลังรวบรวมข้อมูลสำรอง…"); const p=await bkDownload(); setFoot("สำรองแล้ว "+bkCount(p)+" รายการ"); render(); };
 if(el("bkLater"))el("bkLater").onclick=()=>{ const d=new Date(); d.setDate(d.getDate()+1); try{ localStorage.setItem("sw-bksnooze",isoOf(d)); }catch(e){} render(); };
 document.querySelectorAll("[data-go]").forEach(n=>{n.style.cursor="pointer";
 n.onclick=e=>{e.stopPropagation();
@@ -504,24 +504,26 @@ await SB.from("rows").delete().eq("id",id).eq("uid",uid);
 out.innerHTML=`<div class="banner ok">${svg(ICON.check,19)} เขียน อ่าน และลบข้อมูลได้ปกติ · ตอนนี้มี ${rd.count!=null?rd.count-1:"?"} แถวบนเซิร์ฟเวอร์</div>`;
 });
 // ---- สำรอง / กู้คืน ----
-if(el("bkdown"))el("bkdown").onclick=()=>{
-const pack=bkDownload();
-const n=pack.items.length+pack.ledger.length+pack.legal.length+pack.index.length+pack.note.length;
+if(el("bkdown"))el("bkdown").onclick=async()=>{
+setFoot("กำลังรวบรวมข้อมูลสำรอง…"); const pack=await bkDownload();
+const n=bkCount(pack);
 bkMsg=`<div class="banner ok" style="margin-top:12px">${svg(ICON.file,17)} สำรองแล้ว <b>${n}</b> รายการ + การตั้งค่าทั้งหมด — เก็บไฟล์ไว้ใน Google Drive หรือที่ปลอดภัยนะคะ</div>`; render();};
 if(el("bkgo"))el("bkgo").onclick=async()=>{
 const f=el("bkfile").files&&el("bkfile").files[0];
 if(!f){tell("เลือกไฟล์สำรอง (.json) ก่อนนะคะ");return;}
 let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Work</div>"); return; }
 if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Work</b>");return;}
-const cnt=["items","ledger","legal","index","note"].reduce((a,k)=>a+((pack[k]||[]).length),0);
+const cnt=bkCount(pack);
 if(!await ask("ไฟล์นี้สำรองไว้เมื่อ <b>"+esc(new Date(pack.at||Date.now()).toLocaleString("th-TH"))+"</b> มี <b>"+cnt+"</b> รายการ<br>กู้คืนแบบ<b>เติมกลับ</b> — ของที่ลบไปจะกลับมา ของที่มีอยู่จะถูกเขียนทับด้วยค่าในไฟล์ ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบ<br>ดำเนินการต่อไหมคะ?","กู้คืนข้อมูล"))return;
 let ok=0,fail=0;
-for(const [coll,key] of [["items","items"],["ledger","ledger"],["legal","legal"],["index","index"],["note","note"]]){
+for(const [coll,key] of [["items","items"],["ledger","ledger"],["legal","legal"],["index","index"],["note","note"],["sec","sec"]]){
 for(const r of (pack[key]||[])){
 try{ await DB.collection(coll).doc(r.id).set(r.data); ok++; }catch(e){ fail++; }
 if(ok%25===0)setFoot("กำลังกู้คืน "+ok+"/"+cnt+" …");}}
+for(const r of [...(pack.raw||[]),...(pack.rows||[])]){ try{ if(!r||!r.id||!r.kind)continue; const {error}=await SB.from("rows").upsert({id:r.id,uid,kind:r.kind,data:r.data,updated_at:new Date().toISOString()}); if(error)throw error; ok++; }catch(e){ fail++; } if(ok%25===0)setFoot("กำลังกู้คืน "+ok+"/"+cnt+" …"); }
 const M=pack.meta||{};
 try{
+if(Array.isArray(M.secex)&&M.secex.length){ secEx=M.secex; await DB.doc("meta/secex").set({list:secEx}); }
 if(Array.isArray(M.groups)&&M.groups.length){groups=M.groups; await saveMeta("groups",groups);}
 if(Array.isArray(M.companies)){companies=M.companies; await saveMeta("companies",companies);}
 if(Array.isArray(M.gl)){gls=M.gl; await saveMeta("gl",gls);}

@@ -318,7 +318,7 @@ const live=ty.filter(t=>t.status!==STATUS_CANCEL);
 const sum=(a,k)=>a.reduce((x,t)=>x+(+t[k]||0),0);
 const pax=sum(live,"pax"), hrs=live.reduce((x,t)=>x+hoursOf(t)*(+t.pax||1),0);
 const nCourse=uniqCourses(live);
-const cost=live.reduce((x,t)=>x+((+t.actual||0)||budgetOf(t)),0);
+const cost=live.reduce((x,t)=>x+(actOf(t)||budgetOf(t)),0);
 const done=live.filter(t=>t.status===STATUS_DONE).length;
 const cancel=ty.length-live.length;
 const byDsdStatus=d=>items.filter(t=>isTrain(t)&&(t.dsd||"")===d&&inScope(t)&&t.status!==STATUS_CANCEL);
@@ -670,10 +670,21 @@ return (d.textContent||"").replace(/\n{3,}/g,"\n\n").trim(); };
 const ntHtml=n=>n&&n.fmt==="h"?ntClean(n.body||""):esc((n&&n.body)||"").replace(/\n/g,"<br>");
 const NOTEKIND=["บันทึกการประชุม","โน้ต","ไอเดีย"];
 const NOTEKIND_ALL=()=>[...NOTEKIND,INKKIND];
+function ntCardHtml(n,vault){ return `<div class="notecard" data-nt="${n._id}" style="border-left:5px solid ${n.color||"var(--accent-2)"}">
+<div class="nh"><span class="tag${n.kind==="ไอเดีย"||n.kind===INKKIND?" sky":""}">${esc(n.kind||"โน้ต")}</span>
+${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}${noteFolderTag(n)}
+<span style="margin-left:auto;font-size:12px;color:var(--ink-3)">${esc(n.date||"")}</span>
+<button class="ntedit" data-ntmv="${n._id}" title="ย้ายไปโฟลเดอร์" aria-label="ย้ายไปโฟลเดอร์">${svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',14)}</button>
+${ntArchBtn(n,vault)}<button class="ntedit" data-ntedit="${n._id}" title="แก้ไข" aria-label="แก้ไข">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',14)}</button></div>
+<div class="nt1">${esc(n.title||"(ไม่มีหัวข้อ)")}</div>
+<div class="nb">${n.kind===INKKIND?(n.thumb?`${n.cover?`<div class="inkcv" style="--cv:${esc(n.cover)}">`:""}<img class="ink-th" src="${esc(n.thumb)}" alt="ตัวอย่างหน้าแรก">${n.cover?"</div>":""}<div class="t-note" style="margin-top:6px">${n.pages||1} หน้า · แตะเพื่อเปิดเขียนต่อ</div>`:`<div class="t-note">สมุดเปล่า · ${n.pages||1} หน้า</div>`):(()=>{const t=ntPlain(n); return esc(t.slice(0,180))+(t.length>180?"…":"");})()}</div>
+${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</div>`; }
 function noteView(){
 const fk=R.noteKind||"", q=(R.noteQ||"").toLowerCase();
-const list=notes.filter(n=>(!fk||n.kind===fk)&&noteFolderFilter(n)&&(!q||((n.title||"")+" "+ntPlain(n)+" "+(n.tag||"")).toLowerCase().includes(q)))
-.sort((a,b)=>(b.pin?1:0)-(a.pin?1:0)||((b.date||"")<(a.date||"")?-1:1));
+const vault=!!R.noteArch, nVault=notes.filter(ntArch).length;
+const list=notes.filter(n=>ntArch(n)===vault&&(!fk||n.kind===fk)&&noteFolderFilter(n)&&(!q||((n.title||"")+" "+ntPlain(n)+" "+(n.tag||"")).toLowerCase().includes(q)))
+.sort(ntSorter(R.noteSort||""));
+const rows=ntMode()==="list";
 const opt=(arr,sel)=>arr.map(([v,l])=>`<option value="${esc(v)}"${sel===v?" selected":""}>${esc(l)}</option>`).join("");
 const cnt=k=>notes.filter(n=>n.kind===k).length;
 return header("บันทึก & ไอเดีย","บันทึกการประชุม โน้ตประจำวัน และไอเดียที่ยังไม่ได้ทำ",false)+
@@ -692,17 +703,12 @@ return header("บันทึก & ไอเดีย","บันทึกก�
 ${noteFolderBar()}
 <div class="toolbar" style="margin-bottom:6px">
 <input type="search" id="nt-q" placeholder="ค้นหาในบันทึก" value="${esc(R.noteQ||"")}">
-<select id="nt-kind">${opt([["","ทุกประเภท"],...NOTEKIND_ALL().map(x=>[x,x])],fk)}</select></div>
-<div class="notegrid">${list.map(n=>`<div class="notecard" data-nt="${n._id}" style="border-left:5px solid ${n.color||"var(--accent-2)"}">
-<div class="nh"><span class="tag${n.kind==="ไอเดีย"||n.kind===INKKIND?" sky":""}">${esc(n.kind||"โน้ต")}</span>
-${n.pin?`<span class="tag sky">ปักหมุด</span>`:""}${noteFolderTag(n)}
-<span style="margin-left:auto;font-size:12px;color:var(--ink-3)">${esc(n.date||"")}</span>
-<button class="ntedit" data-ntmv="${n._id}" title="ย้ายไปโฟลเดอร์" aria-label="ย้ายไปโฟลเดอร์">${svg('<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',14)}</button>
-<button class="ntedit" data-ntedit="${n._id}" title="แก้ไข" aria-label="แก้ไข">${svg('<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',14)}</button></div>
-<div class="nt1">${esc(n.title||"(ไม่มีหัวข้อ)")}</div>
-<div class="nb">${n.kind===INKKIND?(n.thumb?`${n.cover?`<div class="inkcv" style="--cv:${esc(n.cover)}">`:""}<img class="ink-th" src="${esc(n.thumb)}" alt="ตัวอย่างหน้าแรก">${n.cover?"</div>":""}<div class="t-note" style="margin-top:6px">${n.pages||1} หน้า · แตะเพื่อเปิดเขียนต่อ</div>`:`<div class="t-note">สมุดเปล่า · ${n.pages||1} หน้า</div>`):(()=>{const t=ntPlain(n); return esc(t.slice(0,180))+(t.length>180?"…":"");})()}</div>
-${n.tag?`<div class="t-note" style="margin-top:6px">#${esc(n.tag)}</div>`:""}</div>`).join("")
-||`<div class="empty">ยังไม่มีบันทึก — กด “เขียนบันทึก”</div>`}</div></div>
+<select id="nt-kind">${opt([["","ทุกประเภท"],...NOTEKIND_ALL().map(x=>[x,x])],fk)}</select>
+<select id="nt-sort" aria-label="เรียงลำดับ">${opt([["","เรียง: ปักหมุด + วันที่ล่าสุด"],["opened","เรียง: เปิดใช้ล่าสุด"],["old","เรียง: เก่าสุดก่อน"],["title","เรียง: ชื่อ ก–ฮ"]],R.noteSort||"")}</select>
+<div class="seg" id="nt-mode"><button data-ntm="card" aria-pressed="${!rows}">การ์ด</button><button data-ntm="list" aria-pressed="${rows}">รายการ</button></div>
+<button class="btn ${vault?"":"ghost"} sm" id="nt-vault" aria-pressed="${vault}" title="โน้ตที่เก็บเข้าคลัง (ไม่ได้ลบ — กลับมาใช้ได้เสมอ)">🗄 คลัง <b>${nVault}</b></button></div>
+${vault?ntVaultBar(nVault):""}
+<div class="${rows?"notelistv":"notegrid"}">${list.map(n=>rows?ntRowHtml(n,vault):ntCardHtml(n,vault)).join("")||`<div class="empty">ยังไม่มีบันทึก — กด “เขียนบันทึก”</div>`}</div></div>
 </div>`;
 }
 function setView(){
