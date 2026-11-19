@@ -394,7 +394,8 @@ inkPop(`<div class="ink-ph">แบบกระดาษ</div><div class="ink-row
 }
 function inkMoreMenu(a){
 const nt=inkLive();
-inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เลิกปักหมุด":"ปักหมุด"}</button>
+inkPop(`<button type="button" class="ink-mi" data-imore="ocr">Aa แปลงลายมือที่เห็นบนจอ → ตัวพิมพ์</button>
+<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เลิกปักหมุด":"ปักหมุด"}</button>
 <button type="button" class="ink-mi" data-imore="folder">ย้ายไปโฟลเดอร์…${nt.folder?" (ตอนนี้: "+esc(folderName(nt.folder))+")":""}</button>
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="ver">🕘 กู้เวอร์ชันเก่า</button>

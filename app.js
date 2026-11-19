@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.59"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.60"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -3125,7 +3125,8 @@ inkPop(`<div class="ink-ph">แบบกระดาษ</div><div class="ink-row
 }
 function inkMoreMenu(a){
 const nt=inkLive();
-inkPop(`<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เลิกปักหมุด":"ปักหมุด"}</button>
+inkPop(`<button type="button" class="ink-mi" data-imore="ocr">Aa แปลงลายมือที่เห็นบนจอ → ตัวพิมพ์</button>
+<button type="button" class="ink-mi" data-imore="pin">${nt.pin?"เลิกปักหมุด":"ปักหมุด"}</button>
 <button type="button" class="ink-mi" data-imore="folder">ย้ายไปโฟลเดอร์…${nt.folder?" (ตอนนี้: "+esc(folderName(nt.folder))+")":""}</button>
 ${ink.board?"":`<button type="button" class="ink-mi" data-imore="addpage">เพิ่มหน้าใหม่ต่อจากหน้านี้</button>`}
 <button type="button" class="ink-mi" data-imore="ver">🕘 กู้เวอร์ชันเก่า</button>
@@ -4010,7 +4011,7 @@ function inkRememberShape(s){ const line=s.sh==="line"||s.sh==="arrow"||s.sh==="
 // ---------- แถบเครื่องมือ + เมนูลอย ----------
 function inkSizesHtml(){
 const t=ink.tool; if(!["pen","shape","hl","eraser","text","tape","laser","sticky"].includes(t))return "";
-const key=inkSizeKey(), v=ink.size[key], rg={pen:[0.25,60],shape:[0.25,40],hl:[4,70],eraser:[4,90],text:[10,120],tape:[8,90],laser:[0.25,18],sticky:[12,60]}[key]; let h="";
+const key=inkSizeKey(), v=ink.size[key], rg={pen:[0.25,60],shape:[0.25,40],hl:[4,70],eraser:[0.25,90],text:[10,120],tape:[8,90],laser:[0.25,18],sticky:[12,60]}[key]; let h="";
 if(t==="tape")h+=`<button type="button" class="ink-opt ink-bb" id="ink-tapem" title="เทปแบบอิสระ ลากตามมือ / แบบแนวตรง (ลากเป็นเส้นตรง ล็อกมุม 15°)">${ink.tapeMode==="line"?"📏 แนวตรง":"✍ อิสระ"} ⇄</button>`;
 if(t==="pen"){ const b=INK_BRUSHES.find(x=>x.k===ink.brush)||INK_BRUSHES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-brushb" title="เปลี่ยนหัวปากกา (ดินสอ พู่กัน สเปรย์ ฯลฯ)">🖌 ${esc(b.n)} ▾</button>`; }
 if(t==="shape"){ const b=INK_SHAPES.find(x=>x[0]===ink.shape)||INK_SHAPES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-shapeb" title="เลือกรูปทรง">◇ ${esc(b[1])} ▾</button>`; }
@@ -6282,6 +6283,28 @@ document.addEventListener("click",e=>{
  if(b.dataset.selcol){ e.stopPropagation(); inkSelRecolor(b.dataset.selcol); return; }
  if(b.dataset.selmore){ e.stopPropagation(); const p=el("ink-pop"); if(!p.hidden&&p.querySelector("#ink-scust")){ inkClosePop(); return; } inkSelColorMenu(b); return; }
 },true);
+// ===== สมุดเขียนมือ: กันภาพ "เด้ง" เมื่อแถบเครื่องมือสูงขึ้น/ลดลง + แปลงลายมือทั้งจอ (v14.14.60) =====
+// เดิม: เลือกด้วยตัวจับ (ลาสโซ่) → แถบเครื่องมือเพิ่มปุ่ม → พื้นที่วาดถูกดันลง แต่ภาพ/กรอบเลือกไม่ขยับตาม → ทุกอย่างดูเด้ง
+// ตอนนี้: เฝ้าขนาด/ตำแหน่งพื้นที่วาด ถ้าขอบบนเลื่อน ชดเชยมุมมองให้ลายเส้นอยู่ที่เดิมบนจอ แล้ววาดใหม่ทั้งภาพและกรอบที่เลือก
+(function(){
+ const st=el("ink-stage"); if(!st||typeof ResizeObserver!=="function")return; let last=null;
+ const chk=()=>{ if(!ink.note||!el("inkdlg")||!el("inkdlg").open){ last=null; return; } const r=st.getBoundingClientRect(); if(!r.width||!r.height)return;
+  if(last&&(Math.abs(r.top-last.top)>0.5||Math.abs(r.height-last.h)>0.5||Math.abs(r.width-last.w)>0.5)){ const d=r.top-last.top;
+   if(ink.board){ if(d)ink.vy+=d/(ink.z||1); inkApply(); inkRedrawSoon(); }
+   else{ const s0=(ink.fit||0)*ink.z, t0=ink.ty, x0=ink.tx; if(d)ink.ty-=d; inkApply(); const s1=(ink.fit||0)*ink.z;   // สมุดแบบหน้า: คงขนาดหน้าเดิม ไม่ให้ย่อ/ขยายตามแถบเครื่องมือ
+    if(s0&&s1&&Math.abs(r.width-last.w)<=0.5&&Math.abs(s1-s0)>1e-6){ ink.z=Math.max(.5,Math.min(6,ink.z*s0/s1)); ink.ty=t0-d; ink.tx=x0; inkApply(); if(typeof inkZoomLabel==="function")inkZoomLabel(); } } }
+  last={top:r.top,h:r.height,w:r.width}; };
+ new ResizeObserver(()=>requestAnimationFrame(chk)).observe(st);
+ const top=document.querySelector(".ink-top"); if(top)new ResizeObserver(()=>requestAnimationFrame(chk)).observe(top);
+ const d=el("inkdlg"); if(d)d.addEventListener("close",()=>{ last=null; });
+})();
+// Aa แปลงลายมือที่เห็นบนจอ (ไม่ต้องลาสโซ่ก่อน)
+function inkOcrVisible(){ const pg=inkPage(); if(!pg)return; const S=pg.strokes; let vx0=-1e9,vy0=-1e9,vx1=1e9,vy1=1e9;
+ if(ink.board){ const c=el("ink-base"); vx0=ink.vx; vy0=ink.vy; vx1=ink.vx+c.width/ink.k; vy1=ink.vy+c.height/ink.k; }
+ const idx=new Set(); S.forEach((s,i)=>{ if(!s||!(s.t==="p"||s.t==="s"||s.t==="x"))return; const b=inkBBox(S,new Set([i])); if(b&&b[2]>=vx0&&b[0]<=vx1&&b[3]>=vy0&&b[1]<=vy1)idx.add(i); });
+ if(!idx.size){ inkStatus("ไม่พบลายมือบนจอ — เลื่อนให้ลายมือที่ต้องการอยู่ในจอ หรือใช้ตัวจับล้อมเฉพาะส่วน","bad"); return; }
+ ink.sel={idx,box:inkBBox(S,idx)}; inkDrawSel(); inkToolbar(); inkOcrRun(); }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest('[data-imore="ocr"]'); if(!b)return; e.preventDefault(); e.stopImmediatePropagation(); inkClosePop(); inkOcrVisible(); },true);
 // ---------- แจ้งเตือนนอกแอป (Web Push) ----------
 const PUSH={checked:false,ready:false,cron:false,key:"",busy:false,msg:"",here:false,ep:"",gen:null};
 const pushOK=()=>("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);

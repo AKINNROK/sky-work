@@ -172,7 +172,7 @@ function inkRememberShape(s){ const line=s.sh==="line"||s.sh==="arrow"||s.sh==="
 // ---------- แถบเครื่องมือ + เมนูลอย ----------
 function inkSizesHtml(){
 const t=ink.tool; if(!["pen","shape","hl","eraser","text","tape","laser","sticky"].includes(t))return "";
-const key=inkSizeKey(), v=ink.size[key], rg={pen:[0.25,60],shape:[0.25,40],hl:[4,70],eraser:[4,90],text:[10,120],tape:[8,90],laser:[0.25,18],sticky:[12,60]}[key]; let h="";
+const key=inkSizeKey(), v=ink.size[key], rg={pen:[0.25,60],shape:[0.25,40],hl:[4,70],eraser:[0.25,90],text:[10,120],tape:[8,90],laser:[0.25,18],sticky:[12,60]}[key]; let h="";
 if(t==="tape")h+=`<button type="button" class="ink-opt ink-bb" id="ink-tapem" title="เทปแบบอิสระ ลากตามมือ / แบบแนวตรง (ลากเป็นเส้นตรง ล็อกมุม 15°)">${ink.tapeMode==="line"?"📏 แนวตรง":"✍ อิสระ"} ⇄</button>`;
 if(t==="pen"){ const b=INK_BRUSHES.find(x=>x.k===ink.brush)||INK_BRUSHES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-brushb" title="เปลี่ยนหัวปากกา (ดินสอ พู่กัน สเปรย์ ฯลฯ)">🖌 ${esc(b.n)} ▾</button>`; }
 if(t==="shape"){ const b=INK_SHAPES.find(x=>x[0]===ink.shape)||INK_SHAPES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-shapeb" title="เลือกรูปทรง">◇ ${esc(b[1])} ▾</button>`; }
