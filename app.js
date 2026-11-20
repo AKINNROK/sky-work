@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.62"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.64"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2950,7 +2950,7 @@ try{ el("ink-stage").setPointerCapture(e.pointerId); }catch(er){}
 ink.ptrs.set(e.pointerId,{type:t,x:e.clientX,y:e.clientY});
 const touchCount=[...ink.ptrs.values()].filter(v=>v.type==="touch").length;
 if(touchCount>=2){ ink.drag={mode:"pinch"}; inkOverClear(); inkDrawSel(); ink.pinch=null; return; }       // สองนิ้ว = ซูม/เลื่อน
-const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||ink.tool==="laser")));
+const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||(ink.tool==="laser"&&!ink.penSeen))));
 if(!canDraw){ ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 inkClosePop();
 const [x,y]=(typeof inkGdDown==="function"?inkGdDown(e,inkToPage(e)):inkToPage(e)), pr=t==="pen"?(e.pressure||.5):.5; ink.lastPt=[x,y];
@@ -4353,12 +4353,21 @@ function inkLaserAdd(x,y,down){ const t=performance.now(), d=down===1; if(d&&!in
 function inkLaserUp(){ const now=performance.now(); inkLz.pts.forEach(p=>{ if(p.s===inkLz.sid&&!p.u)p.u=now; }); ink.laserDown=false; if(!inkLz.raf)inkLz.raf=requestAnimationFrame(inkLaserLoop); }
 const inkLzA=(p,now)=>p.s==="h"?1-(now-p.t)/inkLz.life:(p.u?1-(now-p.u)/inkLz.fade:1);
 function inkLaserLoop(){
+ // v14.14.64: วาดแต่ละเส้นเป็น "path เดียว" แบบโค้งเรียบ (เดิมวาดทีละท่อนสั้น ๆ ซ้อนกัน → เป็นเม็ด ๆ หนาบางไม่เท่ากัน ดูขาด ๆ)
  inkLz.raf=0; const c=el("ink-laser"); if(!c||!ink.note){ inkLz.pts=[]; return; } const ctx=c.getContext("2d"), now=performance.now(), k=ink.k, [ox,oy]=inkO();
  ctx.clearRect(0,0,c.width,c.height); inkLz.pts=inkLz.pts.filter(p=>inkLzA(p,now)>0); const P=inkLz.pts; if(!P.length)return;
- const col=ink.color.laser, wd=Math.max(.5,(ink.size.laser||6)*k*1.2); ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round";
- for(let i=1;i<P.length;i++){ if(P[i].s!==P[i-1].s)continue; const a=inkLzA(P[i],now); if(a<=0)continue; ctx.globalAlpha=Math.max(0,a*.9); ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=wd*2.2; ctx.lineWidth=wd*(.35+.65*a);
-  ctx.beginPath(); ctx.moveTo((P[i-1].x+ox)*k,(P[i-1].y+oy)*k); ctx.lineTo((P[i].x+ox)*k,(P[i].y+oy)*k); ctx.stroke(); }
- const h=P[P.length-1], ha=inkLzA(h,now); if(ha>0){ ctx.globalAlpha=Math.min(1,ha*1.4); ctx.shadowBlur=wd*3; ctx.shadowColor=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc((h.x+ox)*k,(h.y+oy)*k,wd*1.15,0,6.283); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.globalAlpha=Math.min(1,ha*1.4)*.9; ctx.beginPath(); ctx.arc((h.x+ox)*k,(h.y+oy)*k,wd*.45,0,6.283); ctx.fill(); }
+ const col=ink.color.laser, wd=Math.max(.5,(ink.size.laser||6)*k*1.2), X=p=>(p.x+ox)*k, Y=p=>(p.y+oy)*k;
+ const path=seg=>{ ctx.beginPath(); ctx.moveTo(X(seg[0]),Y(seg[0])); if(seg.length===2){ ctx.lineTo(X(seg[1]),Y(seg[1])); return; }
+  for(let i=1;i<seg.length-1;i++){ const a=seg[i], b=seg[i+1]; ctx.quadraticCurveTo(X(a),Y(a),(X(a)+X(b))/2,(Y(a)+Y(b))/2); } const z=seg[seg.length-1]; ctx.lineTo(X(z),Y(z)); };
+ ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.shadowColor=col;
+ for(let i=0;i<P.length;){ let j=i; while(j+1<P.length&&P[j+1].s===P[i].s)j++; const seg=P.slice(i,j+1); i=j+1;
+  if(seg[0].s==="h"){ // จุดชี้ตอนลอยปากกา: หางสั้นจางเร็ว
+   for(let q=1;q<seg.length;q++){ const a=inkLzA(seg[q],now); if(a<=0)continue; ctx.globalAlpha=a*.85; ctx.shadowBlur=wd*2; ctx.lineWidth=wd*(.35+.65*a); ctx.beginPath(); ctx.moveTo(X(seg[q-1]),Y(seg[q-1])); ctx.lineTo(X(seg[q]),Y(seg[q])); ctx.stroke(); } continue; }
+  const a=Math.min(1,inkLzA(seg[seg.length-1],now)); if(a<=0)continue;
+  if(seg.length===1){ ctx.globalAlpha=a; ctx.shadowBlur=wd*2.4; ctx.beginPath(); ctx.arc(X(seg[0]),Y(seg[0]),wd*.6,0,6.283); ctx.fill(); continue; }
+  ctx.globalAlpha=a; ctx.shadowBlur=wd*2.4; ctx.lineWidth=wd*(.5+.5*a); path(seg); ctx.stroke();           // เส้นสี + แสงเรือง
+  if(wd>=5){ ctx.shadowBlur=0; ctx.globalAlpha=a*.45; ctx.strokeStyle="#fff"; ctx.lineWidth=wd*.25; path(seg); ctx.stroke(); ctx.strokeStyle=col; } }   // แกนกลางสว่าง
+ const h=P[P.length-1], ha=inkLzA(h,now); if(ha>0){ ctx.globalAlpha=Math.min(1,ha*1.4); ctx.shadowBlur=wd*3; ctx.shadowColor=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X(h),Y(h),wd*1.15,0,6.283); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.globalAlpha=Math.min(1,ha*1.4)*.9; ctx.beginPath(); ctx.arc(X(h),Y(h),wd*.45,0,6.283); ctx.fill(); }
  ctx.restore(); inkLz.raf=requestAnimationFrame(inkLaserLoop);
 }
 function inkLaserClear(){ inkLz.pts=[]; const c=el("ink-laser"); if(c)c.getContext("2d").clearRect(0,0,c.width,c.height); }
@@ -10125,6 +10134,21 @@ function onbCard(force){ const S=onbSteps(), d=S.filter(x=>x[1]).length; if(!for
   if(el("onbHide"))el("onbHide").onclick=()=>{ try{ localStorage.setItem(ONB_K,"hide"); }catch(e){} render(); };
   if(el("onbShow"))el("onbShow").onclick=()=>{ try{ localStorage.removeItem(ONB_K); }catch(e){} render(); };
   try{ budRowsPaint(); }catch(e){ console.error(e); } }; }
+// ===== หน้าเขียนบันทึก: แถบเครื่องมือกะทัดรัด (v14.14.63) =====
+// โหมดย่อ (ค่าเริ่มต้น): ฟอนต์/ขนาด 1 แถว + เครื่องมือ 1 แถว (เลื่อนซ้าย-ขวาได้) · ซ่อนแถว "เนื้อหา / พูดให้พิมพ์" (มีปุ่ม 🎤 พูด ในแถบแล้ว)
+// ประเภท + วันที่ อยู่แถวเดียวกัน → พื้นที่พิมพ์เนื้อหาเพิ่มขึ้นมาก · ปุ่ม "▾ ทั้งหมด / ▴ ย่อ" สลับกลับแบบเดิมได้ (จำค่าไว้ในเครื่อง)
+const NTC_K="sw-ntc";
+const ntcOn=()=>{ try{ return localStorage.getItem(NTC_K)!=="0"; }catch(e){ return true; } };
+(function(){ const nt=el("ntool"), dlg=el("ndlg"); if(!nt||!dlg)return;
+ const row=document.createElement("div"); row.className="ntrow"; row.id="ntrow";
+ [...nt.children].forEach(c=>{ if(c.id!=="nefbar"&&!c.classList.contains("netbar"))row.appendChild(c); });
+ const tg=document.createElement("button"); tg.type="button"; tg.id="ntc-tg"; tg.className="ntc-tg"; row.insertBefore(tg,row.firstChild);
+ const nb=nt.querySelector(".netbar"); nt.insertBefore(row,nb||null);
+ const paint=()=>{ const on=ntcOn(); dlg.classList.toggle("ncompact",on); tg.textContent=on?"▾ ทั้งหมด":"▴ ย่อ"; tg.title=on?"แสดงเครื่องมือทั้งหมดแบบหลายแถว":"ย่อเครื่องมือให้เหลือ 2 แถว (พื้นที่พิมพ์มากขึ้น)"; };
+ tg.addEventListener("mousedown",e=>e.preventDefault());
+ tg.addEventListener("click",e=>{ e.preventDefault(); e.stopImmediatePropagation(); try{ localStorage.setItem(NTC_K,ntcOn()?"0":"1"); }catch(x){} paint(); });
+ paint();
+})();
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

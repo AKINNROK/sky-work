@@ -968,6 +968,25 @@ body.psheet-on .psh{page-break-after:always;break-after:page;box-shadow:none;pad
 body.psheet-on .psh.week .wc{min-height:380px}
 .pst tr,.wi{break-inside:avoid}
 }
+/* ===== หน้าเขียนบันทึก: โหมดกะทัดรัด ===== */
+.ntrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1 1 100%;min-width:0}
+.ntc-tg{font-weight:700!important;color:var(--accent)!important;background:var(--card)!important}
+#ndlg.ncompact .ntool{padding:4px 6px;gap:2px}
+#ndlg.ncompact .ntrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:2px}
+#ndlg.ncompact .ntrow::-webkit-scrollbar{display:none}
+#ndlg.ncompact .ntrow>*{flex:none}
+#ndlg.ncompact .ntool button{height:30px;min-width:30px;padding:0 8px;font-size:12.5px}
+#ndlg.ncompact .nefbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:0 0 4px;gap:6px 10px}
+#ndlg.ncompact .nefbar::-webkit-scrollbar{display:none}
+#ndlg.ncompact .nefbar>*{flex:none}
+#ndlg.ncompact .nefbar-l{font-size:11.5px}#ndlg.ncompact .nefbar-l small{display:none}
+#ndlg.ncompact .nefbar-r{flex-wrap:nowrap;gap:10px}
+#ndlg.ncompact .nefbar-f,#ndlg.ncompact .nefbar-s{overflow:visible;max-width:none}
+#ndlg.ncompact .nefbar button{padding:3px 10px;min-height:28px;font-size:12.5px}
+#ndlg.ncompact .nlabrow{display:none}
+#ndlg .dlg-b input[type=date]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:block}
+@media(min-width:560px){#ndlg .dlg-b{grid-template-columns:1fr 1fr}}
+@media(min-width:600px){#ndlg.ncompact .dlg-b{max-height:calc(100vh - 210px)}}
 /* ===== รอบ C: ลดความซับซ้อน ===== */
 .hstrip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;cursor:pointer;padding:14px 18px!important}.hstrip>b{font-size:15px;margin-right:4px}.hstrip span{background:var(--paper);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink-2)}.hstrip span b{font-size:15px;color:var(--ink)}.hstrip span.bad{background:var(--over-soft);color:var(--over)}.hstrip span.bad b{color:var(--over)}.hstrip em{margin-left:auto;font-style:normal;font-weight:600;color:var(--accent);font-size:13.5px}
 .navg{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.3px;padding:12px 14px 4px;text-transform:uppercase}
@@ -1475,4 +1494,4 @@ setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement(
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
 d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.62"></script></body></html>
+<script src="app.js?v=14.14.64"></script></body></html>

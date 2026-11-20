@@ -172,12 +172,12 @@ function inkRememberShape(s){ const line=s.sh==="line"||s.sh==="arrow"||s.sh==="
 // ---------- แถบเครื่องมือ + เมนูลอย ----------
 function inkSizesHtml(){
 const t=ink.tool; if(!["pen","shape","hl","eraser","text","tape","laser","sticky"].includes(t))return "";
-const key=inkSizeKey(), v=ink.size[key], rg={pen:[1,60],shape:[1,40],hl:[4,70],eraser:[4,90],text:[10,120],tape:[8,90],laser:[3,18],sticky:[12,60]}[key]; let h="";
+const key=inkSizeKey(), v=ink.size[key], rg={pen:[0.25,60],shape:[0.25,40],hl:[4,70],eraser:[0.25,90],text:[10,120],tape:[8,90],laser:[0.25,18],sticky:[12,60]}[key]; let h="";
 if(t==="tape")h+=`<button type="button" class="ink-opt ink-bb" id="ink-tapem" title="เทปแบบอิสระ ลากตามมือ / แบบแนวตรง (ลากเป็นเส้นตรง ล็อกมุม 15°)">${ink.tapeMode==="line"?"📏 แนวตรง":"✍ อิสระ"} ⇄</button>`;
 if(t==="pen"){ const b=INK_BRUSHES.find(x=>x.k===ink.brush)||INK_BRUSHES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-brushb" title="เปลี่ยนหัวปากกา (ดินสอ พู่กัน สเปรย์ ฯลฯ)">🖌 ${esc(b.n)} ▾</button>`; }
 if(t==="shape"){ const b=INK_SHAPES.find(x=>x[0]===ink.shape)||INK_SHAPES[0]; h+=`<button type="button" class="ink-opt ink-bb" id="ink-shapeb" title="เลือกรูปทรง">◇ ${esc(b[1])} ▾</button>`; }
 if(t==="eraser")h+=`<button type="button" class="ink-opt ink-bb" id="ink-ersm" title="สลับโหมดยางลบ: ลบเป็นจุดแบบ Photoshop / ลบทั้งเส้น">${ink.ersPart?"◔ ลบเป็นจุด":"▭ ลบทั้งเส้น"} ⇄</button>`;
-h+=`<span class="ink-szw" title="ปรับขนาด"><i class="ink-szd" id="ink-szd" style="${inkDotStyle(v)}"></i><input type="range" id="ink-sz" min="${rg[0]}" max="${rg[1]}" step="0.5" value="${v}" aria-label="ขนาดเส้น"><b id="ink-szv">${v}</b></span>`;
+h+=`<span class="ink-szw" title="ปรับขนาด"><i class="ink-szd" id="ink-szd" style="${inkDotStyle(v)}"></i><input type="range" id="ink-sz" min="${rg[0]}" max="${rg[1]}" step="${rg[0]<1?0.25:0.5}" value="${v}" aria-label="ขนาดเส้น"><input type="number" id="ink-szv" class="ink-szn" inputmode="decimal" min="${rg[0]}" max="${rg[1]}" step="${rg[0]<1?0.25:0.5}" value="${v}" aria-label="พิมพ์ขนาดเส้น" title="แตะเพื่อพิมพ์ขนาด (${rg[0]}–${rg[1]})"></span>`;
 return h;
 }
 const inkDotStyle=v=>{ const d=Math.max(3,Math.min(24,v)); return `width:${d}px;height:${d}px`; };
@@ -215,9 +215,11 @@ if(b.dataset.ifill!=null&&b.dataset.ifill!==""){ ink.fill=+b.dataset.ifill; inkS
 if(b.dataset.idash){ ink.dash=ink.dash?0:1; inkSetSave(); inkShapeMenu(el("ink-shapeb")||b); return; }
 if(b.dataset.ilock){ ink.lock=ink.lock?0:1; inkSetSave(); inkShapeMenu(el("ink-shapeb")||b); return; }
 });
+dlg.addEventListener("change",e=>{ const t=e.target; if(t.id!=="ink-szv")return; const mn=+t.min, mx=+t.max; let v=parseFloat(String(t.value).replace(",",".")); if(!isFinite(v)||v<=0)v=ink.size[inkSizeKey()]; v=Math.round(Math.min(mx,Math.max(mn,v))*100)/100; t.value=v; ink.size[inkSizeKey()]=v; el("ink-sz").value=v; el("ink-szd").style.cssText=inkDotStyle(v); inkSetSave(); });
 dlg.addEventListener("input",e=>{
 const t=e.target;
-if(t.id==="ink-sz"){ const v=+t.value; ink.size[inkSizeKey()]=v; el("ink-szv").textContent=v; el("ink-szd").style.cssText=inkDotStyle(v); inkSetSave(); }
+if(t.id==="ink-sz"){ const v=+t.value; ink.size[inkSizeKey()]=v; el("ink-szv").value=v; el("ink-szd").style.cssText=inkDotStyle(v); inkSetSave(); }
+if(t.id==="ink-szv"){ const mn=+t.min, mx=+t.max; let v=parseFloat(String(t.value).replace(",",".")); if(!isFinite(v)||v<=0)return; if(e.type!=="input"||v>=mn){ v=Math.round(Math.min(mx,Math.max(mn,v))*100)/100; ink.size[inkSizeKey()]=v; el("ink-sz").value=v; el("ink-szd").style.cssText=inkDotStyle(v); if(e.type!=="input")t.value=v; inkSetSave(); } }
 else if(t.id==="ink-al"){ ink.alpha=+t.value/100; el("ink-alv").textContent=Math.round(t.value)+"%"; inkSetSave(); }
 });
 })();
