@@ -33,7 +33,7 @@ const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
 const byMonthTip=MTH.map((_,i)=>tipList(items.filter(t=>monthsOf(t).includes(i+1)),t=>t.title+(t.status?" · "+t.status:"")));
 const stParts=[{n:"เสร็จสิ้น",v:done,c:"var(--ok)",tip:tipList(A.filter(t=>t.status==="เสร็จสิ้น"))},{n:"กำลังดำเนินการ",v:run,c:"var(--run)",tip:tipList(A.filter(t=>t.status==="กำลังดำเนินการ"))},{n:"รอดำเนินการ",v:wait,c:"var(--wait)",tip:tipList(A.filter(t=>t.status==="รอดำเนินการ"))}];
 const stCancel={n:"ยกเลิก",v:cancelled,c:"var(--ink-3)",tip:tipList(scoped.filter(t=>t.status===STATUS_CANCEL))};
-return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
+return header("สวัสดีค่ะ วิม 👋","Sky Plan · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+bkBanner()+
 (()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
 return lw.length?`<div class="banner bad" ${regList("hLaw","งานบังคับตามกฎหมายที่เลยกำหนดแล้ว",lw.map(t=>{const d=dueDate(t);return {id:t._id,

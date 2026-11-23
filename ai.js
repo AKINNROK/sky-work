@@ -1,4 +1,4 @@
-// Sky Work — ผู้ช่วย AI (Vercel Serverless Function)
+// Sky Plan — ผู้ช่วย AI (Vercel Serverless Function)
 // เก็บ ANTHROPIC_API_KEY ไว้ฝั่งเซิร์ฟเวอร์เท่านั้น (ตั้งใน Vercel → Settings → Environment Variables)
 // ตัวแปรที่ต้องมี: ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY
 // ตัวแปรเสริม: AI_MODEL (ชื่อรุ่นโมเดล), ALLOWED_EMAILS (อีเมลที่อนุญาต คั่นด้วยคอมมา)
@@ -14,7 +14,7 @@ module.exports = async (req, res) => {
   if (req.method !== "POST") return res.status(405).json({ error: "method_not_allowed" });
   if (!(KEY && SB_URL && SB_ANON)) return res.status(503).json({ error: "not_configured", message: "ยังไม่ได้ตั้งค่า ANTHROPIC_API_KEY / SUPABASE_URL / SUPABASE_ANON_KEY ที่ Vercel" });
 
-  // ยืนยันตัวตน: ต้องล็อกอิน Sky Work (Supabase) อยู่เท่านั้น
+  // ยืนยันตัวตน: ต้องล็อกอิน Sky Plan (Supabase) อยู่เท่านั้น
   const token = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!token) return res.status(401).json({ error: "unauthorized", message: "ต้องล็อกอินก่อน" });
   let email = "";

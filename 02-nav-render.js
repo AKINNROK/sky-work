@@ -251,7 +251,7 @@ function icsText(){
 const pad=n=>String(n).padStart(2,"0");
 const stamp=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
 const esc2=v=>String(v||"").replace(/[\\;,]/g,m=>"\\"+m).replace(/\n/g," ");
-const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sky Work//TH","CALSCALE:GREGORIAN","X-WR-CALNAME:Sky Work"];
+const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sky Plan//TH","CALSCALE:GREGORIAN","X-WR-CALNAME:Sky Plan"];
 const now=new Date(), seen=new Set();
 items.forEach(t=>{
 const ds=[];
@@ -287,7 +287,7 @@ return out.join("\r\n");
 function downloadICS(){
 const a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([icsText()],{type:"text/calendar;charset=utf-8"}));
-a.download="sky-work.ics"; document.body.appendChild(a); a.click();
+a.download="sky-plan.ics"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 }
 async function notifyToday(force){
@@ -298,8 +298,8 @@ const key="sw-notified-"+new Date().toDateString();
 if(!force){ try{ if(localStorage.getItem(key))return true; }catch(e){} }
 const w=dueSoon(2), pr=prepDue(2);
 const n=w.late.length+w.soon.length+pr.length;
-if(n)new Notification("Sky Work",{body:[w.late.length?`เลยกำหนด ${w.late.length} งาน`:"",w.soon.length?`ครบกำหนดใน 2 วัน ${w.soon.length} งาน`:"",pr.length?`ต้องเตรียมข้อมูลประชุม ${pr.length} รายการ`:""].filter(Boolean).join(" · "),icon:"icon-192.png"});
-else if(force)new Notification("Sky Work",{body:"ไม่มีงานที่ครบกำหนดใน 2 วันนี้ 🎉",icon:"icon-192.png"});
+if(n)new Notification("Sky Plan",{body:[w.late.length?`เลยกำหนด ${w.late.length} งาน`:"",w.soon.length?`ครบกำหนดใน 2 วัน ${w.soon.length} งาน`:"",pr.length?`ต้องเตรียมข้อมูลประชุม ${pr.length} รายการ`:""].filter(Boolean).join(" · "),icon:"icon-192.png"});
+else if(force)new Notification("Sky Plan",{body:"ไม่มีงานที่ครบกำหนดใน 2 วันนี้ 🎉",icon:"icon-192.png"});
 try{localStorage.setItem(key,"1");}catch(e){}
 return true;
 }

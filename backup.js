@@ -1,4 +1,4 @@
-// Sky Work — สำรองข้อมูลอัตโนมัติรายสัปดาห์ (Vercel Cron → Supabase Storage bucket "backups")
+// Sky Plan — สำรองข้อมูลอัตโนมัติรายสัปดาห์ (Vercel Cron → Supabase Storage bucket "backups")
 // ตัวแปรที่ต้องมี (ชุดเดียวกับสรุปเช้า): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET
 // ไฟล์: weekly/backup-YYYY-MM-DD.json (รูปแบบ {app:"sky-work",format:"rows",rows:[{id,uid,kind,data}]}) เก็บล่าสุด 8 ไฟล์
 // กู้คืน: ตั้งค่า › นำเข้า/สำรอง › "กู้คืนจากไฟล์" เลือกไฟล์นี้ได้เลย (แอปรู้จักรูปแบบ rows)

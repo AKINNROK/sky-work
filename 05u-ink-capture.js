@@ -53,7 +53,7 @@ async function inkCapRender(b){
 function inkCapShow(blob,w,h){
  const old=el("ink-capv"); if(old)old.remove(); if(CAP.url)try{ URL.revokeObjectURL(CAP.url); }catch(e){}
  const url=CAP.url=URL.createObjectURL(blob), p=n=>String(n).padStart(2,"0"), d=new Date();
- const name=((el("ink-title")&&el("ink-title").value.trim())||"sky-work").replace(/[\\/:*?"<>|]+/g,"-")+"-capture-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+".png";
+ const name=((el("ink-title")&&el("ink-title").value.trim())||"sky-plan").replace(/[\\/:*?"<>|]+/g,"-")+"-capture-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+".png";
  const file=new File([blob],name,{type:"image/png"}), canShare=!!(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]}));
  const o=document.createElement("div"); o.id="ink-capv"; o.className="ink-ocr";
  o.innerHTML=`<div class="ocr-box"><b>แคปแล้ว ✓</b> <span class="hint" style="margin:0">${w}×${h}px · ${(blob.size/1024).toFixed(0)} KB</span>

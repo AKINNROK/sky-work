@@ -40,7 +40,7 @@ function voiceStart(target){
  try{ rec.start(); }catch(e){ voiceStop(); return false; }
  return true;
 }
-function voiceNoSupport(){ tell("<b>เบราว์เซอร์นี้ยังพิมพ์ตามเสียงในแอปไม่ได้</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">ใช้ <b>ปุ่มไมค์บนคีย์บอร์ด</b> ของ iPad/มือถือ (กดช่องข้อความ แล้วแตะรูปไมค์ 🎤 มุมล่างคีย์บอร์ด) พูดได้ทันที — หรือเปิด Sky Work ใน Safari / Chrome ปกติ (ไม่ใช่ไอคอนหน้าจอโฮม) จะใช้ปุ่มไมค์ในแอปได้</div>"); }
+function voiceNoSupport(){ tell("<b>เบราว์เซอร์นี้ยังพิมพ์ตามเสียงในแอปไม่ได้</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">ใช้ <b>ปุ่มไมค์บนคีย์บอร์ด</b> ของ iPad/มือถือ (กดช่องข้อความ แล้วแตะรูปไมค์ 🎤 มุมล่างคีย์บอร์ด) พูดได้ทันที — หรือเปิด Sky Plan ใน Safari / Chrome ปกติ (ไม่ใช่ไอคอนหน้าจอโฮม) จะใช้ปุ่มไมค์ในแอปได้</div>"); }
 
 // ---------- สมุดเขียนมือ / กระดาน: เติมเป็นกล่องข้อความ ----------
 function inkVoiceToggle(){

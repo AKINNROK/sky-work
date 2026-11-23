@@ -23,7 +23,7 @@ function buildDigest(plan, today, soonDays, ext) {
   const k = ext.kpi, kpi = k && cfg.kpi !== 0 && k.n > 0 && k.from && k.to && today >= k.from && today <= k.to ? k.n : 0;
   if (kpi) parts.push("KPI รอกรอก " + kpi + " ข้อ");
   if (!parts.length) return null;
-  return { title: "Sky Work · เช้านี้", body: short(parts.join(" · "), 230), tag: "skywork-daily", url: "/", counts: { late: late.length, today: now.length, soon: soon.length, law, ap: ap.length, kpi } };
+  return { title: "Sky Plan · เช้านี้", body: short(parts.join(" · "), 230), tag: "skywork-daily", url: "/", counts: { late: late.length, today: now.length, soon: soon.length, law, ap: ap.length, kpi } };
 }
 // ===== เตือนก่อนนัดผู้บริหาร (ยิงจากตัวเรียกภายนอกทุก ~10 นาที → /api/push?remind=1) =====
 // ap = [{i:id, d:"YYYY-MM-DD", st:"HH:MM", ms:เวลาเริ่ม(epoch ms), t:ชื่อนัด, x:ผู้บริหาร, b:นาทีเผื่อเดินทาง, pl:สถานที่}]

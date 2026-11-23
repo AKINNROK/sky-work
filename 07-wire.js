@@ -489,7 +489,7 @@ el("csvsample").onclick=()=>{el("csvtext").value=
 el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
-el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
+el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skyplan-tasks",
 ["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","หมวดทักษะ","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รหัสหลักสูตร","รุ่นที่","แบบที่ยื่น","วันที่ฝึกเสร็จ","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
 t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.course||"",t.batch||"",t.yp||"",t.dsdEnd||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
@@ -511,8 +511,8 @@ bkMsg=`<div class="banner ok" style="margin-top:12px">${svg(ICON.file,17)} ส�
 if(el("bkgo"))el("bkgo").onclick=async()=>{
 const f=el("bkfile").files&&el("bkfile").files[0];
 if(!f){tell("เลือกไฟล์สำรอง (.json) ก่อนนะคะ");return;}
-let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Work</div>"); return; }
-if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Work</b>");return;}
+let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Plan</div>"); return; }
+if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Plan</b>");return;}
 const cnt=bkCount(pack);
 if(!await ask("ไฟล์นี้สำรองไว้เมื่อ <b>"+esc(new Date(pack.at||Date.now()).toLocaleString("th-TH"))+"</b> มี <b>"+cnt+"</b> รายการ<br>กู้คืนแบบ<b>เติมกลับ</b> — ของที่ลบไปจะกลับมา ของที่มีอยู่จะถูกเขียนทับด้วยค่าในไฟล์ ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบ<br>ดำเนินการต่อไหมคะ?","กู้คืนข้อมูล"))return;
 let ok=0,fail=0;
@@ -565,16 +565,16 @@ el("preset")&&(el("preset").onclick=async()=>{
 TRAIN_PRESET.forEach(x=>{ if(!groups.some(g=>g.label===x.label))groups.push({key:x.key,label:x.label}); });
 render(); await saveMeta("groups",groups);});
 el("signout")&&(el("signout").onclick=async()=>{if(await ask("ออกจากระบบเครื่องนี้ใช่ไหมคะ?","ออกจากระบบ"))signOut();});
-el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skywork-index",
+el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skyplan-index",
 ["สารบัญ","กลุ่มงาน","ผู้ดูแล","ลิงก์","สถานะ","รายละเอียดเอกสาร","หมายเหตุ"],
 idx.map(x=>[x.title,x.group,x.owner,x.url,x.status,x.detail,x.note])));
-el("expNote")&&(el("expNote").onclick=()=>exportCSV("skywork-notes",
+el("expNote")&&(el("expNote").onclick=()=>exportCSV("skyplan-notes",
 ["หัวข้อ","ประเภท","วันที่","ป้ายกำกับ","เนื้อหา"],
 notes.map(n=>[n.title,n.kind,n.date,n.tag,ntPlain(n,true)])));
-el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
+el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skyplan-legal",
 ["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
 legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));
-el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
+el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skyplan-ledger",
 ["วันที่","ประเภท","หมวด GL","จำนวนเงิน","บริษัท","รายละเอียด"],
 ledger.map(x=>[x.date,x.kind==="income"?"รายรับ":"รายจ่าย",glLabel(x.gl),x.amount,cLabel(x.company),x.note])));
 }

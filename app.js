@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.64"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.66"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1005,7 +1005,7 @@ function icsText(){
 const pad=n=>String(n).padStart(2,"0");
 const stamp=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
 const esc2=v=>String(v||"").replace(/[\\;,]/g,m=>"\\"+m).replace(/\n/g," ");
-const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sky Work//TH","CALSCALE:GREGORIAN","X-WR-CALNAME:Sky Work"];
+const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sky Plan//TH","CALSCALE:GREGORIAN","X-WR-CALNAME:Sky Plan"];
 const now=new Date(), seen=new Set();
 items.forEach(t=>{
 const ds=[];
@@ -1041,7 +1041,7 @@ return out.join("\r\n");
 function downloadICS(){
 const a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([icsText()],{type:"text/calendar;charset=utf-8"}));
-a.download="sky-work.ics"; document.body.appendChild(a); a.click();
+a.download="sky-plan.ics"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 }
 async function notifyToday(force){
@@ -1052,8 +1052,8 @@ const key="sw-notified-"+new Date().toDateString();
 if(!force){ try{ if(localStorage.getItem(key))return true; }catch(e){} }
 const w=dueSoon(2), pr=prepDue(2);
 const n=w.late.length+w.soon.length+pr.length;
-if(n)new Notification("Sky Work",{body:[w.late.length?`เลยกำหนด ${w.late.length} งาน`:"",w.soon.length?`ครบกำหนดใน 2 วัน ${w.soon.length} งาน`:"",pr.length?`ต้องเตรียมข้อมูลประชุม ${pr.length} รายการ`:""].filter(Boolean).join(" · "),icon:"icon-192.png"});
-else if(force)new Notification("Sky Work",{body:"ไม่มีงานที่ครบกำหนดใน 2 วันนี้ 🎉",icon:"icon-192.png"});
+if(n)new Notification("Sky Plan",{body:[w.late.length?`เลยกำหนด ${w.late.length} งาน`:"",w.soon.length?`ครบกำหนดใน 2 วัน ${w.soon.length} งาน`:"",pr.length?`ต้องเตรียมข้อมูลประชุม ${pr.length} รายการ`:""].filter(Boolean).join(" · "),icon:"icon-192.png"});
+else if(force)new Notification("Sky Plan",{body:"ไม่มีงานที่ครบกำหนดใน 2 วันนี้ 🎉",icon:"icon-192.png"});
 try{localStorage.setItem(key,"1");}catch(e){}
 return true;
 }
@@ -1092,7 +1092,7 @@ const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
 const byMonthTip=MTH.map((_,i)=>tipList(items.filter(t=>monthsOf(t).includes(i+1)),t=>t.title+(t.status?" · "+t.status:"")));
 const stParts=[{n:"เสร็จสิ้น",v:done,c:"var(--ok)",tip:tipList(A.filter(t=>t.status==="เสร็จสิ้น"))},{n:"กำลังดำเนินการ",v:run,c:"var(--run)",tip:tipList(A.filter(t=>t.status==="กำลังดำเนินการ"))},{n:"รอดำเนินการ",v:wait,c:"var(--wait)",tip:tipList(A.filter(t=>t.status==="รอดำเนินการ"))}];
 const stCancel={n:"ยกเลิก",v:cancelled,c:"var(--ink-3)",tip:tipList(scoped.filter(t=>t.status===STATUS_CANCEL))};
-return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
+return header("สวัสดีค่ะ วิม 👋","Sky Plan · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+bkBanner()+
 (()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
 return lw.length?`<div class="banner bad" ${regList("hLaw","งานบังคับตามกฎหมายที่เลยกำหนดแล้ว",lw.map(t=>{const d=dueDate(t);return {id:t._id,
@@ -1690,7 +1690,7 @@ const W5_SYS=["คุณช่วยเติมรายละเอียด 5
 "how ให้เป็นขั้นตอนสั้นๆ ขึ้นบรรทัดใหม่ทีละข้อ ไม่เกิน 5 ข้อ"].join("\n");
 // ---------- ผู้ช่วย AI: สรุป · จัดแผน · เตือนงาน · เสนอการแก้ (ต้องกดยืนยันเสมอ) ----------
 const AI_SYSTEM=[
-"คุณคือผู้ช่วย HR ประจำตัวของวิม (HR, LeKise Group) ในแอป Sky Work",
+"คุณคือผู้ช่วย HR ประจำตัวของวิม (HR, LeKise Group) ในแอป Sky Plan",
 "สไตล์: ตอบภาษาไทย กระชับแบบผู้บริหาร พูดตรง วิเคราะห์ได้ และเสนอสิ่งที่ควรทำต่อเป็นข้อๆ",
 "กติกา:",
 "- ใช้เฉพาะข้อมูลในส่วน [ข้อมูลในระบบ] ห้ามเดาหรือแต่งตัวเลข ถ้าไม่มีข้อมูลให้บอกตรงๆ ว่าไม่มี",
@@ -3279,7 +3279,7 @@ function inkDiagReport(){
 inkDiag.on=0; try{ inkDiag.po&&inkDiag.po.disconnect(); }catch(er){}
 const st=a=>{ if(!a.length)return "ไม่มีข้อมูล"; const s=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0); return `n=${a.length} · เฉลี่ย ${(sum/a.length).toFixed(1)} · p95 ${s[Math.floor(s.length*.95)].toFixed(1)} · สูงสุด ${s[s.length-1].toFixed(1)} ms`; };
 const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base"), SS=(ink.pages[ink.cur]?ink.pages[ink.cur].strokes:[]).filter(q=>q.t==="p");
-return ["Sky Work v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
+return ["Sky Plan v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
 "หน้าจอ: "+innerWidth+"x"+innerHeight+" dpr "+(window.devicePixelRatio||1)+" · แคนวาส "+c.width+"x"+c.height+" · "+(ink.board?"กระดาน":"สมุด")+(window.PointerEvent&&PointerEvent.prototype.getCoalescedEvents?" · coalesced":" · no-coalesced")+(PointerEvent.prototype.getPredictedEvents?" · predicted":" · no-predicted"),
 "ปากกาแตะลง (pointerdown): "+st(inkDiag.hd),"ปากกาลาก (pointermove): "+st(inkDiag.hm),"ปากกายก (pointerup+วาดเก็บ): "+st(inkDiag.hu),
 "อีเวนต์รอคิวก่อนถูกประมวลผล: "+st(inkDiag.lag),"ช่วงห่างระหว่างเฟรมขณะเขียน: "+st(inkDiag.gaps)+" · เฟรมช้า(>24ms) "+slow+" ครั้ง",
@@ -4569,7 +4569,7 @@ function voiceStart(target){
  try{ rec.start(); }catch(e){ voiceStop(); return false; }
  return true;
 }
-function voiceNoSupport(){ tell("<b>เบราว์เซอร์นี้ยังพิมพ์ตามเสียงในแอปไม่ได้</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">ใช้ <b>ปุ่มไมค์บนคีย์บอร์ด</b> ของ iPad/มือถือ (กดช่องข้อความ แล้วแตะรูปไมค์ 🎤 มุมล่างคีย์บอร์ด) พูดได้ทันที — หรือเปิด Sky Work ใน Safari / Chrome ปกติ (ไม่ใช่ไอคอนหน้าจอโฮม) จะใช้ปุ่มไมค์ในแอปได้</div>"); }
+function voiceNoSupport(){ tell("<b>เบราว์เซอร์นี้ยังพิมพ์ตามเสียงในแอปไม่ได้</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">ใช้ <b>ปุ่มไมค์บนคีย์บอร์ด</b> ของ iPad/มือถือ (กดช่องข้อความ แล้วแตะรูปไมค์ 🎤 มุมล่างคีย์บอร์ด) พูดได้ทันที — หรือเปิด Sky Plan ใน Safari / Chrome ปกติ (ไม่ใช่ไอคอนหน้าจอโฮม) จะใช้ปุ่มไมค์ในแอปได้</div>"); }
 
 // ---------- สมุดเขียนมือ / กระดาน: เติมเป็นกล่องข้อความ ----------
 function inkVoiceToggle(){
@@ -5010,7 +5010,7 @@ const HLP_INK=[
  ["mic","พิมพ์ตามเสียงพูด",'[data-iact="mic"]',"กดแล้วพูด ข้อความจะเติมเป็นกล่องข้อความบนหน้า · สลับไทย/EN ที่แถบเสียง · iPad แบบไอคอนหน้าจอโฮมอาจใช้ไม่ได้ → ใช้ไมค์บนคีย์บอร์ดแทน","ไมค์ เสียง พูด พิมพ์ตามเสียง บันทึกเสียง"],
  ["calc","เครื่องคิดเลข",'[data-iact="calc"]',"เครื่องคิดเลขลอย + − × ÷ % ( ) · ใส่ผลลัพธ์ลงหน้า · ถ้าเลือกกล่องตัวเลขไว้ จะมีปุ่มรวม/เฉลี่ย · พิมพ์ในกล่องข้อความ 1200+350*2= ได้ผลต่อท้ายทันที","เครื่องคิดเลข คำนวณ บวก ลบ คูณ หาร เปอร์เซ็นต์ สูตร"],
  ["ruler","ไม้บรรทัด/เส้นไกด์",'[data-iact="ruler"]',"เมนูไม้บรรทัด: ซ่อน/แสดง ปิดเปิดแม่เหล็ก ลบไกด์ทั้งหมด · ลากจากขอบบน (แนวนอน) หรือขอบซ้าย (แนวตั้ง) เพื่อวางเส้นไกด์ · ลากจุดสามเหลี่ยมกลับไปที่ไม้บรรทัดเพื่อลบ","ไม้บรรทัด ไกด์ เส้นช่วย เส้นทาบ ruler guide ตรง"],
- ["act","สรุปประชุม→งาน",'[data-iact="act"]',"AI อ่านสิ่งที่เขียน/พิมพ์ในหน้านี้ (รวมลายมือถ้ามี · ลาสโซ่เลือกเฉพาะส่วนได้) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Work ได้เลย · ไม่สร้างเองถ้าไม่ได้กดยืนยัน","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม เลขา สร้างงาน"],
+ ["act","สรุปประชุม→งาน",'[data-iact="act"]',"AI อ่านสิ่งที่เขียน/พิมพ์ในหน้านี้ (รวมลายมือถ้ามี · ลาสโซ่เลือกเฉพาะส่วนได้) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Plan ได้เลย · ไม่สร้างเองถ้าไม่ได้กดยืนยัน","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม เลขา สร้างงาน"],
  ["ai","ผู้ช่วย AI",'[data-iact="ai"]',"ปุ่มนี้เอง — ถามหาเครื่องมือหรือให้สอนใช้งานได้","ช่วย ผู้ช่วย ai สอน ถาม"],
  ["undo","ย้อนกลับ",'#ink-undo',"ย้อนการกระทำล่าสุด (Ctrl+Z)","ย้อน undo ยกเลิก"],
  ["redo","ทำซ้ำ",'#ink-redo',"ทำซ้ำสิ่งที่ย้อนไป (Ctrl+Shift+Z)","ทำซ้ำ redo"],
@@ -5037,7 +5037,7 @@ const HLP_INK=[
  ["seldel","ลบที่เลือก",'#ink-seldel',"ลบของที่เลือก (หรือกด Delete)","ลบที่เลือก ลบ delete"]
 ];
 const HLP_NOTE=[
- ["act","สรุป→งาน",'[data-ne="act"]',"AI อ่านบันทึกนี้ (หรือเฉพาะข้อความที่เลือก) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Work ได้เลย · แทรกสรุปกลับลงบันทึกได้","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม สร้างงาน"],
+ ["act","สรุป→งาน",'[data-ne="act"]',"AI อ่านบันทึกนี้ (หรือเฉพาะข้อความที่เลือก) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Plan ได้เลย · แทรกสรุปกลับลงบันทึกได้","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม สร้างงาน"],
  ["ai","ผู้ช่วย AI",'[data-ne="ai"]',"ปุ่มนี้เอง — ถามหาเครื่องมือหรือให้สอนใช้งานได้","ช่วย ผู้ช่วย ai สอน ถาม"],
  ["undo","ย้อนกลับ / ทำซ้ำ",'[data-ne="undo"]',"ย้อน (Ctrl+Z) / ทำซ้ำ (Ctrl+Shift+Z)","ย้อน undo redo ทำซ้ำ"],
  ["h2","หัวข้อใหญ่/ย่อย",'[data-ne="h2"]',"H2 = หัวข้อใหญ่ · H3 = หัวข้อย่อย (เลือกบรรทัดนั้นก่อน)","หัวข้อ heading ใหญ่ ย่อย"],
@@ -5067,7 +5067,7 @@ function hlpState(){
 function hlpSystem(){
  const kb=hlpKB(), page=HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ");
  const list=kb.map(k=>`{{${k[0]}}} ${k[1]} — ${k[3]}`).join("\n");
- return `คุณคือ “ผู้ช่วยสอนใช้งาน Sky Work” (แอปจัดการงาน/บันทึกของ HR) ผู้ใช้เปิดหน้า “${page}” อยู่และขอให้ช่วยหาเครื่องมือหรือสอนใช้งาน
+ return `คุณคือ “ผู้ช่วยสอนใช้งาน Sky Plan” (แอปจัดการงาน/บันทึกของ HR) ผู้ใช้เปิดหน้า “${page}” อยู่และขอให้ช่วยหาเครื่องมือหรือสอนใช้งาน
 กติกา: ตอบเป็นภาษาไทย สั้น กระชับ เป็นขั้นตอนเมื่อสอน (ไม่เกิน ~8 บรรทัด) ใช้ภาษาง่ายๆ ผู้ใช้ไม่ใช่โปรแกรมเมอร์ · ห้ามแต่งฟีเจอร์ที่ไม่มีในรายการ ถ้าไม่มีให้บอกตรงๆ และเสนอทางที่ใกล้เคียงที่สุด
 เมื่อพูดถึงเครื่องมือ/ปุ่มที่มีในรายการ ให้ใส่รหัสในวงเล็บปีกกาคู่ เช่น {{pen}} เพื่อให้แอปแสดงปุ่ม “ชี้ให้ดู” (ใช้เฉพาะรหัสที่มีในรายการนี้ ใส่ทุกครั้งที่อ้างถึงปุ่ม)
 ปุ่มที่ขึ้นต้น “โผล่เมื่อ…” จะไม่เห็นจนกว่าจะเลือกของตามเงื่อนไข ให้บอกขั้นตอนเลือกก่อน
@@ -5094,7 +5094,7 @@ function hlpSugs(){ return HLP.ctx==="note"?["สอนใช้หน้าน�
 function hlpClose(){ const p=el("hlp"); if(p)p.remove(); HLP.open=false; hlpShutUp(); if(HLP.listening&&typeof voiceStop==="function")voiceStop(); HLP.listening=false; }
 function hlpOpen(host){
  if(el("hlp")){ hlpClose(); return; } HLP.ctx=hlpCtx(); HLP.open=true; const p=document.createElement("div"); p.id="hlp"; p.className="hlp";
- p.innerHTML=`<div class="hlp-h"><b>✨ ผู้ช่วย Sky Work <small>${HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ")}</small></b><span><button type="button" data-hc="spk" id="hlp-spk" title="อ่านคำตอบออกเสียง (เมื่อถามด้วยเสียง)">🔊</button><button type="button" data-hc="clr" title="ล้างบทสนทนา">ล้าง</button><button type="button" data-hc="x" aria-label="ปิด">✕</button></span></div><div id="hlp-body" class="hlp-body"></div>
+ p.innerHTML=`<div class="hlp-h"><b>✨ ผู้ช่วย Sky Plan <small>${HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ")}</small></b><span><button type="button" data-hc="spk" id="hlp-spk" title="อ่านคำตอบออกเสียง (เมื่อถามด้วยเสียง)">🔊</button><button type="button" data-hc="clr" title="ล้างบทสนทนา">ล้าง</button><button type="button" data-hc="x" aria-label="ปิด">✕</button></span></div><div id="hlp-body" class="hlp-body"></div>
  <form class="hlp-f" id="hlp-form"><button type="button" class="hlp-mic" id="hlp-mic" data-hmic="1" aria-label="กดแล้วพูดสั่ง" title="กดครั้งเดียว แล้วพูดได้เลย">🎤</button><textarea id="hlp-in" rows="1" placeholder="พิมพ์ หรือกด 🎤 แล้วพูด" aria-label="ถามผู้ช่วย"></textarea><button type="submit" class="hlp-send" aria-label="ส่ง">ส่ง</button></form>`;
  (host||el(HLP.ctx==="note"?"ndlg":"inkdlg")).appendChild(p);
  p.addEventListener("pointerdown",e=>e.stopPropagation()); p.addEventListener("mousedown",e=>{ if(!e.target.closest("textarea"))e.preventDefault(); });
@@ -5217,7 +5217,7 @@ document.addEventListener("keydown",e=>{
  if(b.id==="ink-mva"){ e.stopPropagation(); ink.mvAuto=!ink.mvAuto; inkMoveSave(); inkToolbar(); } else if(b.id==="ink-mvd"){ e.stopPropagation(); ink.mvDup=ink.mvDup?0:1; inkToolbar(); } },true); })();
 (function(){ const f=inkToolbar; inkToolbar=function(){ const r=f.apply(this,arguments); const s=el("ink-stage"); if(s)s.style.cursor=ink.tool==="move"?"move":""; return r; }; })();
 // ===== สรุปประชุม → แตกเป็นงาน (AI) — กระดานกว้าง · สมุดเขียนมือ · เขียนบันทึก =====
-// AI อ่านข้อความ (และลายมือในรูป ถ้ามี) → สรุป · มติ · รายการงาน (ใคร/ทำอะไร/เมื่อไร) → ผู้ใช้ติ๊ก/แก้ แล้วกดสร้างงานจริงใน Sky Work
+// AI อ่านข้อความ (และลายมือในรูป ถ้ามี) → สรุป · มติ · รายการงาน (ใคร/ทำอะไร/เมื่อไร) → ผู้ใช้ติ๊ก/แก้ แล้วกดสร้างงานจริงใน Sky Plan
 // ใช้ /api/ai เดิม และ aiRun({type:"add_task"}) เดิม (มีตัวตรวจสอบข้อมูลอยู่แล้ว) — AI ไม่เขียนข้อมูลเอง ต้องกดยืนยันทุกครั้ง
 const ACT_SYS=(today,wd)=>`คุณคือผู้ช่วยเลขาประชุมของ HR (LeKise Group) งาน: อ่านบันทึกประชุม/โน้ต (อาจมีรูปลายมือแนบ) แล้วสรุปเป็น JSON เท่านั้น
 วันนี้คือ ${today} (วัน${wd}) — ใช้แปลงวันที่แบบสัมพัทธ์ เช่น “ศุกร์นี้” “สัปดาห์หน้า” “สิ้นเดือน” เป็น YYYY-MM-DD
@@ -6274,7 +6274,7 @@ async function inkCapRender(b){
 function inkCapShow(blob,w,h){
  const old=el("ink-capv"); if(old)old.remove(); if(CAP.url)try{ URL.revokeObjectURL(CAP.url); }catch(e){}
  const url=CAP.url=URL.createObjectURL(blob), p=n=>String(n).padStart(2,"0"), d=new Date();
- const name=((el("ink-title")&&el("ink-title").value.trim())||"sky-work").replace(/[\\/:*?"<>|]+/g,"-")+"-capture-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+".png";
+ const name=((el("ink-title")&&el("ink-title").value.trim())||"sky-plan").replace(/[\\/:*?"<>|]+/g,"-")+"-capture-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+".png";
  const file=new File([blob],name,{type:"image/png"}), canShare=!!(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]}));
  const o=document.createElement("div"); o.id="ink-capv"; o.className="ink-ocr";
  o.innerHTML=`<div class="ocr-box"><b>แคปแล้ว ✓</b> <span class="hint" style="margin:0">${w}×${h}px · ${(blob.size/1024).toFixed(0)} KB</span>
@@ -6496,7 +6496,7 @@ ${pushCard()}
 <div class="card" style="margin-top:16px"><h2>ซิงก์เข้า Google Calendar</h2>
 <div class="hint" style="margin-top:6px">ดาวน์โหลดไฟล์ปฏิทิน (.ics) ที่รวมงานทุกงานที่มีวันที่ รวมงานที่ตั้งเกิดซ้ำล่วงหน้า 14 เดือน พร้อมเตือนล่วงหน้า 2 วัน</div>
 <div class="addg"><button class="btn" id="icsgo">${svg(ICON.cal,17)}ดาวน์โหลดไฟล์ปฏิทิน (.ics)</button></div>
-<div class="code">Google Calendar → Settings → Import &amp; export → Import → เลือกไฟล์ sky-work.ics → Import
+<div class="code">Google Calendar → Settings → Import &amp; export → Import → เลือกไฟล์ sky-plan.ics → Import
 มือถือ: เปิดไฟล์ .ics แล้วเลือก "เพิ่มลงในปฏิทิน"</div>
 <div class="hint">เพิ่มงานใหม่แล้วดาวน์โหลดใหม่ได้ ระบบใส่รหัสงานกำกับไว้ ปฏิทินจะอัปเดตทับของเดิม ไม่ซ้ำซ้อน</div></div>`;
 }
@@ -6820,7 +6820,7 @@ ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ �
 <div class="d">${groups.length} กลุ่ม · ${gls.length} หมวด GL · ${companies.length} บริษัท</div></div>
 <div class="card span4"><h2>แอปนี้ทำงานยังไง</h2>
 <div class="hint" style="margin-top:0">
-Sky Work เป็นเว็บแอปของวิมเอง ติดตั้งบน <b>Vercel</b> และเก็บข้อมูลบน <b>Supabase</b> — เปิดจากไอคอนบนหน้าจอได้เลย
+Sky Plan เป็นเว็บแอปของวิมเอง ติดตั้งบน <b>Vercel</b> และเก็บข้อมูลบน <b>Supabase</b> — เปิดจากไอคอนบนหน้าจอได้เลย
 ไม่ต้องผ่านแอปไหน แก้จากมือถือแล้วโน้ตบุ๊กเห็นทันทีเพราะข้อมูลอยู่ฐานข้อมูลกลางชุดเดียวกัน<br><br>
 ข้อมูลผูกกับบัญชีที่ล็อกอิน คนอื่นเปิดลิงก์โดยไม่มีรหัสผ่านก็ไม่เห็นข้อมูล · เครื่องนี้จำการล็อกอินไว้แล้ว ไม่ต้องกรอกซ้ำ<br><br>
 แนะนำให้กดดาวน์โหลด CSV เก็บไว้เดือนละครั้ง เป็นสำเนาสำรองไว้อุ่นใจค่ะ
@@ -6956,7 +6956,7 @@ hr:{manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd,subsidy:h
 function bkDownload(){
 const pack=bkPack(), a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,1)],{type:"application/json"}));
-a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
+a.download="sky-plan-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},900);
 bkAt=pack.at; try{ localStorage.removeItem("sw-bksnooze"); }catch(e){}
 saveMeta("bk",[{at:pack.at}]);
@@ -7462,7 +7462,7 @@ el("csvsample").onclick=()=>{el("csvtext").value=
 el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
-el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
+el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skyplan-tasks",
 ["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","หมวดทักษะ","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รหัสหลักสูตร","รุ่นที่","แบบที่ยื่น","วันที่ฝึกเสร็จ","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
 t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.course||"",t.batch||"",t.yp||"",t.dsdEnd||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
@@ -7484,8 +7484,8 @@ bkMsg=`<div class="banner ok" style="margin-top:12px">${svg(ICON.file,17)} ส�
 if(el("bkgo"))el("bkgo").onclick=async()=>{
 const f=el("bkfile").files&&el("bkfile").files[0];
 if(!f){tell("เลือกไฟล์สำรอง (.json) ก่อนนะคะ");return;}
-let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Work</div>"); return; }
-if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Work</b>");return;}
+let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Plan</div>"); return; }
+if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Plan</b>");return;}
 const cnt=bkCount(pack);
 if(!await ask("ไฟล์นี้สำรองไว้เมื่อ <b>"+esc(new Date(pack.at||Date.now()).toLocaleString("th-TH"))+"</b> มี <b>"+cnt+"</b> รายการ<br>กู้คืนแบบ<b>เติมกลับ</b> — ของที่ลบไปจะกลับมา ของที่มีอยู่จะถูกเขียนทับด้วยค่าในไฟล์ ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบ<br>ดำเนินการต่อไหมคะ?","กู้คืนข้อมูล"))return;
 let ok=0,fail=0;
@@ -7538,16 +7538,16 @@ el("preset")&&(el("preset").onclick=async()=>{
 TRAIN_PRESET.forEach(x=>{ if(!groups.some(g=>g.label===x.label))groups.push({key:x.key,label:x.label}); });
 render(); await saveMeta("groups",groups);});
 el("signout")&&(el("signout").onclick=async()=>{if(await ask("ออกจากระบบเครื่องนี้ใช่ไหมคะ?","ออกจากระบบ"))signOut();});
-el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skywork-index",
+el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skyplan-index",
 ["สารบัญ","กลุ่มงาน","ผู้ดูแล","ลิงก์","สถานะ","รายละเอียดเอกสาร","หมายเหตุ"],
 idx.map(x=>[x.title,x.group,x.owner,x.url,x.status,x.detail,x.note])));
-el("expNote")&&(el("expNote").onclick=()=>exportCSV("skywork-notes",
+el("expNote")&&(el("expNote").onclick=()=>exportCSV("skyplan-notes",
 ["หัวข้อ","ประเภท","วันที่","ป้ายกำกับ","เนื้อหา"],
 notes.map(n=>[n.title,n.kind,n.date,n.tag,ntPlain(n,true)])));
-el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
+el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skyplan-legal",
 ["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
 legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));
-el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
+el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skyplan-ledger",
 ["วันที่","ประเภท","หมวด GL","จำนวนเงิน","บริษัท","รายละเอียด"],
 ledger.map(x=>[x.date,x.kind==="income"?"รายรับ":"รายจ่าย",glLabel(x.gl),x.amount,cLabel(x.company),x.note])));
 }
@@ -9461,7 +9461,7 @@ const bkCount=p=>["items","ledger","legal","index","note","sec","raw","rows"].re
 async function bkDownload(){
  const pack=bkPack(); try{ pack.raw=await bkFetchKinds(["ink","nimg"]); }catch(e){ pack.rawErr=String((e&&e.message)||e); }
  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));
- a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },900);
+ a.download="sky-plan-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },900);
  bkAt=pack.at; try{ localStorage.removeItem("sw-bksnooze"); }catch(e){}
  saveMeta("bk",[{at:pack.at}]);
  if(pack.rawErr)tell("<b>สำรองได้ไม่ครบ</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">ส่วนสมุดเขียนมือ/รูปในโน้ตดึงไม่สำเร็จ ("+esc(pack.rawErr)+") — ลองสำรองใหม่อีกครั้งตอนเน็ตดี</div>");
@@ -9649,7 +9649,7 @@ function spExtras(ex){ if(!SP.extra)return "";
  if(!docs.length&&!dirs.length)return "";
  const blk=(h,rows,cols)=>rows.length?`<div class="psx"><h3>${h} (${rows.length})</h3><table class="pst sm"><tbody>${rows.map(r=>`<tr><td>${esc(r.title)}${r.urgent?" 🔥":""}</td><td>${esc(cols(r))}</td><td class="r${r.due&&r.due<T?" late":""}">${r.due?"ครบ "+spShort(r.due):""}</td></tr>`).join("")}</tbody></table></div>`:"";
  return `<div class="psxs">${blk("เอกสารรอลงนาม",docs,r=>r.from||"")}${blk("งานสั่งการที่ค้าง",dirs,r=>r.owner?"ผู้รับผิดชอบ "+r.owner:"")}</div>`; }
-function spFoot(){ const n=new Date(); return `<footer>พิมพ์เมื่อ ${n.getDate()} ${MTH[n.getMonth()]} ${n.getFullYear()+543} ${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")} น. · Sky Work · เอกสารลับเฉพาะผู้บริหาร</footer>`; }
+function spFoot(){ const n=new Date(); return `<footer>พิมพ์เมื่อ ${n.getDate()} ${MTH[n.getMonth()]} ${n.getFullYear()+543} ${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")} น. · Sky Plan · เอกสารลับเฉพาะผู้บริหาร</footer>`; }
 function spDay(ex,iso){ const e=secEx1(ex)||{name:"",color:"#555"}, L=spAppts(ex,iso), tr=SP.trip?secTrip1(ex,iso):null; let rows=[];
  L.forEach(r=>rows.push({a:secMin(r.st)==null?-1:secMin(r.st),h:`<tr><td class="tm">${esc(spTm(r)||"ทั้งวัน")}</td><td><b>${esc(r.title)}</b>${r.status==="pending"?` <span class="tg">รอตอบรับ</span>`:""}${r.rep?" ↻":""}${r.note?`<small>${esc(r.note)}</small>`:""}</td><td>${esc(r.with||"")}</td><td>${esc(r.place||"")}</td><td class="lv">${+r.buf&&secMin(r.st)!=null?"ออก "+secHM(Math.max(0,secMin(r.st)-(+r.buf))):""}</td></tr>`}));
  if(SP.free&&!tr&&secDow(iso)>0&&secDow(iso)<6)secFree(ex,iso,30).forEach(g=>rows.push({a:g[0]-.5,h:`<tr class="fr"><td class="tm">${secHM(g[0])}–${secHM(g[1])}</td><td colspan="4">ว่าง</td></tr>`}));
@@ -9898,7 +9898,7 @@ function evPrintHtml(html,land){ let s=el("psheet"); if(!s){ s=document.createEl
  let pg=el("psheet-pg"); if(!pg){ pg=document.createElement("style"); pg.id="psheet-pg"; document.head.appendChild(pg); } pg.textContent=`@page{size:A4 ${land?"landscape":"portrait"};margin:10mm}`; document.body.classList.add("psheet-on");
  const done=()=>{ document.body.classList.remove("psheet-on"); s.innerHTML=""; window.removeEventListener("afterprint",done); }; window.addEventListener("afterprint",done); setTimeout(()=>{ try{ window.print(); }catch(x){ done(); } },80); }
 function evPhead(h,t){ const e=t.ev, n=new Date(); return `<header><div><h1>${h}</h1><div class="who">${esc(t.title)}</div></div><div class="dt"><b>${e.date?spDate(e.date):"ยังไม่ระบุวันงาน"}</b><small>${[e.start&&"เริ่ม "+e.start,e.venue].filter(Boolean).map(esc).join(" · ")}</small></div></header>`; }
-const evPfoot=()=>`<footer>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")} · Sky Work · Project Hub</footer>`;
+const evPfoot=()=>`<footer>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")} · Sky Plan · Project Hub</footer>`;
 function evPrintDoc(kind){ const t=EV.t, e=t.ev; let h="";
  if(kind==="run"){ const L=(e.run||[]).slice().sort((a,b)=>(evMin(a.t)==null?9999:evMin(a.t))-(evMin(b.t)==null?9999:evMin(b.t)));
   h=`<section class="psh day">${evPhead("Run-of-show / กำหนดการ",t)}<table class="pst"><thead><tr><th style="width:14%">เวลา</th><th style="width:7%">นาที</th><th>กิจกรรม</th><th style="width:20%">ผู้รับผิดชอบ</th><th style="width:20%">หมายเหตุ</th><th style="width:5%">✓</th></tr></thead><tbody>${L.map(r=>{ const a=evMin(r.t); return `<tr><td class="tm">${esc(r.t||"")}${a!=null&&+r.dur?"–"+evHM(a+(+r.dur)):""}</td><td>${r.dur||""}</td><td><b>${esc(r.title)}</b></td><td>${esc(r.owner||"")}</td><td>${esc(r.note||"")}</td><td></td></tr>`; }).join("")}</tbody></table>${evPfoot()}</section>`; evPrintHtml(h,false); return; }
@@ -10119,7 +10119,7 @@ const ONB_K="sw-onb";
 function onbSteps(){ const st=()=>{ try{ return window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){ return false; } };
  return [["เพิ่มงานแรก",items.length>0,()=>openPick()],["ตั้งหมวดงบ (GL) + งบอนุมัติ",gls.length>0,()=>{ view="set"; settab="gl"; }],["ลงทะเบียนกฎหมาย / ใบอนุญาต",legal.length>0,()=>{ view="legal"; }],
   ["ตั้ง PIN + รายชื่อผู้บริหาร (ถ้าใช้ส่วนเลขาฯ)",secHasPin()&&secEx.length>0,()=>{ view="sec"; }],["เปิดการแจ้งเตือน",("Notification" in window&&Notification.permission==="granted")||pushSubs.length>0,()=>{ view="set"; settab="remind"; }],
-  ["สำรองข้อมูลครั้งแรก",!!bkAt,()=>{ view="set"; settab="import"; }],["ติดตั้งเป็นแอปบน iPad",st(),()=>tell("<b>ติดตั้งเป็นแอป</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">Safari › ปุ่มแชร์ (สี่เหลี่ยมมีลูกศร) › <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วเปิดจากไอคอน Sky Work — จะได้แจ้งเตือนและเต็มจอ</div>")]]; }
+  ["สำรองข้อมูลครั้งแรก",!!bkAt,()=>{ view="set"; settab="import"; }],["ติดตั้งเป็นแอปบน iPad",st(),()=>tell("<b>ติดตั้งเป็นแอป</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">Safari › ปุ่มแชร์ (สี่เหลี่ยมมีลูกศร) › <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วเปิดจากไอคอน Sky Plan — จะได้แจ้งเตือนและเต็มจอ</div>")]]; }
 const onbHidden=()=>{ try{ return localStorage.getItem(ONB_K)==="hide"; }catch(e){ return false; } };
 function onbCard(force){ const S=onbSteps(), d=S.filter(x=>x[1]).length; if(!force&&(onbHidden()||d===S.length))return "";
  return `<div class="card onb"><div class="onb-h"><h2>เริ่มต้นใช้งาน <small>${d}/${S.length} ขั้น</small></h2><button class="btn ghost sm" id="onbHide">ซ่อน</button></div><div class="ph-bar sm"><i style="width:${Math.round(d/S.length*100)}%;background:var(--ok)"></i></div>
@@ -10149,6 +10149,29 @@ const ntcOn=()=>{ try{ return localStorage.getItem(NTC_K)!=="0"; }catch(e){ retu
  tg.addEventListener("click",e=>{ e.preventDefault(); e.stopImmediatePropagation(); try{ localStorage.setItem(NTC_K,ntcOn()?"0":"1"); }catch(x){} paint(); });
  paint();
 })();
+// ===== iPad: กันจอขาว/ข้อมูลหาย (v14.14.65) =====
+// จากวิดีโอ: (1) แตะ/เขียน Scribble ในบันทึก → จอซูมเข้าเอง (ฟอนต์เล็กกว่า 16px × ซูมแอป) → แก้ใน <head> (maximum-scale=1 เฉพาะ iOS)
+// (2) สลับภาษาคีย์บอร์ดตอนจอซูมอยู่ → หน้าเว็บขาวทั้งจอ = iPadOS ปิดหน้าเพราะหน่วยความจำเต็ม
+//   แก้: ปิดเบลอพื้นหลังหน้าต่างบน iOS · คืนหน่วยความจำ canvas ของสมุดเมื่อปิดสมุด · เก็บร่างทันทีเมื่อแอปถูกพักไว้
+//   และถ้าเปิดแอปใหม่แล้วมีบันทึกที่ยังไม่ได้กดบันทึก → ขึ้นแถบ "เปิดต่อ" กู้คืนให้ทันที
+(function(){
+ const d=el("inkdlg");
+ if(d)d.addEventListener("close",()=>{ try{ ["ink-base","ink-over","ink-pred","ink-laser"].forEach(id=>{ const c=el(id); if(c){ c.width=1; c.height=1; } }); ink.rc=null; }catch(e){} });
+ const flush=()=>{ try{ if(typeof DR!=="undefined"&&DR.cur&&typeof drStore==="function")drStore(); }catch(e){} };
+ addEventListener("pagehide",flush); document.addEventListener("visibilitychange",()=>{ if(document.hidden)flush(); });
+})();
+function drResumeList(){ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k.indexOf("sw-dr:ndlg:")!==0)continue;
+ const v=JSON.parse(localStorage.getItem(k)||"null"); if(!v||!v.snap)continue; const age=Date.now()-new Date(v.at).getTime(); if(!(age>=0&&age<3*864e5))continue;
+ const f=v.snap.f||v.snap.fields||{}, h=v.snap.h||v.snap.html||{}; const title=(f["n-title"]||"").trim(), body=String(h["n-body"]||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+ if(!title&&!body)continue; out.push({key:k.slice(6),at:v.at,title:title||body.slice(0,30)}); } }catch(e){} return out.sort((a,b)=>a.at<b.at?1:-1); }
+function drResumeOpen(r){ const id=r.key.slice(5); let n=null; if(id!=="new"){ n=(notes||[]).find(x=>x._id===id); if(!n){ setFoot("ยังโหลดบันทึกนี้ไม่เสร็จ — ลองอีกครั้งในอีกสักครู่"); return; } }
+ openNote(n); let t=0; const iv=setInterval(()=>{ t++; const b=document.querySelector('#ndlg .dr-bar.has [data-dr="restore"]'); if(b){ clearInterval(iv); b.click(); } else if(t>20)clearInterval(iv); },100); }
+function drResumeBar(){ if(el("ndlg")&&el("ndlg").open)return; const L=drResumeList(); const old=el("drres"); if(old)old.remove(); if(!L.length)return;
+ const r=L[0], b=document.createElement("div"); b.id="drres"; b.className="drres"; b.setAttribute("role","status");
+ b.innerHTML=`📝 มีบันทึกที่ยังไม่ได้กดบันทึก <b>${esc(r.title)}</b> <span style="opacity:.75">(${esc(drHM(r.at))})</span><button type="button" data-dg="go">เปิดต่อ</button><button type="button" class="ghost" data-dg="no">ภายหลัง</button>`;
+ b.addEventListener("click",e=>{ const x=e.target.closest("[data-dg]"); if(!x)return; b.remove(); if(x.dataset.dg==="go")drResumeOpen(r); });
+ document.body.appendChild(b); }
+setTimeout(()=>{ try{ drResumeBar(); }catch(e){ console.error(e); } },3500);
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");
@@ -10170,7 +10193,7 @@ b.innerHTML=`<div class="f"><label for="g-new">รหัสผ่านใหม
 <div id="g-msg"></div>`;
 el("gatego").textContent="บันทึกรหัสผ่านใหม่";
 }else if(mode==="login"){
-el("gateh").textContent="เข้าสู่ระบบ Sky Work";
+el("gateh").textContent="เข้าสู่ระบบ Sky Plan";
 b.innerHTML=`<div class="f"><label for="g-mail">อีเมล</label><input id="g-mail" type="email" autocomplete="email"></div>
 <div class="f" style="margin-top:12px"><label for="g-pass">รหัสผ่าน</label><input id="g-pass" type="password" autocomplete="current-password"></div>
 <div class="hint">เครื่องนี้จะจำไว้ ไม่ต้องล็อกอินอีก · <b>เคยมีบัญชีแล้วให้กด “เข้าสู่ระบบ” เท่านั้น</b> (ข้อมูลทั้งหมดอยู่ในบัญชีเดิม)</div>
