@@ -76,9 +76,9 @@ document.execCommand("styleWithCSS",false,false); neSave(); neState();
 }
 function neClearColor(prop){
 const s=getSelection(); if(!s.rangeCount)return; const r=s.getRangeAt(0);
-NE().querySelectorAll("span[style]").forEach(sp=>{ if(!r.intersectsNode(sp))return;
+NE().querySelectorAll("span[style],b[style],strong[style],i[style],em[style],u[style],s[style],a[style],font").forEach(sp=>{ if(!r.intersectsNode(sp))return; if(sp.tagName==="FONT"){ if(prop==="color")sp.removeAttribute("color"); if(!sp.getAttribute("style")&&!sp.getAttribute("color")){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } return; }
  const hadBg=!!sp.style.backgroundColor; sp.style[prop]=""; if(prop==="backgroundColor"&&hadBg)sp.style.color="";
- if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
+ if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(sp.tagName==="SPAN"&&!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
 }
 
 // ---------- ช่องติ๊ก (To-do) ----------

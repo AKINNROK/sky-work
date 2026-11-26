@@ -5,12 +5,13 @@
 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Sky Work</title>
+<script>/* iPad/iPhone: กันจอซูมเองตอนแตะช่องพิมพ์/เขียน Scribble (ฟอนต์ <16px) — ผู้ใช้ยังถ่างนิ้วซูมได้ตามปกติ */try{var ua=navigator.userAgent,ios=/iPad|iPhone|iPod/.test(ua)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);if(ios){document.documentElement.classList.add("ios");var vm=document.querySelector('meta[name="viewport"]');vm&&vm.setAttribute("content","width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover");}}catch(e){}</script>
+<title>Sky Plan</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#124E82">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Sky Work">
+<meta name="apple-mobile-web-app-title" content="Sky Plan">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Prompt:wght@400;500;600&family=Kanit:wght@300;400;500&family=Niramit:wght@400;500&family=Noto+Sans+Thai:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500&family=Pridi:wght@400;500&family=Mali:wght@400;500&family=Itim&display=swap">
 <style>:root{--ink:#123A5E; --ink-2:#4a6480; --ink-3:#8aa0b6;--paper:#EEF3F8; --card:#ffffff; --line:#e2eaf1; --line-2:#eef3f8;--accent:#124E82; --accent-2:#5B7BAA; --accent-soft:#DCE7F1;--sky:#5B7BAA; --sky-soft:#AEBECD;--ok:#1a9f86; --ok-soft:#dff4ef;--run:#e0932b; --run-soft:#fcefdb;--wait:#8fa3ba; --wait-soft:#e9eff5;--over:#e0606d; --over-soft:#fbe5e8;--sh-s:0 2px 6px -2px rgba(18,58,94,.12);--sh-m:0 6px 20px -10px rgba(18,58,94,.28);--sh-l:0 18px 44px -22px rgba(18,58,94,.45);--r:24px; --r-sm:16px; --r-xs:12px;--head:"Mitr","Sarabun",system-ui,sans-serif;--sans:"Sarabun","Noto Sans Thai",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}button,input,select,textarea{font:inherit;color:inherit}:focus-visible{outline:2.5px solid var(--accent-2);outline-offset:3px;border-radius:10px}@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}svg{flex:none}.shell{display:grid;grid-template-columns:236px 1fr;min-height:calc(100vh/var(--zf,1))}.side{padding:22px 16px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:calc(100vh/var(--zf,1))}.brand,.mtop{cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -968,6 +969,83 @@ body.psheet-on .psh{page-break-after:always;break-after:page;box-shadow:none;pad
 body.psheet-on .psh.week .wc{min-height:380px}
 .pst tr,.wi{break-inside:avoid}
 }
+/* ===== หน้าเขียนบันทึก: โหมดกะทัดรัด ===== */
+.ntrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center;flex:1 1 100%;min-width:0}
+.ntc-tg{font-weight:700!important;color:var(--accent)!important;background:var(--card)!important}
+#ndlg.ncompact .ntool{padding:4px 6px;gap:2px}
+#ndlg.ncompact .ntrow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:2px}
+#ndlg.ncompact .ntrow::-webkit-scrollbar{display:none}
+#ndlg.ncompact .ntrow>*{flex:none}
+#ndlg.ncompact .ntool button{height:30px;min-width:30px;padding:0 8px;font-size:12.5px}
+#ndlg.ncompact .nefbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding:0 0 4px;gap:6px 10px}
+#ndlg.ncompact .nefbar::-webkit-scrollbar{display:none}
+#ndlg.ncompact .nefbar>*{flex:none}
+#ndlg.ncompact .nefbar-l{font-size:11.5px}#ndlg.ncompact .nefbar-l small{display:none}
+#ndlg.ncompact .nefbar-r{flex-wrap:nowrap;gap:10px}
+#ndlg.ncompact .nefbar-f,#ndlg.ncompact .nefbar-s{overflow:visible;max-width:none}
+#ndlg.ncompact .nefbar button{padding:3px 10px;min-height:28px;font-size:12.5px}
+#ndlg.ncompact .nlabrow{display:none}
+#ndlg .dlg-b input[type=date]{width:100%;min-width:0;max-width:100%;box-sizing:border-box;display:block}
+@media(min-width:560px){#ndlg .dlg-b{grid-template-columns:1fr 1fr}}
+@media(min-width:600px){#ndlg.ncompact .dlg-b{max-height:calc(100vh - 210px)}}
+/* ===== หน้าเขียนบันทึก: แถบเดียว + เมนูดรอปดาวน์ ===== */
+#ndlg.nbar2 .ntool{padding:5px 6px;gap:0;flex-wrap:wrap}
+#ndlg.nbar2 .nb2{display:flex;align-items:center;gap:2px;flex:1 1 100%;min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+#ndlg.nbar2 .nb2::-webkit-scrollbar{display:none}
+#ndlg.nbar2 .nb2>*{flex:none}
+#ndlg.nbar2 .nb2 button{height:34px;min-width:32px;padding:0 7px;font-size:13.5px;border-radius:10px}
+#ndlg.nbar2 .nb2 .sep{height:20px;margin:0 3px}
+#ndlg.nbar2 .nb2-t{display:inline-flex;align-items:center;gap:6px;background:var(--card)!important;color:var(--ink)!important;box-shadow:inset 0 0 0 1px var(--line)}
+#ndlg.nbar2 .nb2-t i{font-style:normal;font-size:10px;color:var(--ink-3)}
+#ndlg.nbar2 .nb2-t.on{box-shadow:inset 0 0 0 2px var(--accent)}
+#ndlg.nbar2 .nb2-t.sel{box-shadow:inset 0 0 0 2px var(--accent-2)}
+#ndlg.nbar2 #nb2-font{min-width:112px;justify-content:space-between}
+.nb2-ff{max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nb2-fs{font-weight:700;font-size:12.5px;color:var(--accent);background:var(--paper);border-radius:6px;padding:1px 6px}
+#ndlg.nbar2 .nb2-dots{font-size:18px;font-weight:700;letter-spacing:1px}
+.nb2-pop{position:fixed;z-index:70;min-width:210px;max-width:min(92vw,360px);overflow-y:auto;background:var(--card);border-radius:14px;box-shadow:0 12px 32px rgba(18,40,70,.22),0 0 0 1px var(--line);padding:6px;display:flex;flex-direction:column;gap:2px}
+.nb2-pop[hidden]{display:none!important}
+#ndlg .ntool .nb2-pop>button{display:flex;align-items:center;gap:8px;width:100%;height:auto;min-height:40px;padding:8px 12px;text-align:left;justify-content:flex-start;font-size:14px;color:var(--ink);border-radius:10px;background:none}
+#ndlg .ntool .nb2-pop>button:hover{background:var(--paper)}
+#ndlg .ntool .nb2-pop>button.on{background:var(--accent-soft);color:var(--accent)}
+/* แผงฟอนต์/ขนาด (โรลเมนู) */
+#ndlg .ntool .nefbar.nb2-fpop{flex:none;flex-wrap:nowrap;border:0;padding:8px;width:300px;gap:6px;flex-direction:column;align-items:stretch}
+#ndlg .nb2-fpop .nefbar-l{font-size:12px;padding:2px 6px 4px;white-space:normal}
+#ndlg .nb2-fpop .nefbar-l small{display:block}
+#ndlg .nb2-fpop .nefbar-r{flex-direction:column;align-items:stretch;gap:8px;flex-wrap:nowrap}
+#ndlg .nb2-fpop .nefbar-f{flex-direction:column;align-items:stretch;gap:1px;max-height:min(240px,42vh);overflow-y:auto;overflow-x:hidden;border-bottom:1px solid var(--line);padding-bottom:6px}
+#ndlg .nb2-fpop .nefbar-f button{display:flex;align-items:center;justify-content:flex-start;text-align:left;border-radius:10px;background:none;min-height:38px;padding:6px 12px;font-size:15.5px}
+#ndlg .nb2-fpop .nefbar-f button:hover{background:var(--paper)}
+#ndlg .nb2-fpop .nefbar-f button.on{background:var(--accent);color:#fff}
+#ndlg .nb2-fpop .nefbar-f button.on:after{content:"✓";margin-left:auto}
+#ndlg .nb2-fpop .nefbar-f button.rs{text-decoration:none;color:var(--ink-3);font-size:13px}
+#ndlg .nb2-fpop .nefbar-s{flex-wrap:wrap;gap:4px;overflow:visible}
+#ndlg .nb2-fpop .nefbar-s button{background:var(--paper);min-height:32px;padding:4px 10px;font-size:13px}
+#ndlg .nb2-fpop .nefbar-s button.rs{background:none}
+#ndlg .nb2-fpop .nefbar-s b{min-width:40px}
+@media(max-width:860px){#ndlg.nbar2 [data-ne="del"]{font-size:0!important}#ndlg.nbar2 [data-ne="del"]:before{content:"⌫";font-size:16px}}
+/* ===== บันทึกการประชุมย้อนหลัง (ไทม์ไลน์) ===== */
+.mtl-chips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:thin}
+.mtl-chip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--ink-2);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.mtl-chip b{display:inline-block;min-width:18px;margin-left:4px;padding:0 6px;border-radius:999px;background:var(--paper);color:var(--ink-2);font-size:11.5px}
+.mtl-chip.on{background:var(--accent);border-color:var(--accent);color:#fff}.mtl-chip.on b{background:rgba(255,255,255,.22);color:#fff}
+.mtl-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 12px;border-bottom:1px solid var(--line)}
+.mtl-bar>span{color:var(--ink-3);font-size:13px}.mtl-bar input{flex:1 1 180px;min-width:0;background:var(--paper);border:0;border-radius:999px;padding:7px 14px;font:inherit;font-size:13px}
+.mtl-tl{position:relative;padding:10px 0 4px}
+.mtl-it{display:grid;grid-template-columns:58px 18px 1fr;gap:6px;align-items:start;padding:8px 6px;border-radius:12px;cursor:pointer;position:relative}
+.mtl-it:hover,.mtl-it:focus-visible{background:var(--paper);outline:0}
+.mtl-it:before{content:"";position:absolute;left:72px;top:0;bottom:0;width:2px;background:var(--line)}
+.mtl-it:first-child:before{top:18px}.mtl-it:last-child:before{bottom:calc(100% - 18px)}
+.mtl-d{text-align:right;line-height:1.15}.mtl-d b{display:block;font-size:18px;color:var(--ink)}.mtl-d span{font-size:11.5px;color:var(--ink-3)}
+.mtl-dot{position:relative;z-index:1;width:12px;height:12px;margin:5px auto 0;border-radius:50%;background:var(--card);border:2px solid var(--accent-2)}.mtl-dot.new{background:var(--accent);border-color:var(--accent)}
+.mtl-tx .t1{font-weight:600;color:var(--ink)}.mtl-tx .t2{font-size:13px;color:var(--ink-2);margin-top:2px;line-height:1.55;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mtl-nav{display:inline-flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap}.mtl-nav .btn[disabled]{opacity:.4;pointer-events:none}.mtl-pos{font-size:12px;color:var(--ink-3)}
+.nv-mtg{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+/* ===== iPad: ลดภาระหน่วยความจำ (กันจอขาว) ===== */
+html.ios dialog::backdrop{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(18,58,94,.42)}
+html.ios .ink-ocr{-webkit-backdrop-filter:none;backdrop-filter:none}
+.drres{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:9997;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;max-width:92vw;padding:10px 16px;border-radius:18px;background:#fff7e6;color:#7a4b00;border:1px solid #f3d39a;font-size:14px;box-shadow:var(--sh-l)}
+.drres button{border:0;border-radius:999px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;background:#7a4b00;color:#fff;font-weight:600}.drres button.ghost{background:transparent;color:#7a4b00;border:1px solid #e6c58a}
 /* ===== รอบ C: ลดความซับซ้อน ===== */
 .hstrip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;cursor:pointer;padding:14px 18px!important}.hstrip>b{font-size:15px;margin-right:4px}.hstrip span{background:var(--paper);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--ink-2)}.hstrip span b{font-size:15px;color:var(--ink)}.hstrip span.bad{background:var(--over-soft);color:var(--over)}.hstrip span.bad b{color:var(--over)}.hstrip em{margin-left:auto;font-style:normal;font-weight:600;color:var(--accent);font-size:13.5px}
 .navg{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.3px;padding:12px 14px 4px;text-transform:uppercase}
@@ -1048,16 +1126,16 @@ dialog.gsdlg[open]{display:flex;flex-direction:column}dialog.gsdlg::backdrop{bac
 <div class="shell">
 <nav class="side">
 <div class="brand" id="brandBtn" role="button" tabindex="0" title="แตะเพื่อรีเฟรชแอปและโหลดเวอร์ชันล่าสุด">
-<img class="logo" src="logo.png" alt="Sky Work">
-<div><b>Sky Work</b><span id="brandsub">ระบบติดตามงาน</span></div>
+<img class="logo" src="logo.png" alt="Sky Plan">
+<div><b>Sky Plan</b><span id="brandsub">ระบบติดตามงาน</span></div>
 </div>
 <div class="nav" id="nav"></div>
 <div class="foot" id="foot"><span class="dotlive"></span>กำลังโหลด…</div>
 </nav>
 <main>
 <div class="mtop" id="brandBtnM" role="button" tabindex="0" title="แตะเพื่อรีเฟรชแอปและโหลดเวอร์ชันล่าสุด">
-<img class="logo" src="logo.png" alt="Sky Work">
-<div><b>Sky Work <small id="mver" style="font-weight:500;opacity:.7;font-size:11.5px"></small></b><span id="mfoot">กำลังโหลด…</span></div>
+<img class="logo" src="logo.png" alt="Sky Plan">
+<div><b>Sky Plan <small id="mver" style="font-weight:500;opacity:.7;font-size:11.5px"></small></b><span id="mfoot">กำลังโหลด…</span></div>
 </div>
 <div id="view"></div>
 </main>
@@ -1473,6 +1551,6 @@ dialog.gsdlg[open]{display:flex;flex-direction:column}dialog.gsdlg::backdrop{bac
 window.__errs=[]; addEventListener("error",function(e){window.__errs.push((e.message||"")+(e.filename?" @"+String(e.filename).split("/").pop()+":"+e.lineno:""));},true);
 setTimeout(function(){ if(window.__skyBoot)return; var d=document.createElement("div");
 d.style.cssText="position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;background:#fff;color:#23272c;border-radius:16px;padding:16px 18px;box-shadow:0 8px 30px rgba(0,0,0,.2);font:14px/1.7 sans-serif";
-d.innerHTML="<b>Sky Work โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
+d.innerHTML="<b>Sky Plan โหลดไม่สำเร็จ</b><br>ลองกด <b>Ctrl+Shift+R</b> (มือถือ: ปิดแอปแล้วเปิดใหม่) · ถ้ายังไม่ขึ้น ส่งข้อความนี้ให้ผู้ดูแล:<br><code style='font-size:12px;word-break:break-all'>"+(window.__errs.join(" | ")||"ไม่พบ error (ไฟล์สคริปต์อาจโหลดไม่ถึง)")+"</code>"; document.body.appendChild(d); },8000);
 </script>
-<script src="app.js?v=14.14.62"></script></body></html>
+<script src="app.js?v=14.14.67"></script></body></html>

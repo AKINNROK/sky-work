@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.66"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.67"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -2627,10 +2627,11 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
 (function walk(p){ [...p.childNodes].forEach(n=>{
  if(n.nodeType===3)return;
  if(n.nodeType!==1){ n.remove(); return; }
+ if(n.tagName==="FONT"){ const sp=document.createElement("span"), fc=ntRgb(n.getAttribute("color"))||ntRgb(n.style.color), fb=ntRgb(n.style.backgroundColor); if(fc)sp.style.color=fc; if(fb)sp.style.backgroundColor=fb; while(n.firstChild)sp.appendChild(n.firstChild); p.replaceChild(sp,n); n=sp; }
  if(!NT_OK[n.tagName]){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  const T=n.tagName;
- if(T==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
-  if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); walk(n); return; }
+ if(T==="A"){ const h=n.getAttribute("href")||"", ac=ntRgb(n.style.color); [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+  if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); if(ac)n.setAttribute("style","color:"+ac+";"); walk(n); return; }
   while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  if(T==="IMG"){ const nid=n.getAttribute("data-nid")||"", src=n.getAttribute("src")||"", w=n.getAttribute("data-w")||"";
   [...n.attributes].forEach(at=>n.removeAttribute(at.name));
@@ -2641,6 +2642,7 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(T==="SPAN"&&n.hasAttribute("data-stk")){ const sk=n.getAttribute("data-stk"); if(typeof stkValid==="function"&&stkValid(sk)){ const nn=stkNode(sk); n.replaceWith(nn); return; } n.remove(); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
  let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="",dfo="",dff="",dfs="";
+ if(/^(B|STRONG|I|EM|U|S)$/.test(T)){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }  // v14.14.67: Chrome/Safari ใส่สีบน <b>/<u> ตรง ๆ
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); const a=n.getAttribute("data-ff")||"", z=+n.getAttribute("data-fs"); if(typeof NE_FKEYS!=="undefined"&&NE_FKEYS.has(a))dff=a; if(z>=9&&z<=72)dfs=String(Math.round(z)); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
@@ -8976,9 +8978,9 @@ document.execCommand("styleWithCSS",false,false); neSave(); neState();
 }
 function neClearColor(prop){
 const s=getSelection(); if(!s.rangeCount)return; const r=s.getRangeAt(0);
-NE().querySelectorAll("span[style]").forEach(sp=>{ if(!r.intersectsNode(sp))return;
+NE().querySelectorAll("span[style],b[style],strong[style],i[style],em[style],u[style],s[style],a[style],font").forEach(sp=>{ if(!r.intersectsNode(sp))return; if(sp.tagName==="FONT"){ if(prop==="color")sp.removeAttribute("color"); if(!sp.getAttribute("style")&&!sp.getAttribute("color")){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } return; }
  const hadBg=!!sp.style.backgroundColor; sp.style[prop]=""; if(prop==="backgroundColor"&&hadBg)sp.style.color="";
- if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
+ if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(sp.tagName==="SPAN"&&!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
 }
 
 // ---------- ช่องติ๊ก (To-do) ----------
@@ -10172,6 +10174,129 @@ function drResumeBar(){ if(el("ndlg")&&el("ndlg").open)return; const L=drResumeL
  b.addEventListener("click",e=>{ const x=e.target.closest("[data-dg]"); if(!x)return; b.remove(); if(x.dataset.dg==="go")drResumeOpen(r); });
  document.body.appendChild(b); }
 setTimeout(()=>{ try{ drResumeBar(); }catch(e){ console.error(e); } },3500);
+// ===== บันทึกการประชุมย้อนหลัง: ไทม์ไลน์แยกตามการประชุม (v14.14.67) =====
+// หน้า การประชุม → การ์ด "บันทึกการประชุมย้อนหลัง" · เลือกการประชุม (HAI Meeting, HR-Weekly …) → ไทม์ไลน์ทุกครั้ง ใหม่→เก่า พร้อมสรุปมติ
+// เปิดบันทึก → แถบด้านบนมี ‹ ครั้งก่อน · ครั้งถัดไป › · การ์ดการประชุมมีปุ่ม "📚 ไทม์ไลน์บันทึก"
+const MTL={sel:(()=>{ try{ return localStorage.getItem("sw-mtl")||""; }catch(e){ return ""; } })(),q:""};
+const MTL_K="บันทึกการประชุม";
+const mtlDate=n=>n.mtgd||n.date||(n.opened||"").slice(0,10)||"";
+function mtlItems(){ return items.filter(t=>isMeet(t)&&!isTrain(t)); }
+function mtlKey(n,ms){ ms=ms||mtlItems();
+ if(n.mtg&&ms.some(t=>t._id===n.mtg))return n.mtg;
+ const tt=(n.title||"").toLowerCase(); let best=null;
+ ms.forEach(t=>{ const s=(t.title||"").trim().toLowerCase(); if(s.length>=3&&tt.includes(s)&&(!best||s.length>best.title.length))best=t; });
+ return best?best._id:"_other"; }
+function mtlGroups(){ const ms=mtlItems(), G=new Map();
+ notes.filter(n=>n.kind!==INKKIND&&(n.mtg||n.kind===MTL_K)).forEach(n=>{ const k=mtlKey(n,ms); if(!G.has(k)){ const t=ms.find(x=>x._id===k); G.set(k,{key:k,t,label:t?t.title:"ประชุมอื่น ๆ (ไม่ได้ผูกกับการประชุม)",list:[]}); } G.get(k).list.push(n); });
+ const out=[...G.values()]; out.forEach(g=>g.list.sort((a,b)=>mtlDate(a)<mtlDate(b)?1:mtlDate(a)>mtlDate(b)?-1:0)); out.forEach(g=>g.last=mtlDate(g.list[0]));
+ return out.sort((a,b)=>a.key==="_other"?1:b.key==="_other"?-1:(a.last<b.last?1:-1)); }
+function mtlSnip(n){ const raw=n.fmt==="h"?ntClean(n.body||""):esc(n.body||"").replace(/\n/g,"<br>"); const d=document.createElement("div"); d.innerHTML=raw;
+ const hs=[...d.querySelectorAll("h2,h3,p,div,li,b,strong")].filter(x=>/มติ|ข้อสรุป|สรุป/.test(x.textContent)&&x.textContent.length<60);
+ let txt=""; const h=hs[0]&&(hs[0].closest("h2,h3,p,div,li")||hs[0]);
+ if(h&&h!==d){ let x=h.nextElementSibling, k=0; while(x&&k<6&&!/^H[23]$/.test(x.tagName)){ txt+=" "+x.textContent; x=x.nextElementSibling; k++; } txt=txt.trim(); if(txt)txt="มติ: "+txt; }
+ if(!txt)txt=d.textContent.replace(/^\s*ประชุม:.*?(ผู้เข้าร่วม:[^\n]*)?/,"");
+ txt=txt.replace(/\s+/g," ").trim(); return txt.length>180?txt.slice(0,180)+"…":txt; }
+const mtlDay=iso=>{ if(!iso)return{d:"—",m:""}; const x=new Date(iso+"T00:00:00"); return {d:x.getDate(),m:MTH[x.getMonth()]+" "+String((x.getFullYear()+543)%100).padStart(2,"0")}; };
+function mtlCard(){ const G=mtlGroups(); if(!G.length)return `<div class="card span4" id="mtl"><h2>📚 บันทึกการประชุมย้อนหลัง</h2><div class="empty">ยังไม่มีบันทึกการประชุม — เปิดการประชุม (เช่น HAI Meeting) แล้วกด “📝 จดบันทึกประชุม” บันทึกจะมารวมเป็นไทม์ไลน์ที่นี่</div></div>`;
+ let g=G.find(x=>x.key===MTL.sel)||G[0]; const q=MTL.q.trim().toLowerCase();
+ const L=g.list.filter(n=>!q||((n.title||"")+" "+ntPlain(n)).toLowerCase().includes(q));
+ const chips=G.map(x=>`<button type="button" class="mtl-chip${x===g?" on":""}" data-mtl="${esc(x.key)}">${esc(x.label)} <b>${x.list.length}</b></button>`).join("");
+ const rows=L.map((n,i)=>{ const D=mtlDay(mtlDate(n)), s=mtlSnip(n); return `<div class="mtl-it" data-mtlo="${n._id}" role="button" tabindex="0">
+  <div class="mtl-d"><b>${D.d}</b><span>${esc(D.m)}</span></div><i class="mtl-dot${i===0&&!q?" new":""}"></i>
+  <div class="mtl-tx"><div class="t1">${esc(n.title||"ไม่มีชื่อ")}${i===0&&!q?' <span class="tag sky">ล่าสุด</span>':""}</div>${s?`<div class="t2">${esc(s)}</div>`:""}</div></div>`; }).join("");
+ return `<div class="card span4" id="mtl"><h2>📚 บันทึกการประชุมย้อนหลัง <small>เลือกการประชุมเพื่อดูไทม์ไลน์ทุกครั้ง · ${notes.filter(n=>n.mtg||n.kind===MTL_K).length} บันทึก</small></h2>
+ <div class="mtl-chips">${chips}</div>
+ <div class="mtl-bar"><b>${esc(g.label)}</b><span>${g.list.length} ครั้ง${g.list.length?" · ล่าสุด "+esc(fmtDate(g.last))+" "+(new Date(g.last).getFullYear()+543):""}</span>
+  <input type="search" id="mtl-q" placeholder="ค้นในบันทึกของการประชุมนี้" value="${esc(MTL.q)}">
+  ${g.t?`<button type="button" class="btn ghost sm" data-mtlcard="${g.t._id}">เปิดการประชุม / จดครั้งใหม่</button>`:""}</div>
+ <div class="mtl-tl">${rows||`<div class="empty">ไม่พบบันทึกที่ตรงกับ “${esc(MTL.q)}”</div>`}</div></div>`; }
+{ const _m=meet; meet=function(){ let h=_m.apply(this,arguments); try{ h=h.replace('<div class="toolbar">','<div class="toolbar"><button type="button" class="btn ghost sm" data-mtljump>📚 บันทึกประชุมย้อนหลัง</button> '); const i=h.lastIndexOf("</div>"); return i>0?h.slice(0,i)+mtlCard()+h.slice(i):h+mtlCard(); }catch(e){ console.error(e); return h; } }; }
+function mtlPick(k){ MTL.sel=k; MTL.q=""; try{ localStorage.setItem("sw-mtl",k); }catch(e){} const c=el("mtl"); if(c){ const t=document.createElement("div"); t.innerHTML=mtlCard(); c.replaceWith(t.firstElementChild); mtlWire(); } }
+function mtlWire(){ const q=el("mtl-q"); if(q&&!q._w){ q._w=1; q.addEventListener("input",()=>{ MTL.q=q.value; const pos=q.selectionStart; const c=el("mtl"), t=document.createElement("div"); t.innerHTML=mtlCard(); c.replaceWith(t.firstElementChild); mtlWire(); const nq=el("mtl-q"); nq.focus(); try{ nq.setSelectionRange(pos,pos); }catch(e){} }); } }
+function mtlGo(k){ const d=el("cardlg"); if(d&&d.open)d.close(); const v=el("nvdlg"); if(v&&v.open)v.close(); MTL.sel=k; MTL.q=""; try{ localStorage.setItem("sw-mtl",k); }catch(e){}
+ view="meet"; renderNav(); render(); setTimeout(()=>{ const c=el("mtl"); if(c)c.scrollIntoView({behavior:"smooth",block:"start"}); },60); }
+document.addEventListener("click",e=>{ const t=e.target; if(!t.closest)return;
+ if(t.closest("[data-mtljump]")){ const m=el("mtl"); if(m)m.scrollIntoView({behavior:"smooth",block:"start"}); return; }
+ const c=t.closest("[data-mtl]"); if(c){ mtlPick(c.dataset.mtl); return; }
+ const o=t.closest("[data-mtlo]"); if(o){ const n=notes.find(x=>x._id===o.dataset.mtlo); if(n)viewNote(n); return; }
+ const k=t.closest("[data-mtlcard]"); if(k){ const it=items.find(x=>x._id===k.dataset.mtlcard); if(it)openCard(it); } });
+document.addEventListener("keydown",e=>{ if(e.key!=="Enter")return; const o=e.target.closest&&e.target.closest("[data-mtlo]"); if(o)o.click(); });
+{ const _w=wire; wire=function(){ _w.apply(this,arguments); if(view==="meet")mtlWire(); }; }
+// เปิดบันทึก → ครั้งก่อน / ครั้งถัดไป / ไทม์ไลน์
+{ const _v=viewNote; viewNote=function(n){ const r=_v.apply(this,arguments); try{ if(!n||!(n.mtg||n.kind===MTL_K))return r; const k=mtlKey(n), g=mtlGroups().find(x=>x.key===k); if(!g)return r;
+  const i=g.list.findIndex(x=>x._id===n._id), older=g.list[i+1], newer=g.list[i-1];
+  let x=el("nv-mtg"); if(!x){ const b=el("nvb"); if(!b)return r; x=document.createElement("div"); x.id="nv-mtg"; x.className="nv-mtg"; x.innerHTML=`📚 <b>${esc(g.label)}</b>`; b.parentNode.insertBefore(x,b); }
+  const nav=document.createElement("span"); nav.className="mtl-nav";
+  nav.innerHTML=`<button type="button" class="btn ghost sm" ${older?"":"disabled"} title="${older?esc(older.title||""):"ไม่มีครั้งก่อนหน้า"}">‹ ครั้งก่อน</button><span class="mtl-pos">${i+1>0?(g.list.length-i)+"/"+g.list.length:""}</span><button type="button" class="btn ghost sm" ${newer?"":"disabled"} title="${newer?esc(newer.title||""):"นี่คือครั้งล่าสุด"}">ครั้งถัดไป ›</button><button type="button" class="btn ghost sm">ไทม์ไลน์</button>`;
+  const bs=nav.querySelectorAll("button"); bs[0].onclick=()=>older&&viewNote(older); bs[1].onclick=()=>newer&&viewNote(newer); bs[2].onclick=()=>mtlGo(k);
+  const last=x.querySelector("button:last-of-type"); x.insertBefore(nav,last&&last.parentNode===x?last:null); }catch(e){ console.error(e); } return r; }; }
+// การ์ดการประชุม → ปุ่มไทม์ไลน์
+{ const _c=openCard; openCard=function(t){ const r=_c.apply(this,arguments); try{ if(!t||!isMeet(t)||isTrain(t))return r; const f=document.querySelector("#cardlg .dlg-f"); if(!f)return r; f.querySelectorAll(".mtlbtn").forEach(b=>b.remove());
+  const g=mtlGroups().find(x=>x.key===t._id); if(!g||!g.list.length)return r;
+  const b=document.createElement("button"); b.type="button"; b.className="btn ghost xcard mtlbtn"; b.textContent="📚 ไทม์ไลน์บันทึก ("+g.list.length+")"; b.onclick=()=>mtlGo(t._id); f.insertBefore(b,el("vc-edit2")); }catch(e){ console.error(e); } return r; }; }
+// ===== หน้าเขียนบันทึก: แถบเครื่องมือแถวเดียว + เมนูแบบดรอปดาวน์ (v14.14.67) =====
+// เดิม: ฟอนต์ 10 ปุ่ม + ขนาด 7 ปุ่ม เรียงยาว และเครื่องมือ ~30 ปุ่มกระจาย 2 แถว
+// ใหม่: ↶ ↷ ⌫ | [Aa ฟอนต์ · ขนาด ▾] | B I U A | ☑ To-do | [¶ ย่อหน้า ▾] [＋ แทรก ▾] [✨ AI ▾] [⋯]
+// ปุ่มจริงทุกปุ่มยังเป็นปุ่มเดิม (data-ne) แค่ย้ายเข้าเมนู → ทุกฟังก์ชันทำงานเหมือนเดิม
+(function(){ const nt=el("ntool"), dlg=el("ndlg"), fb=el("nefbar"); if(!nt||!dlg)return;
+ try{ localStorage.setItem("sw-ntc","1"); }catch(e){} dlg.classList.add("ncompact","nbar2"); const tg=el("ntc-tg"); if(tg)tg.remove();
+ const B=k=>nt.querySelector('[data-ne="'+k+'"]');
+ const lab={h2:"H1 · หัวข้อใหญ่",h3:"H2 · หัวข้อย่อย",ul:"• รายการ (บูเลต)",ol:"1. เลขข้อ",outdent:"⇤ เลื่อนออก",indent:"⇥ เลื่อนเข้า",fold:"▾ พับ/ขยายทุกหัวข้อ",hr:"— เส้นคั่น",
+  img:"🖼 รูปภาพ",table:"▦ ตาราง",link:"🔗 ลิงก์",stk:"🔥 สติกเกอร์สถานะ",calc:"🧮 เครื่องคิดเลข",mic:"🎤 พูดให้พิมพ์",
+  ai:"✨ ถาม AI / สอนใช้งาน",act:"🧾 สรุปประชุม → งาน",strike:"<s>S</s> ขีดฆ่า",light:'<span style="font-weight:300">บาง</span> ตัวบาง',clear:"🧹 ล้างรูปแบบ",hist:"🕘 ประวัติเวอร์ชัน"};
+ const row=document.createElement("div"); row.className="nb2"; row.id="nb2";
+ const sep=()=>{ const s=document.createElement("span"); s.className="sep"; return s; };
+ const trig=(id,html,title)=>{ const b=document.createElement("button"); b.type="button"; b.className="nb2-t"; b.id=id; b.innerHTML=html; b.title=title; b.setAttribute("aria-haspopup","menu"); b.setAttribute("aria-expanded","false"); return b; };
+ const menus={};
+ const menu=(id,keys,cls)=>{ const p=document.createElement("div"); p.className="nb2-pop"+(cls?" "+cls:""); p.id=id; p.hidden=true; p.setAttribute("role","menu");
+  keys.forEach(k=>{ const b=B(k); if(!b)return; if(lab[k])b.innerHTML=lab[k]; b.setAttribute("role","menuitem"); p.appendChild(b); }); nt.appendChild(p); menus[id]=p; return p; };
+ // แถวหลัก
+ ["undo","redo","del"].forEach(k=>{ const b=B(k); if(b)row.appendChild(b); }); const d=B("del"); if(d){ d.textContent="⌫"; }
+ row.appendChild(sep());
+ const ft=trig("nb2-font",'<span class="nb2-ff">Sarabun</span><span class="nb2-fs">15</span><i>▾</i>',"ฟอนต์และขนาดตัวอักษร"); row.appendChild(ft);
+ row.appendChild(sep());
+ ["bold","italic","underline","color"].forEach(k=>{ const b=B(k); if(b)row.appendChild(b); });
+ row.appendChild(sep());
+ const ck=B("ck"); if(ck)row.appendChild(ck);
+ const pt=trig("nb2-par","¶ ย่อหน้า <i>▾</i>","หัวข้อ · รายการ · เลขข้อ · เลื่อนเข้า/ออก · เส้นคั่น"); row.appendChild(pt);
+ const it=trig("nb2-ins","＋ แทรก <i>▾</i>","รูป · ตาราง · ลิงก์ · สติกเกอร์ · คิดเลข · พูด"); row.appendChild(it);
+ const at=trig("nb2-ai","✨ AI <i>▾</i>","ถาม AI · สรุปประชุมเป็นงาน"); row.appendChild(at);
+ const mt=trig("nb2-more","⋯","ขีดฆ่า · ตัวบาง · ล้างรูปแบบ · ประวัติ"); mt.classList.add("nb2-dots"); row.appendChild(mt);
+ menu("nb2m-par",["h2","h3","ul","ol","outdent","indent","fold","hr"]);
+ menu("nb2m-ins",["img","table","link","stk","calc","mic"]);
+ menu("nb2m-ai",["ai","act"]);
+ menu("nb2m-more",["strike","light","clear","hist"]);
+ // ฟอนต์ → แผงเลือก (ใช้ #nefbar เดิม ให้ตัวจัดการเดิมทำงานต่อ)
+ if(fb){ fb.classList.add("nb2-pop","nb2-fpop"); fb.hidden=true; fb.setAttribute("role","menu"); nt.appendChild(fb); menus.nefbar=fb; }
+ // ลบแถวเดิม/ตัวคั่นที่ว่าง แล้ววางแถวใหม่ไว้บนสุด
+ const old=el("ntrow"); if(old){ [...old.children].forEach(c=>{ if(c.matches("button[data-ne]"))menus["nb2m-more"].appendChild(c); }); old.remove(); }
+ nt.querySelectorAll(":scope>.sep,:scope>button[data-ne]").forEach(x=>{ if(x.tagName==="BUTTON")menus["nb2m-more"].appendChild(x); else x.remove(); });
+ nt.insertBefore(row,nt.firstChild);
+ const pairs=[[ft,fb],[pt,menus["nb2m-par"]],[it,menus["nb2m-ins"]],[at,menus["nb2m-ai"]],[mt,menus["nb2m-more"]]];
+ const closeAll=ex=>pairs.forEach(([t,p])=>{ if(p&&p!==ex){ p.hidden=true; t.setAttribute("aria-expanded","false"); t.classList.remove("on"); } });
+ window.nb2Close=()=>closeAll(null);
+ function place(t,p){ p.style.left="0px"; p.style.top="0px"; const o=p.getBoundingClientRect(), z=(p.offsetWidth?o.width/p.offsetWidth:1)||1, r=t.getBoundingClientRect();
+  const w=o.width, x=Math.max(8,Math.min(innerWidth-w-8,r.left)), spaceB=innerHeight-r.bottom, h=o.height; let y=r.bottom+4; if(h>spaceB-12&&r.top>spaceB)y=Math.max(8,r.top-4-h);
+  p.style.left=((x-o.left)/z)+"px"; p.style.top=((y-o.top)/z)+"px"; p.style.maxHeight=Math.max(160,(y>r.top?innerHeight-y-12:r.top-12))/z+"px"; }
+ pairs.forEach(([t,p])=>{ if(!p)return;
+  t.addEventListener("mousedown",e=>e.preventDefault());
+  t.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); try{ neSave(); }catch(x){} const open=p.hidden; closeAll(); if(!open)return;
+   p.hidden=false; t.setAttribute("aria-expanded","true"); t.classList.add("on"); if(p===fb)try{ neFBarSync(); }catch(x){} place(t,p); });
+  p.addEventListener("mousedown",e=>{ if(!e.target.closest("input"))e.preventDefault(); });
+  // เลือกแล้วปิดเมนู (ยกเว้น A−/A+ ให้กดซ้ำได้)
+  p.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; if(b.dataset.fsz==="-2"||b.dataset.fsz==="2")return; setTimeout(()=>{ p.hidden=true; t.setAttribute("aria-expanded","false"); t.classList.remove("on"); },0); }); });
+ document.addEventListener("pointerdown",e=>{ if(!e.target.closest(".nb2-pop,.nb2-t"))closeAll(); },true);
+ document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pairs.some(([,p])=>p&&!p.hidden)){ e.preventDefault(); e.stopPropagation(); closeAll(); } },true);
+ dlg.addEventListener("close",()=>closeAll());
+ const bd=dlg.querySelector(".dlg-b"); if(bd)bd.addEventListener("scroll",()=>closeAll(),{passive:true}); addEventListener("resize",()=>closeAll());
+})();
+// แผงฟอนต์: หัวแผง + ชื่อฟอนต์ในปุ่มด้านบน
+{ const _s=neFBarSync; neFBarSync=function(){ const r=_s.apply(this,arguments); try{ const bar=el("nefbar"), t=el("nb2-font"); if(!bar||!t)return r;
+  const on=bar.querySelector("[data-ffk].on"), key=on?on.dataset.ffk:"sarabun", f=NE_FONTS.find(x=>x[0]===key)||NE_FONTS[0];
+  const ff=t.querySelector(".nb2-ff"); ff.textContent=f[1].replace(" Sans Thai",""); ff.style.fontFamily=f[3]+",Sarabun,sans-serif";
+  t.querySelector(".nb2-fs").textContent=(el("nefs-v")||{}).textContent||"15"; t.classList.toggle("sel",neFScope==="sel");
+  t.title="ฟอนต์และขนาด · ใช้กับ"+(neFScope==="sel"?"ข้อความที่เลือก":"ทั้งบันทึก"); }catch(e){} return r; }; }
+{ const _o=openNote; openNote=function(){ const r=_o.apply(this,arguments); try{ if(window.nb2Close)nb2Close(); neFBarSync(); }catch(e){} return r; }; }
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");

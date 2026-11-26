@@ -219,7 +219,7 @@ try{ el("ink-stage").setPointerCapture(e.pointerId); }catch(er){}
 ink.ptrs.set(e.pointerId,{type:t,x:e.clientX,y:e.clientY});
 const touchCount=[...ink.ptrs.values()].filter(v=>v.type==="touch").length;
 if(touchCount>=2){ ink.drag={mode:"pinch"}; inkOverClear(); inkDrawSel(); ink.pinch=null; return; }       // สองนิ้ว = ซูม/เลื่อน
-const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||ink.tool==="laser")));
+const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||(ink.tool==="laser"&&!ink.penSeen))));
 if(!canDraw){ ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 inkClosePop();
 const [x,y]=(typeof inkGdDown==="function"?inkGdDown(e,inkToPage(e)):inkToPage(e)), pr=t==="pen"?(e.pressure||.5):.5; ink.lastPt=[x,y];
@@ -548,7 +548,7 @@ function inkDiagReport(){
 inkDiag.on=0; try{ inkDiag.po&&inkDiag.po.disconnect(); }catch(er){}
 const st=a=>{ if(!a.length)return "ไม่มีข้อมูล"; const s=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0); return `n=${a.length} · เฉลี่ย ${(sum/a.length).toFixed(1)} · p95 ${s[Math.floor(s.length*.95)].toFixed(1)} · สูงสุด ${s[s.length-1].toFixed(1)} ms`; };
 const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base"), SS=(ink.pages[ink.cur]?ink.pages[ink.cur].strokes:[]).filter(q=>q.t==="p");
-return ["Sky Work v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
+return ["Sky Plan v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
 "หน้าจอ: "+innerWidth+"x"+innerHeight+" dpr "+(window.devicePixelRatio||1)+" · แคนวาส "+c.width+"x"+c.height+" · "+(ink.board?"กระดาน":"สมุด")+(window.PointerEvent&&PointerEvent.prototype.getCoalescedEvents?" · coalesced":" · no-coalesced")+(PointerEvent.prototype.getPredictedEvents?" · predicted":" · no-predicted"),
 "ปากกาแตะลง (pointerdown): "+st(inkDiag.hd),"ปากกาลาก (pointermove): "+st(inkDiag.hm),"ปากกายก (pointerup+วาดเก็บ): "+st(inkDiag.hu),
 "อีเวนต์รอคิวก่อนถูกประมวลผล: "+st(inkDiag.lag),"ช่วงห่างระหว่างเฟรมขณะเขียน: "+st(inkDiag.gaps)+" · เฟรมช้า(>24ms) "+slow+" ครั้ง",

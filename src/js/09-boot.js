@@ -19,7 +19,7 @@ b.innerHTML=`<div class="f"><label for="g-new">รหัสผ่านใหม
 <div id="g-msg"></div>`;
 el("gatego").textContent="บันทึกรหัสผ่านใหม่";
 }else if(mode==="login"){
-el("gateh").textContent="เข้าสู่ระบบ Sky Work";
+el("gateh").textContent="เข้าสู่ระบบ Sky Plan";
 b.innerHTML=`<div class="f"><label for="g-mail">อีเมล</label><input id="g-mail" type="email" autocomplete="email"></div>
 <div class="f" style="margin-top:12px"><label for="g-pass">รหัสผ่าน</label><input id="g-pass" type="password" autocomplete="current-password"></div>
 <div class="hint">เครื่องนี้จะจำไว้ ไม่ต้องล็อกอินอีก · <b>เคยมีบัญชีแล้วให้กด “เข้าสู่ระบบ” เท่านั้น</b> (ข้อมูลทั้งหมดอยู่ในบัญชีเดิม)</div>

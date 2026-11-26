@@ -96,12 +96,21 @@ function inkLaserAdd(x,y,down){ const t=performance.now(), d=down===1; if(d&&!in
 function inkLaserUp(){ const now=performance.now(); inkLz.pts.forEach(p=>{ if(p.s===inkLz.sid&&!p.u)p.u=now; }); ink.laserDown=false; if(!inkLz.raf)inkLz.raf=requestAnimationFrame(inkLaserLoop); }
 const inkLzA=(p,now)=>p.s==="h"?1-(now-p.t)/inkLz.life:(p.u?1-(now-p.u)/inkLz.fade:1);
 function inkLaserLoop(){
+ // v14.14.64: วาดแต่ละเส้นเป็น "path เดียว" แบบโค้งเรียบ (เดิมวาดทีละท่อนสั้น ๆ ซ้อนกัน → เป็นเม็ด ๆ หนาบางไม่เท่ากัน ดูขาด ๆ)
  inkLz.raf=0; const c=el("ink-laser"); if(!c||!ink.note){ inkLz.pts=[]; return; } const ctx=c.getContext("2d"), now=performance.now(), k=ink.k, [ox,oy]=inkO();
  ctx.clearRect(0,0,c.width,c.height); inkLz.pts=inkLz.pts.filter(p=>inkLzA(p,now)>0); const P=inkLz.pts; if(!P.length)return;
- const col=ink.color.laser, wd=Math.max(.5,(ink.size.laser||6)*k*1.2); ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round";
- for(let i=1;i<P.length;i++){ if(P[i].s!==P[i-1].s)continue; const a=inkLzA(P[i],now); if(a<=0)continue; ctx.globalAlpha=Math.max(0,a*.9); ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=wd*2.2; ctx.lineWidth=wd*(.35+.65*a);
-  ctx.beginPath(); ctx.moveTo((P[i-1].x+ox)*k,(P[i-1].y+oy)*k); ctx.lineTo((P[i].x+ox)*k,(P[i].y+oy)*k); ctx.stroke(); }
- const h=P[P.length-1], ha=inkLzA(h,now); if(ha>0){ ctx.globalAlpha=Math.min(1,ha*1.4); ctx.shadowBlur=wd*3; ctx.shadowColor=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc((h.x+ox)*k,(h.y+oy)*k,wd*1.15,0,6.283); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.globalAlpha=Math.min(1,ha*1.4)*.9; ctx.beginPath(); ctx.arc((h.x+ox)*k,(h.y+oy)*k,wd*.45,0,6.283); ctx.fill(); }
+ const col=ink.color.laser, wd=Math.max(.5,(ink.size.laser||6)*k*1.2), X=p=>(p.x+ox)*k, Y=p=>(p.y+oy)*k;
+ const path=seg=>{ ctx.beginPath(); ctx.moveTo(X(seg[0]),Y(seg[0])); if(seg.length===2){ ctx.lineTo(X(seg[1]),Y(seg[1])); return; }
+  for(let i=1;i<seg.length-1;i++){ const a=seg[i], b=seg[i+1]; ctx.quadraticCurveTo(X(a),Y(a),(X(a)+X(b))/2,(Y(a)+Y(b))/2); } const z=seg[seg.length-1]; ctx.lineTo(X(z),Y(z)); };
+ ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.shadowColor=col;
+ for(let i=0;i<P.length;){ let j=i; while(j+1<P.length&&P[j+1].s===P[i].s)j++; const seg=P.slice(i,j+1); i=j+1;
+  if(seg[0].s==="h"){ // จุดชี้ตอนลอยปากกา: หางสั้นจางเร็ว
+   for(let q=1;q<seg.length;q++){ const a=inkLzA(seg[q],now); if(a<=0)continue; ctx.globalAlpha=a*.85; ctx.shadowBlur=wd*2; ctx.lineWidth=wd*(.35+.65*a); ctx.beginPath(); ctx.moveTo(X(seg[q-1]),Y(seg[q-1])); ctx.lineTo(X(seg[q]),Y(seg[q])); ctx.stroke(); } continue; }
+  const a=Math.min(1,inkLzA(seg[seg.length-1],now)); if(a<=0)continue;
+  if(seg.length===1){ ctx.globalAlpha=a; ctx.shadowBlur=wd*2.4; ctx.beginPath(); ctx.arc(X(seg[0]),Y(seg[0]),wd*.6,0,6.283); ctx.fill(); continue; }
+  ctx.globalAlpha=a; ctx.shadowBlur=wd*2.4; ctx.lineWidth=wd*(.5+.5*a); path(seg); ctx.stroke();           // เส้นสี + แสงเรือง
+  if(wd>=5){ ctx.shadowBlur=0; ctx.globalAlpha=a*.45; ctx.strokeStyle="#fff"; ctx.lineWidth=wd*.25; path(seg); ctx.stroke(); ctx.strokeStyle=col; } }   // แกนกลางสว่าง
+ const h=P[P.length-1], ha=inkLzA(h,now); if(ha>0){ ctx.globalAlpha=Math.min(1,ha*1.4); ctx.shadowBlur=wd*3; ctx.shadowColor=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X(h),Y(h),wd*1.15,0,6.283); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.globalAlpha=Math.min(1,ha*1.4)*.9; ctx.beginPath(); ctx.arc(X(h),Y(h),wd*.45,0,6.283); ctx.fill(); }
  ctx.restore(); inkLz.raf=requestAnimationFrame(inkLaserLoop);
 }
 function inkLaserClear(){ inkLz.pts=[]; const c=el("ink-laser"); if(c)c.getContext("2d").clearRect(0,0,c.width,c.height); }

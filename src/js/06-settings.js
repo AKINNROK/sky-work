@@ -95,7 +95,7 @@ ${pushCard()}
 <div class="card" style="margin-top:16px"><h2>ซิงก์เข้า Google Calendar</h2>
 <div class="hint" style="margin-top:6px">ดาวน์โหลดไฟล์ปฏิทิน (.ics) ที่รวมงานทุกงานที่มีวันที่ รวมงานที่ตั้งเกิดซ้ำล่วงหน้า 14 เดือน พร้อมเตือนล่วงหน้า 2 วัน</div>
 <div class="addg"><button class="btn" id="icsgo">${svg(ICON.cal,17)}ดาวน์โหลดไฟล์ปฏิทิน (.ics)</button></div>
-<div class="code">Google Calendar → Settings → Import &amp; export → Import → เลือกไฟล์ sky-work.ics → Import
+<div class="code">Google Calendar → Settings → Import &amp; export → Import → เลือกไฟล์ sky-plan.ics → Import
 มือถือ: เปิดไฟล์ .ics แล้วเลือก "เพิ่มลงในปฏิทิน"</div>
 <div class="hint">เพิ่มงานใหม่แล้วดาวน์โหลดใหม่ได้ ระบบใส่รหัสงานกำกับไว้ ปฏิทินจะอัปเดตทับของเดิม ไม่ซ้ำซ้อน</div></div>`;
 }
@@ -419,7 +419,7 @@ ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ �
 <div class="d">${groups.length} กลุ่ม · ${gls.length} หมวด GL · ${companies.length} บริษัท</div></div>
 <div class="card span4"><h2>แอปนี้ทำงานยังไง</h2>
 <div class="hint" style="margin-top:0">
-Sky Work เป็นเว็บแอปของวิมเอง ติดตั้งบน <b>Vercel</b> และเก็บข้อมูลบน <b>Supabase</b> — เปิดจากไอคอนบนหน้าจอได้เลย
+Sky Plan เป็นเว็บแอปของวิมเอง ติดตั้งบน <b>Vercel</b> และเก็บข้อมูลบน <b>Supabase</b> — เปิดจากไอคอนบนหน้าจอได้เลย
 ไม่ต้องผ่านแอปไหน แก้จากมือถือแล้วโน้ตบุ๊กเห็นทันทีเพราะข้อมูลอยู่ฐานข้อมูลกลางชุดเดียวกัน<br><br>
 ข้อมูลผูกกับบัญชีที่ล็อกอิน คนอื่นเปิดลิงก์โดยไม่มีรหัสผ่านก็ไม่เห็นข้อมูล · เครื่องนี้จำการล็อกอินไว้แล้ว ไม่ต้องกรอกซ้ำ<br><br>
 แนะนำให้กดดาวน์โหลด CSV เก็บไว้เดือนละครั้ง เป็นสำเนาสำรองไว้อุ่นใจค่ะ
@@ -555,7 +555,7 @@ hr:{manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd,subsidy:h
 function bkDownload(){
 const pack=bkPack(), a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,1)],{type:"application/json"}));
-a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
+a.download="sky-plan-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},900);
 bkAt=pack.at; try{ localStorage.removeItem("sw-bksnooze"); }catch(e){}
 saveMeta("bk",[{at:pack.at}]);

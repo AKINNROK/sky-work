@@ -1,4 +1,4 @@
-// Sky Work — แจ้งเตือนนอกแอป (Web Push) · Vercel Serverless Function
+// Sky Plan — แจ้งเตือนนอกแอป (Web Push) · Vercel Serverless Function
 // ตัวแปรที่ต้องมี: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, SUPABASE_URL, SUPABASE_ANON_KEY
 // สรุปอัตโนมัติรายเช้า (Vercel Cron) ต้องเพิ่ม: SUPABASE_SERVICE_ROLE_KEY, CRON_SECRET
 // ตัวแปรเสริม: VAPID_SUBJECT (เช่น mailto:you@example.com), ALLOWED_EMAILS
@@ -49,8 +49,8 @@ module.exports = async (req, res) => {
   let payload;
   if (action === "digest") {
     const plan = ((docs.find(d => d.id === "pushplan") || {}).data || {}).list || [];
-    payload = buildDigest(plan, bangkokToday()) || { title: "Sky Work · เช้านี้", body: "ไม่มีงานเลยกำหนดหรือใกล้ครบกำหนดใน 3 วัน 🎉", tag: "skywork-daily", url: "/" };
-  } else payload = { title: "Sky Work", body: "ทดสอบแจ้งเตือนนอกแอป สำเร็จ ✅", tag: "skywork-test", url: "/" };
+    payload = buildDigest(plan, bangkokToday()) || { title: "Sky Plan · เช้านี้", body: "ไม่มีงานเลยกำหนดหรือใกล้ครบกำหนดใน 3 วัน 🎉", tag: "skywork-daily", url: "/" };
+  } else payload = { title: "Sky Plan", body: "ทดสอบแจ้งเตือนนอกแอป สำเร็จ ✅", tag: "skywork-test", url: "/" };
   const out = await sendAll(E, subs, payload);
   return res.status(200).json({ ok: true, sent: out.sent, failed: out.failed, gone: out.gone.length, action });
 };

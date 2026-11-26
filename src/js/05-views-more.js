@@ -626,10 +626,11 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
 (function walk(p){ [...p.childNodes].forEach(n=>{
  if(n.nodeType===3)return;
  if(n.nodeType!==1){ n.remove(); return; }
+ if(n.tagName==="FONT"){ const sp=document.createElement("span"), fc=ntRgb(n.getAttribute("color"))||ntRgb(n.style.color), fb=ntRgb(n.style.backgroundColor); if(fc)sp.style.color=fc; if(fb)sp.style.backgroundColor=fb; while(n.firstChild)sp.appendChild(n.firstChild); p.replaceChild(sp,n); n=sp; }
  if(!NT_OK[n.tagName]){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  const T=n.tagName;
- if(T==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
-  if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); walk(n); return; }
+ if(T==="A"){ const h=n.getAttribute("href")||"", ac=ntRgb(n.style.color); [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+  if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); if(ac)n.setAttribute("style","color:"+ac+";"); walk(n); return; }
   while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  if(T==="IMG"){ const nid=n.getAttribute("data-nid")||"", src=n.getAttribute("src")||"", w=n.getAttribute("data-w")||"";
   [...n.attributes].forEach(at=>n.removeAttribute(at.name));
@@ -640,6 +641,7 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(T==="SPAN"&&n.hasAttribute("data-stk")){ const sk=n.getAttribute("data-stk"); if(typeof stkValid==="function"&&stkValid(sk)){ const nn=stkNode(sk); n.replaceWith(nn); return; } n.remove(); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
  let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="",dfo="",dff="",dfs="";
+ if(/^(B|STRONG|I|EM|U|S)$/.test(T)){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }  // v14.14.67: Chrome/Safari ใส่สีบน <b>/<u> ตรง ๆ
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); const a=n.getAttribute("data-ff")||"", z=+n.getAttribute("data-fs"); if(typeof NE_FKEYS!=="undefined"&&NE_FKEYS.has(a))dff=a; if(z>=9&&z<=72)dfs=String(Math.round(z)); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");

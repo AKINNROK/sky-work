@@ -55,7 +55,7 @@ const bkCount=p=>["items","ledger","legal","index","note","sec","raw","rows"].re
 async function bkDownload(){
  const pack=bkPack(); try{ pack.raw=await bkFetchKinds(["ink","nimg"]); }catch(e){ pack.rawErr=String((e&&e.message)||e); }
  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));
- a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },900);
+ a.download="sky-plan-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },900);
  bkAt=pack.at; try{ localStorage.removeItem("sw-bksnooze"); }catch(e){}
  saveMeta("bk",[{at:pack.at}]);
  if(pack.rawErr)tell("<b>สำรองได้ไม่ครบ</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">ส่วนสมุดเขียนมือ/รูปในโน้ตดึงไม่สำเร็จ ("+esc(pack.rawErr)+") — ลองสำรองใหม่อีกครั้งตอนเน็ตดี</div>");

@@ -44,7 +44,7 @@ document.addEventListener("focusout",()=>tipHide());
 document.addEventListener("touchstart",e=>{ _touchAt=Date.now(); const t=e.target.closest&&e.target.closest("[data-tip]"); if(t){ const p=e.touches[0]; if(_tipFor===t){tipHide();} else tipShow(t,p.clientX,p.clientY); } else tipHide(); },{passive:true});
 window.addEventListener("scroll",tipHide,{passive:true});
 document.addEventListener("keydown",e=>{ if(e.key==="Escape")tipHide(); });
-const APP_VERSION="14.14.62"; const APP_DATE="17 พ.ย. 2026";
+const APP_VERSION="14.14.67"; const APP_DATE="17 พ.ย. 2026";
 const MTH=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 const MTHFULL=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
 const DOW=["อา","จ","อ","พ","พฤ","ศ","ส"];
@@ -1005,7 +1005,7 @@ function icsText(){
 const pad=n=>String(n).padStart(2,"0");
 const stamp=d=>d.getFullYear()+pad(d.getMonth()+1)+pad(d.getDate());
 const esc2=v=>String(v||"").replace(/[\\;,]/g,m=>"\\"+m).replace(/\n/g," ");
-const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sky Work//TH","CALSCALE:GREGORIAN","X-WR-CALNAME:Sky Work"];
+const out=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Sky Plan//TH","CALSCALE:GREGORIAN","X-WR-CALNAME:Sky Plan"];
 const now=new Date(), seen=new Set();
 items.forEach(t=>{
 const ds=[];
@@ -1041,7 +1041,7 @@ return out.join("\r\n");
 function downloadICS(){
 const a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([icsText()],{type:"text/calendar;charset=utf-8"}));
-a.download="sky-work.ics"; document.body.appendChild(a); a.click();
+a.download="sky-plan.ics"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);
 }
 async function notifyToday(force){
@@ -1052,8 +1052,8 @@ const key="sw-notified-"+new Date().toDateString();
 if(!force){ try{ if(localStorage.getItem(key))return true; }catch(e){} }
 const w=dueSoon(2), pr=prepDue(2);
 const n=w.late.length+w.soon.length+pr.length;
-if(n)new Notification("Sky Work",{body:[w.late.length?`เลยกำหนด ${w.late.length} งาน`:"",w.soon.length?`ครบกำหนดใน 2 วัน ${w.soon.length} งาน`:"",pr.length?`ต้องเตรียมข้อมูลประชุม ${pr.length} รายการ`:""].filter(Boolean).join(" · "),icon:"icon-192.png"});
-else if(force)new Notification("Sky Work",{body:"ไม่มีงานที่ครบกำหนดใน 2 วันนี้ 🎉",icon:"icon-192.png"});
+if(n)new Notification("Sky Plan",{body:[w.late.length?`เลยกำหนด ${w.late.length} งาน`:"",w.soon.length?`ครบกำหนดใน 2 วัน ${w.soon.length} งาน`:"",pr.length?`ต้องเตรียมข้อมูลประชุม ${pr.length} รายการ`:""].filter(Boolean).join(" · "),icon:"icon-192.png"});
+else if(force)new Notification("Sky Plan",{body:"ไม่มีงานที่ครบกำหนดใน 2 วันนี้ 🎉",icon:"icon-192.png"});
 try{localStorage.setItem(key,"1");}catch(e){}
 return true;
 }
@@ -1092,7 +1092,7 @@ const byMonth=MTH.map((_,i)=>items.filter(t=>monthsOf(t).includes(i+1)).length);
 const byMonthTip=MTH.map((_,i)=>tipList(items.filter(t=>monthsOf(t).includes(i+1)),t=>t.title+(t.status?" · "+t.status:"")));
 const stParts=[{n:"เสร็จสิ้น",v:done,c:"var(--ok)",tip:tipList(A.filter(t=>t.status==="เสร็จสิ้น"))},{n:"กำลังดำเนินการ",v:run,c:"var(--run)",tip:tipList(A.filter(t=>t.status==="กำลังดำเนินการ"))},{n:"รอดำเนินการ",v:wait,c:"var(--wait)",tip:tipList(A.filter(t=>t.status==="รอดำเนินการ"))}];
 const stCancel={n:"ยกเลิก",v:cancelled,c:"var(--ink-3)",tip:tipList(scoped.filter(t=>t.status===STATUS_CANCEL))};
-return header("สวัสดีค่ะ วิม 👋","Sky Work · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
+return header("สวัสดีค่ะ วิม 👋","Sky Plan · ทุกงานรวมที่เดียว ซิงก์ทุกเครื่อง")+
 `<div class="toolbar">${scopeBar("sc1")}</div>`+bkBanner()+
 (()=>{const lw=items.filter(t=>isLawItem(t)&&isOpenStatus(t.status)&&(()=>{const d=dueDate(t);return d&&daysTo(d)<0;})());
 return lw.length?`<div class="banner bad" ${regList("hLaw","งานบังคับตามกฎหมายที่เลยกำหนดแล้ว",lw.map(t=>{const d=dueDate(t);return {id:t._id,
@@ -1690,7 +1690,7 @@ const W5_SYS=["คุณช่วยเติมรายละเอียด 5
 "how ให้เป็นขั้นตอนสั้นๆ ขึ้นบรรทัดใหม่ทีละข้อ ไม่เกิน 5 ข้อ"].join("\n");
 // ---------- ผู้ช่วย AI: สรุป · จัดแผน · เตือนงาน · เสนอการแก้ (ต้องกดยืนยันเสมอ) ----------
 const AI_SYSTEM=[
-"คุณคือผู้ช่วย HR ประจำตัวของวิม (HR, LeKise Group) ในแอป Sky Work",
+"คุณคือผู้ช่วย HR ประจำตัวของวิม (HR, LeKise Group) ในแอป Sky Plan",
 "สไตล์: ตอบภาษาไทย กระชับแบบผู้บริหาร พูดตรง วิเคราะห์ได้ และเสนอสิ่งที่ควรทำต่อเป็นข้อๆ",
 "กติกา:",
 "- ใช้เฉพาะข้อมูลในส่วน [ข้อมูลในระบบ] ห้ามเดาหรือแต่งตัวเลข ถ้าไม่มีข้อมูลให้บอกตรงๆ ว่าไม่มี",
@@ -2627,10 +2627,11 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
 (function walk(p){ [...p.childNodes].forEach(n=>{
  if(n.nodeType===3)return;
  if(n.nodeType!==1){ n.remove(); return; }
+ if(n.tagName==="FONT"){ const sp=document.createElement("span"), fc=ntRgb(n.getAttribute("color"))||ntRgb(n.style.color), fb=ntRgb(n.style.backgroundColor); if(fc)sp.style.color=fc; if(fb)sp.style.backgroundColor=fb; while(n.firstChild)sp.appendChild(n.firstChild); p.replaceChild(sp,n); n=sp; }
  if(!NT_OK[n.tagName]){ while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  const T=n.tagName;
- if(T==="A"){ const h=n.getAttribute("href")||""; [...n.attributes].forEach(at=>n.removeAttribute(at.name));
-  if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); walk(n); return; }
+ if(T==="A"){ const h=n.getAttribute("href")||"", ac=ntRgb(n.style.color); [...n.attributes].forEach(at=>n.removeAttribute(at.name));
+  if(/^(https?:\/\/|mailto:|tel:)/i.test(h)){ n.setAttribute("href",h); n.setAttribute("target","_blank"); n.setAttribute("rel","noopener noreferrer"); if(ac)n.setAttribute("style","color:"+ac+";"); walk(n); return; }
   while(n.firstChild)p.insertBefore(n.firstChild,n); n.remove(); return; }
  if(T==="IMG"){ const nid=n.getAttribute("data-nid")||"", src=n.getAttribute("src")||"", w=n.getAttribute("data-w")||"";
   [...n.attributes].forEach(at=>n.removeAttribute(at.name));
@@ -2641,6 +2642,7 @@ d.querySelectorAll("script,style,iframe,object,embed,link,meta").forEach(n=>n.re
  if(T==="SPAN"&&n.hasAttribute("data-stk")){ const sk=n.getAttribute("data-stk"); if(typeof stkValid==="function"&&stkValid(sk)){ const nn=stkNode(sk); n.replaceWith(nn); return; } n.remove(); return; }
  const cls=(T==="SPAN"&&n.classList.contains("lt"))?"lt":(T==="UL"&&n.classList.contains("ck"))?"ck":(T==="TABLE")?"nt":"";
  let col="",bg="",dc="",di="",dbg="",da="",dta="",dh="",df="",dfo="",dff="",dfs="";
+ if(/^(B|STRONG|I|EM|U|S)$/.test(T)){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); }  // v14.14.67: Chrome/Safari ใส่สีบน <b>/<u> ตรง ๆ
  if(T==="SPAN"){ col=ntRgb(n.style.color); bg=ntRgb(n.style.backgroundColor); const a=n.getAttribute("data-ff")||"", z=+n.getAttribute("data-fs"); if(typeof NE_FKEYS!=="undefined"&&NE_FKEYS.has(a))dff=a; if(z>=9&&z<=72)dfs=String(Math.round(z)); }
  if(T==="LI"&&n.getAttribute("data-c")==="1")dc="1";
  if(/^(P|DIV|H2|H3|BLOCKQUOTE)$/.test(T)&&/^[1-6]$/.test(n.getAttribute("data-i")||""))di=n.getAttribute("data-i");
@@ -2950,7 +2952,7 @@ try{ el("ink-stage").setPointerCapture(e.pointerId); }catch(er){}
 ink.ptrs.set(e.pointerId,{type:t,x:e.clientX,y:e.clientY});
 const touchCount=[...ink.ptrs.values()].filter(v=>v.type==="touch").length;
 if(touchCount>=2){ ink.drag={mode:"pinch"}; inkOverClear(); inkDrawSel(); ink.pinch=null; return; }       // สองนิ้ว = ซูม/เลื่อน
-const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||ink.tool==="laser")));
+const canDraw=ink.tool!=="hand"&&e.button!==1&&(t==="pen"||t==="mouse"||(t==="touch"&&(inkFinger()||(ink.tool==="laser"&&!ink.penSeen))));
 if(!canDraw){ ink.drag={mode:"pan",id:e.pointerId,x:e.clientX,y:e.clientY,tx:ink.tx,ty:ink.ty,vx:ink.vx,vy:ink.vy}; return; }
 inkClosePop();
 const [x,y]=(typeof inkGdDown==="function"?inkGdDown(e,inkToPage(e)):inkToPage(e)), pr=t==="pen"?(e.pressure||.5):.5; ink.lastPt=[x,y];
@@ -3279,7 +3281,7 @@ function inkDiagReport(){
 inkDiag.on=0; try{ inkDiag.po&&inkDiag.po.disconnect(); }catch(er){}
 const st=a=>{ if(!a.length)return "ไม่มีข้อมูล"; const s=[...a].sort((x,y)=>x-y), sum=a.reduce((x,y)=>x+y,0); return `n=${a.length} · เฉลี่ย ${(sum/a.length).toFixed(1)} · p95 ${s[Math.floor(s.length*.95)].toFixed(1)} · สูงสุด ${s[s.length-1].toFixed(1)} ms`; };
 const slow=inkDiag.gaps.filter(g=>g>24).length, c=el("ink-base"), SS=(ink.pages[ink.cur]?ink.pages[ink.cur].strokes:[]).filter(q=>q.t==="p");
-return ["Sky Work v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
+return ["Sky Plan v"+APP_VERSION+" · วัดความลื่น "+Math.round((performance.now()-inkDiag.t0)/1000)+" วินาที",
 "หน้าจอ: "+innerWidth+"x"+innerHeight+" dpr "+(window.devicePixelRatio||1)+" · แคนวาส "+c.width+"x"+c.height+" · "+(ink.board?"กระดาน":"สมุด")+(window.PointerEvent&&PointerEvent.prototype.getCoalescedEvents?" · coalesced":" · no-coalesced")+(PointerEvent.prototype.getPredictedEvents?" · predicted":" · no-predicted"),
 "ปากกาแตะลง (pointerdown): "+st(inkDiag.hd),"ปากกาลาก (pointermove): "+st(inkDiag.hm),"ปากกายก (pointerup+วาดเก็บ): "+st(inkDiag.hu),
 "อีเวนต์รอคิวก่อนถูกประมวลผล: "+st(inkDiag.lag),"ช่วงห่างระหว่างเฟรมขณะเขียน: "+st(inkDiag.gaps)+" · เฟรมช้า(>24ms) "+slow+" ครั้ง",
@@ -4353,12 +4355,21 @@ function inkLaserAdd(x,y,down){ const t=performance.now(), d=down===1; if(d&&!in
 function inkLaserUp(){ const now=performance.now(); inkLz.pts.forEach(p=>{ if(p.s===inkLz.sid&&!p.u)p.u=now; }); ink.laserDown=false; if(!inkLz.raf)inkLz.raf=requestAnimationFrame(inkLaserLoop); }
 const inkLzA=(p,now)=>p.s==="h"?1-(now-p.t)/inkLz.life:(p.u?1-(now-p.u)/inkLz.fade:1);
 function inkLaserLoop(){
+ // v14.14.64: วาดแต่ละเส้นเป็น "path เดียว" แบบโค้งเรียบ (เดิมวาดทีละท่อนสั้น ๆ ซ้อนกัน → เป็นเม็ด ๆ หนาบางไม่เท่ากัน ดูขาด ๆ)
  inkLz.raf=0; const c=el("ink-laser"); if(!c||!ink.note){ inkLz.pts=[]; return; } const ctx=c.getContext("2d"), now=performance.now(), k=ink.k, [ox,oy]=inkO();
  ctx.clearRect(0,0,c.width,c.height); inkLz.pts=inkLz.pts.filter(p=>inkLzA(p,now)>0); const P=inkLz.pts; if(!P.length)return;
- const col=ink.color.laser, wd=Math.max(.5,(ink.size.laser||6)*k*1.2); ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round";
- for(let i=1;i<P.length;i++){ if(P[i].s!==P[i-1].s)continue; const a=inkLzA(P[i],now); if(a<=0)continue; ctx.globalAlpha=Math.max(0,a*.9); ctx.strokeStyle=col; ctx.shadowColor=col; ctx.shadowBlur=wd*2.2; ctx.lineWidth=wd*(.35+.65*a);
-  ctx.beginPath(); ctx.moveTo((P[i-1].x+ox)*k,(P[i-1].y+oy)*k); ctx.lineTo((P[i].x+ox)*k,(P[i].y+oy)*k); ctx.stroke(); }
- const h=P[P.length-1], ha=inkLzA(h,now); if(ha>0){ ctx.globalAlpha=Math.min(1,ha*1.4); ctx.shadowBlur=wd*3; ctx.shadowColor=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc((h.x+ox)*k,(h.y+oy)*k,wd*1.15,0,6.283); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.globalAlpha=Math.min(1,ha*1.4)*.9; ctx.beginPath(); ctx.arc((h.x+ox)*k,(h.y+oy)*k,wd*.45,0,6.283); ctx.fill(); }
+ const col=ink.color.laser, wd=Math.max(.5,(ink.size.laser||6)*k*1.2), X=p=>(p.x+ox)*k, Y=p=>(p.y+oy)*k;
+ const path=seg=>{ ctx.beginPath(); ctx.moveTo(X(seg[0]),Y(seg[0])); if(seg.length===2){ ctx.lineTo(X(seg[1]),Y(seg[1])); return; }
+  for(let i=1;i<seg.length-1;i++){ const a=seg[i], b=seg[i+1]; ctx.quadraticCurveTo(X(a),Y(a),(X(a)+X(b))/2,(Y(a)+Y(b))/2); } const z=seg[seg.length-1]; ctx.lineTo(X(z),Y(z)); };
+ ctx.save(); ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle=col; ctx.fillStyle=col; ctx.shadowColor=col;
+ for(let i=0;i<P.length;){ let j=i; while(j+1<P.length&&P[j+1].s===P[i].s)j++; const seg=P.slice(i,j+1); i=j+1;
+  if(seg[0].s==="h"){ // จุดชี้ตอนลอยปากกา: หางสั้นจางเร็ว
+   for(let q=1;q<seg.length;q++){ const a=inkLzA(seg[q],now); if(a<=0)continue; ctx.globalAlpha=a*.85; ctx.shadowBlur=wd*2; ctx.lineWidth=wd*(.35+.65*a); ctx.beginPath(); ctx.moveTo(X(seg[q-1]),Y(seg[q-1])); ctx.lineTo(X(seg[q]),Y(seg[q])); ctx.stroke(); } continue; }
+  const a=Math.min(1,inkLzA(seg[seg.length-1],now)); if(a<=0)continue;
+  if(seg.length===1){ ctx.globalAlpha=a; ctx.shadowBlur=wd*2.4; ctx.beginPath(); ctx.arc(X(seg[0]),Y(seg[0]),wd*.6,0,6.283); ctx.fill(); continue; }
+  ctx.globalAlpha=a; ctx.shadowBlur=wd*2.4; ctx.lineWidth=wd*(.5+.5*a); path(seg); ctx.stroke();           // เส้นสี + แสงเรือง
+  if(wd>=5){ ctx.shadowBlur=0; ctx.globalAlpha=a*.45; ctx.strokeStyle="#fff"; ctx.lineWidth=wd*.25; path(seg); ctx.stroke(); ctx.strokeStyle=col; } }   // แกนกลางสว่าง
+ const h=P[P.length-1], ha=inkLzA(h,now); if(ha>0){ ctx.globalAlpha=Math.min(1,ha*1.4); ctx.shadowBlur=wd*3; ctx.shadowColor=col; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(X(h),Y(h),wd*1.15,0,6.283); ctx.fill(); ctx.shadowBlur=0; ctx.fillStyle="#fff"; ctx.globalAlpha=Math.min(1,ha*1.4)*.9; ctx.beginPath(); ctx.arc(X(h),Y(h),wd*.45,0,6.283); ctx.fill(); }
  ctx.restore(); inkLz.raf=requestAnimationFrame(inkLaserLoop);
 }
 function inkLaserClear(){ inkLz.pts=[]; const c=el("ink-laser"); if(c)c.getContext("2d").clearRect(0,0,c.width,c.height); }
@@ -4560,7 +4571,7 @@ function voiceStart(target){
  try{ rec.start(); }catch(e){ voiceStop(); return false; }
  return true;
 }
-function voiceNoSupport(){ tell("<b>เบราว์เซอร์นี้ยังพิมพ์ตามเสียงในแอปไม่ได้</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">ใช้ <b>ปุ่มไมค์บนคีย์บอร์ด</b> ของ iPad/มือถือ (กดช่องข้อความ แล้วแตะรูปไมค์ 🎤 มุมล่างคีย์บอร์ด) พูดได้ทันที — หรือเปิด Sky Work ใน Safari / Chrome ปกติ (ไม่ใช่ไอคอนหน้าจอโฮม) จะใช้ปุ่มไมค์ในแอปได้</div>"); }
+function voiceNoSupport(){ tell("<b>เบราว์เซอร์นี้ยังพิมพ์ตามเสียงในแอปไม่ได้</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">ใช้ <b>ปุ่มไมค์บนคีย์บอร์ด</b> ของ iPad/มือถือ (กดช่องข้อความ แล้วแตะรูปไมค์ 🎤 มุมล่างคีย์บอร์ด) พูดได้ทันที — หรือเปิด Sky Plan ใน Safari / Chrome ปกติ (ไม่ใช่ไอคอนหน้าจอโฮม) จะใช้ปุ่มไมค์ในแอปได้</div>"); }
 
 // ---------- สมุดเขียนมือ / กระดาน: เติมเป็นกล่องข้อความ ----------
 function inkVoiceToggle(){
@@ -5001,7 +5012,7 @@ const HLP_INK=[
  ["mic","พิมพ์ตามเสียงพูด",'[data-iact="mic"]',"กดแล้วพูด ข้อความจะเติมเป็นกล่องข้อความบนหน้า · สลับไทย/EN ที่แถบเสียง · iPad แบบไอคอนหน้าจอโฮมอาจใช้ไม่ได้ → ใช้ไมค์บนคีย์บอร์ดแทน","ไมค์ เสียง พูด พิมพ์ตามเสียง บันทึกเสียง"],
  ["calc","เครื่องคิดเลข",'[data-iact="calc"]',"เครื่องคิดเลขลอย + − × ÷ % ( ) · ใส่ผลลัพธ์ลงหน้า · ถ้าเลือกกล่องตัวเลขไว้ จะมีปุ่มรวม/เฉลี่ย · พิมพ์ในกล่องข้อความ 1200+350*2= ได้ผลต่อท้ายทันที","เครื่องคิดเลข คำนวณ บวก ลบ คูณ หาร เปอร์เซ็นต์ สูตร"],
  ["ruler","ไม้บรรทัด/เส้นไกด์",'[data-iact="ruler"]',"เมนูไม้บรรทัด: ซ่อน/แสดง ปิดเปิดแม่เหล็ก ลบไกด์ทั้งหมด · ลากจากขอบบน (แนวนอน) หรือขอบซ้าย (แนวตั้ง) เพื่อวางเส้นไกด์ · ลากจุดสามเหลี่ยมกลับไปที่ไม้บรรทัดเพื่อลบ","ไม้บรรทัด ไกด์ เส้นช่วย เส้นทาบ ruler guide ตรง"],
- ["act","สรุปประชุม→งาน",'[data-iact="act"]',"AI อ่านสิ่งที่เขียน/พิมพ์ในหน้านี้ (รวมลายมือถ้ามี · ลาสโซ่เลือกเฉพาะส่วนได้) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Work ได้เลย · ไม่สร้างเองถ้าไม่ได้กดยืนยัน","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม เลขา สร้างงาน"],
+ ["act","สรุปประชุม→งาน",'[data-iact="act"]',"AI อ่านสิ่งที่เขียน/พิมพ์ในหน้านี้ (รวมลายมือถ้ามี · ลาสโซ่เลือกเฉพาะส่วนได้) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Plan ได้เลย · ไม่สร้างเองถ้าไม่ได้กดยืนยัน","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม เลขา สร้างงาน"],
  ["ai","ผู้ช่วย AI",'[data-iact="ai"]',"ปุ่มนี้เอง — ถามหาเครื่องมือหรือให้สอนใช้งานได้","ช่วย ผู้ช่วย ai สอน ถาม"],
  ["undo","ย้อนกลับ",'#ink-undo',"ย้อนการกระทำล่าสุด (Ctrl+Z)","ย้อน undo ยกเลิก"],
  ["redo","ทำซ้ำ",'#ink-redo',"ทำซ้ำสิ่งที่ย้อนไป (Ctrl+Shift+Z)","ทำซ้ำ redo"],
@@ -5028,7 +5039,7 @@ const HLP_INK=[
  ["seldel","ลบที่เลือก",'#ink-seldel',"ลบของที่เลือก (หรือกด Delete)","ลบที่เลือก ลบ delete"]
 ];
 const HLP_NOTE=[
- ["act","สรุป→งาน",'[data-ne="act"]',"AI อ่านบันทึกนี้ (หรือเฉพาะข้อความที่เลือก) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Work ได้เลย · แทรกสรุปกลับลงบันทึกได้","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม สร้างงาน"],
+ ["act","สรุป→งาน",'[data-ne="act"]',"AI อ่านบันทึกนี้ (หรือเฉพาะข้อความที่เลือก) แล้วสรุป มติ และรายการงาน (ใคร/อะไร/เมื่อไร) ให้ติ๊กเลือก-แก้ไข แล้วกดสร้างงานเข้า Sky Plan ได้เลย · แทรกสรุปกลับลงบันทึกได้","สรุป ประชุม งาน action item แตกงาน มติ รายงานการประชุม สร้างงาน"],
  ["ai","ผู้ช่วย AI",'[data-ne="ai"]',"ปุ่มนี้เอง — ถามหาเครื่องมือหรือให้สอนใช้งานได้","ช่วย ผู้ช่วย ai สอน ถาม"],
  ["undo","ย้อนกลับ / ทำซ้ำ",'[data-ne="undo"]',"ย้อน (Ctrl+Z) / ทำซ้ำ (Ctrl+Shift+Z)","ย้อน undo redo ทำซ้ำ"],
  ["h2","หัวข้อใหญ่/ย่อย",'[data-ne="h2"]',"H2 = หัวข้อใหญ่ · H3 = หัวข้อย่อย (เลือกบรรทัดนั้นก่อน)","หัวข้อ heading ใหญ่ ย่อย"],
@@ -5058,7 +5069,7 @@ function hlpState(){
 function hlpSystem(){
  const kb=hlpKB(), page=HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ");
  const list=kb.map(k=>`{{${k[0]}}} ${k[1]} — ${k[3]}`).join("\n");
- return `คุณคือ “ผู้ช่วยสอนใช้งาน Sky Work” (แอปจัดการงาน/บันทึกของ HR) ผู้ใช้เปิดหน้า “${page}” อยู่และขอให้ช่วยหาเครื่องมือหรือสอนใช้งาน
+ return `คุณคือ “ผู้ช่วยสอนใช้งาน Sky Plan” (แอปจัดการงาน/บันทึกของ HR) ผู้ใช้เปิดหน้า “${page}” อยู่และขอให้ช่วยหาเครื่องมือหรือสอนใช้งาน
 กติกา: ตอบเป็นภาษาไทย สั้น กระชับ เป็นขั้นตอนเมื่อสอน (ไม่เกิน ~8 บรรทัด) ใช้ภาษาง่ายๆ ผู้ใช้ไม่ใช่โปรแกรมเมอร์ · ห้ามแต่งฟีเจอร์ที่ไม่มีในรายการ ถ้าไม่มีให้บอกตรงๆ และเสนอทางที่ใกล้เคียงที่สุด
 เมื่อพูดถึงเครื่องมือ/ปุ่มที่มีในรายการ ให้ใส่รหัสในวงเล็บปีกกาคู่ เช่น {{pen}} เพื่อให้แอปแสดงปุ่ม “ชี้ให้ดู” (ใช้เฉพาะรหัสที่มีในรายการนี้ ใส่ทุกครั้งที่อ้างถึงปุ่ม)
 ปุ่มที่ขึ้นต้น “โผล่เมื่อ…” จะไม่เห็นจนกว่าจะเลือกของตามเงื่อนไข ให้บอกขั้นตอนเลือกก่อน
@@ -5085,7 +5096,7 @@ function hlpSugs(){ return HLP.ctx==="note"?["สอนใช้หน้าน�
 function hlpClose(){ const p=el("hlp"); if(p)p.remove(); HLP.open=false; hlpShutUp(); if(HLP.listening&&typeof voiceStop==="function")voiceStop(); HLP.listening=false; }
 function hlpOpen(host){
  if(el("hlp")){ hlpClose(); return; } HLP.ctx=hlpCtx(); HLP.open=true; const p=document.createElement("div"); p.id="hlp"; p.className="hlp";
- p.innerHTML=`<div class="hlp-h"><b>✨ ผู้ช่วย Sky Work <small>${HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ")}</small></b><span><button type="button" data-hc="spk" id="hlp-spk" title="อ่านคำตอบออกเสียง (เมื่อถามด้วยเสียง)">🔊</button><button type="button" data-hc="clr" title="ล้างบทสนทนา">ล้าง</button><button type="button" data-hc="x" aria-label="ปิด">✕</button></span></div><div id="hlp-body" class="hlp-body"></div>
+ p.innerHTML=`<div class="hlp-h"><b>✨ ผู้ช่วย Sky Plan <small>${HLP.ctx==="note"?"เขียนบันทึก":(ink.board?"กระดานกว้าง":"สมุดเขียนมือ")}</small></b><span><button type="button" data-hc="spk" id="hlp-spk" title="อ่านคำตอบออกเสียง (เมื่อถามด้วยเสียง)">🔊</button><button type="button" data-hc="clr" title="ล้างบทสนทนา">ล้าง</button><button type="button" data-hc="x" aria-label="ปิด">✕</button></span></div><div id="hlp-body" class="hlp-body"></div>
  <form class="hlp-f" id="hlp-form"><button type="button" class="hlp-mic" id="hlp-mic" data-hmic="1" aria-label="กดแล้วพูดสั่ง" title="กดครั้งเดียว แล้วพูดได้เลย">🎤</button><textarea id="hlp-in" rows="1" placeholder="พิมพ์ หรือกด 🎤 แล้วพูด" aria-label="ถามผู้ช่วย"></textarea><button type="submit" class="hlp-send" aria-label="ส่ง">ส่ง</button></form>`;
  (host||el(HLP.ctx==="note"?"ndlg":"inkdlg")).appendChild(p);
  p.addEventListener("pointerdown",e=>e.stopPropagation()); p.addEventListener("mousedown",e=>{ if(!e.target.closest("textarea"))e.preventDefault(); });
@@ -5208,7 +5219,7 @@ document.addEventListener("keydown",e=>{
  if(b.id==="ink-mva"){ e.stopPropagation(); ink.mvAuto=!ink.mvAuto; inkMoveSave(); inkToolbar(); } else if(b.id==="ink-mvd"){ e.stopPropagation(); ink.mvDup=ink.mvDup?0:1; inkToolbar(); } },true); })();
 (function(){ const f=inkToolbar; inkToolbar=function(){ const r=f.apply(this,arguments); const s=el("ink-stage"); if(s)s.style.cursor=ink.tool==="move"?"move":""; return r; }; })();
 // ===== สรุปประชุม → แตกเป็นงาน (AI) — กระดานกว้าง · สมุดเขียนมือ · เขียนบันทึก =====
-// AI อ่านข้อความ (และลายมือในรูป ถ้ามี) → สรุป · มติ · รายการงาน (ใคร/ทำอะไร/เมื่อไร) → ผู้ใช้ติ๊ก/แก้ แล้วกดสร้างงานจริงใน Sky Work
+// AI อ่านข้อความ (และลายมือในรูป ถ้ามี) → สรุป · มติ · รายการงาน (ใคร/ทำอะไร/เมื่อไร) → ผู้ใช้ติ๊ก/แก้ แล้วกดสร้างงานจริงใน Sky Plan
 // ใช้ /api/ai เดิม และ aiRun({type:"add_task"}) เดิม (มีตัวตรวจสอบข้อมูลอยู่แล้ว) — AI ไม่เขียนข้อมูลเอง ต้องกดยืนยันทุกครั้ง
 const ACT_SYS=(today,wd)=>`คุณคือผู้ช่วยเลขาประชุมของ HR (LeKise Group) งาน: อ่านบันทึกประชุม/โน้ต (อาจมีรูปลายมือแนบ) แล้วสรุปเป็น JSON เท่านั้น
 วันนี้คือ ${today} (วัน${wd}) — ใช้แปลงวันที่แบบสัมพัทธ์ เช่น “ศุกร์นี้” “สัปดาห์หน้า” “สิ้นเดือน” เป็น YYYY-MM-DD
@@ -6265,7 +6276,7 @@ async function inkCapRender(b){
 function inkCapShow(blob,w,h){
  const old=el("ink-capv"); if(old)old.remove(); if(CAP.url)try{ URL.revokeObjectURL(CAP.url); }catch(e){}
  const url=CAP.url=URL.createObjectURL(blob), p=n=>String(n).padStart(2,"0"), d=new Date();
- const name=((el("ink-title")&&el("ink-title").value.trim())||"sky-work").replace(/[\\/:*?"<>|]+/g,"-")+"-capture-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+".png";
+ const name=((el("ink-title")&&el("ink-title").value.trim())||"sky-plan").replace(/[\\/:*?"<>|]+/g,"-")+"-capture-"+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+".png";
  const file=new File([blob],name,{type:"image/png"}), canShare=!!(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]}));
  const o=document.createElement("div"); o.id="ink-capv"; o.className="ink-ocr";
  o.innerHTML=`<div class="ocr-box"><b>แคปแล้ว ✓</b> <span class="hint" style="margin:0">${w}×${h}px · ${(blob.size/1024).toFixed(0)} KB</span>
@@ -6487,7 +6498,7 @@ ${pushCard()}
 <div class="card" style="margin-top:16px"><h2>ซิงก์เข้า Google Calendar</h2>
 <div class="hint" style="margin-top:6px">ดาวน์โหลดไฟล์ปฏิทิน (.ics) ที่รวมงานทุกงานที่มีวันที่ รวมงานที่ตั้งเกิดซ้ำล่วงหน้า 14 เดือน พร้อมเตือนล่วงหน้า 2 วัน</div>
 <div class="addg"><button class="btn" id="icsgo">${svg(ICON.cal,17)}ดาวน์โหลดไฟล์ปฏิทิน (.ics)</button></div>
-<div class="code">Google Calendar → Settings → Import &amp; export → Import → เลือกไฟล์ sky-work.ics → Import
+<div class="code">Google Calendar → Settings → Import &amp; export → Import → เลือกไฟล์ sky-plan.ics → Import
 มือถือ: เปิดไฟล์ .ics แล้วเลือก "เพิ่มลงในปฏิทิน"</div>
 <div class="hint">เพิ่มงานใหม่แล้วดาวน์โหลดใหม่ได้ ระบบใส่รหัสงานกำกับไว้ ปฏิทินจะอัปเดตทับของเดิม ไม่ซ้ำซ้อน</div></div>`;
 }
@@ -6811,7 +6822,7 @@ ${on?"เชื่อมต่อฐานข้อมูลสำเร็จ �
 <div class="d">${groups.length} กลุ่ม · ${gls.length} หมวด GL · ${companies.length} บริษัท</div></div>
 <div class="card span4"><h2>แอปนี้ทำงานยังไง</h2>
 <div class="hint" style="margin-top:0">
-Sky Work เป็นเว็บแอปของวิมเอง ติดตั้งบน <b>Vercel</b> และเก็บข้อมูลบน <b>Supabase</b> — เปิดจากไอคอนบนหน้าจอได้เลย
+Sky Plan เป็นเว็บแอปของวิมเอง ติดตั้งบน <b>Vercel</b> และเก็บข้อมูลบน <b>Supabase</b> — เปิดจากไอคอนบนหน้าจอได้เลย
 ไม่ต้องผ่านแอปไหน แก้จากมือถือแล้วโน้ตบุ๊กเห็นทันทีเพราะข้อมูลอยู่ฐานข้อมูลกลางชุดเดียวกัน<br><br>
 ข้อมูลผูกกับบัญชีที่ล็อกอิน คนอื่นเปิดลิงก์โดยไม่มีรหัสผ่านก็ไม่เห็นข้อมูล · เครื่องนี้จำการล็อกอินไว้แล้ว ไม่ต้องกรอกซ้ำ<br><br>
 แนะนำให้กดดาวน์โหลด CSV เก็บไว้เดือนละครั้ง เป็นสำเนาสำรองไว้อุ่นใจค่ะ
@@ -6947,7 +6958,7 @@ hr:{manpower:hrdata.manpower,certified:hrdata.certified,dsd:hrdata.dsd,subsidy:h
 function bkDownload(){
 const pack=bkPack(), a=document.createElement("a");
 a.href=URL.createObjectURL(new Blob([JSON.stringify(pack,null,1)],{type:"application/json"}));
-a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
+a.download="sky-plan-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click();
 setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},900);
 bkAt=pack.at; try{ localStorage.removeItem("sw-bksnooze"); }catch(e){}
 saveMeta("bk",[{at:pack.at}]);
@@ -7453,7 +7464,7 @@ el("csvsample").onclick=()=>{el("csvtext").value=
 el("csvfile").onchange=e=>{const f=e.target.files[0];if(!f)return;
 const r=new FileReader();r.onload=()=>{el("csvtext").value=r.result;importCSV(r.result);};r.readAsText(f,"utf-8");};
 }
-el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skywork-tasks",
+el("expTasks")&&(el("expTasks").onclick=()=>exportCSV("skyplan-tasks",
 ["ชื่องาน","กลุ่ม","ประเภท","สถานะ","ผู้รับผิดชอบ","วันที่","บริษัท","หมวด GL","งบ","หมวด GL รอง","งบรอง","ใช้จริง","เวลา","สถานที่","ผู้เข้าร่วม","เตรียมล่วงหน้า(วัน)","สิ่งที่ต้องเตรียม","ป้ายกำกับ","สี","ผู้เข้าอบรม","ชั่วโมง","หมวดทักษะ","รูปแบบการอบรม","วิทยากร/สถาบัน","กรมพัฒฯ","รหัสหลักสูตร","รุ่นที่","แบบที่ยื่น","วันที่ฝึกเสร็จ","วันที่ยื่นเปิดหลักสูตร","เลขคำขอเปิด","วันที่ยื่นรับรองรุ่น","เลขคำขอรับรอง","การเกิดซ้ำ","รายละเอียด"],
 items.map(t=>[t.title,gLabel(t.track),t.type,t.status,t.owner,t.date||t.recurring,cLabel(t.company),
 t.gl1?glLabel(glKeyOf(t.gl1)):"",+t.b1||"",t.gl2?glLabel(glKeyOf(t.gl2)):"",+t.b2||"",t.actual,t.time||"",t.place||"",t.attendees||"",t.prepDays||"",t.prepNote||"",t.tag||"",t.color||"",t.pax||"",t.hours||"",t.skill||"",t.mode||"",t.vendor||"",t.dsd||"",t.course||"",t.batch||"",t.yp||"",t.dsdEnd||"",t.dsdOpenDate||"",t.dsdOpenNo||"",t.dsdCertDate||"",t.dsdCertNo||"",rruleText(t),t.note])));
@@ -7475,8 +7486,8 @@ bkMsg=`<div class="banner ok" style="margin-top:12px">${svg(ICON.file,17)} ส�
 if(el("bkgo"))el("bkgo").onclick=async()=>{
 const f=el("bkfile").files&&el("bkfile").files[0];
 if(!f){tell("เลือกไฟล์สำรอง (.json) ก่อนนะคะ");return;}
-let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Work</div>"); return; }
-if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Work</b>");return;}
+let pack; try{ pack=JSON.parse(await f.text()); }catch(e){ tell("<b>อ่านไฟล์ไม่ได้</b><div style=\"font-size:13px;margin-top:6px\">ไฟล์อาจไม่ใช่ไฟล์สำรองของ Sky Plan</div>"); return; }
+if(!pack||pack.app!=="sky-work"){tell("<b>ไม่ใช่ไฟล์สำรองของ Sky Plan</b>");return;}
 const cnt=bkCount(pack);
 if(!await ask("ไฟล์นี้สำรองไว้เมื่อ <b>"+esc(new Date(pack.at||Date.now()).toLocaleString("th-TH"))+"</b> มี <b>"+cnt+"</b> รายการ<br>กู้คืนแบบ<b>เติมกลับ</b> — ของที่ลบไปจะกลับมา ของที่มีอยู่จะถูกเขียนทับด้วยค่าในไฟล์ ของใหม่ที่เพิ่มหลังวันสำรองจะไม่ถูกลบ<br>ดำเนินการต่อไหมคะ?","กู้คืนข้อมูล"))return;
 let ok=0,fail=0;
@@ -7529,16 +7540,16 @@ el("preset")&&(el("preset").onclick=async()=>{
 TRAIN_PRESET.forEach(x=>{ if(!groups.some(g=>g.label===x.label))groups.push({key:x.key,label:x.label}); });
 render(); await saveMeta("groups",groups);});
 el("signout")&&(el("signout").onclick=async()=>{if(await ask("ออกจากระบบเครื่องนี้ใช่ไหมคะ?","ออกจากระบบ"))signOut();});
-el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skywork-index",
+el("expIdx")&&(el("expIdx").onclick=()=>exportCSV("skyplan-index",
 ["สารบัญ","กลุ่มงาน","ผู้ดูแล","ลิงก์","สถานะ","รายละเอียดเอกสาร","หมายเหตุ"],
 idx.map(x=>[x.title,x.group,x.owner,x.url,x.status,x.detail,x.note])));
-el("expNote")&&(el("expNote").onclick=()=>exportCSV("skywork-notes",
+el("expNote")&&(el("expNote").onclick=()=>exportCSV("skyplan-notes",
 ["หัวข้อ","ประเภท","วันที่","ป้ายกำกับ","เนื้อหา"],
 notes.map(n=>[n.title,n.kind,n.date,n.tag,ntPlain(n,true)])));
-el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skywork-legal",
+el("expLegal")&&(el("expLegal").onclick=()=>exportCSV("skyplan-legal",
 ["ชื่อรายการ","หมวด","ตำแหน่ง/หน่วยงาน","บริษัทที่ต้องมี","ผู้รับผิดชอบ","วันที่ออก","วันหมดอายุ","รอบทบทวน(เดือน)","ไม่มีวันหมดอายุ","เงื่อนไข/หมายเหตุ"],
 legal.map(L=>[L.title,L.cat,L.unit,(L.comps||[]).map(cLabel).join(", "),L.person,L.issued,L.expires,L.cycle||"",L.lifetime?"TRUE":"",L.note])));
-el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skywork-ledger",
+el("expLedger")&&(el("expLedger").onclick=()=>exportCSV("skyplan-ledger",
 ["วันที่","ประเภท","หมวด GL","จำนวนเงิน","บริษัท","รายละเอียด"],
 ledger.map(x=>[x.date,x.kind==="income"?"รายรับ":"รายจ่าย",glLabel(x.gl),x.amount,cLabel(x.company),x.note])));
 }
@@ -8967,9 +8978,9 @@ document.execCommand("styleWithCSS",false,false); neSave(); neState();
 }
 function neClearColor(prop){
 const s=getSelection(); if(!s.rangeCount)return; const r=s.getRangeAt(0);
-NE().querySelectorAll("span[style]").forEach(sp=>{ if(!r.intersectsNode(sp))return;
+NE().querySelectorAll("span[style],b[style],strong[style],i[style],em[style],u[style],s[style],a[style],font").forEach(sp=>{ if(!r.intersectsNode(sp))return; if(sp.tagName==="FONT"){ if(prop==="color")sp.removeAttribute("color"); if(!sp.getAttribute("style")&&!sp.getAttribute("color")){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } return; }
  const hadBg=!!sp.style.backgroundColor; sp.style[prop]=""; if(prop==="backgroundColor"&&hadBg)sp.style.color="";
- if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
+ if(!sp.getAttribute("style")){ sp.removeAttribute("style"); if(sp.tagName==="SPAN"&&!sp.className){ while(sp.firstChild)sp.parentNode.insertBefore(sp.firstChild,sp); sp.remove(); } } });
 }
 
 // ---------- ช่องติ๊ก (To-do) ----------
@@ -9452,7 +9463,7 @@ const bkCount=p=>["items","ledger","legal","index","note","sec","raw","rows"].re
 async function bkDownload(){
  const pack=bkPack(); try{ pack.raw=await bkFetchKinds(["ink","nimg"]); }catch(e){ pack.rawErr=String((e&&e.message)||e); }
  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(pack)],{type:"application/json"}));
- a.download="sky-work-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },900);
+ a.download="sky-plan-backup-"+isoOf(new Date())+".json"; document.body.appendChild(a); a.click(); setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },900);
  bkAt=pack.at; try{ localStorage.removeItem("sw-bksnooze"); }catch(e){}
  saveMeta("bk",[{at:pack.at}]);
  if(pack.rawErr)tell("<b>สำรองได้ไม่ครบ</b><div style=\"font-size:13px;margin-top:8px;line-height:1.7\">ส่วนสมุดเขียนมือ/รูปในโน้ตดึงไม่สำเร็จ ("+esc(pack.rawErr)+") — ลองสำรองใหม่อีกครั้งตอนเน็ตดี</div>");
@@ -9640,7 +9651,7 @@ function spExtras(ex){ if(!SP.extra)return "";
  if(!docs.length&&!dirs.length)return "";
  const blk=(h,rows,cols)=>rows.length?`<div class="psx"><h3>${h} (${rows.length})</h3><table class="pst sm"><tbody>${rows.map(r=>`<tr><td>${esc(r.title)}${r.urgent?" 🔥":""}</td><td>${esc(cols(r))}</td><td class="r${r.due&&r.due<T?" late":""}">${r.due?"ครบ "+spShort(r.due):""}</td></tr>`).join("")}</tbody></table></div>`:"";
  return `<div class="psxs">${blk("เอกสารรอลงนาม",docs,r=>r.from||"")}${blk("งานสั่งการที่ค้าง",dirs,r=>r.owner?"ผู้รับผิดชอบ "+r.owner:"")}</div>`; }
-function spFoot(){ const n=new Date(); return `<footer>พิมพ์เมื่อ ${n.getDate()} ${MTH[n.getMonth()]} ${n.getFullYear()+543} ${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")} น. · Sky Work · เอกสารลับเฉพาะผู้บริหาร</footer>`; }
+function spFoot(){ const n=new Date(); return `<footer>พิมพ์เมื่อ ${n.getDate()} ${MTH[n.getMonth()]} ${n.getFullYear()+543} ${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")} น. · Sky Plan · เอกสารลับเฉพาะผู้บริหาร</footer>`; }
 function spDay(ex,iso){ const e=secEx1(ex)||{name:"",color:"#555"}, L=spAppts(ex,iso), tr=SP.trip?secTrip1(ex,iso):null; let rows=[];
  L.forEach(r=>rows.push({a:secMin(r.st)==null?-1:secMin(r.st),h:`<tr><td class="tm">${esc(spTm(r)||"ทั้งวัน")}</td><td><b>${esc(r.title)}</b>${r.status==="pending"?` <span class="tg">รอตอบรับ</span>`:""}${r.rep?" ↻":""}${r.note?`<small>${esc(r.note)}</small>`:""}</td><td>${esc(r.with||"")}</td><td>${esc(r.place||"")}</td><td class="lv">${+r.buf&&secMin(r.st)!=null?"ออก "+secHM(Math.max(0,secMin(r.st)-(+r.buf))):""}</td></tr>`}));
  if(SP.free&&!tr&&secDow(iso)>0&&secDow(iso)<6)secFree(ex,iso,30).forEach(g=>rows.push({a:g[0]-.5,h:`<tr class="fr"><td class="tm">${secHM(g[0])}–${secHM(g[1])}</td><td colspan="4">ว่าง</td></tr>`}));
@@ -9889,7 +9900,7 @@ function evPrintHtml(html,land){ let s=el("psheet"); if(!s){ s=document.createEl
  let pg=el("psheet-pg"); if(!pg){ pg=document.createElement("style"); pg.id="psheet-pg"; document.head.appendChild(pg); } pg.textContent=`@page{size:A4 ${land?"landscape":"portrait"};margin:10mm}`; document.body.classList.add("psheet-on");
  const done=()=>{ document.body.classList.remove("psheet-on"); s.innerHTML=""; window.removeEventListener("afterprint",done); }; window.addEventListener("afterprint",done); setTimeout(()=>{ try{ window.print(); }catch(x){ done(); } },80); }
 function evPhead(h,t){ const e=t.ev, n=new Date(); return `<header><div><h1>${h}</h1><div class="who">${esc(t.title)}</div></div><div class="dt"><b>${e.date?spDate(e.date):"ยังไม่ระบุวันงาน"}</b><small>${[e.start&&"เริ่ม "+e.start,e.venue].filter(Boolean).map(esc).join(" · ")}</small></div></header>`; }
-const evPfoot=()=>`<footer>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")} · Sky Work · Project Hub</footer>`;
+const evPfoot=()=>`<footer>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")} · Sky Plan · Project Hub</footer>`;
 function evPrintDoc(kind){ const t=EV.t, e=t.ev; let h="";
  if(kind==="run"){ const L=(e.run||[]).slice().sort((a,b)=>(evMin(a.t)==null?9999:evMin(a.t))-(evMin(b.t)==null?9999:evMin(b.t)));
   h=`<section class="psh day">${evPhead("Run-of-show / กำหนดการ",t)}<table class="pst"><thead><tr><th style="width:14%">เวลา</th><th style="width:7%">นาที</th><th>กิจกรรม</th><th style="width:20%">ผู้รับผิดชอบ</th><th style="width:20%">หมายเหตุ</th><th style="width:5%">✓</th></tr></thead><tbody>${L.map(r=>{ const a=evMin(r.t); return `<tr><td class="tm">${esc(r.t||"")}${a!=null&&+r.dur?"–"+evHM(a+(+r.dur)):""}</td><td>${r.dur||""}</td><td><b>${esc(r.title)}</b></td><td>${esc(r.owner||"")}</td><td>${esc(r.note||"")}</td><td></td></tr>`; }).join("")}</tbody></table>${evPfoot()}</section>`; evPrintHtml(h,false); return; }
@@ -10110,7 +10121,7 @@ const ONB_K="sw-onb";
 function onbSteps(){ const st=()=>{ try{ return window.matchMedia("(display-mode: standalone)").matches||navigator.standalone===true; }catch(e){ return false; } };
  return [["เพิ่มงานแรก",items.length>0,()=>openPick()],["ตั้งหมวดงบ (GL) + งบอนุมัติ",gls.length>0,()=>{ view="set"; settab="gl"; }],["ลงทะเบียนกฎหมาย / ใบอนุญาต",legal.length>0,()=>{ view="legal"; }],
   ["ตั้ง PIN + รายชื่อผู้บริหาร (ถ้าใช้ส่วนเลขาฯ)",secHasPin()&&secEx.length>0,()=>{ view="sec"; }],["เปิดการแจ้งเตือน",("Notification" in window&&Notification.permission==="granted")||pushSubs.length>0,()=>{ view="set"; settab="remind"; }],
-  ["สำรองข้อมูลครั้งแรก",!!bkAt,()=>{ view="set"; settab="import"; }],["ติดตั้งเป็นแอปบน iPad",st(),()=>tell("<b>ติดตั้งเป็นแอป</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">Safari › ปุ่มแชร์ (สี่เหลี่ยมมีลูกศร) › <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วเปิดจากไอคอน Sky Work — จะได้แจ้งเตือนและเต็มจอ</div>")]]; }
+  ["สำรองข้อมูลครั้งแรก",!!bkAt,()=>{ view="set"; settab="import"; }],["ติดตั้งเป็นแอปบน iPad",st(),()=>tell("<b>ติดตั้งเป็นแอป</b><div style=\"font-size:13.5px;margin-top:8px;line-height:1.8\">Safari › ปุ่มแชร์ (สี่เหลี่ยมมีลูกศร) › <b>เพิ่มไปยังหน้าจอโฮม</b> แล้วเปิดจากไอคอน Sky Plan — จะได้แจ้งเตือนและเต็มจอ</div>")]]; }
 const onbHidden=()=>{ try{ return localStorage.getItem(ONB_K)==="hide"; }catch(e){ return false; } };
 function onbCard(force){ const S=onbSteps(), d=S.filter(x=>x[1]).length; if(!force&&(onbHidden()||d===S.length))return "";
  return `<div class="card onb"><div class="onb-h"><h2>เริ่มต้นใช้งาน <small>${d}/${S.length} ขั้น</small></h2><button class="btn ghost sm" id="onbHide">ซ่อน</button></div><div class="ph-bar sm"><i style="width:${Math.round(d/S.length*100)}%;background:var(--ok)"></i></div>
@@ -10125,6 +10136,167 @@ function onbCard(force){ const S=onbSteps(), d=S.filter(x=>x[1]).length; if(!for
   if(el("onbHide"))el("onbHide").onclick=()=>{ try{ localStorage.setItem(ONB_K,"hide"); }catch(e){} render(); };
   if(el("onbShow"))el("onbShow").onclick=()=>{ try{ localStorage.removeItem(ONB_K); }catch(e){} render(); };
   try{ budRowsPaint(); }catch(e){ console.error(e); } }; }
+// ===== หน้าเขียนบันทึก: แถบเครื่องมือกะทัดรัด (v14.14.63) =====
+// โหมดย่อ (ค่าเริ่มต้น): ฟอนต์/ขนาด 1 แถว + เครื่องมือ 1 แถว (เลื่อนซ้าย-ขวาได้) · ซ่อนแถว "เนื้อหา / พูดให้พิมพ์" (มีปุ่ม 🎤 พูด ในแถบแล้ว)
+// ประเภท + วันที่ อยู่แถวเดียวกัน → พื้นที่พิมพ์เนื้อหาเพิ่มขึ้นมาก · ปุ่ม "▾ ทั้งหมด / ▴ ย่อ" สลับกลับแบบเดิมได้ (จำค่าไว้ในเครื่อง)
+const NTC_K="sw-ntc";
+const ntcOn=()=>{ try{ return localStorage.getItem(NTC_K)!=="0"; }catch(e){ return true; } };
+(function(){ const nt=el("ntool"), dlg=el("ndlg"); if(!nt||!dlg)return;
+ const row=document.createElement("div"); row.className="ntrow"; row.id="ntrow";
+ [...nt.children].forEach(c=>{ if(c.id!=="nefbar"&&!c.classList.contains("netbar"))row.appendChild(c); });
+ const tg=document.createElement("button"); tg.type="button"; tg.id="ntc-tg"; tg.className="ntc-tg"; row.insertBefore(tg,row.firstChild);
+ const nb=nt.querySelector(".netbar"); nt.insertBefore(row,nb||null);
+ const paint=()=>{ const on=ntcOn(); dlg.classList.toggle("ncompact",on); tg.textContent=on?"▾ ทั้งหมด":"▴ ย่อ"; tg.title=on?"แสดงเครื่องมือทั้งหมดแบบหลายแถว":"ย่อเครื่องมือให้เหลือ 2 แถว (พื้นที่พิมพ์มากขึ้น)"; };
+ tg.addEventListener("mousedown",e=>e.preventDefault());
+ tg.addEventListener("click",e=>{ e.preventDefault(); e.stopImmediatePropagation(); try{ localStorage.setItem(NTC_K,ntcOn()?"0":"1"); }catch(x){} paint(); });
+ paint();
+})();
+// ===== iPad: กันจอขาว/ข้อมูลหาย (v14.14.65) =====
+// จากวิดีโอ: (1) แตะ/เขียน Scribble ในบันทึก → จอซูมเข้าเอง (ฟอนต์เล็กกว่า 16px × ซูมแอป) → แก้ใน <head> (maximum-scale=1 เฉพาะ iOS)
+// (2) สลับภาษาคีย์บอร์ดตอนจอซูมอยู่ → หน้าเว็บขาวทั้งจอ = iPadOS ปิดหน้าเพราะหน่วยความจำเต็ม
+//   แก้: ปิดเบลอพื้นหลังหน้าต่างบน iOS · คืนหน่วยความจำ canvas ของสมุดเมื่อปิดสมุด · เก็บร่างทันทีเมื่อแอปถูกพักไว้
+//   และถ้าเปิดแอปใหม่แล้วมีบันทึกที่ยังไม่ได้กดบันทึก → ขึ้นแถบ "เปิดต่อ" กู้คืนให้ทันที
+(function(){
+ const d=el("inkdlg");
+ if(d)d.addEventListener("close",()=>{ try{ ["ink-base","ink-over","ink-pred","ink-laser"].forEach(id=>{ const c=el(id); if(c){ c.width=1; c.height=1; } }); ink.rc=null; }catch(e){} });
+ const flush=()=>{ try{ if(typeof DR!=="undefined"&&DR.cur&&typeof drStore==="function")drStore(); }catch(e){} };
+ addEventListener("pagehide",flush); document.addEventListener("visibilitychange",()=>{ if(document.hidden)flush(); });
+})();
+function drResumeList(){ const out=[]; try{ for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k.indexOf("sw-dr:ndlg:")!==0)continue;
+ const v=JSON.parse(localStorage.getItem(k)||"null"); if(!v||!v.snap)continue; const age=Date.now()-new Date(v.at).getTime(); if(!(age>=0&&age<3*864e5))continue;
+ const f=v.snap.f||v.snap.fields||{}, h=v.snap.h||v.snap.html||{}; const title=(f["n-title"]||"").trim(), body=String(h["n-body"]||"").replace(/<[^>]*>/g," ").replace(/\s+/g," ").trim();
+ if(!title&&!body)continue; out.push({key:k.slice(6),at:v.at,title:title||body.slice(0,30)}); } }catch(e){} return out.sort((a,b)=>a.at<b.at?1:-1); }
+function drResumeOpen(r){ const id=r.key.slice(5); let n=null; if(id!=="new"){ n=(notes||[]).find(x=>x._id===id); if(!n){ setFoot("ยังโหลดบันทึกนี้ไม่เสร็จ — ลองอีกครั้งในอีกสักครู่"); return; } }
+ openNote(n); let t=0; const iv=setInterval(()=>{ t++; const b=document.querySelector('#ndlg .dr-bar.has [data-dr="restore"]'); if(b){ clearInterval(iv); b.click(); } else if(t>20)clearInterval(iv); },100); }
+function drResumeBar(){ if(el("ndlg")&&el("ndlg").open)return; const L=drResumeList(); const old=el("drres"); if(old)old.remove(); if(!L.length)return;
+ const r=L[0], b=document.createElement("div"); b.id="drres"; b.className="drres"; b.setAttribute("role","status");
+ b.innerHTML=`📝 มีบันทึกที่ยังไม่ได้กดบันทึก <b>${esc(r.title)}</b> <span style="opacity:.75">(${esc(drHM(r.at))})</span><button type="button" data-dg="go">เปิดต่อ</button><button type="button" class="ghost" data-dg="no">ภายหลัง</button>`;
+ b.addEventListener("click",e=>{ const x=e.target.closest("[data-dg]"); if(!x)return; b.remove(); if(x.dataset.dg==="go")drResumeOpen(r); });
+ document.body.appendChild(b); }
+setTimeout(()=>{ try{ drResumeBar(); }catch(e){ console.error(e); } },3500);
+// ===== บันทึกการประชุมย้อนหลัง: ไทม์ไลน์แยกตามการประชุม (v14.14.67) =====
+// หน้า การประชุม → การ์ด "บันทึกการประชุมย้อนหลัง" · เลือกการประชุม (HAI Meeting, HR-Weekly …) → ไทม์ไลน์ทุกครั้ง ใหม่→เก่า พร้อมสรุปมติ
+// เปิดบันทึก → แถบด้านบนมี ‹ ครั้งก่อน · ครั้งถัดไป › · การ์ดการประชุมมีปุ่ม "📚 ไทม์ไลน์บันทึก"
+const MTL={sel:(()=>{ try{ return localStorage.getItem("sw-mtl")||""; }catch(e){ return ""; } })(),q:""};
+const MTL_K="บันทึกการประชุม";
+const mtlDate=n=>n.mtgd||n.date||(n.opened||"").slice(0,10)||"";
+function mtlItems(){ return items.filter(t=>isMeet(t)&&!isTrain(t)); }
+function mtlKey(n,ms){ ms=ms||mtlItems();
+ if(n.mtg&&ms.some(t=>t._id===n.mtg))return n.mtg;
+ const tt=(n.title||"").toLowerCase(); let best=null;
+ ms.forEach(t=>{ const s=(t.title||"").trim().toLowerCase(); if(s.length>=3&&tt.includes(s)&&(!best||s.length>best.title.length))best=t; });
+ return best?best._id:"_other"; }
+function mtlGroups(){ const ms=mtlItems(), G=new Map();
+ notes.filter(n=>n.kind!==INKKIND&&(n.mtg||n.kind===MTL_K)).forEach(n=>{ const k=mtlKey(n,ms); if(!G.has(k)){ const t=ms.find(x=>x._id===k); G.set(k,{key:k,t,label:t?t.title:"ประชุมอื่น ๆ (ไม่ได้ผูกกับการประชุม)",list:[]}); } G.get(k).list.push(n); });
+ const out=[...G.values()]; out.forEach(g=>g.list.sort((a,b)=>mtlDate(a)<mtlDate(b)?1:mtlDate(a)>mtlDate(b)?-1:0)); out.forEach(g=>g.last=mtlDate(g.list[0]));
+ return out.sort((a,b)=>a.key==="_other"?1:b.key==="_other"?-1:(a.last<b.last?1:-1)); }
+function mtlSnip(n){ const raw=n.fmt==="h"?ntClean(n.body||""):esc(n.body||"").replace(/\n/g,"<br>"); const d=document.createElement("div"); d.innerHTML=raw;
+ const hs=[...d.querySelectorAll("h2,h3,p,div,li,b,strong")].filter(x=>/มติ|ข้อสรุป|สรุป/.test(x.textContent)&&x.textContent.length<60);
+ let txt=""; const h=hs[0]&&(hs[0].closest("h2,h3,p,div,li")||hs[0]);
+ if(h&&h!==d){ let x=h.nextElementSibling, k=0; while(x&&k<6&&!/^H[23]$/.test(x.tagName)){ txt+=" "+x.textContent; x=x.nextElementSibling; k++; } txt=txt.trim(); if(txt)txt="มติ: "+txt; }
+ if(!txt)txt=d.textContent.replace(/^\s*ประชุม:.*?(ผู้เข้าร่วม:[^\n]*)?/,"");
+ txt=txt.replace(/\s+/g," ").trim(); return txt.length>180?txt.slice(0,180)+"…":txt; }
+const mtlDay=iso=>{ if(!iso)return{d:"—",m:""}; const x=new Date(iso+"T00:00:00"); return {d:x.getDate(),m:MTH[x.getMonth()]+" "+String((x.getFullYear()+543)%100).padStart(2,"0")}; };
+function mtlCard(){ const G=mtlGroups(); if(!G.length)return `<div class="card span4" id="mtl"><h2>📚 บันทึกการประชุมย้อนหลัง</h2><div class="empty">ยังไม่มีบันทึกการประชุม — เปิดการประชุม (เช่น HAI Meeting) แล้วกด “📝 จดบันทึกประชุม” บันทึกจะมารวมเป็นไทม์ไลน์ที่นี่</div></div>`;
+ let g=G.find(x=>x.key===MTL.sel)||G[0]; const q=MTL.q.trim().toLowerCase();
+ const L=g.list.filter(n=>!q||((n.title||"")+" "+ntPlain(n)).toLowerCase().includes(q));
+ const chips=G.map(x=>`<button type="button" class="mtl-chip${x===g?" on":""}" data-mtl="${esc(x.key)}">${esc(x.label)} <b>${x.list.length}</b></button>`).join("");
+ const rows=L.map((n,i)=>{ const D=mtlDay(mtlDate(n)), s=mtlSnip(n); return `<div class="mtl-it" data-mtlo="${n._id}" role="button" tabindex="0">
+  <div class="mtl-d"><b>${D.d}</b><span>${esc(D.m)}</span></div><i class="mtl-dot${i===0&&!q?" new":""}"></i>
+  <div class="mtl-tx"><div class="t1">${esc(n.title||"ไม่มีชื่อ")}${i===0&&!q?' <span class="tag sky">ล่าสุด</span>':""}</div>${s?`<div class="t2">${esc(s)}</div>`:""}</div></div>`; }).join("");
+ return `<div class="card span4" id="mtl"><h2>📚 บันทึกการประชุมย้อนหลัง <small>เลือกการประชุมเพื่อดูไทม์ไลน์ทุกครั้ง · ${notes.filter(n=>n.mtg||n.kind===MTL_K).length} บันทึก</small></h2>
+ <div class="mtl-chips">${chips}</div>
+ <div class="mtl-bar"><b>${esc(g.label)}</b><span>${g.list.length} ครั้ง${g.list.length?" · ล่าสุด "+esc(fmtDate(g.last))+" "+(new Date(g.last).getFullYear()+543):""}</span>
+  <input type="search" id="mtl-q" placeholder="ค้นในบันทึกของการประชุมนี้" value="${esc(MTL.q)}">
+  ${g.t?`<button type="button" class="btn ghost sm" data-mtlcard="${g.t._id}">เปิดการประชุม / จดครั้งใหม่</button>`:""}</div>
+ <div class="mtl-tl">${rows||`<div class="empty">ไม่พบบันทึกที่ตรงกับ “${esc(MTL.q)}”</div>`}</div></div>`; }
+{ const _m=meet; meet=function(){ let h=_m.apply(this,arguments); try{ h=h.replace('<div class="toolbar">','<div class="toolbar"><button type="button" class="btn ghost sm" data-mtljump>📚 บันทึกประชุมย้อนหลัง</button> '); const i=h.lastIndexOf("</div>"); return i>0?h.slice(0,i)+mtlCard()+h.slice(i):h+mtlCard(); }catch(e){ console.error(e); return h; } }; }
+function mtlPick(k){ MTL.sel=k; MTL.q=""; try{ localStorage.setItem("sw-mtl",k); }catch(e){} const c=el("mtl"); if(c){ const t=document.createElement("div"); t.innerHTML=mtlCard(); c.replaceWith(t.firstElementChild); mtlWire(); } }
+function mtlWire(){ const q=el("mtl-q"); if(q&&!q._w){ q._w=1; q.addEventListener("input",()=>{ MTL.q=q.value; const pos=q.selectionStart; const c=el("mtl"), t=document.createElement("div"); t.innerHTML=mtlCard(); c.replaceWith(t.firstElementChild); mtlWire(); const nq=el("mtl-q"); nq.focus(); try{ nq.setSelectionRange(pos,pos); }catch(e){} }); } }
+function mtlGo(k){ const d=el("cardlg"); if(d&&d.open)d.close(); const v=el("nvdlg"); if(v&&v.open)v.close(); MTL.sel=k; MTL.q=""; try{ localStorage.setItem("sw-mtl",k); }catch(e){}
+ view="meet"; renderNav(); render(); setTimeout(()=>{ const c=el("mtl"); if(c)c.scrollIntoView({behavior:"smooth",block:"start"}); },60); }
+document.addEventListener("click",e=>{ const t=e.target; if(!t.closest)return;
+ if(t.closest("[data-mtljump]")){ const m=el("mtl"); if(m)m.scrollIntoView({behavior:"smooth",block:"start"}); return; }
+ const c=t.closest("[data-mtl]"); if(c){ mtlPick(c.dataset.mtl); return; }
+ const o=t.closest("[data-mtlo]"); if(o){ const n=notes.find(x=>x._id===o.dataset.mtlo); if(n)viewNote(n); return; }
+ const k=t.closest("[data-mtlcard]"); if(k){ const it=items.find(x=>x._id===k.dataset.mtlcard); if(it)openCard(it); } });
+document.addEventListener("keydown",e=>{ if(e.key!=="Enter")return; const o=e.target.closest&&e.target.closest("[data-mtlo]"); if(o)o.click(); });
+{ const _w=wire; wire=function(){ _w.apply(this,arguments); if(view==="meet")mtlWire(); }; }
+// เปิดบันทึก → ครั้งก่อน / ครั้งถัดไป / ไทม์ไลน์
+{ const _v=viewNote; viewNote=function(n){ const r=_v.apply(this,arguments); try{ if(!n||!(n.mtg||n.kind===MTL_K))return r; const k=mtlKey(n), g=mtlGroups().find(x=>x.key===k); if(!g)return r;
+  const i=g.list.findIndex(x=>x._id===n._id), older=g.list[i+1], newer=g.list[i-1];
+  let x=el("nv-mtg"); if(!x){ const b=el("nvb"); if(!b)return r; x=document.createElement("div"); x.id="nv-mtg"; x.className="nv-mtg"; x.innerHTML=`📚 <b>${esc(g.label)}</b>`; b.parentNode.insertBefore(x,b); }
+  const nav=document.createElement("span"); nav.className="mtl-nav";
+  nav.innerHTML=`<button type="button" class="btn ghost sm" ${older?"":"disabled"} title="${older?esc(older.title||""):"ไม่มีครั้งก่อนหน้า"}">‹ ครั้งก่อน</button><span class="mtl-pos">${i+1>0?(g.list.length-i)+"/"+g.list.length:""}</span><button type="button" class="btn ghost sm" ${newer?"":"disabled"} title="${newer?esc(newer.title||""):"นี่คือครั้งล่าสุด"}">ครั้งถัดไป ›</button><button type="button" class="btn ghost sm">ไทม์ไลน์</button>`;
+  const bs=nav.querySelectorAll("button"); bs[0].onclick=()=>older&&viewNote(older); bs[1].onclick=()=>newer&&viewNote(newer); bs[2].onclick=()=>mtlGo(k);
+  const last=x.querySelector("button:last-of-type"); x.insertBefore(nav,last&&last.parentNode===x?last:null); }catch(e){ console.error(e); } return r; }; }
+// การ์ดการประชุม → ปุ่มไทม์ไลน์
+{ const _c=openCard; openCard=function(t){ const r=_c.apply(this,arguments); try{ if(!t||!isMeet(t)||isTrain(t))return r; const f=document.querySelector("#cardlg .dlg-f"); if(!f)return r; f.querySelectorAll(".mtlbtn").forEach(b=>b.remove());
+  const g=mtlGroups().find(x=>x.key===t._id); if(!g||!g.list.length)return r;
+  const b=document.createElement("button"); b.type="button"; b.className="btn ghost xcard mtlbtn"; b.textContent="📚 ไทม์ไลน์บันทึก ("+g.list.length+")"; b.onclick=()=>mtlGo(t._id); f.insertBefore(b,el("vc-edit2")); }catch(e){ console.error(e); } return r; }; }
+// ===== หน้าเขียนบันทึก: แถบเครื่องมือแถวเดียว + เมนูแบบดรอปดาวน์ (v14.14.67) =====
+// เดิม: ฟอนต์ 10 ปุ่ม + ขนาด 7 ปุ่ม เรียงยาว และเครื่องมือ ~30 ปุ่มกระจาย 2 แถว
+// ใหม่: ↶ ↷ ⌫ | [Aa ฟอนต์ · ขนาด ▾] | B I U A | ☑ To-do | [¶ ย่อหน้า ▾] [＋ แทรก ▾] [✨ AI ▾] [⋯]
+// ปุ่มจริงทุกปุ่มยังเป็นปุ่มเดิม (data-ne) แค่ย้ายเข้าเมนู → ทุกฟังก์ชันทำงานเหมือนเดิม
+(function(){ const nt=el("ntool"), dlg=el("ndlg"), fb=el("nefbar"); if(!nt||!dlg)return;
+ try{ localStorage.setItem("sw-ntc","1"); }catch(e){} dlg.classList.add("ncompact","nbar2"); const tg=el("ntc-tg"); if(tg)tg.remove();
+ const B=k=>nt.querySelector('[data-ne="'+k+'"]');
+ const lab={h2:"H1 · หัวข้อใหญ่",h3:"H2 · หัวข้อย่อย",ul:"• รายการ (บูเลต)",ol:"1. เลขข้อ",outdent:"⇤ เลื่อนออก",indent:"⇥ เลื่อนเข้า",fold:"▾ พับ/ขยายทุกหัวข้อ",hr:"— เส้นคั่น",
+  img:"🖼 รูปภาพ",table:"▦ ตาราง",link:"🔗 ลิงก์",stk:"🔥 สติกเกอร์สถานะ",calc:"🧮 เครื่องคิดเลข",mic:"🎤 พูดให้พิมพ์",
+  ai:"✨ ถาม AI / สอนใช้งาน",act:"🧾 สรุปประชุม → งาน",strike:"<s>S</s> ขีดฆ่า",light:'<span style="font-weight:300">บาง</span> ตัวบาง',clear:"🧹 ล้างรูปแบบ",hist:"🕘 ประวัติเวอร์ชัน"};
+ const row=document.createElement("div"); row.className="nb2"; row.id="nb2";
+ const sep=()=>{ const s=document.createElement("span"); s.className="sep"; return s; };
+ const trig=(id,html,title)=>{ const b=document.createElement("button"); b.type="button"; b.className="nb2-t"; b.id=id; b.innerHTML=html; b.title=title; b.setAttribute("aria-haspopup","menu"); b.setAttribute("aria-expanded","false"); return b; };
+ const menus={};
+ const menu=(id,keys,cls)=>{ const p=document.createElement("div"); p.className="nb2-pop"+(cls?" "+cls:""); p.id=id; p.hidden=true; p.setAttribute("role","menu");
+  keys.forEach(k=>{ const b=B(k); if(!b)return; if(lab[k])b.innerHTML=lab[k]; b.setAttribute("role","menuitem"); p.appendChild(b); }); nt.appendChild(p); menus[id]=p; return p; };
+ // แถวหลัก
+ ["undo","redo","del"].forEach(k=>{ const b=B(k); if(b)row.appendChild(b); }); const d=B("del"); if(d){ d.textContent="⌫"; }
+ row.appendChild(sep());
+ const ft=trig("nb2-font",'<span class="nb2-ff">Sarabun</span><span class="nb2-fs">15</span><i>▾</i>',"ฟอนต์และขนาดตัวอักษร"); row.appendChild(ft);
+ row.appendChild(sep());
+ ["bold","italic","underline","color"].forEach(k=>{ const b=B(k); if(b)row.appendChild(b); });
+ row.appendChild(sep());
+ const ck=B("ck"); if(ck)row.appendChild(ck);
+ const pt=trig("nb2-par","¶ ย่อหน้า <i>▾</i>","หัวข้อ · รายการ · เลขข้อ · เลื่อนเข้า/ออก · เส้นคั่น"); row.appendChild(pt);
+ const it=trig("nb2-ins","＋ แทรก <i>▾</i>","รูป · ตาราง · ลิงก์ · สติกเกอร์ · คิดเลข · พูด"); row.appendChild(it);
+ const at=trig("nb2-ai","✨ AI <i>▾</i>","ถาม AI · สรุปประชุมเป็นงาน"); row.appendChild(at);
+ const mt=trig("nb2-more","⋯","ขีดฆ่า · ตัวบาง · ล้างรูปแบบ · ประวัติ"); mt.classList.add("nb2-dots"); row.appendChild(mt);
+ menu("nb2m-par",["h2","h3","ul","ol","outdent","indent","fold","hr"]);
+ menu("nb2m-ins",["img","table","link","stk","calc","mic"]);
+ menu("nb2m-ai",["ai","act"]);
+ menu("nb2m-more",["strike","light","clear","hist"]);
+ // ฟอนต์ → แผงเลือก (ใช้ #nefbar เดิม ให้ตัวจัดการเดิมทำงานต่อ)
+ if(fb){ fb.classList.add("nb2-pop","nb2-fpop"); fb.hidden=true; fb.setAttribute("role","menu"); nt.appendChild(fb); menus.nefbar=fb; }
+ // ลบแถวเดิม/ตัวคั่นที่ว่าง แล้ววางแถวใหม่ไว้บนสุด
+ const old=el("ntrow"); if(old){ [...old.children].forEach(c=>{ if(c.matches("button[data-ne]"))menus["nb2m-more"].appendChild(c); }); old.remove(); }
+ nt.querySelectorAll(":scope>.sep,:scope>button[data-ne]").forEach(x=>{ if(x.tagName==="BUTTON")menus["nb2m-more"].appendChild(x); else x.remove(); });
+ nt.insertBefore(row,nt.firstChild);
+ const pairs=[[ft,fb],[pt,menus["nb2m-par"]],[it,menus["nb2m-ins"]],[at,menus["nb2m-ai"]],[mt,menus["nb2m-more"]]];
+ const closeAll=ex=>pairs.forEach(([t,p])=>{ if(p&&p!==ex){ p.hidden=true; t.setAttribute("aria-expanded","false"); t.classList.remove("on"); } });
+ window.nb2Close=()=>closeAll(null);
+ function place(t,p){ p.style.left="0px"; p.style.top="0px"; const o=p.getBoundingClientRect(), z=(p.offsetWidth?o.width/p.offsetWidth:1)||1, r=t.getBoundingClientRect();
+  const w=o.width, x=Math.max(8,Math.min(innerWidth-w-8,r.left)), spaceB=innerHeight-r.bottom, h=o.height; let y=r.bottom+4; if(h>spaceB-12&&r.top>spaceB)y=Math.max(8,r.top-4-h);
+  p.style.left=((x-o.left)/z)+"px"; p.style.top=((y-o.top)/z)+"px"; p.style.maxHeight=Math.max(160,(y>r.top?innerHeight-y-12:r.top-12))/z+"px"; }
+ pairs.forEach(([t,p])=>{ if(!p)return;
+  t.addEventListener("mousedown",e=>e.preventDefault());
+  t.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); try{ neSave(); }catch(x){} const open=p.hidden; closeAll(); if(!open)return;
+   p.hidden=false; t.setAttribute("aria-expanded","true"); t.classList.add("on"); if(p===fb)try{ neFBarSync(); }catch(x){} place(t,p); });
+  p.addEventListener("mousedown",e=>{ if(!e.target.closest("input"))e.preventDefault(); });
+  // เลือกแล้วปิดเมนู (ยกเว้น A−/A+ ให้กดซ้ำได้)
+  p.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b)return; if(b.dataset.fsz==="-2"||b.dataset.fsz==="2")return; setTimeout(()=>{ p.hidden=true; t.setAttribute("aria-expanded","false"); t.classList.remove("on"); },0); }); });
+ document.addEventListener("pointerdown",e=>{ if(!e.target.closest(".nb2-pop,.nb2-t"))closeAll(); },true);
+ document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&pairs.some(([,p])=>p&&!p.hidden)){ e.preventDefault(); e.stopPropagation(); closeAll(); } },true);
+ dlg.addEventListener("close",()=>closeAll());
+ const bd=dlg.querySelector(".dlg-b"); if(bd)bd.addEventListener("scroll",()=>closeAll(),{passive:true}); addEventListener("resize",()=>closeAll());
+})();
+// แผงฟอนต์: หัวแผง + ชื่อฟอนต์ในปุ่มด้านบน
+{ const _s=neFBarSync; neFBarSync=function(){ const r=_s.apply(this,arguments); try{ const bar=el("nefbar"), t=el("nb2-font"); if(!bar||!t)return r;
+  const on=bar.querySelector("[data-ffk].on"), key=on?on.dataset.ffk:"sarabun", f=NE_FONTS.find(x=>x[0]===key)||NE_FONTS[0];
+  const ff=t.querySelector(".nb2-ff"); ff.textContent=f[1].replace(" Sans Thai",""); ff.style.fontFamily=f[3]+",Sarabun,sans-serif";
+  t.querySelector(".nb2-fs").textContent=(el("nefs-v")||{}).textContent||"15"; t.classList.toggle("sel",neFScope==="sel");
+  t.title="ฟอนต์และขนาด · ใช้กับ"+(neFScope==="sel"?"ข้อความที่เลือก":"ทั้งบันทึก"); }catch(e){} return r; }; }
+{ const _o=openNote; openNote=function(){ const r=_o.apply(this,arguments); try{ if(window.nb2Close)nb2Close(); neFBarSync(); }catch(e){} return r; }; }
 function gate(mode){
 gateMode=mode;
 const b=el("gatebody");
@@ -10146,7 +10318,7 @@ b.innerHTML=`<div class="f"><label for="g-new">รหัสผ่านใหม
 <div id="g-msg"></div>`;
 el("gatego").textContent="บันทึกรหัสผ่านใหม่";
 }else if(mode==="login"){
-el("gateh").textContent="เข้าสู่ระบบ Sky Work";
+el("gateh").textContent="เข้าสู่ระบบ Sky Plan";
 b.innerHTML=`<div class="f"><label for="g-mail">อีเมล</label><input id="g-mail" type="email" autocomplete="email"></div>
 <div class="f" style="margin-top:12px"><label for="g-pass">รหัสผ่าน</label><input id="g-pass" type="password" autocomplete="current-password"></div>
 <div class="hint">เครื่องนี้จะจำไว้ ไม่ต้องล็อกอินอีก · <b>เคยมีบัญชีแล้วให้กด “เข้าสู่ระบบ” เท่านั้น</b> (ข้อมูลทั้งหมดอยู่ในบัญชีเดิม)</div>
